@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 390" width="100%" height="100%">
+  <defs>
+    <filter id="shadowBox" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.1"/>
+    </filter>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; fill: #64748b; }
+    .code { font-family: ui-monospace, monospace; font-size: 13px; }
+    .heading { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 700; fill: #1e293b; }
+    .text { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #475569; line-height: 1.4; }
+  </style>
+
+  <rect width="880" height="390" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">The Generics Inheritance Trap: Why List&lt;Integer&gt; is NOT a List&lt;Number&gt;</text>
+  <text x="30" y="55" class="sub">Even though Integer is-a Number, generic types are invariant in Java for safety reasons.</text>
+
+  <!-- LEFT: What beginners think (The Disaster scenario if allowed) -->
+  <g transform="translate(30, 80)">
+    <rect width="395" height="235" rx="10" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5" filter="url(#shadowBox)"/>
+    
+    <g transform="translate(20, 20)">
+      <circle cx="12" cy="12" r="12" fill="#ef4444"/>
+      <text x="12" y="17" fill="#ffffff" font-family="sans-serif" font-weight="bold" font-size="14" text-anchor="middle">&#215;</text>
+      <text x="35" y="16" class="heading" fill="#991b1b">If Java Allowed This (Catastrophe!)</text>
+    </g>
+
+    <g transform="translate(20, 55)">
+      <!-- Line 1 -->
+      <rect width="355" height="30" rx="4" fill="#ffffff" stroke="#fecaca"/>
+      <text x="12" y="20" class="code" fill="#334155">List&lt;Integer&gt; ints = new ArrayList&lt;&gt;();</text>
+      
+      <!-- Line 2 (Hypothetical error) -->
+      <rect y="38" width="355" height="30" rx="4" fill="#fee2e2" stroke="#f87171"/>
+      <text x="12" y="58" class="code" fill="#b91c1c" font-weight="bold">List&lt;Number&gt; nums = ints; // ILLEGAL IN JAVA!</text>
+
+      <!-- Line 3 (Corrupting the array) -->
+      <rect y="76" width="355" height="30" rx="4" fill="#ffffff" stroke="#fecaca"/>
+      <text x="12" y="96" class="code" fill="#334155">nums.add(3.14); // Double is a Number, right?</text>
+
+      <!-- Line 4 (Explosion) -->
+      <rect y="114" width="355" height="30" rx="4" fill="#ffffff" stroke="#fecaca"/>
+      <text x="12" y="134" class="code" fill="#b91c1c">Integer val = ints.get(0); // CRASH! It's a Double!</text>
+    </g>
+
+    <text x="20" y="215" class="text" fill="#b91c1c" font-weight="bold">Result: Memory corruption &amp; ClassCastException at runtime!</text>
+  </g>
+
+  <!-- RIGHT: How Java solves this safely -->
+  <g transform="translate(455, 80)">
+    <rect width="395" height="235" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5" filter="url(#shadowBox)"/>
+
+    <g transform="translate(20, 20)">
+      <circle cx="12" cy="12" r="12" fill="#22c55e"/>
+      <text x="12" y="17" fill="#ffffff" font-family="sans-serif" font-weight="bold" font-size="13" text-anchor="middle">&#10003;</text>
+      <text x="35" y="16" class="heading" fill="#166534">The Solution: Wildcards (? extends Number)</text>
+    </g>
+
+    <g transform="translate(20, 55)">
+      <!-- Line 1 -->
+      <rect width="355" height="30" rx="4" fill="#ffffff" stroke="#bbf7d0"/>
+      <text x="12" y="20" class="code" fill="#334155">List&lt;Integer&gt; ints = List.of(1, 2, 3);</text>
+
+      <!-- Line 2 (Wildcard allows reading) -->
+      <rect y="38" width="355" height="30" rx="4" fill="#dcfce7" stroke="#4ade80"/>
+      <text x="12" y="58" class="code" fill="#15803d" font-weight="bold">List&lt;? extends Number&gt; nums = ints; // LEGAL!</text>
+
+      <!-- Line 3 (Compiler guards from corruption) -->
+      <rect y="76" width="355" height="30" rx="4" fill="#ffffff" stroke="#bbf7d0"/>
+      <text x="12" y="96" class="code" fill="#64748b">nums.add(3.14); // COMPILE ERROR: Read-only!</text>
+
+      <!-- Line 4 (Safe reading) -->
+      <rect y="114" width="355" height="30" rx="4" fill="#ffffff" stroke="#bbf7d0"/>
+      <text x="12" y="134" class="code" fill="#15803d">Number n = nums.get(0); // 100% Safe guaranteed</text>
+    </g>
+
+    <text x="20" y="215" class="text" fill="#166534" font-weight="bold">Java blocks writing at compile-time to guarantee 100% safety.</text>
+  </g>
+
+  <!-- BOTTOM CALLOUT -->
+  <g transform="translate(30, 335)">
+    <rect width="820" height="40" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="20" y="24" class="text">&#128273; <tspan font-weight="bold" fill="#0f172a">Rule of Thumb:</tspan> <tspan font-family="monospace">Integer extends Number</tspan>, but <tspan font-family="monospace">List&lt;Integer&gt;</tspan> does <tspan font-weight="bold">NOT</tspan> extend <tspan font-family="monospace">List&lt;Number&gt;</tspan>. Use <tspan font-family="monospace">&lt;? extends Number&gt;</tspan> when you only need to read.</text>
+  </g>
+</svg>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Session 3 — File Handling, Streams and Serialization: examples, guided lab, practice. Examples create their files in the sandbox/ folder.
+  Open this folder in IntelliJ (File → Open → select this folder), then run any class with the green ▶.
+  Plain Java: no libraries needed.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.aptech</groupId>
+    <artifactId>s03-files-streams</artifactId>
+    <version>1.0</version>
+    <name>Session 3 - Files and Streams</name>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+</project>

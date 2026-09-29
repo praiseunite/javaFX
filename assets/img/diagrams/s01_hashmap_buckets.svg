@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 420" width="100%" height="100%">
+  <defs>
+    <filter id="shadowSm" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.1"/>
+    </filter>
+    <marker id="mapArrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#3b82f6"/>
+    </marker>
+    <marker id="pinkArrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#ec4899"/>
+    </marker>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .box-title { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; font-weight: 700; fill: #1e293b; }
+    .code { font-family: ui-monospace, monospace; font-size: 12px; }
+    .bucket-idx { font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; fill: #64748b; }
+    .note { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #475569; }
+  </style>
+
+  <!-- Card Frame -->
+  <rect width="880" height="420" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">How HashMap Finds Values in O(1) Time</text>
+  <text x="30" y="54" class="sub">Step 1: Hash the Key &#8594; Step 2: Modulo Array Length &#8594; Step 3: Jump Straight to Bucket &#8594; Step 4: Compare .equals()</text>
+
+  <!-- STEP 1: KEY INPUT -->
+  <g transform="translate(30, 85)" filter="url(#shadowSm)">
+    <rect width="140" height="70" rx="8" fill="#f8fafc" stroke="#3b82f6" stroke-width="2"/>
+    <text x="70" y="24" class="box-title" text-anchor="middle">1. Key Passed In</text>
+    <rect x="15" y="34" width="110" height="26" rx="4" fill="#eff6ff"/>
+    <text x="70" y="52" class="code" fill="#1d4ed8" font-weight="bold" text-anchor="middle">"alice"</text>
+  </g>
+
+  <!-- Arrow to Hash Function -->
+  <path d="M 175 120 L 225 120" stroke="#3b82f6" stroke-width="2" marker-end="url(#mapArrow)"/>
+
+  <!-- STEP 2: HASH FUNCTION -->
+  <g transform="translate(230, 85)" filter="url(#shadowSm)">
+    <rect width="150" height="70" rx="8" fill="#f8fafc" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="75" y="24" class="box-title" text-anchor="middle">2. hashCode() &amp; Modulo</text>
+    <text x="75" y="44" class="code" fill="#6d28d9" text-anchor="middle">hash = 92900742</text>
+    <text x="75" y="60" class="code" fill="#6d28d9" font-weight="bold" text-anchor="middle">index = hash % 16 &#8594; [2]</text>
+  </g>
+
+  <!-- Arrow to Bucket Array -->
+  <path d="M 385 120 L 440 120 L 440 190 L 485 190" stroke="#8b5cf6" stroke-width="2" fill="none" marker-end="url(#mapArrow)"/>
+
+  <!-- STEP 3: BUCKET ARRAY -->
+  <g transform="translate(490, 80)">
+    <text x="0" y="0" class="box-title">3. Internal Node[] table (Buckets 0 to 7)</text>
+
+    <!-- Buckets 0 to 5 -->
+    <!-- Bucket 0 -->
+    <g transform="translate(0, 15)">
+      <rect width="60" height="30" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/>
+      <text x="30" y="20" class="bucket-idx" text-anchor="middle">[0]</text>
+      <text x="80" y="20" fill="#94a3b8" font-family="monospace" font-size="12">null</text>
+    </g>
+
+    <!-- Bucket 1 -->
+    <g transform="translate(0, 52)">
+      <rect width="60" height="30" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/>
+      <text x="30" y="20" class="bucket-idx" text-anchor="middle">[1]</text>
+      <text x="80" y="20" fill="#94a3b8" font-family="monospace" font-size="12">null</text>
+    </g>
+
+    <!-- Bucket 2 (TARGET) -->
+    <g transform="translate(0, 89)" filter="url(#shadowSm)">
+      <rect width="60" height="34" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+      <text x="30" y="22" class="bucket-idx" fill="#1d4ed8" text-anchor="middle">[2]</text>
+      <!-- Direct arrow into linked entries -->
+      <path d="M 65 17 L 105 17" stroke="#2563eb" stroke-width="2.5" marker-end="url(#mapArrow)"/>
+    </g>
+
+    <!-- Bucket 3 -->
+    <g transform="translate(0, 130)">
+      <rect width="60" height="30" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/>
+      <text x="30" y="20" class="bucket-idx" text-anchor="middle">[3]</text>
+      <path d="M 65 15 L 105 15" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#mapArrow)"/>
+    </g>
+
+    <!-- Bucket 4 -->
+    <g transform="translate(0, 167)">
+      <rect width="60" height="30" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/>
+      <text x="30" y="20" class="bucket-idx" text-anchor="middle">[4]</text>
+      <text x="80" y="20" fill="#94a3b8" font-family="monospace" font-size="12">null</text>
+    </g>
+
+    <!-- Bucket 5 -->
+    <g transform="translate(0, 204)">
+      <rect width="60" height="30" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/>
+      <text x="30" y="20" class="bucket-idx" text-anchor="middle">[5]</text>
+      <text x="80" y="20" fill="#94a3b8" font-family="monospace" font-size="12">null</text>
+    </g>
+
+    <!-- Bucket 2 Linked List Entries (Collision resolution) -->
+    <!-- Entry 1: "alice" -->
+    <g transform="translate(110, 84)" filter="url(#shadowSm)">
+      <rect width="125" height="44" rx="6" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+      <text x="10" y="18" class="code" fill="#047857" font-weight="bold">Key: "alice"</text>
+      <text x="10" y="34" class="code" fill="#065f46">Value: 95</text>
+      <rect x="95" y="12" width="22" height="20" rx="3" fill="#a7f3d0"/>
+      <text x="106" y="26" font-family="sans-serif" font-size="10" text-anchor="middle">&#8226;</text>
+    </g>
+
+    <!-- Pointer to next collision entry -->
+    <path d="M 240 106 L 275 106" stroke="#10b981" stroke-width="2" marker-end="url(#mapArrow)"/>
+
+    <!-- Entry 2: "charlie" (collision) -->
+    <g transform="translate(280, 84)" filter="url(#shadowSm)">
+      <rect width="130" height="44" rx="6" fill="#fff7ed" stroke="#f97316" stroke-width="1.5"/>
+      <text x="10" y="18" class="code" fill="#c2410c">Key: "charlie"</text>
+      <text x="10" y="34" class="code" fill="#9a3412">Value: 88</text>
+      <text x="110" y="26" fill="#94a3b8" font-family="monospace" font-size="10">null</text>
+    </g>
+
+    <!-- Bucket 3 entry -->
+    <g transform="translate(110, 125)">
+      <rect width="125" height="38" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+      <text x="10" y="16" class="code" fill="#334155">Key: "bob"</text>
+      <text x="10" y="30" class="code" fill="#64748b">Value: 72</text>
+    </g>
+  </g>
+
+  <!-- EXPLANATORY FOOTER -->
+  <g transform="translate(30, 350)">
+    <rect width="820" height="50" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="20" y="22" class="note"><tspan font-weight="bold" fill="#0f172a">&#128161; Why it's O(1):</tspan> Java doesn't search through thousands of items. The key's hash immediately pinpoints index [2].</text>
+    <text x="20" y="38" class="note"><tspan font-weight="bold" fill="#0f172a">&#9888; Collisions:</tspan> If two keys land on the same bucket (e.g., "alice" and "charlie"), Java chains them in a tiny list and checks <tspan font-family="monospace">.equals()</tspan>.</text>
+  </g>
+</svg>

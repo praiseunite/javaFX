@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 340" width="100%" height="100%">
+  <defs>
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.08"/>
+    </filter>
+    <marker id="pipeArrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#6366f1"/>
+    </marker>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; fill: #64748b; }
+    .step-title { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 700; fill: #1e293b; }
+    .code { font-family: ui-monospace, monospace; font-size: 11.5px; }
+    .explain { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; fill: #64748b; }
+  </style>
+
+  <rect width="880" height="340" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">How Type Erasure Works Under The Hood</text>
+  <text x="30" y="54" class="sub">Java Generics exist purely for the developer and compiler — at runtime, the JVM runs lean raw types with zero overhead.</text>
+
+  <!-- STEP 1: SOURCE CODE -->
+  <g transform="translate(30, 80)" filter="url(#cardShadow)">
+    <rect width="250" height="195" rx="8" fill="#f8fafc" stroke="#3b82f6" stroke-width="2"/>
+    <rect x="0" y="0" width="250" height="32" rx="8" fill="#eff6ff"/>
+    <text x="15" y="21" class="step-title" fill="#1d4ed8">1. Your Java Source (.java)</text>
+
+    <g transform="translate(15, 45)">
+      <text x="0" y="15" class="code" fill="#334155">// You write type parameters</text>
+      <text x="0" y="35" class="code" fill="#0f172a" font-weight="bold">List&lt;String&gt; list =</text>
+      <text x="15" y="53" class="code" fill="#0f172a" font-weight="bold">new ArrayList&lt;&gt;();</text>
+      
+      <text x="0" y="78" class="code" fill="#0f172a">list.add("Hello");</text>
+      <text x="0" y="100" class="code" fill="#0f172a">String s = list.get(0);</text>
+
+      <text x="0" y="130" class="explain">&#10003; Clean, readable code</text>
+      <text x="0" y="145" class="explain">&#10003; No manual casting needed</text>
+    </g>
+  </g>
+
+  <!-- ARROW 1 -> 2 -->
+  <path d="M 290 175 L 315 175" stroke="#6366f1" stroke-width="2.5" marker-end="url(#pipeArrow)"/>
+
+  <!-- STEP 2: COMPILER VERIFICATION -->
+  <g transform="translate(325, 80)" filter="url(#cardShadow)">
+    <rect width="230" height="195" rx="8" fill="#f8fafc" stroke="#8b5cf6" stroke-width="2"/>
+    <rect x="0" y="0" width="230" height="32" rx="8" fill="#f5f3ff"/>
+    <text x="15" y="21" class="step-title" fill="#6d28d9">2. javac (Compilation)</text>
+
+    <g transform="translate(15, 45)">
+      <circle cx="10" cy="12" r="8" fill="#10b981"/>
+      <text x="10" y="16" fill="#fff" font-family="sans-serif" font-weight="bold" font-size="10" text-anchor="middle">&#10003;</text>
+      <text x="25" y="16" class="code" fill="#059669" font-weight="bold">Type Check Passed</text>
+
+      <text x="0" y="45" class="explain">Checks that only <tspan font-family="monospace">String</tspan> is added.</text>
+      <text x="0" y="65" class="explain">Blocks incompatible types.</text>
+
+      <rect y="85" width="200" height="48" rx="4" fill="#fdf4ff" stroke="#e879f9"/>
+      <text x="10" y="102" class="code" fill="#a21caf" font-weight="bold">&#9986; Erasure Step:</text>
+      <text x="10" y="120" class="explain" fill="#86198f">Strips away &lt;String&gt; from bytecode</text>
+    </g>
+  </g>
+
+  <!-- ARROW 2 -> 3 -->
+  <path d="M 565 175 L 590 175" stroke="#6366f1" stroke-width="2.5" marker-end="url(#pipeArrow)"/>
+
+  <!-- STEP 3: RUNTIME JVM BYTECODE -->
+  <g transform="translate(600, 80)" filter="url(#cardShadow)">
+    <rect width="250" height="195" rx="8" fill="#f8fafc" stroke="#10b981" stroke-width="2"/>
+    <rect x="0" y="0" width="250" height="32" rx="8" fill="#ecfdf5"/>
+    <text x="15" y="21" class="step-title" fill="#047857">3. JVM Bytecode (.class)</text>
+
+    <g transform="translate(15, 45)">
+      <text x="0" y="15" class="code" fill="#334155">// Raw types run in JVM</text>
+      <text x="0" y="35" class="code" fill="#0f172a" font-weight="bold">List list = new ArrayList();</text>
+      
+      <text x="0" y="65" class="code" fill="#0f172a">list.add("Hello");</text>
+      <text x="0" y="90" class="code" fill="#0f172a"><tspan fill="#059669" font-weight="bold">(String)</tspan> list.get(0);</text>
+
+      <text x="0" y="120" class="explain">&#9775; Backward compatible with Java 1.0</text>
+      <text x="0" y="135" class="explain">&#9888; Why <tspan font-family="monospace">new T()</tspan> cannot exist at runtime</text>
+    </g>
+  </g>
+
+  <!-- FOOTER -->
+  <text x="440" y="310" class="explain" text-anchor="middle" font-size="12">Type safety happens <tspan font-weight="bold" fill="#0f172a">before</tspan> your code runs. Zero memory overhead in production!</text>
+</svg>

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bridge 4 — Methods & Arrays</title>
+  <meta name="description" content="Bridge 4 of Building Rich Java Applications with JavaFX and AI Tools: Modularize code with methods, understand pass-by-value stack frames, and master 0-indexed arrays.">
+  <link rel="stylesheet" href="../assets/css/course.css?v=5">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "b4";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== HERO ============================================================ -->
+  <section class="hero">
+    <span class="tag">Foundation Bridge &middot; Lesson B4 &middot; 2 hours prep &middot; Self-Paced / In-Class</span>
+    <h1>Bridge 4 &mdash; Methods &amp; Arrays</h1>
+    <p class="lede">
+      Writing every line of code inside one gigantic <code>main</code> method leads to unreadable "spaghetti code."
+      Professional engineers break programs into small, reusable building blocks called <strong>Methods</strong>
+      and organize related data in contiguous memory structures called <strong>Arrays</strong>.
+      Today you learn how to pass parameters, return values, understand Java's <strong>pass-by-value</strong> mechanics,
+      and wield 0-indexed arrays without ever crashing on an out-of-bounds error.
+    </p>
+    <div class="meta">
+      <span>&#128218; Core Foundation: Modular Functions &amp; Data Lists</span>
+      <span>&#9201; ~2 hours</span>
+      <span>&#9989; Prerequisites: Bridge B3 (Decisions, Loops &amp; Flow Control)</span>
+      <span>&#128203; Goal: Build a Student Grade &amp; Statistical Analyzer</span>
+    </div>
+  </section>
+
+  <!-- ===== OBJECTIVES ====================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this bridge session you can&hellip;</b>
+    <ol>
+      <li><strong>Deconstruct</strong> the anatomy of a Java method: access modifiers, return types, parameters, and bodies.</li>
+      <li><strong>Explain</strong> why Java is strictly <strong>pass-by-value</strong> and how stack memory frames isolate local variables.</li>
+      <li><strong>Apply</strong> method overloading to create flexible APIs with distinct parameter signatures.</li>
+      <li><strong>Declare, instantiate, and initialize</strong> 1D and 2D arrays in contiguous memory.</li>
+      <li><strong>Traverse</strong> arrays using both classic indexed <code>for</code> loops and enhanced <code>for-each</code> loops.</li>
+      <li><strong>Prevent and debug</strong> the notorious <code>ArrayIndexOutOfBoundsException</code>.</li>
+    </ol>
+  </div>
+
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== ROADMAP ========================================================= -->
+  <h2>Your Learning Roadmap</h2>
+  <div class="roadmap">
+    <a href="#why-methods">Why Modular Methods?</a>
+    <a href="#the-visual-kitchen-lockers">The Kitchen &amp; Lockers Metaphor</a>
+    <a href="#method-anatomy">Anatomy of a Method</a>
+    <a href="#pass-by-value">Pass-by-Value Explained</a>
+    <a href="#method-overloading">Method Overloading</a>
+    <a href="#mastering-arrays">Mastering Arrays</a>
+    <a href="#for-each-loops">Classic vs For-Each Loops</a>
+    <a href="#interactive-array-locker">Interactive Array Visualizer</a>
+    <a href="#common-traps">Common Pitfalls</a>
+    <a href="#knowledge-check">Knowledge Check</a>
+    <a href="#guided-lab">Guided Lab</a>
+  </div>
+
+  <!-- ===== CONCEPT 1 ======================================================= -->
+  <h2 id="why-methods">1. Why Modular Methods?</h2>
+  <p>
+    In software engineering, the <strong>DRY Principle</strong> stands for <em>"Don't Repeat Yourself"</em>.
+    If you copy-paste the same 10 lines of calculation code into three places in your program, you create three places
+    where bugs can hide.
+  </p>
+  <p>
+    A <strong>Method</strong> is a self-contained, named sub-routine that takes inputs (arguments),
+    performs a specific task, and optionally returns a result back to the caller.
+  </p>
+
+  <!-- ===== VISUAL CARTOON ================================================== -->
+  <h2 id="the-visual-kitchen-lockers">2. The Kitchen Appliance &amp; Locker Cubbies Analogy</h2>
+
+  <figure class="concept-visual" aria-label="Visual cartoon: Java Methods as Kitchen Appliances and Arrays as Locker Cubbies">
+    <img src="../assets/img/cartoons/b4_methods_and_arrays.jpg" alt="A modular kitchen appliance method on the left and a neat row of numbered locker cubbies 0 to 4 on the right">
+    <figcaption>
+      <span class="fig-badge fig-badge--analogy">&#127917; Visual Analogy</span>
+      <strong>Methods &amp; Arrays:</strong> On the left, a <strong>Method</strong> works like an automated kitchen machine:
+      raw ingredients enter the top funnel (parameters), specialized machinery processes the task (method body), and a hot pizza
+      slides out the bottom (return value). On the right, an <strong>Array</strong> is a row of school locker cubbies:
+      every locker is strictly identical in size, fixed into the wall forever, and numbered starting at index 0!
+    </figcaption>
+  </figure>
+
+  <!-- ===== METHOD ANATOMY ================================================== -->
+  <h2 id="method-anatomy">3. Anatomy of a Java Method</h2>
+  <p>Let's inspect a complete method that calculates the total price of an order with sales tax:</p>
+
+  <pre class="numbered" data-file="MethodDemo.java" data-hl="7,8,9"><code class="lang-java">public class MethodDemo {
+    public static void main(String[] args) {
+        double total = calculateTotal(150.0, 0.08); // Method Call
+        System.out.println("Final Bill: $" + total);
+    }
+
+    // Method Declaration
+    public static double calculateTotal(double subtotal, double taxRate) {
+        double tax = subtotal * taxRate;
+        return subtotal + tax; // Value returned to caller
+    }
+}</code></pre>
+
+  <div class="walkthrough">
+    <table>
+      <thead>
+        <tr><th>Keyword / Token</th><th>Role in Method</th><th>Explanation</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>public</code></td><td>Access Modifier</td><td>Can be called from anywhere in the application.</td></tr>
+        <tr><td><code>static</code></td><td>Class Method</td><td>Belongs to the class itself; can be called without creating an object with <code>new</code>.</td></tr>
+        <tr><td><code>double</code></td><td>Return Type</td><td>The data type of the value this method promises to send back. Use <code>void</code> if returning nothing.</td></tr>
+        <tr><td><code>calculateTotal</code></td><td>Method Name</td><td>LowerCamelCase verb describing the action performed.</td></tr>
+        <tr><td><code>(double subtotal, double taxRate)</code></td><td>Parameters</td><td>The input variables required by the method, separated by commas.</td></tr>
+        <tr><td><code>return</code></td><td>Return Statement</td><td>Exits the method immediately and hands the calculated result back to the caller.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== PASS BY VALUE =================================================== -->
+  <h2 id="pass-by-value">4. The Big Secret: Java is Strictly Pass-by-Value</h2>
+  <p>
+    A huge point of confusion for beginners is what happens when you pass a variable into a method:
+  </p>
+
+  <pre class="numbered" data-file="PassByValueDemo.java" data-hl="3,9"><code class="lang-java">public class PassByValueDemo {
+    public static void main(String[] args) {
+        int balance = 50;
+        addBonus(balance); // Pass balance into method
+        System.out.println("Balance after call: " + balance); // Prints 50, NOT 70!
+    }
+
+    public static void addBonus(int balance) {
+        balance = balance + 20; // Only modifies local copy inside addBonus stack frame!
+    }
+}</code></pre>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Stack Frames &amp; Copies</b>
+      When you call <code>addBonus(balance)</code>, Java creates a completely separate <em>stack frame</em> for <code>addBonus</code>.
+      It copies the number <code>50</code> into a new local parameter also named <code>balance</code>.
+      When <code>addBonus</code> finishes, its stack frame is instantly destroyed. The original <code>balance</code> in <code>main</code> remains 50!
+    </div>
+  </div>
+
+  <!-- ===== METHOD OVERLOADING ============================================== -->
+  <h2 id="method-overloading">5. Method Overloading</h2>
+  <p>
+    <strong>Method Overloading</strong> is when multiple methods in the same class share the exact same name,
+    but have <strong>different parameter lists</strong> (different number of parameters, different data types, or different order):
+  </p>
+
+  <pre class="numbered" data-file="OverloadDemo.java"><code class="lang-java">public class OverloadDemo {
+    // Version 1: takes two integers
+    public static int add(int a, int b) { return a + b; }
+
+    // Version 2: takes three integers
+    public static int add(int a, int b, int c) { return a + b + c; }
+
+    // Version 3: takes two doubles
+    public static double add(double a, double b) { return a + b; }
+}</code></pre>
+  <p>Java automatically knows which version to invoke based on the arguments you provide at compile-time!</p>
+
+  <!-- ===== MASTERING ARRAYS ================================================ -->
+  <h2 id="mastering-arrays">6. Mastering Java Arrays</h2>
+  <p>
+    An <strong>Array</strong> is a fixed-size container that holds multiple values of the exact same data type in contiguous RAM memory slots.
+  </p>
+
+  <h3>A. Declaring &amp; Allocating Arrays</h3>
+  <pre><code class="lang-java">// Approach 1: Allocate empty array of 4 ints (default values are 0)
+int[] scores = new int[4];
+scores[0] = 95;
+scores[1] = 88;
+scores[2] = 72;
+scores[3] = 91;
+
+// Approach 2: Array literal shortcut (size inferred automatically as 3)
+String[] heroes = {"Batman", "Spider-Man", "Iron Man"};</code></pre>
+
+  <h3>B. The Golden Rule of 0-Indexing</h3>
+  <p>
+    In Java, array indexing starts at <strong>0</strong>, not 1:
+  </p>
+  <ul>
+    <li>The first element is at index <code>0</code>.</li>
+    <li>The last element is at index <code>length - 1</code>.</li>
+    <li><code>array.length</code> tells you the total capacity of the array (notice: no parentheses!).</li>
+  </ul>
+
+  <!-- ===== FOR VS FOR-EACH ================================================= -->
+  <h2 id="for-each-loops">7. Traversing Arrays: Classic vs Enhanced For-Each Loop</h2>
+
+  <pre class="numbered" data-file="ArrayTraversal.java"><code class="lang-java">String[] fruit = {"Apple", "Banana", "Cherry"};
+
+// Option 1: Classic indexed for loop (use when you need the index number i)
+for (int i = 0; i < fruit.length; i++) {
+    System.out.println("Slot " + i + ": " + fruit[i]);
+}
+
+// Option 2: Modern Enhanced for-each loop (cleaner for reading every element)
+for (String f : fruit) {
+    System.out.println("Delicious " + f);
+}</code></pre>
+
+  <!-- ===== INTERACTIVE ARRAY LOCKER ======================================== -->
+  <h2 id="interactive-array-locker">&#128187; Interactive Simulator: The Array Locker Inspector</h2>
+  <p>Click the lockers below to inspect values, modify elements, and test boundary conditions:</p>
+
+  <div class="playground" id="b4Playground">
+    <div class="playground__header">&#9881;&#65039; 5-Slot Array Memory Inspector: <code>int[] scores = new int[5];</code></div>
+    <div class="playground__body">
+      <div id="lockerRow" style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.5rem;">
+        <div class="locker-box" onclick="selectLocker(0)" style="flex:1;min-width:70px;background:var(--surface-2);border:2px solid var(--accent);border-radius:8px;padding:0.75rem;text-align:center;cursor:pointer;">
+          <div style="font-size:0.75rem;color:var(--ink-soft);">Index [0]</div>
+          <div id="val0" style="font-size:1.5rem;font-weight:700;color:var(--accent);">85</div>
+        </div>
+        <div class="locker-box" onclick="selectLocker(1)" style="flex:1;min-width:70px;background:var(--surface-2);border:2px solid var(--line);border-radius:8px;padding:0.75rem;text-align:center;cursor:pointer;">
+          <div style="font-size:0.75rem;color:var(--ink-soft);">Index [1]</div>
+          <div id="val1" style="font-size:1.5rem;font-weight:700;color:var(--ink);">92</div>
+        </div>
+        <div class="locker-box" onclick="selectLocker(2)" style="flex:1;min-width:70px;background:var(--surface-2);border:2px solid var(--line);border-radius:8px;padding:0.75rem;text-align:center;cursor:pointer;">
+          <div style="font-size:0.75rem;color:var(--ink-soft);">Index [2]</div>
+          <div id="val2" style="font-size:1.5rem;font-weight:700;color:var(--ink);">78</div>
+        </div>
+        <div class="locker-box" onclick="selectLocker(3)" style="flex:1;min-width:70px;background:var(--surface-2);border:2px solid var(--line);border-radius:8px;padding:0.75rem;text-align:center;cursor:pointer;">
+          <div style="font-size:0.75rem;color:var(--ink-soft);">Index [3]</div>
+          <div id="val3" style="font-size:1.5rem;font-weight:700;color:var(--ink);">99</div>
+        </div>
+        <div class="locker-box" onclick="selectLocker(4)" style="flex:1;min-width:70px;background:var(--surface-2);border:2px solid var(--line);border-radius:8px;padding:0.75rem;text-align:center;cursor:pointer;">
+          <div style="font-size:0.75rem;color:var(--ink-soft);">Index [4]</div>
+          <div id="val4" style="font-size:1.5rem;font-weight:700;color:var(--ink);">64</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+        <button class="playground__btn" onclick="calculateArrayStats()">Compute Average &amp; Highest</button>
+        <button class="playground__btn playground__btn--secondary" onclick="triggerOutOfBounds()">Attempt: read index [5]</button>
+      </div>
+
+      <div id="arrayConsole" style="background:var(--surface-2);padding:1rem;border-radius:8px;font-family:monospace;white-space:pre-wrap;">Click a locker or action above.</div>
+    </div>
+  </div>
+
+  <script>
+    var currentScores = [85, 92, 78, 99, 64];
+
+    function selectLocker(idx) {
+      document.getElementById("arrayConsole").textContent =
+        "Selected slot: scores[" + idx + "]\n" +
+        "Memory Address: Contiguous RAM block (Base + " + (idx * 4) + " bytes)\n" +
+        "Stored Value: " + currentScores[idx];
+    }
+
+    function calculateArrayStats() {
+      var sum = 0;
+      var max = currentScores[0];
+      for (var i = 0; i < currentScores.length; i++) {
+        sum += currentScores[i];
+        if (currentScores[i] > max) max = currentScores[i];
+      }
+      var avg = (sum / currentScores.length).toFixed(1);
+      document.getElementById("arrayConsole").textContent =
+        "[CALCULATION RESULTS]\n" +
+        "Array Length : " + currentScores.length + " slots\n" +
+        "Total Sum    : " + sum + "\n" +
+        "Class Average: " + avg + "\n" +
+        "Top Score    : " + max;
+    }
+
+    function triggerOutOfBounds() {
+      document.getElementById("arrayConsole").textContent =
+        "CRASH SIMULATION:\n" +
+        "Exception in thread \"main\" java.lang.ArrayIndexOutOfBoundsException: Index 5 out of bounds for length 5\n" +
+        "   at StudentGrades.main(StudentGrades.java:18)\n\n" +
+        "EXPLANATION: Length is 5, so valid indices are ONLY 0, 1, 2, 3, 4! Index 5 does not exist!";
+    }
+  </script>
+
+  <!-- ===== COMMON MISTAKES ================================================= -->
+  <h2 id="common-traps">&#9888;&#65039; Top 3 Beginner Traps in Methods &amp; Arrays</h2>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Trap 1: The Off-By-One Error (Index <= length)</b>
+      <pre><code class="lang-java">int[] list = new int[5];
+for (int i = 0; i <= list.length; i++) { // ERROR: <= instead of <
+    System.out.println(list[i]);
+}</code></pre>
+      <p><strong>Error:</strong> <code>ArrayIndexOutOfBoundsException: Index 5 out of bounds for length 5</code></p>
+      <p><strong>The Fix:</strong> Always use <code>i &lt; list.length</code> (strictly less than), never <code>&lt;=</code>.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Trap 2: Expecting an Array to Automatically Grow</b>
+      <p>Beginners often ask: <em>"How do I add a 6th element to an array of size 5?"</em></p>
+      <p><strong>The Reality:</strong> You cannot! Once created, a Java array's size is permanently fixed in RAM. If you need dynamic expansion, you use <code>ArrayList</code> (which you will master in Session 1).</p>
+    </div>
+  </div>
+
+  <!-- ===== KNOWLEDGE CHECK ================================================= -->
+  <h2 id="knowledge-check">&#128221; Knowledge Check</h2>
+  <div class="quiz" id="b4-quiz">
+    <div class="quiz__title">&#128161; Verify Your Understanding</div>
+
+    <!-- Q1 -->
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__stem">1. What is the index of the final element in an array declared as <code>int[] data = new int[10];</code>?</div>
+      <label class="quiz__opt"><input type="radio" name="b4q1" value="a"> 10</label>
+      <label class="quiz__opt"><input type="radio" name="b4q1" value="b"> 9</label>
+      <label class="quiz__opt"><input type="radio" name="b4q1" value="c"> 8</label>
+      <label class="quiz__opt"><input type="radio" name="b4q1" value="d"> -1</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: B.</strong> Because Java arrays are 0-indexed, an array of 10 items uses indices 0 through 9.
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__stem">2. What distinguishes two overloaded methods from one another in Java?</div>
+      <label class="quiz__opt"><input type="radio" name="b4q2" value="a"> Their return types must be completely different</label>
+      <label class="quiz__opt"><input type="radio" name="b4q2" value="b"> One must be public and the other must be private</label>
+      <label class="quiz__opt"><input type="radio" name="b4q2" value="c"> Their parameter lists (number, types, or order of parameters) must differ</label>
+      <label class="quiz__opt"><input type="radio" name="b4q2" value="d"> They must live in different Java files</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: C.</strong> Method overloading is resolved strictly by the method signature (name + parameter types/count). Differing return types alone is illegal.
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz__q" data-answer="true">
+      <div class="quiz__stem">3. Java is strictly pass-by-value, meaning primitive arguments are copied into method parameters. True or False?</div>
+      <label class="quiz__opt"><input type="radio" name="b4q3" value="true"> True</label>
+      <label class="quiz__opt"><input type="radio" name="b4q3" value="false"> False</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: True.</strong> Java never passes primitive variables by reference; it always copies the bits of the value into the method's local parameter frame.
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__stem">4. What is the default value assigned to each slot when you allocate <code>boolean[] flags = new boolean[3];</code>?</div>
+      <label class="quiz__opt"><input type="radio" name="b4q4" value="a"> <code>true</code></label>
+      <label class="quiz__opt"><input type="radio" name="b4q4" value="b"> <code>false</code></label>
+      <label class="quiz__opt"><input type="radio" name="b4q4" value="c"> <code>null</code></label>
+      <label class="quiz__opt"><input type="radio" name="b4q4" value="d"> <code>0</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: B.</strong> In Java, boolean array slots are automatically initialized to <code>false</code> (numeric arrays default to <code>0</code>, and object reference arrays default to <code>null</code>).
+      </div>
+    </div>
+
+    <div class="quiz__score" style="display:none"></div>
+  </div>
+
+  <!-- ===== GUIDED LAB ====================================================== -->
+  <h2 id="guided-lab">&#128736; Guided Lab: Student Grade Analyzer</h2>
+  <div class="steps">
+    <div class="steps__title">&#128221; Build this modular program in IntelliJ:</div>
+
+    <div class="step"><div class="step__check"></div><span class="step__num">1</span>
+      <span class="step__text">Create a class named <code>GradeAnalyzer</code>.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">2</span>
+      <span class="step__text">In <code>main</code>, create an array with 6 exam scores: <code>int[] marks = {78, 92, 85, 64, 99, 73};</code>.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">3</span>
+      <span class="step__text">Write a method <code>public static double findAverage(int[] numbers)</code> that returns the class average.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">4</span>
+      <span class="step__text">Write a method <code>public static int findHighest(int[] numbers)</code> that loops and finds the top score.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">5</span>
+      <span class="step__text">Call both methods from <code>main</code> and display a clean statistical report to the terminal.</span>
+    </div>
+  </div>
+
+  <!-- ===== FURTHER STUDY =================================================== -->
+  <h2>&#128250; Recommended Further Study</h2>
+  <div class="video-grid">
+    <div class="video-card">
+      <div class="video-card__title">&#127916; CS50: Arrays and Memory Allocation</div>
+      <p style="font-size:0.9rem;color:var(--ink-soft);margin-bottom:0.75rem;">Understand how computers lay out arrays contiguously in RAM memory bytes.</p>
+      <a class="video-card__link" href="https://www.youtube.com/watch?v=s_e5lcmhyb0" target="_blank" rel="noopener">&#9654; Watch on YouTube</a>
+    </div>
+    <div class="video-card">
+      <div class="video-card__title">&#127916; Bro Code: Java Methods &amp; Parameters Tutorial</div>
+      <p style="font-size:0.9rem;color:var(--ink-soft);margin-bottom:0.75rem;">Clear walkthrough of method syntax, return types, and arguments.</p>
+      <a class="video-card__link" href="https://www.youtube.com/watch?v=0k2x1GZ47c0" target="_blank" rel="noopener">&#9654; Watch on YouTube</a>
+    </div>
+  </div>
+
+  <!-- ===== SUMMARY & NEXT ================================================== -->
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Next Up: Bridge 5 &mdash; Classes &amp; Objects (OOP 1)</b>
+      You are now ready to cross into the heart of Java: <strong>Object-Oriented Programming (OOP)</strong>!
+      In Bridge 5, you'll learn how to bundle variables (state) and methods (behavior) together into custom classes,
+      instantiate objects with constructors, and master encapsulation.
+    </div>
+  </div>
+
+</main>
+
+<script src="../assets/js/course.js?v=5"></script>
+<script src="../assets/js/playgrounds.js?v=5"></script>
+
+</body>
+</html>

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bridge 7 — Strings, Exceptions & Packages</title>
+  <meta name="description" content="Bridge 7 of Building Rich Java Applications with JavaFX and AI Tools: Master String immutability, the String Pool, try-catch-finally exception handling, and package namespaces.">
+  <link rel="stylesheet" href="../assets/css/course.css?v=5">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "b7";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== HERO ============================================================ -->
+  <section class="hero">
+    <span class="tag">Foundation Bridge &middot; Lesson B7 &middot; 2 hours prep &middot; Capstone Bridge</span>
+    <h1>Bridge 7 &mdash; Strings, Exceptions &amp; Packages</h1>
+    <p class="lede">
+      Congratulations on reaching the final bridge milestone! Today you master the trio of enterprise essentials
+      that make real-world software crash-proof and maintainable:
+      the internal mechanics of the <strong>String Constant Pool</strong> (and why <code>==</code> breaks),
+      the resilient <strong>try-catch-finally safety net</strong> for handling unexpected runtime failures,
+      and <strong>Packages</strong> for organizing large production codebases.
+    </p>
+    <div class="meta">
+      <span>&#128218; Core Foundation: Memory Optimization, Fault Tolerance &amp; Architecture</span>
+      <span>&#9201; ~2 hours</span>
+      <span>&#9989; Prerequisites: Bridge B5 &amp; B6 (Classes, Objects, Inheritance)</span>
+      <span>&#128203; Ready for: Session 1 (Java Utility APIs &amp; Collections Framework)</span>
+    </div>
+  </section>
+
+  <!-- ===== OBJECTIVES ====================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this bridge session you can&hellip;</b>
+    <ol>
+      <li><strong>Explain</strong> String immutability and how the JVM <strong>String Constant Pool</strong> optimizes Heap memory.</li>
+      <li><strong>Articulate</strong> the critical difference between reference identity (<code>==</code>) and value equivalence (<code>.equals()</code>).</li>
+      <li><strong>Use</strong> <code>StringBuilder</code> to perform efficient string concatenations inside loops without memory thrashing.</li>
+      <li><strong>Handle</strong> runtime failures gracefully using <code>try</code>, <code>catch</code>, and <code>finally</code> blocks.</li>
+      <li><strong>Distinguish</strong> between <strong>Checked Exceptions</strong> (compile-time checked) and <strong>Unchecked Runtime Exceptions</strong>.</li>
+      <li><strong>Organize</strong> classes into reverse-domain packages (<code>com.aptech...</code>) and import external libraries.</li>
+    </ol>
+  </div>
+
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== ROADMAP ========================================================= -->
+  <h2>Your Learning Roadmap</h2>
+  <div class="roadmap">
+    <a href="#strings-and-immutability">Strings &amp; The String Pool</a>
+    <a href="#the-visual-strings-exceptions">The Visual Metaphor</a>
+    <a href="#equals-vs-double-equals">== vs .equals()</a>
+    <a href="#string-builder">Why StringBuilder Matters</a>
+    <a href="#exception-handling">Exception Handling (try-catch)</a>
+    <a href="#checked-vs-unchecked">Checked vs Unchecked</a>
+    <a href="#packages-and-imports">Packages &amp; Namespaces</a>
+    <a href="#interactive-strings-exceptions">Interactive Simulator</a>
+    <a href="#common-traps">Common Pitfalls</a>
+    <a href="#knowledge-check">Knowledge Check</a>
+    <a href="#guided-lab">Guided Lab</a>
+  </div>
+
+  <!-- ===== CONCEPT 1: STRINGS ============================================== -->
+  <h2 id="strings-and-immutability">1. Java Strings &amp; Immutability</h2>
+  <p>
+    In Java, <code>String</code> is not a primitive &mdash; it is a full-featured class.
+    Crucially, Java Strings are <strong>immutable</strong>: once a String object is instantiated in memory,
+    its character sequence can <strong>never</strong> be modified!
+  </p>
+  <p>
+    When you call <code>text.toUpperCase()</code> or concatenate with <code>text + " world"</code>,
+    Java does NOT change the original string. It creates a brand-new String object on the Heap and returns its address!
+  </p>
+
+  <!-- ===== VISUAL CARTOON ================================================== -->
+  <h2 id="the-visual-strings-exceptions">2. The String Pool Vault &amp; Circus Safety Net</h2>
+
+  <figure class="concept-visual" aria-label="Visual cartoon: Java String Pool and Try-Catch Exception Handling">
+    <img src="../assets/img/cartoons/b7_strings_and_exceptions.jpg" alt="String Pool memory vault on left and circus try-catch-finally safety net on right">
+    <figcaption>
+      <span class="fig-badge fig-badge--analogy">&#127917; Visual Analogy</span>
+      <strong>String Pool &amp; Exception Safety Net:</strong>
+      On the left, the <strong>String Pool</strong> is an eco-friendly crystal archive in RAM.
+      When multiple student robots declare identical string literals (<code>"Hello"</code>), their laser pointers aim at
+      the exact same crystal block &mdash; avoiding memory waste!
+      On the right, <strong>Exception Handling</strong> is a circus performance: the acrobat performs risky code on the high-wire
+      (<code>try</code>). If they slip, a resilient, bouncy safety net (<code>catch</code>) prevents a fatal crash,
+      and the green exit door (<code>finally</code>) is guaranteed to open no matter what happens!
+    </figcaption>
+  </figure>
+
+  <!-- ===== EQUALS VS == ==================================================== -->
+  <h2 id="equals-vs-double-equals">&#9888;&#65039; 3. The Number One Java Trap: <code>==</code> vs <code>.equals()</code></h2>
+  <p>
+    This is the most notorious trap in all of Java development:
+  </p>
+  <ul>
+    <li><code>==</code> compares <strong>Memory Addresses (References)</strong> &mdash; <em>"Are these two variables pointing to the exact same physical memory location?"</em></li>
+    <li><code>.equals()</code> compares <strong>Content (Values)</strong> &mdash; <em>"Do these two strings contain the exact same letters in the same order?"</em></li>
+  </ul>
+
+  <pre class="numbered" data-file="StringComparison.java" data-hl="7,10"><code class="lang-java">String s1 = "Java";
+String s2 = "Java";                  // Reuses pool instance!
+String s3 = new String("Java");      // Forces a new object on heap!
+
+System.out.println(s1 == s2);        // true (Both point to same pool block)
+System.out.println(s1 == s3);        // FALSE! (Different memory addresses!)
+System.out.println(s1.equals(s3));   // TRUE! (Exact same letters!)</code></pre>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Golden Rule for Strings</b>
+      <strong>NEVER use <code>==</code> to compare Strings in Java.</strong> Always use <code>s1.equals(s2)</code> or <code>s1.equalsIgnoreCase(s2)</code>.
+    </div>
+  </div>
+
+  <!-- ===== STRINGBUILDER =================================================== -->
+  <h2 id="string-builder">4. When to Use <code>StringBuilder</code></h2>
+  <p>
+    Because Strings are immutable, concatenating inside a loop is disastrous for performance:
+  </p>
+  <pre><code class="lang-java">// BAD PRACTICE: Creates 1,000 temporary dead string objects in RAM!
+String report = "";
+for (int i = 0; i < 1000; i++) {
+    report += i + ", "; 
+}
+
+// BEST PRACTICE: Reuses a single mutable internal char buffer!
+StringBuilder sb = new StringBuilder();
+for (int i = 0; i < 1000; i++) {
+    sb.append(i).append(", ");
+}
+String finalReport = sb.toString(); // Fast and memory efficient!</code></pre>
+
+  <!-- ===== EXCEPTION HANDLING ============================================== -->
+  <h2 id="exception-handling">5. Exception Handling: The Try-Catch-Finally Net</h2>
+  <p>
+    An <strong>Exception</strong> is an abnormal event that occurs during program execution (like entering text when a number was expected,
+    or attempting to read a file that was deleted). Without handling, the program instantly terminates with a red stack trace.
+  </p>
+
+  <pre class="numbered" data-file="ExceptionDemo.java" data-hl="3,6,9"><code class="lang-java">public class ExceptionDemo {
+    public static void main(String[] args) {
+        try {
+            int dividend = 100;
+            int divisor = 0;
+            int result = dividend / divisor; // Risky code: division by zero!
+            System.out.println("Result: " + result);
+        } catch (ArithmeticException ex) {
+            // Safety Net: Rescues the program!
+            System.out.println("Emergency Handler: Cannot divide by zero! Defaulting to 0.");
+        } finally {
+            // GUARANTEED: Always executes no matter what!
+            System.out.println("Cleanup completed. System operational.");
+        }
+    }
+}</code></pre>
+
+  <div class="terminal-output">Emergency Handler: Cannot divide by zero! Defaulting to 0.
+Cleanup completed. System operational.</div>
+
+  <!-- ===== CHECKED VS UNCHECKED ============================================ -->
+  <h2 id="checked-vs-unchecked">6. Checked vs. Unchecked Exceptions</h2>
+  <table class="walkthrough-table">
+    <thead>
+      <tr>
+        <th>Category</th>
+        <th>Superclass</th>
+        <th>When Detected</th>
+        <th>Examples</th>
+        <th>Philosophy</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Checked</strong></td>
+        <td><code>java.lang.Exception</code></td>
+        <td><strong>Compile-Time</strong> (Compiler forces you to handle with try-catch or declare with <code>throws</code>)</td>
+        <td><code>IOException</code>, <code>SQLException</code>, <code>ClassNotFoundException</code></td>
+        <td>Anticipated real-world failures (missing files, network drops).</td>
+      </tr>
+      <tr>
+        <td><strong>Unchecked</strong></td>
+        <td><code>java.lang.RuntimeException</code></td>
+        <td><strong>Runtime Only</strong> (Compiler ignores them)</td>
+        <td><code>NullPointerException</code>, <code>ArrayIndexOutOfBoundsException</code>, <code>ArithmeticException</code></td>
+        <td>Bugs in developer logic. Should be prevented with better code checks, not masked with try-catch.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ===== PACKAGES & IMPORTS ============================================== -->
+  <h2 id="packages-and-imports">7. Packages &amp; Namespaces</h2>
+  <p>
+    In large enterprise software, you might have hundreds of classes.
+    A <strong>Package</strong> is simply a namespace that maps directly to folders on your hard drive.
+  </p>
+  <ul>
+    <li>Industry convention uses your organization's reversed internet domain name: <code>package com.aptech.banking;</code>.</li>
+    <li>To use a class from another package, write an <code>import</code> statement: <code>import java.util.ArrayList;</code>.</li>
+    <li>Classes in <code>java.lang</code> (like <code>String</code>, <code>System</code>, <code>Math</code>) are imported automatically by Java for free.</li>
+  </ul>
+
+  <!-- ===== INTERACTIVE SIMULATOR =========================================== -->
+  <h2 id="interactive-strings-exceptions">&#128187; Interactive Simulator: String Pool &amp; Exception Catcher</h2>
+  <p>Test the memory addresses of strings and simulate exception handling below:</p>
+
+  <div class="playground" id="b7Playground">
+    <div class="playground__header">&#9881;&#65039; String Pool &amp; Try-Catch Live Inspector</div>
+    <div class="playground__body">
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+        <button class="playground__btn" onclick="testStringPool()">Compare: Literal "Aptech" vs new String("Aptech")</button>
+        <button class="playground__btn" onclick="simulateDivision(0)">Simulate: 100 / 0 (Exception Triggered)</button>
+        <button class="playground__btn" onclick="simulateDivision(5)">Simulate: 100 / 5 (Clean Execution)</button>
+      </div>
+
+      <div id="simLog" style="background:var(--surface-2);padding:1rem;border-radius:8px;font-family:monospace;white-space:pre-wrap;min-height:90px;">Select an interactive test above.</div>
+    </div>
+  </div>
+
+  <script>
+    function testStringPool() {
+      var log = "[STRING POOL MEMORY EXPERIMENT]\n" +
+        "String s1 = \"Aptech\";           // Added to String Constant Pool (Address: 0xPOOL_01)\n" +
+        "String s2 = \"Aptech\";           // Reuses Pool Block (Address: 0xPOOL_01)\n" +
+        "String s3 = new String(\"Aptech\"); // Bypasses Pool, forces new Heap object (Address: 0xHEAP_99)\n\n" +
+        "RESULTS:\n" +
+        "s1 == s2      -> TRUE  (Both point to 0xPOOL_01)\n" +
+        "s1 == s3      -> FALSE (0xPOOL_01 != 0xHEAP_99! References differ)\n" +
+        "s1.equals(s3) -> TRUE  (Contents match letter-for-letter: 'A-p-t-e-c-h')\n\n" +
+        "LESSON: Always use .equals()!";
+      document.getElementById("simLog").textContent = log;
+    }
+
+    function simulateDivision(divisor) {
+      var log = "[TRY-CATCH-FINALLY LIFECYCLE]\n" +
+        "1. Entering [try] block...\n";
+      try {
+        if (divisor === 0) throw new Error("ArithmeticException: / by zero");
+        var res = 100 / divisor;
+        log += "2. Division successful! 100 / " + divisor + " = " + res + "\n";
+      } catch (err) {
+        log += "2. [catch] ACTIVATED: Caught " + err.message + "!\n";
+        log += "   System prevented application crash. Error logged.\n";
+      } finally {
+        log += "3. [finally] EXECUTING GUARANTEE: Resources released, sockets closed.\n";
+      }
+      log += "-> Application continues running smoothly on next line.";
+      document.getElementById("simLog").textContent = log;
+    }
+  </script>
+
+  <!-- ===== COMMON MISTAKES ================================================= -->
+  <h2 id="common-traps">&#9888;&#65039; Top 3 Beginner Traps in Strings &amp; Exceptions</h2>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Trap 1: The Empty Catch Block (Silent Failure)</b>
+      <pre><code class="lang-java">try {
+    processData();
+} catch (Exception e) {
+    // EMPTY! Nothing written here!
+}</code></pre>
+      <p><strong>The Danger:</strong> Swallowing exceptions silently makes bugs invisible. When your app malfunctions, there is zero error message in the console. Always print at least <code>e.printStackTrace()</code> or log the failure.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Trap 2: Forgetting That Strings Are Immutable</b>
+      <pre><code class="lang-java">String name = "alice";
+name.toUpperCase(); // TRAP: return value was discarded!
+System.out.println(name); // Still prints "alice" (lowercase)!</code></pre>
+      <p><strong>The Fix:</strong> Reassign the returned string: <code>name = name.toUpperCase();</code>.</p>
+    </div>
+  </div>
+
+  <!-- ===== KNOWLEDGE CHECK ================================================= -->
+  <h2 id="knowledge-check">&#128221; Knowledge Check</h2>
+  <div class="quiz" id="b7-quiz">
+    <div class="quiz__title">&#128161; Verify Your Understanding</div>
+
+    <!-- Q1 -->
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__stem">1. Why does <code>"hello" == new String("hello")</code> evaluate to <code>false</code> in Java?</div>
+      <label class="quiz__opt"><input type="radio" name="b7q1" value="a"> Because String characters are case-sensitive</label>
+      <label class="quiz__opt"><input type="radio" name="b7q1" value="b"> Because <code>==</code> compares memory references, and the two strings reside at different memory addresses</label>
+      <label class="quiz__opt"><input type="radio" name="b7q1" value="c"> Because the JVM deletes one of the strings</label>
+      <label class="quiz__opt"><input type="radio" name="b7q1" value="d"> It actually evaluates to true</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: B.</strong> The <code>==</code> operator compares object identity (memory addresses). The literal lives in the String Pool, while <code>new String()</code> allocates a separate Heap object. Use <code>.equals()</code> for character comparison.
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz__q" data-answer="true">
+      <div class="quiz__stem">2. The <code>finally</code> block in a try-catch-finally statement is guaranteed to execute regardless of whether an exception was thrown. True or False?</div>
+      <label class="quiz__opt"><input type="radio" name="b7q2" value="true"> True</label>
+      <label class="quiz__opt"><input type="radio" name="b7q2" value="false"> False</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: True.</strong> The <code>finally</code> block always executes, making it the ideal location for closing streams, network connections, and database handles.
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__stem">3. Which class should you use to efficiently build a string by repeatedly appending text inside a 5,000-iteration loop?</div>
+      <label class="quiz__opt"><input type="radio" name="b7q3" value="a"> Standard <code>String</code></label>
+      <label class="quiz__opt"><input type="radio" name="b7q3" value="b"> <code>char[]</code></label>
+      <label class="quiz__opt"><input type="radio" name="b7q3" value="c"> <code>StringBuilder</code></label>
+      <label class="quiz__opt"><input type="radio" name="b7q3" value="d"> <code>Scanner</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: C.</strong> <code>StringBuilder</code> maintains a resizable mutable internal buffer, eliminating the creation of thousands of intermediate discardable String objects.
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__stem">4. What defines a Checked Exception in Java?</div>
+      <label class="quiz__opt"><input type="radio" name="b7q4" value="a"> It inherits from <code>RuntimeException</code> and is ignored by the compiler</label>
+      <label class="quiz__opt"><input type="radio" name="b7q4" value="b"> It inherits from <code>Exception</code> (not RuntimeException) and the compiler mandates that you either handle it with <code>try-catch</code> or declare it with <code>throws</code></label>
+      <label class="quiz__opt"><input type="radio" name="b7q4" value="c"> It only happens on 64-bit operating systems</label>
+      <label class="quiz__opt"><input type="radio" name="b7q4" value="d"> It automatically reboots the computer</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: B.</strong> Checked exceptions represent anticipated environmental failures (like missing files or network timeouts). The compiler forces developers to provide recovery logic before the program can compile.
+      </div>
+    </div>
+
+    <div class="quiz__score" style="display:none"></div>
+  </div>
+
+  <!-- ===== GUIDED LAB ====================================================== -->
+  <h2 id="guided-lab">&#128736; Guided Lab: Robust User Validator</h2>
+  <div class="steps">
+    <div class="steps__title">&#128221; Construct this resilient validation system in IntelliJ:</div>
+
+    <div class="step"><div class="step__check"></div><span class="step__num">1</span>
+      <span class="step__text">At the top of your file, declare package: <code>package com.aptech.bridge;</code>.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">2</span>
+      <span class="step__text">Create a custom checked exception: <code>public class InvalidUserException extends Exception { public InvalidUserException(String m) { super(m); } }</code>.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">3</span>
+      <span class="step__text">Create a method <code>public static void validateAge(int age) throws InvalidUserException</code> that throws your custom exception if age &lt; 18.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">4</span>
+      <span class="step__text">In <code>main</code>, wrap calls to <code>validateAge</code> in a <code>try-catch-finally</code> block. Test with both valid (22) and invalid (15) inputs.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">5</span>
+      <span class="step__text">Verify that the catch block intercepts the exception cleanly and that <code>finally</code> executes on both tests!</span>
+    </div>
+  </div>
+
+  <!-- ===== FURTHER STUDY =================================================== -->
+  <h2>&#128250; Recommended Further Study</h2>
+  <div class="video-grid">
+    <div class="video-card">
+      <div class="video-card__title">&#127916; Java Brains: String Pool and Memory Management</div>
+      <p style="font-size:0.9rem;color:var(--ink-soft);margin-bottom:0.75rem;">Clear architectural explanation of the JVM heap string constant pool.</p>
+      <a class="video-card__link" href="https://www.youtube.com/watch?v=kYv9y7qGZTE" target="_blank" rel="noopener">&#9654; Watch on YouTube</a>
+    </div>
+    <div class="video-card">
+      <div class="video-card__title">&#127916; Amigoscode: Java Exception Handling Full Tutorial</div>
+      <p style="font-size:0.9rem;color:var(--ink-soft);margin-bottom:0.75rem;">Master try, catch, finally, throw, throws, and custom business exceptions.</p>
+      <a class="video-card__link" href="https://www.youtube.com/watch?v=1XAfapkNYjk" target="_blank" rel="noopener">&#9654; Watch on YouTube</a>
+    </div>
+  </div>
+
+  <!-- ===== GRADUATION BANNER =============================================== -->
+  <div class="callout callout--tip"><span class="callout__i">&#127881;</span>
+    <div class="callout__b"><b>Bridge Completed &mdash; You Are Ready for Session 1!</b>
+      You have successfully mastered the 7 Java Foundations Bridge lessons:
+      from JDK setup and primitives, through control flow and methods, to OOP, polymorphism, strings, and exceptions.
+      You are now fully prepared to dive into <strong>Session 1: Java Utility APIs &amp; The Collections Framework</strong>!
+    </div>
+  </div>
+
+</main>
+
+<script src="../assets/js/course.js?v=5"></script>
+<script src="../assets/js/playgrounds.js?v=5"></script>
+
+</body>
+</html>

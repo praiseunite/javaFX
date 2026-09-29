@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 440" width="100%" height="100%">
+  <defs>
+    <filter id="ioShadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.1"/>
+    </filter>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .col-title { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 800; }
+    .col-sub { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; fill: #64748b; }
+    .box-title { font-family: ui-monospace, monospace; font-size: 13px; font-weight: 700; }
+    .box-desc { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; fill: #64748b; }
+    .badge { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: bold; }
+  </style>
+
+  <rect width="900" height="440" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">The Java I/O Framework: The Four Great Streams</text>
+  <text x="30" y="54" class="sub">Java separates input from output, and raw binary bytes from human text characters.</text>
+
+  <!-- COLUMN 1: BYTE INPUT -->
+  <g transform="translate(30, 80)">
+    <rect width="195" height="40" rx="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="97" y="24" class="col-title" fill="#1d4ed8" text-anchor="middle">InputStream</text>
+    <text x="97" y="55" class="col-sub" text-anchor="middle">Reads raw 8-bit bytes</text>
+
+    <!-- Classes -->
+    <g transform="translate(0, 70)" filter="url(#ioShadow)">
+      <rect width="195" height="52" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+      <text x="12" y="22" class="box-title" fill="#0f172a">FileInputStream</text>
+      <text x="12" y="38" class="box-desc">Reads bytes from a disk file</text>
+
+      <rect y="64" width="195" height="52" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+      <text x="12" y="86" class="box-title" fill="#0f172a">BufferedInputStream</text>
+      <text x="12" y="102" class="box-desc">8KB memory buffer for speed</text>
+
+      <rect y="128" width="195" height="52" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+      <text x="12" y="150" class="box-title" fill="#0f172a">DataInputStream</text>
+      <text x="12" y="166" class="box-desc">Reads primitives: readInt(), etc.</text>
+
+      <rect y="192" width="195" height="52" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+      <text x="12" y="214" class="box-title" fill="#0f172a">ObjectInputStream</text>
+      <text x="12" y="230" class="box-desc">Deserializes saved objects</text>
+    </g>
+  </g>
+
+  <!-- COLUMN 2: BYTE OUTPUT -->
+  <g transform="translate(245, 80)">
+    <rect width="195" height="40" rx="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="97" y="24" class="col-title" fill="#1d4ed8" text-anchor="middle">OutputStream</text>
+    <text x="97" y="55" class="col-sub" text-anchor="middle">Writes raw 8-bit bytes</text>
+
+    <!-- Classes -->
+    <g transform="translate(0, 70)" filter="url(#ioShadow)">
+      <rect width="195" height="52" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+      <text x="12" y="22" class="box-title" fill="#0f172a">FileOutputStream</text>
+      <text x="12" y="38" class="box-desc">Writes bytes to a disk file</text>
+
+      <rect y="64" width="195" height="52" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+      <text x="12" y="86" class="box-title" fill="#0f172a">BufferedOutputStream</text>
+      <text x="12" y="102" class="box-desc">Flushes when 8KB bucket full</text>
+
+      <rect y="128" width="195" height="52" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+      <text x="12" y="150" class="box-title" fill="#0f172a">DataOutputStream</text>
+      <text x="12" y="166" class="box-desc">Writes primitives: writeInt()</text>
+
+      <rect y="192" width="195" height="52" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+      <text x="12" y="214" class="box-title" fill="#0f172a">ObjectOutputStream</text>
+      <text x="12" y="230" class="box-desc">Serializes objects to disk</text>
+    </g>
+  </g>
+
+  <!-- COLUMN 3: CHAR INPUT (READER) -->
+  <g transform="translate(460, 80)">
+    <rect width="195" height="40" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+    <text x="97" y="24" class="col-title" fill="#15803d" text-anchor="middle">Reader</text>
+    <text x="97" y="55" class="col-sub" text-anchor="middle">Reads 16-bit characters</text>
+
+    <!-- Classes -->
+    <g transform="translate(0, 70)" filter="url(#ioShadow)">
+      <rect width="195" height="52" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+      <text x="12" y="22" class="box-title" fill="#0f172a">FileReader</text>
+      <text x="12" y="38" class="box-desc">Reads char by char (slow)</text>
+
+      <rect y="64" width="195" height="52" rx="6" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+      <text x="12" y="86" class="box-title" fill="#047857">BufferedReader</text>
+      <text x="12" y="102" class="box-desc">Fast + readLine() method!</text>
+
+      <rect y="128" width="195" height="52" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+      <text x="12" y="150" class="box-title" fill="#0f172a">InputStreamReader</text>
+      <text x="12" y="166" class="box-desc">Bridge: byte stream &#8594; chars</text>
+
+      <rect y="192" width="195" height="52" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+      <text x="12" y="214" class="box-title" fill="#0f172a">StringReader</text>
+      <text x="12" y="230" class="box-desc">Reads from in-memory string</text>
+    </g>
+  </g>
+
+  <!-- COLUMN 4: CHAR OUTPUT (WRITER) -->
+  <g transform="translate(675, 80)">
+    <rect width="195" height="40" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+    <text x="97" y="24" class="col-title" fill="#15803d" text-anchor="middle">Writer</text>
+    <text x="97" y="55" class="col-sub" text-anchor="middle">Writes 16-bit characters</text>
+
+    <!-- Classes -->
+    <g transform="translate(0, 70)" filter="url(#ioShadow)">
+      <rect width="195" height="52" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+      <text x="12" y="22" class="box-title" fill="#0f172a">FileWriter</text>
+      <text x="12" y="38" class="box-desc">Writes char by char</text>
+
+      <rect y="64" width="195" height="52" rx="6" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
+      <text x="12" y="86" class="box-title" fill="#047857">BufferedWriter</text>
+      <text x="12" y="102" class="box-desc">Fast + newLine() method!</text>
+
+      <rect y="128" width="195" height="52" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+      <text x="12" y="150" class="box-title" fill="#0f172a">PrintWriter</text>
+      <text x="12" y="166" class="box-desc">Convenient print() / println()</text>
+
+      <rect y="192" width="195" height="52" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+      <text x="12" y="214" class="box-title" fill="#0f172a">OutputStreamWriter</text>
+      <text x="12" y="230" class="box-desc">Bridge: chars &#8594; byte stream</text>
+    </g>
+  </g>
+
+  <!-- FOOTER -->
+  <g transform="translate(30, 395)">
+    <rect width="840" height="30" rx="4" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="15" y="20" class="sub">&#128161; <tspan font-weight="bold" fill="#0f172a">Golden Rule:</tspan> Working with images/sound/binary? Use <tspan font-family="monospace">InputStream / OutputStream</tspan>. Working with human text? Use <tspan font-family="monospace">Reader / Writer</tspan>.</text>
+  </g>
+</svg>

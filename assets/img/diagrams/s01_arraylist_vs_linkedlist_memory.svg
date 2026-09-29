@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 380" width="100%" height="100%">
+  <defs>
+    <filter id="boxShadow" x="-5%" y="-5%" width="110%" height="120%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.1"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#3b82f6"/>
+    </marker>
+    <marker id="arrowBack" viewBox="0 0 10 10" refX="4" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 10 1 L 0 5 L 10 9 z" fill="#f59e0b"/>
+    </marker>
+  </defs>
+
+  <style>
+    .header { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 800; fill: #0f172a; }
+    .badge { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; font-weight: 700; }
+    .idx { font-family: ui-monospace, monospace; font-size: 12px; font-weight: 600; fill: #64748b; }
+    .data { font-family: ui-monospace, monospace; font-size: 15px; font-weight: bold; fill: #1e293b; }
+    .ptr { font-family: ui-monospace, monospace; font-size: 10px; font-weight: 600; fill: #94a3b8; }
+    .caption { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; fill: #475569; line-height: 1.4; }
+  </style>
+
+  <!-- Background -->
+  <rect width="880" height="380" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <!-- TOP SECTION: ARRAYLIST -->
+  <g transform="translate(30, 25)">
+    <text x="0" y="20" class="header">ArrayList: Contiguous Memory Blocks</text>
+    <rect x="310" y="5" width="135" height="22" rx="4" fill="#dcfce7"/>
+    <text x="377" y="20" class="badge" fill="#15803d" text-anchor="middle">O(1) Random Access</text>
+
+    <!-- The continuous array -->
+    <g transform="translate(0, 40)">
+      <!-- Memory slots -->
+      <g transform="translate(0, 0)" filter="url(#boxShadow)">
+        <rect width="70" height="50" rx="6" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/>
+        <text x="35" y="32" class="data" text-anchor="middle">"A"</text>
+        <text x="35" y="66" class="idx" text-anchor="middle">[0]</text>
+      </g>
+      <g transform="translate(75, 0)" filter="url(#boxShadow)">
+        <rect width="70" height="50" rx="6" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/>
+        <text x="35" y="32" class="data" text-anchor="middle">"B"</text>
+        <text x="35" y="66" class="idx" text-anchor="middle">[1]</text>
+      </g>
+      <g transform="translate(150, 0)" filter="url(#boxShadow)">
+        <rect width="70" height="50" rx="6" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/>
+        <text x="35" y="32" class="data" text-anchor="middle">"C"</text>
+        <text x="35" y="66" class="idx" text-anchor="middle">[2]</text>
+      </g>
+      <g transform="translate(225, 0)" filter="url(#boxShadow)">
+        <rect width="70" height="50" rx="6" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/>
+        <text x="35" y="32" class="data" text-anchor="middle">"D"</text>
+        <text x="35" y="66" class="idx" text-anchor="middle">[3]</text>
+      </g>
+      <!-- Empty reserved capacity slots -->
+      <g transform="translate(300, 0)">
+        <rect width="70" height="50" rx="6" fill="#fafafa" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="35" y="30" fill="#94a3b8" font-family="monospace" font-size="12" text-anchor="middle">null</text>
+        <text x="35" y="66" class="idx" text-anchor="middle">[4]</text>
+      </g>
+      <g transform="translate(375, 0)">
+        <rect width="70" height="50" rx="6" fill="#fafafa" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="35" y="30" fill="#94a3b8" font-family="monospace" font-size="12" text-anchor="middle">null</text>
+        <text x="35" y="66" class="idx" text-anchor="middle">[5]</text>
+      </g>
+      
+      <!-- Direct Index Jump Arrow -->
+      <path d="M 35 -15 C 35 -25, 185 -25, 185 -5" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow)"/>
+      <text x="110" y="-22" fill="#2563eb" font-family="sans-serif" font-size="11" font-weight="bold" text-anchor="middle">Instant get(2) Jump: Base + (2 × 8 bytes)</text>
+    </g>
+
+    <text x="490" y="65" class="caption">&#10004; Elements packed back-to-back in memory cache.</text>
+    <text x="490" y="85" class="caption">&#10004; Fast index lookup: <tspan font-family="monospace" font-weight="bold">list.get(i)</tspan> is instantaneous.</text>
+    <text x="490" y="105" class="caption">&#9888; Inserting in middle shifts all right elements.</text>
+  </g>
+
+  <!-- DIVIDER -->
+  <line x1="30" y1="180" x2="850" y2="180" stroke="#f1f5f9" stroke-width="2"/>
+
+  <!-- BOTTOM SECTION: LINKEDLIST -->
+  <g transform="translate(30, 205)">
+    <text x="0" y="20" class="header">LinkedList: Scattered Nodes with Next &amp; Prev Pointers</text>
+    <rect x="420" y="5" width="135" height="22" rx="4" fill="#fef3c7"/>
+    <text x="487" y="20" class="badge" fill="#b45309" text-anchor="middle">O(1) Head/Tail Insert</text>
+
+    <!-- Node 1 -->
+    <g transform="translate(0, 45)" filter="url(#boxShadow)">
+      <rect width="110" height="52" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+      <rect x="0" y="0" width="30" height="52" rx="6" fill="#fffbeb" stroke="#fde68a"/>
+      <text x="15" y="32" class="ptr" text-anchor="middle">null</text>
+      <text x="55" y="32" class="data" text-anchor="middle">"A"</text>
+      <rect x="80" y="0" width="30" height="52" rx="6" fill="#eff6ff" stroke="#bfdbfe"/>
+      <text x="95" y="32" class="ptr" text-anchor="middle">&#8226;</text>
+    </g>
+
+    <!-- Pointer arrows between Node 1 and 2 -->
+    <path d="M 115 62 L 155 62" fill="none" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow)"/>
+    <path d="M 155 78 L 115 78" fill="none" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowBack)"/>
+
+    <!-- Node 2 -->
+    <g transform="translate(160, 45)" filter="url(#boxShadow)">
+      <rect width="110" height="52" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+      <rect x="0" y="0" width="30" height="52" rx="6" fill="#fffbeb" stroke="#fde68a"/>
+      <text x="15" y="32" class="ptr" text-anchor="middle">&#8226;</text>
+      <text x="55" y="32" class="data" text-anchor="middle">"B"</text>
+      <rect x="80" y="0" width="30" height="52" rx="6" fill="#eff6ff" stroke="#bfdbfe"/>
+      <text x="95" y="32" class="ptr" text-anchor="middle">&#8226;</text>
+    </g>
+
+    <!-- Pointer arrows between Node 2 and 3 -->
+    <path d="M 275 62 L 315 62" fill="none" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow)"/>
+    <path d="M 315 78 L 275 78" fill="none" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowBack)"/>
+
+    <!-- Node 3 -->
+    <g transform="translate(320, 45)" filter="url(#boxShadow)">
+      <rect width="110" height="52" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+      <rect x="0" y="0" width="30" height="52" rx="6" fill="#fffbeb" stroke="#fde68a"/>
+      <text x="15" y="32" class="ptr" text-anchor="middle">&#8226;</text>
+      <text x="55" y="32" class="data" text-anchor="middle">"C"</text>
+      <rect x="80" y="0" width="30" height="52" rx="6" fill="#eff6ff" stroke="#bfdbfe"/>
+      <text x="95" y="32" class="ptr" text-anchor="middle">null</text>
+    </g>
+
+    <text x="490" y="65" class="caption">&#10004; Nodes can live anywhere across heap memory.</text>
+    <text x="490" y="85" class="caption">&#10004; Inserting at ends just updates pointers (no shifting!).</text>
+    <text x="490" y="105" class="caption">&#9888; Reading index <tspan font-family="monospace">get(500)</tspan> must walk 500 hops one by one.</text>
+  </g>
+</svg>

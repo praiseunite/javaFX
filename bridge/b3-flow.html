@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bridge 3 — Decisions & Loops</title>
+  <meta name="description" content="Bridge 3 of Building Rich Java Applications with JavaFX and AI Tools: Master control flow, boolean logic, if-else, enhanced switch, while, do-while, and for loops.">
+  <link rel="stylesheet" href="../assets/css/course.css?v=5">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "b3";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== HERO ============================================================ -->
+  <section class="hero">
+    <span class="tag">Foundation Bridge &middot; Lesson B3 &middot; 2 hours prep &middot; Self-Paced / In-Class</span>
+    <h1>Bridge 3 &mdash; Decisions &amp; Loops</h1>
+    <p class="lede">
+      Without decisions, a program is just a rigid calculator that runs from top to bottom and halts.
+      Real applications are intelligent: they validate user passwords, process thousands of database records,
+      and retry failed network requests. Today you learn to direct the flow of your program with
+      <strong>boolean logic, if-else branching, modern switch expressions, and loops</strong>.
+    </p>
+    <div class="meta">
+      <span>&#128218; Core Foundation: Control Flow &amp; Algorithmic Logic</span>
+      <span>&#9201; ~2 hours</span>
+      <span>&#9989; Prerequisites: Bridge B2 (Variables, Data Types &amp; Operators)</span>
+      <span>&#128203; Goal: Build an Interactive Number Guessing Game</span>
+    </div>
+  </section>
+
+  <!-- ===== OBJECTIVES ====================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this bridge session you can&hellip;</b>
+    <ol>
+      <li><strong>Construct</strong> complex conditional tests using relational (<code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;=</code>) and logical operators (<code>&amp;&amp;</code>, <code>||</code>, <code>!</code>).</li>
+      <li><strong>Explain</strong> how <strong>short-circuit evaluation</strong> prevents null pointer and divide-by-zero crashes.</li>
+      <li><strong>Implement</strong> multi-branch decisions using <code>if</code>, <code>else if</code>, <code>else</code>, and modern Java 14+ <code>switch</code> expressions.</li>
+      <li><strong>Choose</strong> the appropriate loop construct (<code>for</code>, <code>while</code>, <code>do-while</code>) based on whether iteration count is known in advance.</li>
+      <li><strong>Control</strong> loop flow precisely with <code>break</code> and <code>continue</code> statements.</li>
+      <li><strong>Build</strong> an interactive console game with user input, score tracking, and replay loops.</li>
+    </ol>
+  </div>
+
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== ROADMAP ========================================================= -->
+  <h2>Your Learning Roadmap</h2>
+  <div class="roadmap">
+    <a href="#control-flow-concept">What is Control Flow?</a>
+    <a href="#the-railroad-analogy">The Railroad Switch Metaphor</a>
+    <a href="#boolean-logic">Boolean Logic &amp; Operators</a>
+    <a href="#if-else-branching">If-Else Branching</a>
+    <a href="#modern-switch">Modern Switch Expressions</a>
+    <a href="#loops-for-while">Loops: While, Do-While &amp; For</a>
+    <a href="#break-and-continue">Break &amp; Continue</a>
+    <a href="#interactive-flow-simulator">Interactive Flow Simulator</a>
+    <a href="#common-traps">Common Pitfalls</a>
+    <a href="#knowledge-check">Knowledge Check</a>
+    <a href="#guided-lab">Guided Lab</a>
+  </div>
+
+  <!-- ===== CONCEPT 1 ======================================================= -->
+  <h2 id="control-flow-concept">1. What is Control Flow?</h2>
+  <p>
+    By default, a computer program executes sequentially: line 1, then line 2, then line 3.
+    <strong>Control Flow</strong> is the ability to change that straight line:
+  </p>
+  <ul>
+    <li><strong>Branching (Decisions):</strong> Choose track A or track B depending on whether a condition is true (e.g. <em>"Is the user an admin?"</em>).</li>
+    <li><strong>Looping (Repetition):</strong> Repeat a block of code multiple times until a stopping condition is met (e.g. <em>"Process all 50 items in the cart"</em>).</li>
+  </ul>
+
+  <!-- ===== VISUAL CARTOON ================================================== -->
+  <h2 id="the-railroad-analogy">2. The Railroad Switch &amp; Loop Analogy</h2>
+  <p>
+    Think of your running program as a train traveling forward on a railroad track.
+  </p>
+
+  <figure class="concept-visual" aria-label="Visual cartoon: Control Flow Railroad Tracks and Loops">
+    <img src="../assets/img/cartoons/b3_train_switch_and_loop.jpg" alt="A friendly train on a track navigating railroad switches and a loop-de-loop track">
+    <figcaption>
+      <span class="fig-badge fig-badge--analogy">&#127917; Visual Analogy</span>
+      <strong>The Railroad Switch &amp; Loop:</strong> When your program approaches a decision, it hits a track switch (<code>if/else</code>).
+      A green light sends the train down the VIP express route; a red light diverts it to standard security check.
+      When the train hits a loop (<code>for/while</code>), it circles the loop track repeatedly until its cargo counter reaches zero,
+      at which point the switch flips and lets the train continue down the main line!
+    </figcaption>
+  </figure>
+
+  <!-- ===== BOOLEAN LOGIC =================================================== -->
+  <h2 id="boolean-logic">3. Boolean Logic &amp; Short-Circuit Evaluation</h2>
+  <p>
+    Every decision in Java evaluates to a <code>boolean</code>: either <code>true</code> or <code>false</code>.
+  </p>
+
+  <h3>A. Relational Comparison Operators</h3>
+  <table class="walkthrough-table">
+    <thead>
+      <tr><th>Operator</th><th>Meaning</th><th>Example</th><th>Evaluates To</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>==</code></td><td>Equal to</td><td><code>5 == 5</code></td><td><code>true</code></td></tr>
+      <tr><td><code>!=</code></td><td>Not equal to</td><td><code>5 != 3</code></td><td><code>true</code></td></tr>
+      <tr><td><code>&gt;</code>, <code>&lt;</code></td><td>Greater than, Less than</td><td><code>10 &gt; 20</code></td><td><code>false</code></td></tr>
+      <tr><td><code>&gt;=</code>, <code>&lt;=</code></td><td>Greater than or equal, Less than or equal</td><td><code>18 &gt;= 18</code></td><td><code>true</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>B. Logical Operators (AND, OR, NOT)</h3>
+  <table class="walkthrough-table">
+    <thead>
+      <tr><th>Operator</th><th>Name</th><th>Rule</th><th>Example</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>&amp;&amp;</code></td><td>AND</td><td>True ONLY if <strong>both</strong> sides are true</td><td><code>age &gt;= 18 &amp;&amp; hasId</code></td></tr>
+      <tr><td><code>||</code></td><td>OR</td><td>True if <strong>at least one</strong> side is true</td><td><code>isMember || hasCoupon</code></td></tr>
+      <tr><td><code>!</code></td><td>NOT</td><td>Reverses truth: flips true to false and vice-versa</td><td><code>!isBlocked</code></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Short-Circuit Evaluation: A Lifesaving Feature</b>
+      Java evaluates <code>&amp;&amp;</code> and <code>||</code> from left to right and stops the instant the final answer is certain:
+      <ul>
+        <li>In <code>false &amp;&amp; anything</code>, Java never evaluates the right side because the result must be <code>false</code>.</li>
+        <li>In <code>true || anything</code>, Java never evaluates the right side because the result must be <code>true</code>.</li>
+      </ul>
+      This prevents crashes! For example: <code>if (text != null &amp;&amp; text.length() &gt; 0)</code> will never throw a <code>NullPointerException</code> because if <code>text</code> is null, Java immediately stops checking!
+    </div>
+  </div>
+
+  <!-- ===== IF-ELSE ========================================================= -->
+  <h2 id="if-else-branching">4. Branching with If, Else If, and Else</h2>
+  <p>Here is how you write decisions in Java:</p>
+
+  <pre class="numbered" data-file="GradeDecider.java" data-hl="3,5,7,9"><code class="lang-java">public class GradeDecider {
+    public static void main(String[] args) {
+        int score = 84;
+
+        if (score >= 90) {
+            System.out.println("Grade: A - Outstanding!");
+        } else if (score >= 80) {
+            System.out.println("Grade: B - Excellent work.");
+        } else if (score >= 70) {
+            System.out.println("Grade: C - Satisfactory.");
+        } else {
+            System.out.println("Grade: F - Needs review.");
+        }
+    }
+}</code></pre>
+
+  <div class="terminal-output">Grade: B - Excellent work.</div>
+
+  <!-- ===== MODERN SWITCH =================================================== -->
+  <h2 id="modern-switch">5. Modern Switch Expressions (Java 14+)</h2>
+  <p>
+    When matching a single variable against many fixed values (like days of the week, HTTP status codes, or menu options),
+    a <code>switch</code> is cleaner than 10 messy <code>if-else</code> blocks.
+    Modern Java uses the elegant <strong>arrow syntax (<code>-&gt;</code>)</strong> which eliminates the notorious missing <code>break</code> bug:
+  </p>
+
+  <pre class="numbered" data-file="DayPlanner.java" data-hl="4,5,6,7"><code class="lang-java">int dayOfWeek = 6; // 1 = Mon, 6 = Sat, 7 = Sun
+
+switch (dayOfWeek) {
+    case 1, 2, 3, 4, 5 -> System.out.println("Weekday: Time to study Java!");
+    case 6             -> System.out.println("Saturday: Build a JavaFX side project!");
+    case 7             -> System.out.println("Sunday: Rest and recharge.");
+    default            -> System.out.println("Invalid day entered!");
+}</code></pre>
+
+  <!-- ===== LOOPS =========================================================== -->
+  <h2 id="loops-for-while">6. Repeating Code with Loops</h2>
+  <p>Java gives you 3 primary loop constructs:</p>
+
+  <h3>A. The <code>for</code> Loop (When you know how many times to repeat)</h3>
+  <pre class="numbered" data-file="ForLoopDemo.java"><code class="lang-java">// Syntax: for (initialize; condition; update)
+for (int i = 1; i <= 5; i++) {
+    System.out.println("Rocket launch in: " + i);
+}
+System.out.println("Liftoff!");</code></pre>
+
+  <h3>B. The <code>while</code> Loop (When repeating until an event happens)</h3>
+  <p>The condition is checked <strong>before</strong> entering the loop body. If the condition is false initially, it runs zero times:</p>
+  <pre class="numbered" data-file="WhileLoopDemo.java"><code class="lang-java">int batteryPercent = 100;
+while (batteryPercent > 20) {
+    System.out.println("Gaming smoothly... battery at " + batteryPercent + "%");
+    batteryPercent -= 30; // Drain battery
+}
+System.out.println("Low battery warning! Plug in charger.");</code></pre>
+
+  <h3>C. The <code>do-while</code> Loop (Guaranteed to run at least ONCE)</h3>
+  <p>The condition is checked <strong>after</strong> executing the body. Ideal for menu prompts and user input validation:</p>
+  <pre class="numbered" data-file="DoWhileDemo.java"><code class="lang-java">int pinAttempt = 0;
+do {
+    System.out.println("Prompting user to enter PIN code...");
+    pinAttempt++;
+} while (pinAttempt < 1); // Executes once even though condition becomes false immediately!</code></pre>
+
+  <!-- ===== BREAK & CONTINUE ================================================ -->
+  <h2 id="break-and-continue">7. Steering Loops: Break &amp; Continue</h2>
+  <ul>
+    <li><code>break</code>: Smashes the emergency glass &mdash; immediately terminates the loop and jumps completely outside.</li>
+    <li><code>continue</code>: Skips the rest of the <em>current</em> iteration and jumps straight to the next cycle.</li>
+  </ul>
+
+  <pre class="numbered" data-file="BreakContinueDemo.java" data-hl="4,8"><code class="lang-java">for (int i = 1; i <= 10; i++) {
+    if (i == 4) {
+        System.out.println("Skipping unlucky number 4!");
+        continue; // Skips printing 4, continues to 5
+    }
+    if (i == 8) {
+        System.out.println("Stopping early at 8!");
+        break;    // Terminates loop completely!
+    }
+    System.out.print(i + " ");
+}</code></pre>
+  <div class="terminal-output">1 2 3 Skipping unlucky number 4!
+5 6 7 Stopping early at 8!</div>
+
+  <!-- ===== INTERACTIVE SIMULATOR =========================================== -->
+  <h2 id="interactive-flow-simulator">&#128187; Interactive Simulator: Railroad Flow Controller</h2>
+  <p>Adjust the inputs below to see how Java evaluates the condition and routes code execution:</p>
+
+  <div class="playground" id="b3Playground">
+    <div class="playground__header">&#9881;&#65039; Live Condition Evaluator</div>
+    <div class="playground__body">
+      <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+        <label>
+          <strong>Student Score:</strong>
+          <input type="range" id="scoreSlider" min="0" max="100" value="75" oninput="updateFlowSim()" style="display:block;margin-top:0.3rem;">
+          <span id="scoreVal" style="font-weight:700;color:var(--accent);">75</span>
+        </label>
+
+        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+          <input type="checkbox" id="hasHonorPledge" onchange="updateFlowSim()" checked>
+          <strong>Signed Honor Pledge</strong>
+        </label>
+      </div>
+
+      <div id="flowRouteDisplay" style="background:var(--surface-2);padding:1rem;border-radius:8px;border-left:4px solid var(--accent);font-family:monospace;">
+        Evaluating logic...
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function updateFlowSim() {
+      var score = parseInt(document.getElementById("scoreSlider").value, 10);
+      var pledge = document.getElementById("hasHonorPledge").checked;
+      document.getElementById("scoreVal").textContent = score;
+
+      var result = "";
+      if (!pledge) {
+        result = "[BLOCKED AT GATE]\nif (!hasHonorPledge) -> TRUE\nAction: Certificate withheld! Student must sign academic honor pledge first.";
+      } else if (score >= 90) {
+        result = "[TRACK A: HIGH HONORS]\nif (score >= 90) -> TRUE\nOutput: Dean's List Certification Awarded with Gold Ribbon!";
+      } else if (score >= 60) {
+        result = "[TRACK B: PASS]\nelse if (score >= 60) -> TRUE\nOutput: Course Passed! Ready for next session.";
+      } else {
+        result = "[TRACK C: REMEDIATION]\nelse -> TRUE\nOutput: Score below 60. Tutor support session scheduled.";
+      }
+
+      document.getElementById("flowRouteDisplay").textContent = result;
+    }
+    updateFlowSim();
+  </script>
+
+  <!-- ===== COMMON MISTAKES ================================================= -->
+  <h2 id="common-traps">&#9888;&#65039; Top 3 Beginner Flow Traps</h2>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Trap 1: Accidental Semicolon After <code>if</code> or <code>for</code></b>
+      <pre><code class="lang-java">if (score >= 90); // DANGEROUS SEMICOLON!
+{
+    System.out.println("You passed!"); // This block ALWAYS runs, even if score is 10!
+}</code></pre>
+      <p><strong>The Fix:</strong> Never place a semicolon after the parentheses of an <code>if</code>, <code>for</code>, or <code>while</code> statement. The semicolon creates an empty statement that finishes the check immediately.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Trap 2: Comparing Strings with <code>==</code></b>
+      <pre><code class="lang-java">String input = "yes";
+if (input == "yes") { ... } // WARNING: Compares memory addresses, NOT letters!</code></pre>
+      <p><strong>The Fix:</strong> For objects and strings, always use <code>.equals()</code>: <code>if (input.equals("yes"))</code>.</p>
+    </div>
+  </div>
+
+  <!-- ===== KNOWLEDGE CHECK ================================================= -->
+  <h2 id="knowledge-check">&#128221; Knowledge Check</h2>
+  <div class="quiz" id="b3-quiz">
+    <div class="quiz__title">&#128161; Verify Your Understanding</div>
+
+    <!-- Q1 -->
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__stem">1. How many times does this loop execute? <code>for (int i = 0; i &lt; 5; i++) { ... }</code></div>
+      <label class="quiz__opt"><input type="radio" name="b3q1" value="a"> 4 times</label>
+      <label class="quiz__opt"><input type="radio" name="b3q1" value="b"> 5 times (for i = 0, 1, 2, 3, 4)</label>
+      <label class="quiz__opt"><input type="radio" name="b3q1" value="c"> 6 times</label>
+      <label class="quiz__opt"><input type="radio" name="b3q1" value="d"> Infinite loop</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: B.</strong> The counter <code>i</code> starts at 0 and increments through 0, 1, 2, 3, 4. When <code>i</code> reaches 5, the condition <code>5 &lt; 5</code> becomes false, completing exactly 5 iterations.
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__stem">2. What happens during short-circuit evaluation of <code>if (false &amp;&amp; secretMethod())</code>?</div>
+      <label class="quiz__opt"><input type="radio" name="b3q1" value="a"> <code>secretMethod()</code> is executed first</label>
+      <label class="quiz__opt"><input type="radio" name="b3q1" value="b"> Both expressions are evaluated concurrently</label>
+      <label class="quiz__opt"><input type="radio" name="b3q1" value="c"> <code>secretMethod()</code> is never called because the left side is false</label>
+      <label class="quiz__opt"><input type="radio" name="b3q1" value="d"> The program crashes with an error</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: C.</strong> Because the operator is AND (<code>&amp;&amp;</code>) and the left operand is false, the overall outcome is already guaranteed to be false. Java skips the right side entirely.
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__stem">3. Which loop construct is guaranteed to execute its code block at least once, even if the condition is false?</div>
+      <label class="quiz__opt"><input type="radio" name="b3q3" value="a"> Standard <code>for</code> loop</label>
+      <label class="quiz__opt"><input type="radio" name="b3q3" value="b"> <code>do-while</code> loop</label>
+      <label class="quiz__opt"><input type="radio" name="b3q3" value="c"> Standard <code>while</code> loop</label>
+      <label class="quiz__opt"><input type="radio" name="b3q3" value="d"> None of them</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: B.</strong> A <code>do-while</code> loop evaluates its condition at the bottom after executing the loop body.
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__stem">4. What does the <code>continue</code> statement do when encountered inside a loop?</div>
+      <label class="quiz__opt"><input type="radio" name="b3q4" value="a"> Skips the rest of the current iteration and jumps to the next cycle</label>
+      <label class="quiz__opt"><input type="radio" name="b3q4" value="b"> Exits the loop permanently</label>
+      <label class="quiz__opt"><input type="radio" name="b3q4" value="c"> Restarts the entire loop back to index 0</label>
+      <label class="quiz__opt"><input type="radio" name="b3q4" value="d"> Pauses the program for 1 second</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: A.</strong> <code>continue</code> bypasses the remaining lines in the current iteration and begins the next iteration. In contrast, <code>break</code> terminates the entire loop.
+      </div>
+    </div>
+
+    <div class="quiz__score" style="display:none"></div>
+  </div>
+
+  <!-- ===== GUIDED LAB ====================================================== -->
+  <h2 id="guided-lab">&#128736; Guided Lab: High-Low Guessing Game</h2>
+  <div class="steps">
+    <div class="steps__title">&#128221; Build this interactive game in IntelliJ:</div>
+
+    <div class="step"><div class="step__check"></div><span class="step__num">1</span>
+      <span class="step__text">Create a class named <code>NumberGuessGame</code> with a <code>main</code> method.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">2</span>
+      <span class="step__text">Generate a secret target number between 1 and 100: <code>int secret = (int)(Math.random() * 100) + 1;</code>.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">3</span>
+      <span class="step__text">Import <code>java.util.Scanner</code> and create an input reader: <code>Scanner scanner = new Scanner(System.in);</code>.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">4</span>
+      <span class="step__text">Use a <code>while</code> loop to give the player up to 7 attempts. Inside the loop, read their guess with <code>scanner.nextInt()</code> and tell them <em>"Too High!"</em>, <em>"Too Low!"</em>, or <em>"CORRECT!"</em>.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">5</span>
+      <span class="step__text">Use <code>break</code> if they guess correctly. If they run out of attempts, reveal the secret number!</span>
+    </div>
+  </div>
+
+  <!-- ===== FURTHER STUDY =================================================== -->
+  <h2>&#128250; Recommended Further Study</h2>
+  <div class="video-grid">
+    <div class="video-card">
+      <div class="video-card__title">&#127916; Programming with Mosh: Java Control Flow</div>
+      <p style="font-size:0.9rem;color:var(--ink-soft);margin-bottom:0.75rem;">Clear visual breakdown of if statements, comparison operators, and loops in modern Java.</p>
+      <a class="video-card__link" href="https://www.youtube.com/watch?v=eIrMbAQSU34" target="_blank" rel="noopener">&#9654; Watch on YouTube</a>
+    </div>
+    <div class="video-card">
+      <div class="video-card__title">&#127916; Alex Lee: Java Loops Explained (For, While, Do-While)</div>
+      <p style="font-size:0.9rem;color:var(--ink-soft);margin-bottom:0.75rem;">Practical hands-on exercises comparing loop structures and debugging infinite loops.</p>
+      <a class="video-card__link" href="https://www.youtube.com/watch?v=rjkYAs6g_sQ" target="_blank" rel="noopener">&#9654; Watch on YouTube</a>
+    </div>
+  </div>
+
+  <!-- ===== SUMMARY & NEXT ================================================== -->
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Next Up: Bridge 4 &mdash; Methods &amp; Arrays</b>
+      Your code can now make decisions and loop! But writing 500 lines of code inside one <code>main</code> method
+      becomes messy fast. In Bridge 4, you'll learn how to package reusable logic into <strong>Methods</strong>
+      and store collections of data in <strong>Arrays</strong>.
+    </div>
+  </div>
+
+</main>
+
+<script src="../assets/js/course.js?v=5"></script>
+<script src="../assets/js/playgrounds.js?v=5"></script>
+
+</body>
+</html>

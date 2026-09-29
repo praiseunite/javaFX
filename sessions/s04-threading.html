@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session 4 — Threading</title>
+  <meta name="description" content="Session 4 of Building Rich Java Applications with JavaFX and AI Tools: the Thread class, creating threads, thread states, Thread methods, managing and stopping threads, daemon threads, and converting platform threads to virtual threads with AI help — explained from zero.">
+  <link rel="stylesheet" href="../assets/css/course.css?v=5">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "s04";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== HERO ============================================================ -->
+  <section class="hero">
+    <span class="tag">Week 1 &middot; Day 4 &middot; Session 4 &middot; 2 hours in class + practice at home</span>
+    <h1>Session 4 &mdash; Threading</h1>
+    <p class="lede">
+      Every program you've written so far does <strong>one thing at a time</strong>: step 1, then step 2, then step 3.
+      Real apps do many things at once: a music app plays a song <em>while</em> you scroll, a browser downloads a file
+      <em>while</em> you read. Today you learn how Java does several things at the same time with <strong>threads</strong>,
+      including Java's newest feature, <strong>virtual threads</strong>, and how an AI assistant can help you use them.
+    </p>
+    <div class="meta">
+      <span>&#128218; Learner's Guide: SG &middot; XP &middot; TG &mdash; Session 4</span>
+      <span>&#9201; ~2 hours + 2 hours practice</span>
+      <span>&#9989; Before this: Sessions 1&ndash;3, Bridge B6 (interfaces) and B7 (exceptions)</span>
+      <span>&#128736; Lab Task L4 (pass / fail)</span>
+    </div>
+  </section>
+
+  <!-- ===== OBJECTIVES ====================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this session you can&hellip;</b>
+    <ol>
+      <li><strong>Explain</strong> what a thread is and what the <code>Thread</code> class represents.</li>
+      <li><strong>Create</strong> threads in three ways (extend <code>Thread</code>, implement <code>Runnable</code>, a lambda) and <strong>explain</strong> <code>start()</code> vs <code>run()</code>.</li>
+      <li><strong>Identify</strong> the six thread states and what moves a thread between them.</li>
+      <li><strong>Use</strong> the main <code>Thread</code> methods: <code>sleep</code>, <code>join</code>, <code>isAlive</code>, <code>getName</code>/<code>setName</code>, <code>setPriority</code>, <code>interrupt</code>.</li>
+      <li><strong>Manage</strong> threads: wait for them and stop them safely.</li>
+      <li><strong>Describe</strong> daemon threads and when to use them.</li>
+      <li><strong>Outline</strong> how an AI assistant can convert platform threads to virtual threads, and <strong>review</strong> its suggestion critically.</li>
+    </ol>
+  </div>
+
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== ROADMAP ========================================================= -->
+  <h2>Your Roadmap for Today</h2>
+  <div class="roadmap">
+    <a href="#part-1-what-is-a-thread">What is a thread?</a>
+    <a href="#part-2-creating-threads">Creating threads</a>
+    <a href="#part-3-thread-states">Thread states</a>
+    <a href="#part-4-methods-of-the-thread-class">Thread methods</a>
+    <a href="#part-5-managing-threads">Managing threads</a>
+    <a href="#part-6-daemon-threads">Daemon threads</a>
+    <a href="#part-7-virtual-threads-with-ai-help">Virtual threads + AI</a>
+  </div>
+
+  <div class="callout callout--note"><span class="callout__i">&#128214;</span>
+    <div class="callout__b"><b>Get the code running</b>
+      Open <code>code/s04-threading</code> in IntelliJ. The examples are in <code>src/main/java/com/aptech/s04</code>. You need <strong>JDK 21 or newer</strong> for the virtual-thread examples (Part 7).
+    </div>
+  </div>
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>Your output may be in a different order &mdash; and that's correct!</b>
+      When several threads run at once, the <strong>operating system</strong> decides who runs next, and it can choose differently every time. Where the order can change,
+      this page says so. Timings (like "about 1 second") also depend on your computer. Run those examples a few times and compare: that experience <em>is</em> the lesson.
+    </div>
+  </div>
+
+  <!-- ===== WHY THIS MATTERS ================================================= -->
+  <h2>Why This Matters</h2>
+  <p>
+    Imagine a JavaFX app with a "Download" button. If the download runs on the same thread that draws the window, the whole window
+    <strong>freezes</strong> until the download finishes: no scrolling, no clicking, the dreaded "Not Responding". The fix is to run the slow work on
+    <strong>another thread</strong>. Servers do the same thing at a huge scale: one web server may serve thousands of users at once, each on their own thread.
+  </p>
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; a restaurant kitchen</b>
+      <p>A <strong>program</strong> (a <em>process</em>) is a restaurant kitchen. A <strong>thread</strong> is one <strong>chef</strong> working in it.</p>
+      <ul>
+        <li>A kitchen with one chef cooks one dish at a time. That's every program you've written so far: the chef is called <code>main</code>.</li>
+        <li>Hire more chefs and several dishes cook <strong>at the same time</strong>. They share the same kitchen (the same memory, the same fridge).</li>
+        <li>Each chef follows their own recipe (their <code>run()</code> method) at their own pace.</li>
+        <li>A head chef (the <strong>scheduler</strong>) decides who gets the stove next, and you don't control the exact order.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== PART 1 ========================================================== -->
+  <span class="eyebrow">Part 1 of 7</span>
+  <h2 id="part-1-what-is-a-thread">Part 1 &mdash; What Is a Thread? The <code>Thread</code> Class</h2>
+  <p>
+    A <strong>thread</strong> is a single path of execution through your code: one "worker" following instructions one after another.
+    A <strong>process</strong> is a running program; it can contain many threads, and they all share the process's memory.
+    In Java, each thread is represented by an object of the class <code>java.lang.Thread</code>. Through that object you can start the thread,
+    name it, check its state, wait for it, or ask it to stop.
+  </p>
+  <figure class="figure" aria-label="A process containing several threads">
+    <svg class="dg" viewBox="0 0 720 220" width="720" height="220" role="img" aria-labelledby="k1t">
+      <title id="k1t">One process with shared memory containing three threads, each with its own path through the code over time</title>
+      <defs><marker id="k1a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="head-accent"/></marker></defs>
+      <rect class="box" x="10" y="10" width="700" height="200" rx="12"/>
+      <text x="30" y="36" class="t-b">PROCESS: your running Java program (the kitchen)</text>
+      <rect class="warm" x="30" y="50" width="150" height="140" rx="8"/>
+      <text x="105" y="80" text-anchor="middle" class="t-b">Shared memory</text>
+      <text x="105" y="102" text-anchor="middle" class="t-sm">objects, lists,</text>
+      <text x="105" y="120" text-anchor="middle" class="t-sm">files, variables</text>
+      <text x="105" y="150" text-anchor="middle" class="t-xs">(the fridge every</text>
+      <text x="105" y="166" text-anchor="middle" class="t-xs">chef can open)</text>
+      <text x="210" y="72" class="t-mono t-sm">main</text><line class="ln-accent" x1="270" y1="68" x2="690" y2="68" marker-end="url(#k1a)"/>
+      <text x="210" y="122" class="t-mono t-sm">Chef Ada</text><line class="ln-accent" x1="300" y1="118" x2="560" y2="118" marker-end="url(#k1a)"/>
+      <text x="210" y="172" class="t-mono t-sm">Chef Ben</text><line class="ln-accent" x1="340" y1="168" x2="640" y2="168" marker-end="url(#k1a)"/>
+      <text x="480" y="95" text-anchor="middle" class="t-xs">each thread runs its own code, at the same time &#8594; time</text>
+    </svg>
+    <figcaption class="figure__cap"><b>Figure 1.</b> One process, several threads. They run at the same time and share the same memory.</figcaption>
+  </figure>
+
+  <h3>Example 1 &mdash; you already have a thread: <code>main</code></h3>
+  <!--@code src="code/s04-threading/src/main/java/com/aptech/s04/E01_MainThread.java" hl="8,16"-->
+<pre class="numbered" data-file="E01_MainThread.java" data-hl="8,16"><code class="lang-java">package com.aptech.s04;
+
+/**
+ * Example 1 — Every Java program already runs in a thread: the "main" thread.
+ */
+public class E01_MainThread {
+    public static void main(String[] args) {
+        Thread me = Thread.currentThread();            // "which thread is running THIS line?"
+
+        System.out.println("Name:     " + me.getName());
+        System.out.println("Priority: " + me.getPriority() + "  (1 = lowest, 5 = normal, 10 = highest)");
+        System.out.println("Daemon?   " + me.isDaemon());
+        System.out.println("Alive?    " + me.isAlive());
+        System.out.println("State:    " + me.getState());
+
+        me.setName("boss");                            // you may rename a thread
+        System.out.println("Renamed:  " + Thread.currentThread().getName());
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>8</td><td><code>Thread.currentThread()</code> answers the question "which thread is running this line right now?" Here it's the thread that runs <code>main</code>, which Java creates for you when the program starts.</td></tr>
+      <tr><td>10</td><td>Every thread has a <strong>name</strong>. The first one is called <code>main</code>.</td></tr>
+      <tr><td>11</td><td>A <strong>priority</strong> from 1 to 10 (5 = normal). It's only a <em>hint</em> to the scheduler (Part 4).</td></tr>
+      <tr><td>12</td><td>Is it a <strong>daemon</strong> (background helper) thread? No (Part 6).</td></tr>
+      <tr><td>13&ndash;14</td><td>It's alive, and its <strong>state</strong> is <code>RUNNABLE</code>, meaning it's running (Part 3 covers all six states).</td></tr>
+      <tr><td>16&ndash;17</td><td>You can rename a thread. Good names make error messages and debugging much easier.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s04-threading" main="com.aptech.s04.E01_MainThread"-->
+<div class="terminal-output">Name:     main
+Priority: 5  (1 = lowest, 5 = normal, 10 = highest)
+Daemon?   false
+Alive?    true
+State:    RUNNABLE
+Renamed:  boss</div>
+<!--@end-->
+  <div class="newwords"><b>&#128218; New words</b>
+    <dl>
+      <dt>Thread</dt><dd>One independent path of execution: a "worker" that runs code. A <code>Thread</code> object represents one.</dd>
+      <dt>Process</dt><dd>A running program. It owns memory and contains one or more threads.</dd>
+      <dt>Multithreading / concurrency</dt><dd>Running several threads at the same time (or taking turns so fast it looks simultaneous).</dd>
+      <dt>Scheduler</dt><dd>The part of the operating system that decides which thread runs on which CPU core, and when.</dd>
+      <dt>Main thread</dt><dd>The thread Java creates to run your <code>main</code> method.</dd>
+    </dl>
+  </div>
+
+  <!-- ===== PART 2 ========================================================== -->
+  <span class="eyebrow">Part 2 of 7</span>
+  <h2 id="part-2-creating-threads">Part 2 &mdash; Creating Threads</h2>
+  <p>
+    A thread needs a <strong>job</strong>: the code it should run. In Java the job always lives in a method called <strong><code>run()</code></strong>.
+    There are three ways to give a thread its job. All three end the same way: you call <strong><code>start()</code></strong>, and Java creates the new thread and calls
+    <code>run()</code> <em>inside</em> it.
+  </p>
+  <figure class="figure" aria-label="Two ways to create a thread">
+    <svg class="dg" viewBox="0 0 720 190" width="720" height="190" role="img" aria-labelledby="k2t">
+      <title id="k2t">Way 1: a class that extends Thread is both worker and job. Way 2: a Runnable job is handed to a Thread worker</title>
+      <text x="175" y="22" text-anchor="middle" class="t-b">Way 1: extends Thread</text>
+      <rect class="impl" x="60" y="40" width="230" height="90" rx="10"/>
+      <text x="175" y="66" text-anchor="middle" class="t-mono">class Counter extends Thread</text>
+      <text x="175" y="90" text-anchor="middle" class="t-sm">is the WORKER and the JOB</text>
+      <text x="175" y="110" text-anchor="middle" class="t-mono t-sm">run() { ... }</text>
+      <text x="175" y="160" text-anchor="middle" class="t-mono t-sm">new Counter("Ada").start();</text>
+      <line class="ln-dash" x1="360" y1="15" x2="360" y2="180"/>
+      <text x="545" y="22" text-anchor="middle" class="t-b">Way 2: implements Runnable (preferred)</text>
+      <rect class="map" x="390" y="40" width="140" height="90" rx="10"/>
+      <text x="460" y="66" text-anchor="middle" class="t-b">Runnable</text>
+      <text x="460" y="88" text-anchor="middle" class="t-sm">the JOB</text>
+      <text x="460" y="110" text-anchor="middle" class="t-mono t-sm">run() { ... }</text>
+      <text x="550" y="90" text-anchor="middle" class="t-b">&#8594;</text>
+      <rect class="impl" x="570" y="40" width="130" height="90" rx="10"/>
+      <text x="635" y="66" text-anchor="middle" class="t-b">Thread</text>
+      <text x="635" y="88" text-anchor="middle" class="t-sm">the WORKER</text>
+      <text x="545" y="160" text-anchor="middle" class="t-mono t-sm">new Thread(job, "worker-1").start();</text>
+    </svg>
+    <figcaption class="figure__cap"><b>Figure 2.</b> Way 2 separates <i>what</i> to do (Runnable) from <i>who</i> does it (Thread). Way 3 is Way 2 written as a lambda.</figcaption>
+  </figure>
+
+  <h3>Example 2 &mdash; Way 1: extend <code>Thread</code></h3>
+  <!--@code src="code/s04-threading/src/main/java/com/aptech/s04/E02_ExtendThread.java" hl="9,15,19,31,35,42"-->
+<pre class="numbered" data-file="E02_ExtendThread.java" data-hl="9,15,19,31,35,42"><code class="lang-java">package com.aptech.s04;
+
+/**
+ * Example 2 — Way 1 to create a thread: EXTEND the Thread class and override run().
+ */
+public class E02_ExtendThread {
+
+    /** A thread that counts to 3. run() holds the job it will do. */
+    static class Counter extends Thread {
+        Counter(String name) {
+            super(name);                               // give the thread a name
+        }
+
+        @Override
+        public void run() {
+            for (int i = 1; i &lt;= 3; i++) {
+                System.out.println(getName() + " says " + i);
+                try {
+                    Thread.sleep(100);                 // pause 100 ms so the threads take turns
+                } catch (InterruptedException e) {
+                    return;
+                }
+            }
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        Counter a = new Counter("Ada");
+        Counter b = new Counter("Ben");
+
+        a.start();                                     // start() = run() in a NEW thread
+        b.start();
+        System.out.println("main started both threads and carries on");
+
+        a.join();                                      // wait for Ada to finish
+        b.join();                                      // wait for Ben to finish
+        System.out.println("Both threads finished");
+
+        // The classic mistake: run() instead of start() does NOT create a thread
+        Counter c = new Counter("Chi");
+        System.out.println("Calling run() directly...");
+        c.run();                                       // runs in the MAIN thread, like any method call
+        System.out.println("...main had to wait for Chi, because no new thread was created");
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>9</td><td><code>Counter extends Thread</code>: a Counter <em>is a</em> Thread, so it can be started.</td></tr>
+      <tr><td>10&ndash;12</td><td>The constructor passes the name up to <code>Thread</code> with <code>super(name)</code>.</td></tr>
+      <tr><td>15&ndash;24</td><td><code>run()</code> is the <strong>job</strong>: count to 3, pausing 100 ms each time.</td></tr>
+      <tr><td>19</td><td><code>Thread.sleep(100)</code> pauses <em>the current thread</em> for 100 ms. It can throw <code>InterruptedException</code> (if someone asks the thread to stop, Part 5), so it must be caught.</td></tr>
+      <tr><td>31&ndash;32</td><td><code>start()</code> creates a real new thread and runs <code>run()</code> in it. Right after these two lines, <strong>three threads</strong> exist: main, Ada and Ben.</td></tr>
+      <tr><td>33</td><td>main doesn't wait: it prints immediately while Ada and Ben are still counting.</td></tr>
+      <tr><td>35&ndash;36</td><td><code>join()</code> means "main, wait here until this thread has finished".</td></tr>
+      <tr><td>42</td><td>The classic mistake: calling <code>run()</code> directly. It's just an ordinary method call, so <strong>no new thread</strong> is created and main does all the work itself.</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Real output of one run.</strong> The order of the Ada/Ben lines <strong>can be different every time</strong>; run it a few times and see:</p>
+  <!--@output project="code/s04-threading" main="com.aptech.s04.E02_ExtendThread"-->
+<div class="terminal-output">main started both threads and carries on
+Ben says 1
+Ada says 1
+Ben says 2
+Ada says 2
+Ben says 3
+Ada says 3
+Both threads finished
+Calling run() directly...
+Chi says 1
+Chi says 2
+Chi says 3
+...main had to wait for Chi, because no new thread was created</div>
+<!--@end-->
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point: <code>start()</code>, never <code>run()</code></b>
+      <code>start()</code> = "create a new thread, and run the job there" (returns immediately). <code>run()</code> = "run the job here, in my thread" (no new thread, no concurrency).
+      And a thread can be started <strong>only once</strong>: a second <code>start()</code> throws <code>IllegalThreadStateException</code>.
+    </div>
+  </div>
+
+  <h3>Example 3 &mdash; Way 2: implement <code>Runnable</code> (and Way 3: a lambda)</h3>
+  <p><code>Runnable</code> is an interface with just one method, <code>void run()</code>. You write the job as a Runnable and hand it to a <code>new Thread(job)</code>. Because Runnable has only one method, you can also write the job as a <strong>lambda</strong> (Session 1, Part 3).</p>
+  <!--@code src="code/s04-threading/src/main/java/com/aptech/s04/E03_ImplementRunnable.java" hl="10,22,26,27,33,34"-->
+<pre class="numbered" data-file="E03_ImplementRunnable.java" data-hl="10,22,26,27,33,34"><code class="lang-java">package com.aptech.s04;
+
+/**
+ * Example 3 — Way 2 (preferred): IMPLEMENT Runnable (the job) and hand it to a Thread (the worker).
+ * Way 3: the same thing written as a lambda.
+ */
+public class E03_ImplementRunnable {
+
+    /** The JOB: what should be done. It is not a thread by itself. */
+    static class Greeting implements Runnable {
+        private final String message;
+
+        Greeting(String message) { this.message = message; }
+
+        @Override
+        public void run() {
+            System.out.println(Thread.currentThread().getName() + ": " + message);
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        Thread t1 = new Thread(new Greeting("Good morning!"), "worker-1");   // job + name
+        t1.start();
+        t1.join();                                     // wait, so the output stays in order
+
+        Runnable job = () -&gt; System.out.println(Thread.currentThread().getName() + ": Hello from a lambda!");
+        Thread t2 = new Thread(job, "worker-2");
+        t2.start();
+        t2.join();
+
+        // One job can be given to several workers
+        Greeting shared = new Greeting("same job, different worker");
+        Thread t3 = new Thread(shared, "worker-3");
+        Thread t4 = new Thread(shared, "worker-4");
+        t3.start();
+        t3.join();
+        t4.start();
+        t4.join();
+
+        System.out.println(Thread.currentThread().getName() + ": all done");
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>10&ndash;19</td><td><code>Greeting implements Runnable</code>: a <strong>job</strong>, not a thread. On its own it can't run in parallel.</td></tr>
+      <tr><td>22</td><td><code>new Thread(job, name)</code> puts the job into a worker called "worker-1".</td></tr>
+      <tr><td>23&ndash;24</td><td>Start it, then wait for it, so our output stays in a predictable order.</td></tr>
+      <tr><td>26</td><td><strong>Way 3</strong>: the job as a lambda. <code>() -&gt; &hellip;</code> means "a method with no parameters that does this".</td></tr>
+      <tr><td>32&ndash;38</td><td>The <em>same</em> job object given to two different workers. Separating job from worker makes this possible.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s04-threading" main="com.aptech.s04.E03_ImplementRunnable"-->
+<div class="terminal-output">worker-1: Good morning!
+worker-2: Hello from a lambda!
+worker-3: same job, different worker
+worker-4: same job, different worker
+main: all done</div>
+<!--@end-->
+  <div class="tablewrap"><table>
+    <thead><tr><th></th><th>extends Thread</th><th>implements Runnable / lambda</th></tr></thead>
+    <tbody>
+      <tr><td>Code</td><td><code>class Job extends Thread { run() }</code></td><td><code>new Thread(() -&gt; &hellip;)</code></td></tr>
+      <tr><td>Can your class extend something else?</td><td class="no">No (Java allows only one parent class)</td><td class="yes">Yes</td></tr>
+      <tr><td>Can one job run on several threads?</td><td class="no">No</td><td class="yes">Yes</td></tr>
+      <tr><td>Works with thread pools and virtual threads (Part 7)?</td><td class="meh">Awkward</td><td class="yes">Directly</td></tr>
+      <tr><td><strong>Use it</strong></td><td>rarely, in simple demos</td><td><strong>almost always</strong></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>&#128187; Try it: Who Prints First?</h3>
+  <p>This demo imitates the scheduler: two threads each print 3 lines. Press <strong>Run again</strong> a few times and count how many different orders you see. Then tick <code>join()</code>.</p>
+  <div data-playground="interleave"></div>
+
+  <div class="quiz mini-check">
+    <div class="mini-check__label">&#9889; Quick check</div>
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__stem"><code>Thread t = new Thread(() -&gt; System.out.println("hi"));</code> What must you call so that "hi" is printed by a <strong>new</strong> thread?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>t.run();</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>t.start();</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>t.join();</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> Nothing; creating the Thread starts it.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> <code>run()</code> would print "hi" in the <em>current</em> thread. <code>join()</code> on a thread that was never started returns at once and prints nothing. A new Thread is in state NEW until <code>start()</code>.</div>
+    </div>
+  </div>
+
+  <!-- ===== PART 3 ========================================================== -->
+  <span class="eyebrow">Part 3 of 7</span>
+  <h2 id="part-3-thread-states">Part 3 &mdash; Thread States: The Life of a Thread</h2>
+  <p>
+    A thread goes through a life cycle, from being created to being finished. At any moment it is in exactly one of <strong>six states</strong>, and you can ask
+    which with <code>t.getState()</code>. The states are the values of the enum <code>Thread.State</code>.
+  </p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>State</th><th>Meaning</th><th>Kitchen analogy</th></tr></thead>
+    <tbody>
+      <tr><td><code>NEW</code></td><td>Created with <code>new</code>, but <code>start()</code> not called yet</td><td>The chef is hired but hasn't come to work</td></tr>
+      <tr><td><code>RUNNABLE</code></td><td>Running, or ready to run as soon as the scheduler gives it a CPU core</td><td>Cooking, or waiting for a free stove</td></tr>
+      <tr><td><code>BLOCKED</code></td><td>Waiting to enter a <code>synchronized</code> block that another thread holds (Session 5)</td><td>Waiting outside the one-person pantry</td></tr>
+      <tr><td><code>WAITING</code></td><td>Waiting with <strong>no time limit</strong>, e.g. <code>join()</code></td><td>Waiting for another chef to finish the sauce</td></tr>
+      <tr><td><code>TIMED_WAITING</code></td><td>Waiting <strong>for a set time</strong>, e.g. <code>sleep(1000)</code>, <code>join(500)</code></td><td>"Let the dough rest for 10 minutes"</td></tr>
+      <tr><td><code>TERMINATED</code></td><td><code>run()</code> has finished; it can never run again</td><td>The chef has gone home</td></tr>
+    </tbody>
+  </table></div>
+  <figure class="figure" aria-label="Thread state diagram">
+    <svg class="dg" viewBox="0 0 760 270" width="760" height="270" role="img" aria-labelledby="k3t">
+      <title id="k3t">Thread states: NEW goes to RUNNABLE on start; RUNNABLE goes to TIMED_WAITING, WAITING or BLOCKED and back; RUNNABLE goes to TERMINATED when run ends</title>
+      <defs><marker id="k3a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker></defs>
+      <rect class="muted" x="20" y="110" width="120" height="40" rx="20"/><text x="80" y="135" text-anchor="middle" class="t-mono t-b">NEW</text>
+      <rect class="impl" x="260" y="110" width="140" height="40" rx="20"/><text x="330" y="135" text-anchor="middle" class="t-mono t-b">RUNNABLE</text>
+      <rect class="warm" x="560" y="20" width="180" height="40" rx="20"/><text x="650" y="45" text-anchor="middle" class="t-mono t-b">TIMED_WAITING</text>
+      <rect class="warm" x="560" y="110" width="180" height="40" rx="20"/><text x="650" y="135" text-anchor="middle" class="t-mono t-b">WAITING</text>
+      <rect class="bad" x="560" y="200" width="180" height="40" rx="20"/><text x="650" y="225" text-anchor="middle" class="t-mono t-b">BLOCKED</text>
+      <rect class="muted" x="260" y="215" width="140" height="40" rx="20"/><text x="330" y="240" text-anchor="middle" class="t-mono t-b">TERMINATED</text>
+      <line class="ln" x1="142" y1="130" x2="256" y2="130" marker-end="url(#k3a)"/><text x="199" y="122" text-anchor="middle" class="t-xs">start()</text>
+      <path class="ln" d="M400 118 Q480 40 556 40" marker-end="url(#k3a)"/><text x="455" y="58" text-anchor="middle" class="t-xs">sleep(ms), join(ms)</text>
+      <path class="ln" d="M560 50 Q470 80 404 124" marker-end="url(#k3a)"/><text x="650" y="84" text-anchor="middle" class="t-xs"><text x="505" y="96" text-anchor="middle" class="t-xs">time up / interrupt</text>#8593; back: time up / interrupt</text>
+      <line class="ln" x1="402" y1="126" x2="556" y2="126" marker-end="url(#k3a)"/><text x="480" y="120" text-anchor="middle" class="t-xs">join()</text>
+      <line class="ln" x1="556" y1="138" x2="402" y2="138" marker-end="url(#k3a)"/><text x="480" y="152" text-anchor="middle" class="t-xs">other thread ends</text>
+      <path class="ln" d="M400 142 Q480 215 556 218" marker-end="url(#k3a)"/><text x="650" y="182" text-anchor="middle" class="t-xs"><text x="455" y="200" text-anchor="middle" class="t-xs">synchronized (lock taken)</text>#8595; synchronized (lock taken)</text>
+      <path class="ln" d="M560 230 Q470 260 404 150" marker-end="url(#k3a)"/><text x="520" y="262" text-anchor="middle" class="t-xs">lock released</text>
+      <line class="ln" x1="330" y1="152" x2="330" y2="211" marker-end="url(#k3a)"/><text x="336" y="186" class="t-xs">run() ends</text>
+    </svg>
+    <figcaption class="figure__cap"><b>Figure 3.</b> The six states of <code>Thread.State</code> and the events that move a thread between them.</figcaption>
+  </figure>
+
+  <h3>Example 4 &mdash; catching each state in the act</h3>
+  <p>This example creates situations that put threads into each state, then asks <code>getState()</code>. The short <code>sleep(100)</code>s give each thread time to get into position before we look.</p>
+  <!--@code src="code/s04-threading/src/main/java/com/aptech/s04/E04_ThreadStates.java" hl="17,22,32,46,56,61"-->
+<pre class="numbered" data-file="E04_ThreadStates.java" data-hl="17,22,32,46,56,61"><code class="lang-java">package com.aptech.s04;
+
+/**
+ * Example 4 — The six thread states, observed one by one with getState().
+ * (Generous pauses make each state easy to catch.)
+ */
+public class E04_ThreadStates {
+
+    private static final Object LOCK = new Object();
+    private static volatile boolean keepSpinning = true;
+
+    public static void main(String[] args) throws InterruptedException {
+        // 1) NEW: created, but start() not called yet
+        Thread spinner = new Thread(() -&gt; {
+            while (keepSpinning) { /* busy working */ }
+        });
+        System.out.println("After new Thread():      " + spinner.getState());
+
+        // 2) RUNNABLE: started and working (or ready to work)
+        spinner.start();
+        Thread.sleep(100);
+        System.out.println("While working:           " + spinner.getState());
+        keepSpinning = false;
+        spinner.join();
+
+        // 3) TIMED_WAITING: sleeping for a fixed time
+        Thread sleeper = new Thread(() -&gt; {
+            try { Thread.sleep(1000); } catch (InterruptedException e) { /* woken early */ }
+        });
+        sleeper.start();
+        Thread.sleep(100);
+        System.out.println("During sleep(1000):      " + sleeper.getState());
+        sleeper.interrupt();                           // wake it up early
+        sleeper.join();
+
+        // 4) WAITING: waiting with NO time limit (here: join on a thread that sleeps)
+        Thread slow = new Thread(() -&gt; {
+            try { Thread.sleep(500); } catch (InterruptedException e) { /* ignore */ }
+        });
+        Thread waiter = new Thread(() -&gt; {
+            try { slow.join(); } catch (InterruptedException e) { /* ignore */ }
+        });
+        slow.start();
+        waiter.start();
+        Thread.sleep(100);
+        System.out.println("During join() (no limit): " + waiter.getState());
+        waiter.join();
+
+        // 5) BLOCKED: waiting to enter a synchronized block that another thread holds
+        Thread blocked = new Thread(() -&gt; {
+            synchronized (LOCK) { /* can only get in when main lets go */ }
+        });
+        synchronized (LOCK) {                          // main holds the lock...
+            blocked.start();
+            Thread.sleep(100);
+            System.out.println("Waiting for a lock:      " + blocked.getState());
+        }                                              // ...and lets go here
+        blocked.join();
+
+        // 6) TERMINATED: run() has finished
+        System.out.println("After run() ends:        " + blocked.getState());
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>9&ndash;10</td><td>A lock object for part 5, and a flag the spinner checks. <code>volatile</code> makes sure the spinner sees when main changes it (more on this in Session 5).</td></tr>
+      <tr><td>14&ndash;17</td><td>Created, not started: <strong>NEW</strong>.</td></tr>
+      <tr><td>20&ndash;22</td><td>Started and busy looping: <strong>RUNNABLE</strong>. Then we stop the loop and <code>join</code>.</td></tr>
+      <tr><td>27&ndash;32</td><td>A thread inside <code>sleep(1000)</code>: <strong>TIMED_WAITING</strong>. We wake it early with <code>interrupt()</code>.</td></tr>
+      <tr><td>37&ndash;46</td><td><code>waiter</code> calls <code>slow.join()</code>, waiting with no time limit: <strong>WAITING</strong>.</td></tr>
+      <tr><td>50&ndash;57</td><td>main enters <code>synchronized (LOCK)</code> first, so <code>blocked</code> can't get in and waits at the door: <strong>BLOCKED</strong>. When main leaves the block, the other thread gets in.</td></tr>
+      <tr><td>61</td><td>After its job ends: <strong>TERMINATED</strong>.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s04-threading" main="com.aptech.s04.E04_ThreadStates"-->
+<div class="terminal-output">After new Thread():      NEW
+While working:           RUNNABLE
+During sleep(1000):      TIMED_WAITING
+During join() (no limit): WAITING
+Waiting for a lock:      BLOCKED
+After run() ends:        TERMINATED</div>
+<!--@end-->
+  <div class="callout callout--note"><span class="callout__i">&#8505;&#65039;</span>
+    <div class="callout__b"><b>"Running" is not a Java state</b>
+      Many books draw separate "Ready" and "Running" states. Java combines them into one: <code>RUNNABLE</code> means "running <em>or</em> ready to run".
+      Whether it's on a CPU core at this exact microsecond is up to the operating system.
+    </div>
+  </div>
+
+  <h3>&#128187; Try it: the State Machine</h3>
+  <p>Start from <code>NEW</code> and click the events. Before each click, <strong>predict</strong> the next state. Try the trap: when the thread is TERMINATED, press <code>start()</code> again.</p>
+  <div data-playground="threadstates"></div>
+
+  <div class="quiz mini-check">
+    <div class="mini-check__label">&#9889; Quick check</div>
+    <div class="quiz__q">
+      <div class="quiz__stem">Match each situation to the state <code>getState()</code> reports.</div>
+      <div class="quiz__matchrow"><span>Inside <code>Thread.sleep(2000)</code></span>
+        <select class="quiz__match" data-correct="TIMED_WAITING" aria-label="sleep"><option value="">choose&hellip;</option><option>NEW</option><option>RUNNABLE</option><option>WAITING</option><option>TIMED_WAITING</option><option>BLOCKED</option><option>TERMINATED</option></select></div>
+      <div class="quiz__matchrow"><span>Inside <code>other.join()</code> with no time limit</span>
+        <select class="quiz__match" data-correct="WAITING" aria-label="join"><option value="">choose&hellip;</option><option>NEW</option><option>RUNNABLE</option><option>WAITING</option><option>TIMED_WAITING</option><option>BLOCKED</option><option>TERMINATED</option></select></div>
+      <div class="quiz__matchrow"><span>Created with <code>new Thread(job)</code>, not started</span>
+        <select class="quiz__match" data-correct="NEW" aria-label="new"><option value="">choose&hellip;</option><option>NEW</option><option>RUNNABLE</option><option>WAITING</option><option>TIMED_WAITING</option><option>BLOCKED</option><option>TERMINATED</option></select></div>
+      <div class="quiz__matchrow"><span>Waiting to enter a <code>synchronized</code> block another thread holds</span>
+        <select class="quiz__match" data-correct="BLOCKED" aria-label="blocked"><option value="">choose&hellip;</option><option>NEW</option><option>RUNNABLE</option><option>WAITING</option><option>TIMED_WAITING</option><option>BLOCKED</option><option>TERMINATED</option></select></div>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">Exactly what Example 4 printed: sleep &rarr; TIMED_WAITING, join() &rarr; WAITING, not started &rarr; NEW, lock taken &rarr; BLOCKED.</div>
+    </div>
+  </div>
+
+  <!-- ===== PART 4 ========================================================== -->
+  <span class="eyebrow">Part 4 of 7</span>
+  <h2 id="part-4-methods-of-the-thread-class">Part 4 &mdash; Methods of the <code>Thread</code> Class</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Method</th><th>What it does</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>start()</code></td><td>Starts the new thread, which then calls <code>run()</code></td><td>Only once per thread</td></tr>
+      <tr><td><code>run()</code></td><td>The job itself</td><td>Don't call it directly</td></tr>
+      <tr><td><code>Thread.sleep(ms)</code></td><td><strong>Static</strong>: pauses the <em>current</em> thread</td><td>Throws <code>InterruptedException</code></td></tr>
+      <tr><td><code>join()</code> / <code>join(ms)</code></td><td>Current thread waits until <em>that</em> thread ends (or at most ms)</td><td>Throws <code>InterruptedException</code></td></tr>
+      <tr><td><code>isAlive()</code></td><td>Started and not yet finished?</td><td><code>boolean</code></td></tr>
+      <tr><td><code>getName()</code> / <code>setName(s)</code></td><td>The thread's name</td><td>Or pass it to the constructor</td></tr>
+      <tr><td><code>getPriority()</code> / <code>setPriority(n)</code></td><td>1 (<code>MIN_PRIORITY</code>) &hellip; 5 (<code>NORM_PRIORITY</code>) &hellip; 10 (<code>MAX_PRIORITY</code>)</td><td>Only a hint to the scheduler</td></tr>
+      <tr><td><code>getState()</code></td><td>One of the six states</td><td><code>Thread.State</code></td></tr>
+      <tr><td><code>interrupt()</code> / <code>isInterrupted()</code></td><td>Politely ask a thread to stop / check whether it was asked</td><td>Part 5</td></tr>
+      <tr><td><code>setDaemon(true)</code> / <code>isDaemon()</code></td><td>Make it a background thread</td><td>Before <code>start()</code>; Part 6</td></tr>
+      <tr><td><code>Thread.currentThread()</code></td><td><strong>Static</strong>: the thread running this line</td><td></td></tr>
+      <tr><td><code>threadId()</code></td><td>A unique number for the thread</td><td>(The old <code>getId()</code> is deprecated)</td></tr>
+    </tbody>
+  </table></div>
+  <!--@code src="code/s04-threading/src/main/java/com/aptech/s04/E05_ThreadMethods.java" hl="19,20,24,27,35"-->
+<pre class="numbered" data-file="E05_ThreadMethods.java" data-hl="19,20,24,27,35"><code class="lang-java">package com.aptech.s04;
+
+/**
+ * Example 5 — The most-used Thread methods: start, sleep, join, isAlive, getName/setName, priority.
+ */
+public class E05_ThreadMethods {
+    public static void main(String[] args) throws InterruptedException {
+        Thread download = new Thread(() -&gt; {
+            for (int percent = 25; percent &lt;= 100; percent += 25) {
+                try {
+                    Thread.sleep(150);                  // pretend to download a piece
+                } catch (InterruptedException e) {
+                    return;
+                }
+                System.out.println("  " + Thread.currentThread().getName() + " " + percent + "%");
+            }
+        });
+
+        download.setName("downloader");
+        download.setPriority(Thread.MAX_PRIORITY);      // a HINT to the scheduler (10), not a guarantee
+        System.out.println("Name: " + download.getName() + ", priority: " + download.getPriority());
+        System.out.println("Alive before start()? " + download.isAlive());
+
+        download.start();
+        System.out.println("Alive after start()?  " + download.isAlive());
+
+        download.join();                                // main waits here until the download is done
+        System.out.println("Alive after join()?   " + download.isAlive());
+
+        // join(ms) waits at most that long
+        Thread slow = new Thread(() -&gt; {
+            try { Thread.sleep(2000); } catch (InterruptedException e) { /* stopped */ }
+        });
+        slow.start();
+        slow.join(300);                                 // give up waiting after 300 ms
+        System.out.println("Still running after join(300)? " + slow.isAlive());
+        slow.interrupt();                               // tidy up: ask it to stop
+        slow.join();
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>8&ndash;17</td><td>A "download" job that reports 25%, 50%, 75%, 100%, pausing 150 ms before each.</td></tr>
+      <tr><td>19&ndash;20</td><td>Name it, and give it the highest priority, which is a <strong>hint</strong> that the scheduler may ignore. Never rely on priorities for correctness.</td></tr>
+      <tr><td>22</td><td>Before <code>start()</code>, the thread isn't alive.</td></tr>
+      <tr><td>24&ndash;25</td><td>After <code>start()</code>, it is.</td></tr>
+      <tr><td>27</td><td><code>join()</code>: main stops here until the download thread finishes. That's why the percentages appear <em>before</em> "Alive after join()".</td></tr>
+      <tr><td>31&ndash;35</td><td><code>join(300)</code> waits <strong>at most</strong> 300 ms. The slow thread (2 s) is still running afterwards, so <code>isAlive()</code> is true.</td></tr>
+      <tr><td>37&ndash;38</td><td>Tidy up: ask it to stop, and wait until it has.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s04-threading" main="com.aptech.s04.E05_ThreadMethods"-->
+<div class="terminal-output">Name: downloader, priority: 10
+Alive before start()? false
+Alive after start()?  true
+  downloader 25%
+  downloader 50%
+  downloader 75%
+  downloader 100%
+Alive after join()?   false
+Still running after join(300)? true</div>
+<!--@end-->
+
+  <!-- ===== PART 5 ========================================================== -->
+  <span class="eyebrow">Part 5 of 7</span>
+  <h2 id="part-5-managing-threads">Part 5 &mdash; Managing Threads: Waiting and Stopping</h2>
+  <p>
+    Managing threads mostly means two things: <strong>waiting</strong> for them to finish (<code>join()</code>, which you've seen), and <strong>stopping</strong> them when
+    their work is no longer needed, for example when the user presses "Cancel". Java has <strong>no safe way to force a thread to stop</strong>. The old
+    <code>Thread.stop()</code> could leave data half-changed, so it was deprecated for decades and in modern Java it simply throws
+    <code>UnsupportedOperationException</code>. Instead, you <strong>ask</strong> politely with <code>interrupt()</code>, and the thread cooperates.
+  </p>
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; tapping a chef on the shoulder</b>
+      You can't yank a chef out of the kitchen mid-recipe, because the pot might boil over. You tap them on the shoulder ("please stop") and they turn off the stove, clean up, and leave.
+      <code>interrupt()</code> is the tap. The thread notices it in two ways: <code>sleep()</code>/<code>join()</code> throw <code>InterruptedException</code>, or the loop checks <code>isInterrupted()</code>.
+    </div>
+  </div>
+  <!--@code src="code/s04-threading/src/main/java/com/aptech/s04/E06_StoppingThreads.java" hl="11,16,18,26"-->
+<pre class="numbered" data-file="E06_StoppingThreads.java" data-hl="11,16,18,26"><code class="lang-java">package com.aptech.s04;
+
+/**
+ * Example 6 — Managing threads: how to STOP a thread politely with interrupt().
+ * (Java has no safe "kill" button — the thread must agree to stop.)
+ */
+public class E06_StoppingThreads {
+    public static void main(String[] args) throws InterruptedException {
+        Thread clock = new Thread(() -&gt; {
+            int tick = 0;
+            while (!Thread.currentThread().isInterrupted()) {   // keep going until asked to stop
+                tick++;
+                System.out.println("tick " + tick);
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    System.out.println("interrupted while sleeping - cleaning up");
+                    return;                                      // leave run(), so the thread ends
+                }
+            }
+        }, "clock");
+
+        clock.start();
+        Thread.sleep(500);                  // let it tick for about half a second
+        System.out.println("main: please stop, clock");
+        clock.interrupt();                  // politely ask the thread to stop
+        clock.join();
+        System.out.println("clock state: " + clock.getState());
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>11</td><td>The loop keeps going <strong>only while nobody has asked it to stop</strong>. This is the check for threads that are busy (not sleeping) when the tap comes.</td></tr>
+      <tr><td>15</td><td>Most of its time is spent sleeping&hellip;</td></tr>
+      <tr><td>16&ndash;18</td><td>&hellip;so the tap usually arrives during <code>sleep</code>, which throws <code>InterruptedException</code>. We clean up and <code>return</code>, which ends <code>run()</code> and so the thread.</td></tr>
+      <tr><td>24</td><td>main lets the clock tick for about half a second (ticks at 0, 200 and 400 ms).</td></tr>
+      <tr><td>26&ndash;27</td><td>Ask it to stop, then wait until it really has.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s04-threading" main="com.aptech.s04.E06_StoppingThreads"-->
+<div class="terminal-output">tick 1
+tick 2
+main: please stop, clock
+interrupted while sleeping - cleaning up
+clock state: TERMINATED</div>
+<!--@end-->
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>Never swallow an interrupt</b>
+      <pre><code class="lang-java">try { Thread.sleep(200); } catch (InterruptedException e) { }   // BAD: the "please stop" is lost</code></pre>
+      An empty <code>catch</code> throws the request away, and your thread may never stop. Either leave <code>run()</code> (as above), or restore the flag with
+      <code>Thread.currentThread().interrupt();</code> so code further up can see it (Example 8 does this).
+    </div>
+  </div>
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      Wait with <code>join()</code>. Stop with <code>interrupt()</code>, and write your <code>run()</code> so it reacts: return from <code>catch (InterruptedException e)</code> and check <code>isInterrupted()</code> in loops.
+      Never use <code>stop()</code>.
+    </div>
+  </div>
+
+  <!-- ===== PART 6 ========================================================== -->
+  <span class="eyebrow">Part 6 of 7</span>
+  <h2 id="part-6-daemon-threads">Part 6 &mdash; Daemon Threads</h2>
+  <p>
+    Java keeps your program running as long as <strong>at least one normal ("user") thread</strong> is alive. A <strong>daemon thread</strong> is a background helper
+    that does <em>not</em> count: when the last user thread finishes, the JVM exits and switches all daemon threads off, even in the middle of their work.
+    Use daemons for background chores that should never keep the program open: autosave, a clock, a status reporter. Java's own garbage collector runs on daemon threads.
+  </p>
+  <!--@code src="code/s04-threading/src/main/java/com/aptech/s04/E07_DaemonThreads.java" hl="10,21,27"-->
+<pre class="numbered" data-file="E07_DaemonThreads.java" data-hl="10,21,27"><code class="lang-java">package com.aptech.s04;
+
+/**
+ * Example 7 — Daemon threads: background helpers that do NOT keep the program alive.
+ */
+public class E07_DaemonThreads {
+    public static void main(String[] args) throws InterruptedException {
+        Thread autosave = new Thread(() -&gt; {
+            int n = 0;
+            while (true) {                              // runs "forever"...
+                n++;
+                System.out.println("  [autosave #" + n + "]");
+                try {
+                    Thread.sleep(300);
+                } catch (InterruptedException e) {
+                    return;
+                }
+            }
+        }, "autosave");
+
+        autosave.setDaemon(true);                       // MUST be called before start()
+        autosave.start();
+        System.out.println("autosave is a daemon? " + autosave.isDaemon());
+
+        System.out.println("main: typing a document...");
+        Thread.sleep(1000);
+        System.out.println("main: finished - the program ends now.");
+        // No join and no interrupt: when the last NON-daemon thread (main) ends,
+        // the JVM stops and daemon threads are simply switched off.
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>10</td><td><code>while (true)</code>: this job never ends by itself.</td></tr>
+      <tr><td>21</td><td><code>setDaemon(true)</code> makes it a background thread. It <strong>must</strong> be called <em>before</em> <code>start()</code>, or you get <code>IllegalThreadStateException</code>.</td></tr>
+      <tr><td>25&ndash;27</td><td>main works for 1 second (the autosave ticks about 4 times: at 0, 300, 600 and 900 ms), then main ends&hellip;</td></tr>
+      <tr><td>28&ndash;29</td><td>&hellip;and because the only thread left is a daemon, the program ends too. Remove line 21 and the program would run <strong>forever</strong>.</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Real output of one run</strong> (the first autosave line may come before or after "main: typing"):</p>
+  <!--@output project="code/s04-threading" main="com.aptech.s04.E07_DaemonThreads"-->
+<div class="terminal-output">autosave is a daemon? true
+main: typing a document...
+  [autosave #1]
+  [autosave #2]
+  [autosave #3]
+  [autosave #4]
+main: finished - the program ends now.</div>
+<!--@end-->
+  <h3>&#128187; Try it: Daemon or Not?</h3>
+  <div data-playground="daemon"></div>
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      User threads keep the program alive; daemon threads don't. <code>setDaemon(true)</code> goes before <code>start()</code>. Never give a daemon important unfinished work
+      (like writing a file), because it can be stopped mid-write when the program ends.
+    </div>
+  </div>
+
+  <!-- ===== PART 7 ========================================================== -->
+  <span class="eyebrow">Part 7 of 7</span>
+  <h2 id="part-7-virtual-threads-with-ai-help">Part 7 &mdash; Virtual Threads, and Converting to Them with AI Help</h2>
+  <h3>Platform threads vs virtual threads</h3>
+  <p>
+    Every thread you've made so far is a <strong>platform thread</strong>: a thin wrapper around a real operating-system thread. OS threads are expensive: each reserves
+    memory for its stack, and a computer can only handle a few thousand at once. That's a problem for programs that do thousands of things that mostly
+    <strong>wait</strong> (for a website, a database, a file).
+  </p>
+  <p>
+    <strong>Virtual threads</strong> (standard since Java 21) are threads managed by Java itself. They're so cheap you can create <strong>millions</strong>.
+    Behind the scenes, Java runs them on a small number of platform "carrier" threads, and whenever a virtual thread starts waiting, Java parks it and uses
+    the carrier for another virtual thread.
+  </p>
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; waiters and orders</b>
+      With platform threads, every <strong>customer order</strong> gets its own <strong>waiter</strong>, who stands at the kitchen door doing nothing while the food cooks. 100 waiters = at most 100 orders.
+      With virtual threads, orders are slips of paper (cheap!). A handful of waiters carry whichever slip is ready and never stand around waiting. Thousands of orders, the same few waiters.
+    </div>
+  </div>
+  <figure class="figure" aria-label="Virtual threads mounted on carrier threads">
+    <svg class="dg" viewBox="0 0 720 210" width="720" height="210" role="img" aria-labelledby="k4t">
+      <title id="k4t">Many virtual threads share a few platform carrier threads; a virtual thread that waits is parked and its carrier runs another</title>
+      <text x="20" y="22" class="t-b">Thousands of virtual threads (cheap, managed by Java)</text>
+      <g>
+        <rect class="map" x="20" y="36" width="70" height="26" rx="5"/><text x="55" y="54" text-anchor="middle" class="t-xs">task 1</text>
+        <rect class="map" x="96" y="36" width="70" height="26" rx="5"/><text x="131" y="54" text-anchor="middle" class="t-xs">task 2</text>
+        <rect class="muted" x="172" y="36" width="70" height="26" rx="5"/><text x="207" y="54" text-anchor="middle" class="t-xs">waiting&#8230;</text>
+        <rect class="muted" x="248" y="36" width="70" height="26" rx="5"/><text x="283" y="54" text-anchor="middle" class="t-xs">waiting&#8230;</text>
+        <rect class="map" x="324" y="36" width="70" height="26" rx="5"/><text x="359" y="54" text-anchor="middle" class="t-xs">task 5</text>
+        <rect class="muted" x="400" y="36" width="70" height="26" rx="5"/><text x="435" y="54" text-anchor="middle" class="t-xs">waiting&#8230;</text>
+        <text x="500" y="54" class="t-sm">&#8230; 10,000 more</text>
+      </g>
+      <line class="ln" x1="55" y1="64" x2="120" y2="120"/><line class="ln" x1="131" y1="64" x2="300" y2="120"/><line class="ln" x1="359" y1="64" x2="480" y2="120"/>
+      <text x="20" y="112" class="t-b">A few carrier threads (platform)</text>
+      <rect class="impl" x="70" y="122" width="110" height="34" rx="6"/><text x="125" y="144" text-anchor="middle" class="t-sm">carrier 1</text>
+      <rect class="impl" x="250" y="122" width="110" height="34" rx="6"/><text x="305" y="144" text-anchor="middle" class="t-sm">carrier 2</text>
+      <rect class="impl" x="430" y="122" width="110" height="34" rx="6"/><text x="485" y="144" text-anchor="middle" class="t-sm">carrier 3</text>
+      <rect class="box" x="70" y="170" width="470" height="30" rx="6"/><text x="305" y="190" text-anchor="middle" class="t-sm">CPU cores (operating system)</text>
+      <text x="560" y="130" class="t-xs">A waiting virtual</text><text x="560" y="146" class="t-xs">thread is "parked":</text><text x="560" y="162" class="t-xs">its carrier runs</text><text x="560" y="178" class="t-xs">another one.</text>
+    </svg>
+    <figcaption class="figure__cap"><b>Figure 4.</b> Virtual threads are cheap tasks; only the ones actually running use a real (carrier) thread.</figcaption>
+  </figure>
+
+  <h3>Example 8 &mdash; 10,000 waiting tasks</h3>
+  <!--@code src="code/s04-threading/src/main/java/com/aptech/s04/E08_VirtualThreads.java" hl="18,24,33,43,53"-->
+<pre class="numbered" data-file="E08_VirtualThreads.java" data-hl="18,24,33,43,53"><code class="lang-java">package com.aptech.s04;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+/**
+ * Example 8 — Virtual threads (Java 21+): cheap, lightweight threads for work that WAITS a lot.
+ */
+public class E08_VirtualThreads {
+
+    /** A task that mostly waits, like calling a web service or a database. */
+    static void callSlowService() {
+        try {
+            Thread.sleep(1000);                         // 1 second of waiting
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        // 1) Creating ONE virtual thread
+        Thread v = Thread.ofVirtual().name("virtual-1").start(
+                () -&gt; System.out.println("Hello from " + Thread.currentThread().getName()
+                        + " (virtual? " + Thread.currentThread().isVirtual() + ")"));
+        v.join();
+
+        // 2) 10,000 tasks, each waiting 1 second, all at the same time
+        long start = System.currentTimeMillis();
+        List&lt;Thread&gt; threads = new ArrayList&lt;&gt;();
+        for (int i = 0; i &lt; 10_000; i++) {
+            threads.add(Thread.ofVirtual().start(E08_VirtualThreads::callSlowService));
+        }
+        for (Thread t : threads) {
+            t.join();
+        }
+        System.out.println("10,000 virtual threads finished in about "
+                + Math.round((System.currentTimeMillis() - start) / 1000.0) + " second(s)");
+
+        // 3) The same with an ExecutorService (the style you will use most often)
+        start = System.currentTimeMillis();
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            for (int i = 0; i &lt; 10_000; i++) {
+                executor.submit(E08_VirtualThreads::callSlowService);
+            }
+        }                                               // close() waits for every task to finish
+        System.out.println("Executor with virtual threads: about "
+                + Math.round((System.currentTimeMillis() - start) / 1000.0) + " second(s)");
+
+        // 4) For comparison: a pool of 100 ordinary (platform) threads needs 100 rounds
+        start = System.currentTimeMillis();
+        try (ExecutorService pool = Executors.newFixedThreadPool(100)) {
+            for (int i = 0; i &lt; 1_000; i++) {           // only 1,000 tasks, otherwise we'd wait 100 s!
+                pool.submit(E08_VirtualThreads::callSlowService);
+            }
+        }
+        System.out.println("1,000 tasks on 100 platform threads: about "
+                + Math.round((System.currentTimeMillis() - start) / 1000.0) + " second(s)");
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>14&ndash;20</td><td>A task that just <strong>waits</strong> 1 second, like a slow network call. Line 18 restores the interrupt flag instead of swallowing it (Part 5).</td></tr>
+      <tr><td>24&ndash;27</td><td><code>Thread.ofVirtual().name(&hellip;).start(job)</code> creates and starts one virtual thread. <code>isVirtual()</code> confirms it.</td></tr>
+      <tr><td>31&ndash;37</td><td>10,000 virtual threads, each waiting 1 second, all at once. Try that with platform threads and many computers would run out of memory.</td></tr>
+      <tr><td>43&ndash;47</td><td>The everyday style: an <code>ExecutorService</code> that gives <strong>each task its own virtual thread</strong>. In try-with-resources, <code>close()</code> waits for all tasks.</td></tr>
+      <tr><td>53&ndash;57</td><td>For comparison, a pool of 100 platform threads can only wait for 100 tasks at a time: 1,000 tasks need 10 rounds of 1 second.</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Real output of one run</strong> (timings depend on your computer):</p>
+  <!--@output project="code/s04-threading" main="com.aptech.s04.E08_VirtualThreads"-->
+<div class="terminal-output">Hello from virtual-1 (virtual? true)
+10,000 virtual threads finished in about 1 second(s)
+Executor with virtual threads: about 1 second(s)
+1,000 tasks on 100 platform threads: about 10 second(s)</div>
+<!--@end-->
+  <h3>&#128187; Try it: platform vs virtual</h3>
+  <div data-playground="virtual"></div>
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>Virtual threads are not magic speed</b>
+      They help when tasks <strong>wait</strong>. A task that <em>calculates</em> non-stop (like Practice 3's sum) keeps a CPU core busy either way; for that, the number of cores is the limit.
+    </div>
+  </div>
+
+  <h3>Converting old code with an AI assistant</h3>
+  <p>
+    Lots of existing Java code uses pools of platform threads. Converting it to virtual threads is a job AI coding assistants (Windsurf, which you'll install in Session 10,
+    GitHub Copilot, ChatGPT, Claude&hellip;) are good at, <strong>as long as you give a clear request and check the answer</strong>. Here's the process, step by step.
+  </p>
+  <div class="steps">
+    <div class="steps__title">&#129302; The 4-step AI conversion routine</div>
+    <div class="step"><div class="step__check"></div><span class="step__num">1</span>
+      <div class="step__text"><strong>Pick code that waits.</strong> Example 9a checks 200 web addresses (each call waits 200 ms) with a fixed pool of 20 platform threads. That's a perfect candidate.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">2</span>
+      <div class="step__text"><strong>Write a precise prompt.</strong> Say what you want, what must <em>not</em> change, and ask for explanations. For example:
+        <div class="terminal-output">Convert this Java 25 code from a fixed thread pool of platform threads to virtual threads.
+Keep the behaviour and the output exactly the same.
+Use try-with-resources for the ExecutorService.
+Mark every line you change with a // CHANGED comment and explain each change.
+Tell me if anything in this code could be a problem with virtual threads
+(synchronized blocks, ThreadLocal, CPU-heavy work, native calls).</div></div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">3</span>
+      <div class="step__text"><strong>Review the answer with the checklist below</strong>, never paste it blindly.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">4</span>
+      <div class="step__text"><strong>Run both versions and compare</strong>: same results? faster? Then commit.</div></div>
+  </div>
+  <p><strong>Before</strong> (the legacy code):</p>
+  <!--@code src="code/s04-threading/src/main/java/com/aptech/s04/E09_ConvertWithAI_Before.java" from="27" to="42" hl="28,41"-->
+<pre class="numbered" data-file="E09_ConvertWithAI_Before.java  (lines 27–42)" data-hl="2,15" style="counter-reset:line 26"><code class="lang-java">        long start = System.currentTimeMillis();
+        ExecutorService pool = Executors.newFixedThreadPool(20);     // only 20 workers
+        try {
+            List&lt;Future&lt;String&gt;&gt; results = new ArrayList&lt;&gt;();
+            for (String url : urls) {
+                results.add(pool.submit(() -&gt; check(url)));
+            }
+            int ok = 0;
+            for (Future&lt;String&gt; f : results) {
+                if (f.get().endsWith("OK")) ok++;
+            }
+            System.out.println(ok + " sites checked with 20 platform threads in about "
+                    + (System.currentTimeMillis() - start) / 100 * 100 + " ms");
+        } finally {
+            pool.shutdown();
+        }</code></pre>
+<!--@end-->
+  <p><strong>After</strong> (the AI's suggestion, after our review):</p>
+  <!--@code src="code/s04-threading/src/main/java/com/aptech/s04/E09_ConvertWithAI_After.java" from="26" to="40" hl="27,28,29"-->
+<pre class="numbered" data-file="E09_ConvertWithAI_After.java  (lines 26–40)" data-hl="2,3,4" style="counter-reset:line 25"><code class="lang-java">        long start = System.currentTimeMillis();
+        // CHANGED: one cheap virtual thread per task, instead of a fixed pool of 20 platform threads.
+        // CHANGED: try-with-resources - close() waits for all tasks, so no finally/shutdown is needed.
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            List&lt;Future&lt;String&gt;&gt; results = new ArrayList&lt;&gt;();
+            for (String url : urls) {
+                results.add(executor.submit(() -&gt; check(url)));
+            }
+            int ok = 0;
+            for (Future&lt;String&gt; f : results) {
+                if (f.get().endsWith("OK")) ok++;
+            }
+            System.out.println(ok + " sites checked with virtual threads in about "
+                    + (System.currentTimeMillis() - start) / 100 * 100 + " ms");
+        }</code></pre>
+<!--@end-->
+  <p><strong>Real output of both</strong> (timings vary):</p>
+  <!--@output project="code/s04-threading" main="com.aptech.s04.E09_ConvertWithAI_Before"-->
+<div class="terminal-output">200 sites checked with 20 platform threads in about 2000 ms</div>
+<!--@end-->
+  <!--@output project="code/s04-threading" main="com.aptech.s04.E09_ConvertWithAI_After"-->
+<div class="terminal-output">200 sites checked with virtual threads in about 200 ms</div>
+<!--@end-->
+  <p>Only <strong>one real line changed</strong> (<code>newFixedThreadPool(20)</code> &rarr; <code>newVirtualThreadPerTaskExecutor()</code>, plus try-with-resources instead of <code>finally { shutdown(); }</code>), and 200 waits of 200 ms now overlap completely.</p>
+  <div class="callout callout--tip"><span class="callout__i">&#9989;</span>
+    <div class="callout__b"><b>Checklist: reviewing an AI's virtual-thread conversion</b>
+      <ol>
+        <li><strong>Does the work actually wait?</strong> If it's pure calculation, virtual threads won't help. Reject the change.</li>
+        <li><strong>No pools of virtual threads.</strong> Virtual threads are cheap, so each task should get a new one (<code>newVirtualThreadPerTaskExecutor()</code>). If the AI wraps them in a fixed-size pool, that's wrong.</li>
+        <li><strong>Limits moved?</strong> The old pool of 20 also acted as a <em>limit</em> (at most 20 calls to a server at once). If that limit mattered, you need another way to keep it (a <code>Semaphore</code>, Session 5).</li>
+        <li><strong><code>ThreadLocal</code> used as a cache?</strong> With millions of virtual threads, a per-thread cache can use a lot of memory. Ask the AI to point these out.</li>
+        <li><strong>Pinning.</strong> Before Java 24, a virtual thread waiting inside a <code>synchronized</code> block "pinned" (blocked) its carrier. Since JDK 24 (JEP 491) that's fixed; native code can still pin. On Java 21&ndash;23, prefer <code>ReentrantLock</code> around waits.</li>
+        <li><strong>Behaviour unchanged?</strong> Same output, same exceptions handled, resources still closed. Run it!</li>
+        <li><strong>Understand every line</strong> before you keep it. If you can't explain a line, ask the AI to explain it, or don't use it.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      Virtual threads (<code>Thread.ofVirtual().start(job)</code>, <code>Executors.newVirtualThreadPerTaskExecutor()</code>) make thousands of <em>waiting</em> tasks cheap.
+      An AI assistant can do the conversion quickly, but <strong>you</strong> give it a precise prompt, review its answer with the checklist, and test before you trust it.
+    </div>
+  </div>
+
+  <!-- ===== GUIDED LAB ====================================================== -->
+  <h2>&#128736; Guided Lab: The Busy Kitchen</h2>
+  <p>Three chefs cook three dishes <strong>at the same time</strong>, a waiter waits for all of them, and a background clock announces the time. You'll use Runnable, start, sleep, join and a daemon thread together. Pair up; swap the typist after step 3.</p>
+  <div class="steps">
+    <div class="steps__title">&#128221; Lab checklist (about 30 minutes)</div>
+    <div class="step"><div class="step__check"></div><span class="step__num">1</span>
+      <div class="step__text"><strong>The job.</strong> Inside a class <code>Kitchen</code>, write <code>static class Chef implements Runnable</code> with fields <code>dish</code>, <code>steps</code> and <code>msPerStep</code> and a constructor.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">2</span>
+      <div class="step__text"><strong>run().</strong> Get the thread's name with <code>Thread.currentThread().getName()</code>. Loop <code>steps</code> times: <code>Thread.sleep(msPerStep)</code> (catch <code>InterruptedException</code> and <code>return</code>), then print "<em>name</em>: <em>dish</em> step i/n". After the loop print "<em>dish</em> is READY".</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">3</span>
+      <div class="step__text"><strong>Hire three chefs.</strong> In <code>main</code>, make a <code>List&lt;Thread&gt;</code> with <code>new Thread(new Chef("Jollof rice", 3, 300), "Chef Ada")</code> and two more (see the solution for the numbers). Remember the time with <code>System.currentTimeMillis()</code>, then <code>start()</code> all three in a loop.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">4</span>
+      <div class="step__text"><strong>The waiter.</strong> Loop again and <code>join()</code> each chef. Then print how long it took. It should be close to the <em>slowest</em> chef (about 900 ms), not the <em>sum</em> of all three (2300 ms). That's concurrency!</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">5</span>
+      <div class="step__text"><strong>The daemon clock.</strong> Before starting the chefs, create a thread that loops forever: sleep 250 ms, then print "[clock] <em>n</em> ms". Call <code>setDaemon(true)</code> <em>before</em> <code>start()</code>.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">6</span>
+      <div class="step__text"><strong>Experiment.</strong> (a) Remove <code>setDaemon(true)</code>. Does the program end? (Stop it with the red &#9632;.) (b) Replace the <code>join()</code> loop with nothing. What does the waiter say, and when? (c) Change <code>start()</code> to <code>run()</code>. How long does dinner take now?</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">7</span>
+      <div class="step__text"><strong>Stretch.</strong> Add a fourth chef who <code>join()</code>s Chef Ben before starting (dessert can only start after the soup is done), like Practice 5.</div></div>
+  </div>
+  <details>
+    <summary>&#128064; Show the complete lab solution (try on your own first!)</summary>
+    <div>
+      <!--@code src="code/s04-threading/src/main/java/com/aptech/s04/lab/Kitchen.java"-->
+<pre class="numbered" data-file="Kitchen.java"><code class="lang-java">package com.aptech.s04.lab;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * GUIDED LAB — The Busy Kitchen: several chefs cook at the same time, the waiter waits for all of them,
+ * and a background clock (daemon) announces the time.
+ */
+public class Kitchen {
+
+    /** STEP 1 — the JOB of one chef: prepare a dish in a number of steps. */
+    static class Chef implements Runnable {
+        private final String dish;
+        private final int steps;
+        private final int msPerStep;
+
+        Chef(String dish, int steps, int msPerStep) {
+            this.dish = dish;
+            this.steps = steps;
+            this.msPerStep = msPerStep;
+        }
+
+        @Override
+        public void run() {
+            String me = Thread.currentThread().getName();
+            for (int i = 1; i &lt;= steps; i++) {
+                try {
+                    Thread.sleep(msPerStep);                  // STEP 2 — cooking takes time
+                } catch (InterruptedException e) {
+                    System.out.println(me + " was stopped!");
+                    return;
+                }
+                System.out.println("  " + me + ": " + dish + " step " + i + "/" + steps);
+            }
+            System.out.println("  " + me + ": " + dish + " is READY");
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        // STEP 5 — a daemon clock that announces the time every 250 ms
+        Thread clock = new Thread(() -&gt; {
+            int ms = 0;
+            while (true) {
+                try {
+                    Thread.sleep(250);
+                } catch (InterruptedException e) {
+                    return;
+                }
+                ms += 250;
+                System.out.println("[clock] " + ms + " ms");
+            }
+        }, "clock");
+        clock.setDaemon(true);
+        clock.start();
+
+        // STEP 3 — three chefs, three threads, working at the same time
+        List&lt;Thread&gt; chefs = new ArrayList&lt;&gt;();
+        chefs.add(new Thread(new Chef("Jollof rice", 3, 300), "Chef Ada"));
+        chefs.add(new Thread(new Chef("Pepper soup", 2, 400), "Chef Ben"));
+        chefs.add(new Thread(new Chef("Puff-puff", 4, 150), "Chef Chi"));
+
+        long start = System.currentTimeMillis();
+        for (Thread chef : chefs) {
+            chef.start();
+        }
+
+        // STEP 4 — the waiter waits until EVERY chef has finished
+        for (Thread chef : chefs) {
+            chef.join();
+        }
+        long took = System.currentTimeMillis() - start;
+        System.out.println("Waiter: all dishes ready - dinner is served! (about " + (took / 100 * 100) + " ms)");
+        System.out.println("Cooking one after another would take about " + (3 * 300 + 2 * 400 + 4 * 150) + " ms");
+    }
+}</code></pre>
+<!--@end-->
+      <p><strong>Real output of one run.</strong> The order of the lines will differ on your computer, but "dinner is served" always comes last, and the time is close to 900 ms:</p>
+      <!--@output project="code/s04-threading" main="com.aptech.s04.lab.Kitchen"-->
+<div class="terminal-output">  Chef Chi: Puff-puff step 1/4
+[clock] 250 ms
+  Chef Ada: Jollof rice step 1/3
+  Chef Chi: Puff-puff step 2/4
+  Chef Ben: Pepper soup step 1/2
+[clock] 500 ms
+  Chef Chi: Puff-puff step 3/4
+  Chef Ada: Jollof rice step 2/3
+  Chef Chi: Puff-puff step 4/4
+  Chef Chi: Puff-puff is READY
+[clock] 750 ms
+  Chef Ben: Pepper soup step 2/2
+  Chef Ben: Pepper soup is READY
+  Chef Ada: Jollof rice step 3/3
+  Chef Ada: Jollof rice is READY
+Waiter: all dishes ready - dinner is served! (about 900 ms)
+Cooking one after another would take about 2300 ms</div>
+<!--@end-->
+      <p class="text-sm"><strong>Experiment answers:</strong> (a) without the daemon flag the clock keeps the program running forever. (b) Without <code>join()</code>, the waiter announces dinner immediately, before any dish is ready. (c) With <code>run()</code>, everything happens on main, one chef after another: about 2300 ms.</p>
+    </div>
+  </details>
+
+  <!-- ===== COMMON MISTAKES ================================================= -->
+  <h2>&#9888;&#65039; Common Mistakes (and the Exact Error You'll See)</h2>
+  <p>Every message below was produced on JDK 25.</p>
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 1 &mdash; calling <code>run()</code> instead of <code>start()</code></b>
+      <p>No error, which is what makes it dangerous: the code runs, but on the <em>current</em> thread, one job after another. Example 2 (Chi) and Lab experiment (c) show it. <strong>Fix:</strong> <code>start()</code>.</p>
+    </div>
+  </div>
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 2 &mdash; starting the same thread twice</b>
+      <pre><code class="lang-java">Thread t = new Thread(job);
+t.start();
+t.start();</code></pre>
+      <div class="terminal-output is-error">Exception in thread "main" java.lang.IllegalThreadStateException
+	at java.base/java.lang.Thread.start(Thread.java:1416)</div>
+      <p><strong>Fix:</strong> a Thread object is single-use. To run the job again, create a <code>new Thread(job)</code>.</p>
+    </div>
+  </div>
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 3 &mdash; <code>setDaemon(true)</code> after <code>start()</code></b>
+      <pre><code class="lang-java">t.start();
+t.setDaemon(true);</code></pre>
+      <div class="terminal-output is-error">Exception in thread "main" java.lang.IllegalThreadStateException
+	at java.base/java.lang.Thread.setDaemon(Thread.java:2044)</div>
+      <p><strong>Fix:</strong> swap the two lines. You decide what kind of thread it is <em>before</em> it starts.</p>
+    </div>
+  </div>
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 4 &mdash; not handling <code>InterruptedException</code> (compile error)</b>
+      <pre><code class="lang-java">void m() { Thread.sleep(100); }</code></pre>
+      <div class="terminal-output is-error">error: unreported exception InterruptedException; must be caught or declared to be thrown</div>
+      <p><strong>Fix:</strong> wrap it in <code>try { &hellip; } catch (InterruptedException e) { return; }</code> inside <code>run()</code>, or add <code>throws InterruptedException</code> to methods like <code>main</code>. (Note: <code>run()</code> itself can't declare <code>throws</code>, so you must catch there.)</p>
+    </div>
+  </div>
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 5 &mdash; changing a local variable inside a lambda</b>
+      <pre><code class="lang-java">int count = 0;
+Thread t = new Thread(() -&gt; count++);</code></pre>
+      <div class="terminal-output is-error">error: local variables referenced from a lambda expression must be final or effectively final</div>
+      <p><strong>Why:</strong> the lambda may run later, on another thread, after the method has finished, so Java only lets it <em>read</em> local variables that never change. <strong>Fix:</strong> give each thread its own slot in an array or object (like <code>partial[part]</code> in Practice 3). Safely sharing a counter between threads is Session 5.</p>
+    </div>
+  </div>
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 6 &mdash; reading a thread's result without <code>join()</code></b>
+      <pre><code class="lang-java">t.start();                                   // t computes a big sum into result[0]
+System.out.println(result[0]);               // too early!</code></pre>
+      <div class="terminal-output">Result without join(): 0
+Result after join():   1250000025000000</div>
+      <p><strong>Fix:</strong> <code>t.join()</code> before using anything the thread produced. <code>join()</code> also guarantees you see the thread's latest values.</p>
+    </div>
+  </div>
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 7 &mdash; trying to kill a thread with <code>stop()</code></b>
+      <pre><code class="lang-java">t.stop();</code></pre>
+      <div class="terminal-output is-error">Exception in thread "main" java.lang.UnsupportedOperationException
+	at java.base/java.lang.Thread.stop(Thread.java:1557)</div>
+      <p><strong>Fix:</strong> <code>t.interrupt()</code>, and make the thread react to it (Part 5).</p>
+    </div>
+  </div>
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 8 &mdash; a program that never ends</b>
+      <p>No error; the program just keeps running after <code>main</code> finishes. <strong>Why:</strong> a <em>non-daemon</em> thread is still alive (often a <code>while (true)</code> loop, or an <code>ExecutorService</code> that was never shut down). <strong>Fix:</strong> make background helpers daemons, stop workers with <code>interrupt()</code>, and close executors (try-with-resources).</p>
+    </div>
+  </div>
+
+  <!-- ===== KNOWLEDGE CHECK ================================================= -->
+  <h2>&#128221; Knowledge Check</h2>
+  <p>12 questions on the whole session. Aim for <strong>10/12</strong> before starting Lab Task L4.</p>
+  <div class="quiz" id="s04-final">
+    <div class="quiz__title">&#128161; Session 4 Knowledge Check</div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">1. Which statement about threads and processes is correct?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Each thread has its own separate copy of all the program's objects.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> A process can only contain one thread.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> A process can contain many threads, and they share the same memory.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Threads can only run one after another.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> Threads are chefs in the same kitchen: they share the fridge (the memory). That sharing is powerful, and it's why Session 5 is about doing it safely.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">2. What is the difference between <code>t.start()</code> and <code>t.run()</code>?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> There is none.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>start()</code> creates a new thread that runs <code>run()</code>; calling <code>run()</code> just executes the method in the current thread.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>run()</code> creates a new thread; <code>start()</code> doesn't.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>start()</code> can be called many times; <code>run()</code> only once.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> And <code>start()</code> can be called only <em>once</em> per thread (Mistake 2).</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b|d">
+      <div class="quiz__kind">Select all that apply</div>
+      <div class="quiz__stem">3. Why is implementing <code>Runnable</code> usually preferred to extending <code>Thread</code>?</div>
+      <label class="quiz__opt"><input type="checkbox" value="a"> It makes the thread run faster.</label>
+      <label class="quiz__opt"><input type="checkbox" value="b"> Your class is still free to extend another class.</label>
+      <label class="quiz__opt"><input type="checkbox" value="c"> Runnable threads don't need <code>start()</code>.</label>
+      <label class="quiz__opt"><input type="checkbox" value="d"> The job is separate from the worker, so it can be given to a Thread, a thread pool or a virtual thread.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B and D.</strong> Speed is the same, and every thread still needs <code>start()</code>.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="d">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">4. A thread is inside <code>Thread.sleep(3000)</code>. What does <code>getState()</code> return?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>RUNNABLE</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>WAITING</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>BLOCKED</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>TIMED_WAITING</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>D.</strong> Waiting for a <em>set time</em> = TIMED_WAITING. <code>join()</code> with no limit = WAITING. Waiting for a lock = BLOCKED.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="true">
+      <div class="quiz__kind">True / False</div>
+      <div class="quiz__stem">5. Once a thread is <code>TERMINATED</code>, calling <code>start()</code> on it again throws <code>IllegalThreadStateException</code>.</div>
+      <label class="quiz__opt"><input type="radio" value="true"> True</label>
+      <label class="quiz__opt"><input type="radio" value="false"> False</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>True.</strong> Thread objects are single-use. Create a new one.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__kind">Predict</div>
+      <div class="quiz__stem">6. What is printed?</div>
+      <pre><code class="lang-java">Thread t = new Thread(() -&gt; {
+    try { Thread.sleep(2000); } catch (InterruptedException e) { }
+});
+t.start();
+t.join(100);
+System.out.println(t.isAlive());</code></pre>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>true</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>false</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> It waits 2 seconds, then prints <code>false</code>.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A.</strong> <code>join(100)</code> gives up after 100 ms; the thread is still sleeping. (Same as line 35 of Example 5.)</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">7. What is the correct way to stop a running thread?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>t.stop()</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>t.setPriority(Thread.MIN_PRIORITY)</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>t.interrupt()</code>, with the thread checking <code>isInterrupted()</code> / catching <code>InterruptedException</code> and returning</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Set <code>t = null</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> <code>stop()</code> throws <code>UnsupportedOperationException</code> in modern Java; priority only hints; setting a variable to null doesn't affect the running thread at all.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">8. <code>main</code> finishes while a <strong>daemon</strong> thread is in the middle of a <code>while (true)</code> loop. What happens?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> The program keeps running until the daemon finishes.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> The JVM exits and the daemon thread is stopped.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> An exception is thrown.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> The daemon becomes the new main thread.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> Only user (non-daemon) threads keep the JVM alive (Example 7).</div>
+    </div>
+
+    <div class="quiz__q">
+      <div class="quiz__kind">Fill in the blank</div>
+      <div class="quiz__stem">9. Complete the line that starts a job on a new <strong>virtual</strong> thread: <br><code>Thread v = Thread.<input type="text" class="fill-blank" data-accept="ofVirtual()" aria-label="factory method" placeholder="?" style="width:11ch">.start(job);</code></div>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong><code>ofVirtual()</code></strong>. (<code>Thread.ofPlatform()</code> is its platform-thread twin; there's also <code>Thread.startVirtualThread(job)</code>.)</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Scenario</div>
+      <div class="quiz__stem">10. Which program would benefit <strong>most</strong> from switching to virtual threads?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> One that calculates prime numbers up to a billion.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> One with a single thread that edits a photo.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> A server that makes 5,000 web-service calls at once, each waiting about a second for a reply.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Any program: virtual threads always make code faster.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> Virtual threads shine when there are many tasks that mostly <em>wait</em>. Pure calculation (A) is limited by CPU cores.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a|b|d">
+      <div class="quiz__kind">Select all that apply</div>
+      <div class="quiz__stem">11. An AI assistant converted your thread-pool code to virtual threads. What should you check before accepting it?</div>
+      <label class="quiz__opt"><input type="checkbox" value="a"> That the tasks actually wait (I/O), rather than calculate</label>
+      <label class="quiz__opt"><input type="checkbox" value="b"> That it doesn't put virtual threads into a fixed-size pool</label>
+      <label class="quiz__opt"><input type="checkbox" value="c"> Nothing. AI-generated code is always correct.</label>
+      <label class="quiz__opt"><input type="checkbox" value="d"> That the program gives the same results when you run it, and that you understand every changed line</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A, B and D.</strong> See the review checklist in Part 7. AI output is a suggestion; you remain responsible for the code.</div>
+    </div>
+
+    <div class="quiz__q">
+      <div class="quiz__kind">Matching</div>
+      <div class="quiz__stem">12. Match each error to its cause.</div>
+      <div class="quiz__matchrow"><span><code>IllegalThreadStateException</code> at <code>Thread.start</code></span>
+        <select class="quiz__match" data-correct="twice" aria-label="start"><option value="">choose&hellip;</option><option value="twice">start() called on a thread that was already started</option><option value="daemon">setDaemon() called after start()</option><option value="stop">stop() called</option><option value="lambda">a lambda changes a local variable</option></select></div>
+      <div class="quiz__matchrow"><span><code>IllegalThreadStateException</code> at <code>Thread.setDaemon</code></span>
+        <select class="quiz__match" data-correct="daemon" aria-label="daemon"><option value="">choose&hellip;</option><option value="twice">start() called on a thread that was already started</option><option value="daemon">setDaemon() called after start()</option><option value="stop">stop() called</option><option value="lambda">a lambda changes a local variable</option></select></div>
+      <div class="quiz__matchrow"><span><code>UnsupportedOperationException</code> at <code>Thread.stop</code></span>
+        <select class="quiz__match" data-correct="stop" aria-label="stop"><option value="">choose&hellip;</option><option value="twice">start() called on a thread that was already started</option><option value="daemon">setDaemon() called after start()</option><option value="stop">stop() called</option><option value="lambda">a lambda changes a local variable</option></select></div>
+      <div class="quiz__matchrow"><span><code>error: local variables referenced from a lambda expression must be final&hellip;</code></span>
+        <select class="quiz__match" data-correct="lambda" aria-label="lambda"><option value="">choose&hellip;</option><option value="twice">start() called on a thread that was already started</option><option value="daemon">setDaemon() called after start()</option><option value="stop">stop() called</option><option value="lambda">a lambda changes a local variable</option></select></div>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">Mistakes 2, 3, 7 and 5. The last line of a stack trace often names the method that complained (<code>start</code>, <code>setDaemon</code>, <code>stop</code>), which is your biggest clue.</div>
+    </div>
+
+    <div class="quiz__score" style="display:none"></div>
+  </div>
+
+  <!-- ===== PRACTICE ======================================================== -->
+  <h2>&#128170; Practice Exercises</h2>
+  <p>Not graded. Do P1&ndash;P3 before Lab Task L4. Solutions are tested programs in <code>code/s04-threading/&hellip;/practice/</code>.</p>
+  <details>
+    <summary><span class="badge badge--easy">Easy</span>&nbsp; P1 &mdash; Thread info</summary>
+    <div>
+      <p>In a loop, create three named threads (<code>reader</code>, <code>writer</code>, <code>printer</code>) with lambdas. Each prints its name, priority, daemon flag and state. Start and join each one in turn, then print its state after the join.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p>Inside the lambda, <code>Thread.currentThread()</code> gives you the thread running it.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s04-threading/src/main/java/com/aptech/s04/practice/P1_ThreadInfo.java"-->
+<pre class="numbered" data-file="P1_ThreadInfo.java"><code class="lang-java">package com.aptech.s04.practice;
+
+/** Practice 1 (easy) — create three named threads with lambdas; each prints its own details. */
+public class P1_ThreadInfo {
+    public static void main(String[] args) throws InterruptedException {
+        String[] names = {"reader", "writer", "printer"};
+        for (String name : names) {
+            Thread t = new Thread(() -&gt; {
+                Thread me = Thread.currentThread();
+                System.out.println(me.getName() + " | priority " + me.getPriority()
+                        + " | daemon " + me.isDaemon() + " | state " + me.getState());
+            }, name);
+            t.start();
+            t.join();                                  // one at a time, so the output is in order
+            System.out.println("  after join, " + name + " is " + t.getState());
+        }
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s04-threading" main="com.aptech.s04.practice.P1_ThreadInfo"-->
+<div class="terminal-output">reader | priority 5 | daemon false | state RUNNABLE
+  after join, reader is TERMINATED
+writer | priority 5 | daemon false | state RUNNABLE
+  after join, writer is TERMINATED
+printer | priority 5 | daemon false | state RUNNABLE
+  after join, printer is TERMINATED</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+  <details>
+    <summary><span class="badge badge--easy">Easy</span>&nbsp; P2 &mdash; Countdown</summary>
+    <div>
+      <p>A thread counts down 5&hellip;1 (200 ms apart). <code>main</code> prints "Lift off!" only after the countdown has finished.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p><code>countdown.start(); countdown.join(); System.out.println("Lift off!");</code></p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s04-threading/src/main/java/com/aptech/s04/practice/P2_Countdown.java"-->
+<pre class="numbered" data-file="P2_Countdown.java"><code class="lang-java">package com.aptech.s04.practice;
+
+/** Practice 2 (easy) — a countdown thread; main waits for it with join() before "Lift off!". */
+public class P2_Countdown {
+    public static void main(String[] args) throws InterruptedException {
+        Thread countdown = new Thread(() -&gt; {
+            for (int i = 5; i &gt;= 1; i--) {
+                System.out.println(i + "...");
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    System.out.println("Countdown aborted!");
+                    return;
+                }
+            }
+        }, "countdown");
+
+        countdown.start();
+        System.out.println("main: waiting for the countdown");
+        countdown.join();
+        System.out.println("Lift off!");
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s04-threading" main="com.aptech.s04.practice.P2_Countdown"-->
+<div class="terminal-output">main: waiting for the countdown
+5...
+4...
+3...
+2...
+1...
+Lift off!</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+  <details>
+    <summary><span class="badge badge--medium">Medium</span>&nbsp; P3 &mdash; Parallel sum</summary>
+    <div>
+      <p>Add up 1 to 1,000,000 using 4 threads, each summing one quarter. Combine the four results and compare with the formula n(n+1)/2.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p>Give each thread its own slot in a <code>long[] partial</code> so no two threads ever change the same variable. Copy the loop variable into a <code>final int part</code> for the lambda (Mistake 5). Join before reading.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s04-threading/src/main/java/com/aptech/s04/practice/P3_ParallelSum.java"-->
+<pre class="numbered" data-file="P3_ParallelSum.java"><code class="lang-java">package com.aptech.s04.practice;
+
+/** Practice 3 (medium) — add up 1..1,000,000 with 4 threads; each thread sums its own quarter. */
+public class P3_ParallelSum {
+    public static void main(String[] args) throws InterruptedException {
+        int n = 1_000_000;
+        int parts = 4;
+        long[] partial = new long[parts];              // each thread writes ONLY its own slot
+        Thread[] workers = new Thread[parts];
+
+        for (int p = 0; p &lt; parts; p++) {
+            final int part = p;                        // lambdas need a final (unchanging) variable
+            int from = part * (n / parts) + 1;
+            int to = (part + 1) * (n / parts);
+            workers[p] = new Thread(() -&gt; {
+                long sum = 0;
+                for (int i = from; i &lt;= to; i++) {
+                    sum += i;
+                }
+                partial[part] = sum;
+            }, "adder-" + p);
+            workers[p].start();
+        }
+
+        long total = 0;
+        for (int p = 0; p &lt; parts; p++) {
+            workers[p].join();                         // wait, THEN read that thread's result
+            System.out.println(workers[p].getName() + " -&gt; " + partial[p]);
+            total += partial[p];
+        }
+        System.out.println("Total:    " + total);
+        System.out.println("Formula:  " + (long) n * (n + 1) / 2);
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s04-threading" main="com.aptech.s04.practice.P3_ParallelSum"-->
+<div class="terminal-output">adder-0 -&gt; 31250125000
+adder-1 -&gt; 93750125000
+adder-2 -&gt; 156250125000
+adder-3 -&gt; 218750125000
+Total:    500000500000
+Formula:  500000500000</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+  <details>
+    <summary><span class="badge badge--medium">Medium</span>&nbsp; P4 &mdash; A loading spinner you can stop</summary>
+    <div>
+      <p>A thread prints "Loading |", "Loading /", "Loading -", "Loading \" every 250 ms until <code>main</code> interrupts it after 0.9 s; then it prints how many frames it showed.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p>Put the whole loop inside one <code>try</code>; the <code>catch (InterruptedException e)</code> simply lets the method continue to the final message.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s04-threading/src/main/java/com/aptech/s04/practice/P4_LoadingSpinner.java"-->
+<pre class="numbered" data-file="P4_LoadingSpinner.java"><code class="lang-java">package com.aptech.s04.practice;
+
+/** Practice 4 (medium) — a "Loading..." animation thread that main stops with interrupt(). */
+public class P4_LoadingSpinner {
+    public static void main(String[] args) throws InterruptedException {
+        Thread spinner = new Thread(() -&gt; {
+            String[] frames = {"|", "/", "-", "\\"};
+            int i = 0;
+            try {
+                while (!Thread.currentThread().isInterrupted()) {
+                    System.out.println("Loading " + frames[i % frames.length]);
+                    i++;
+                    Thread.sleep(250);
+                }
+            } catch (InterruptedException e) {
+                // interrupted while sleeping: fall through and finish
+            }
+            System.out.println("Spinner stopped after " + i + " frames");
+        }, "spinner");
+
+        spinner.start();
+        Thread.sleep(900);                             // pretend to load something for 0.9 s
+        spinner.interrupt();
+        spinner.join();
+        System.out.println("Loaded!");
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s04-threading" main="com.aptech.s04.practice.P4_LoadingSpinner"-->
+<div class="terminal-output">Loading |
+Loading /
+Loading -
+Loading \
+Spinner stopped after 4 frames
+Loaded!</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+  <details>
+    <summary><span class="badge badge--hard">Challenge</span>&nbsp; P5 &mdash; Relay race</summary>
+    <div>
+      <p>Four runner threads; each must wait for the previous runner to finish before starting its leg. Start them in <strong>reverse</strong> order to prove the order still comes out right.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p>Pass the previous runner's Thread into each runner, and call <code>previous.join()</code> inside the new runner's job. A thread can join another thread, not just main.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s04-threading/src/main/java/com/aptech/s04/practice/P5_RelayRace.java"-->
+<pre class="numbered" data-file="P5_RelayRace.java"><code class="lang-java">package com.aptech.s04.practice;
+
+/** Practice 5 (challenge) — a relay race: each runner's thread join()s the previous runner before starting. */
+public class P5_RelayRace {
+
+    static Thread runner(String name, Thread previous) {
+        return new Thread(() -&gt; {
+            try {
+                if (previous != null) {
+                    previous.join();                   // wait for the baton
+                }
+                System.out.println(name + " takes the baton and runs");
+                Thread.sleep(150);
+                System.out.println(name + " finishes the leg");
+            } catch (InterruptedException e) {
+                System.out.println(name + " was stopped");
+            }
+        }, name);
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        Thread r1 = runner("Runner 1", null);
+        Thread r2 = runner("Runner 2", r1);
+        Thread r3 = runner("Runner 3", r2);
+        Thread r4 = runner("Runner 4", r3);
+
+        // Start them in the WRONG order on purpose - join() still keeps the race in order
+        r4.start();
+        r3.start();
+        r2.start();
+        r1.start();
+
+        r4.join();
+        System.out.println("Race complete!");
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s04-threading" main="com.aptech.s04.practice.P5_RelayRace"-->
+<div class="terminal-output">Runner 1 takes the baton and runs
+Runner 1 finishes the leg
+Runner 2 takes the baton and runs
+Runner 2 finishes the leg
+Runner 3 takes the baton and runs
+Runner 3 finishes the leg
+Runner 4 takes the baton and runs
+Runner 4 finishes the leg
+Race complete!</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+  <details>
+    <summary><span class="badge badge--hard">Challenge</span>&nbsp; P6 &mdash; 1,000 prices with virtual threads</summary>
+    <div>
+      <p>Each "price lookup" waits 300 ms. Fetch 1,000 prices with a virtual-thread executor, storing each result in its own array slot, then total them and report the time.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p><code>Executors.newVirtualThreadPerTaskExecutor()</code> in try-with-resources. Submitting a lambda that <code>return</code>s a value makes it a <code>Callable</code>, which is allowed to throw <code>InterruptedException</code>.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s04-threading/src/main/java/com/aptech/s04/practice/P6_PriceFetcher.java"-->
+<pre class="numbered" data-file="P6_PriceFetcher.java"><code class="lang-java">package com.aptech.s04.practice;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+/** Practice 6 (challenge) — "fetch" 1,000 prices with virtual threads, each result in its own array slot. */
+public class P6_PriceFetcher {
+
+    /** Pretend network call: waits 300 ms, then returns a price based on the product number. */
+    static int fetchPrice(int productId) throws InterruptedException {
+        Thread.sleep(300);
+        return 100 + productId % 50;
+    }
+
+    public static void main(String[] args) {
+        int count = 1_000;
+        int[] prices = new int[count];
+
+        long start = System.currentTimeMillis();
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            for (int id = 0; id &lt; count; id++) {
+                final int product = id;
+                executor.submit(() -&gt; {
+                    prices[product] = fetchPrice(product);   // each task writes only its own slot
+                    return null;                              // return makes this a Callable, which may throw
+                });
+            }
+        }                                                     // waits for all 1,000 tasks
+        long ms = (System.currentTimeMillis() - start) / 100 * 100;       // rounded down to 100 ms
+
+        long total = 0;
+        for (int p : prices) {
+            total += p;
+        }
+        System.out.println("Fetched " + count + " prices, total N" + total);
+        System.out.println("Took about " + ms + " ms (one after another it would take about " + count * 300 / 1000 + " s)");
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s04-threading" main="com.aptech.s04.practice.P6_PriceFetcher"-->
+<div class="terminal-output">Fetched 1000 prices, total N124500
+Took about 300 ms (one after another it would take about 300 s)</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+
+  <!-- ===== LAB TASK L4 ===================================================== -->
+  <h2 id="lab-task-l4">&#128736; Lab Task L4 &mdash; Download Manager <span class="badge badge--medium">Pass / fail</span></h2>
+  <div class="assignment-card">
+    <div class="assignment-card__header">&#128736; L4 &middot; Download Manager &middot; lab task (counts towards "Labs &amp; Participation")</div>
+    <p><strong>Due:</strong> the start of Session 5. &nbsp; <strong>Time:</strong> about 1&ndash;2 hours. &nbsp; <strong>Pass</strong> = SelfCheck shows 7/7 and you can explain, for one minute, how your <code>cancel</code> method works.</p>
+    <h4>&#127919; What you'll build</h4>
+    <p>The engine of a download manager: create download threads, start them together, wait for them, count how many are running, cancel one, run a daemon status reporter, and start a virtual thread. The demo program <code>Main</code> and the tester <code>SelfCheck</code> are given.</p>
+    <h4>&#128230; Getting started</h4>
+    <ol>
+      <li>Open <code>code/l4-download-manager-starter</code> in IntelliJ.</li>
+      <li>Run <code>SelfCheck</code>: <code>0 passed, 7 failed</code>. Complete the TODOs in <code>DownloadManager.java</code> one at a time.</li>
+      <li>When all 7 pass, run <code>Main</code> and watch three downloads, a reporter and a cancellation happen at the same time.</li>
+    </ol>
+    <h4>&#128203; Requirements</h4>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Method</th><th>It must&hellip;</th><th>Concept</th></tr></thead>
+      <tbody>
+        <tr><td>R1</td><td><code>createDownload(file, chunks, ms, log)</code></td><td>return a <strong>NEW</strong> thread named <code>dl-&lt;file&gt;</code> that logs each chunk, or "&lt;file&gt; cancelled" if interrupted</td><td>Runnable/lambda, naming, sleep</td></tr>
+        <tr><td>R2</td><td><code>startAll(list)</code></td><td>start every thread</td><td><code>start()</code></td></tr>
+        <tr><td>R3</td><td><code>waitForAll(list)</code></td><td>wait for every thread</td><td><code>join()</code></td></tr>
+        <tr><td>R4</td><td><code>countAlive(list)</code></td><td>count running threads</td><td><code>isAlive()</code></td></tr>
+        <tr><td>R5</td><td><code>cancel(t, waitMs)</code></td><td>interrupt, wait at most waitMs, return whether it stopped</td><td><code>interrupt()</code>, <code>join(ms)</code></td></tr>
+        <tr><td>R6</td><td><code>startReporter(report, periodMs)</code></td><td>start a <strong>daemon</strong> named "reporter" that repeats the report until interrupted</td><td>daemon threads</td></tr>
+        <tr><td>R7</td><td><code>startVirtual(name, job)</code></td><td>start the job on a named virtual thread</td><td><code>Thread.ofVirtual()</code></td></tr>
+      </tbody>
+    </table></div>
+    <h4>&#9989; Done looks like this</h4>
+    <!--@output project="solutions/l4-download-manager" main="com.aptech.l4.SelfCheck"-->
+<div class="terminal-output">=== L4 Self-Check ===
+
+PASS  R1 createDownload() returns a NEW thread with the right name
+PASS  R1 a download logs every chunk in order
+PASS  R2+R3 startAll() and waitForAll() run several downloads at the same time
+PASS  R4 countAlive() counts running threads
+PASS  R5 cancel() stops a download early
+PASS  R6 startReporter() makes a started daemon thread that repeats the report
+PASS  R7 startVirtual() starts a named virtual thread
+
+7 passed, 0 failed.
+All requirements met - great work!</div>
+<!--@end-->
+    <h4>&#128161; Hints</h4>
+    <details class="hint"><summary>R1 &mdash; building the thread</summary><div><p><code>Runnable job = () -&gt; { for (int i = 1; i &lt;= chunks; i++) { try { Thread.sleep(msPerChunk); } catch (InterruptedException e) { log.add(fileName + " cancelled"); return; } log.add(&hellip;); } }; return new Thread(job, "dl-" + fileName);</code></p></div></details>
+    <details class="hint"><summary>R6 &mdash; the reporter</summary><div><p>Create the thread with a <code>while (!Thread.currentThread().isInterrupted())</code> loop, then <code>setDaemon(true)</code>, then <code>start()</code>, then return it. The order matters!</p></div></details>
+    <h4>&#11088; Bonus</h4>
+    <p>Add <code>List&lt;Thread&gt; downloadAllVirtual(List&lt;String&gt; files, int chunks, int ms, List&lt;String&gt; log)</code> that starts every download on its own virtual thread, and compare the time with platform threads for 1,000 files.</p>
+    <button type="button" class="playground__btn print-btn" data-print>&#128424;&#65039; Print / save as PDF</button>
+  </div>
+
+  <!-- ===== FURTHER STUDY =================================================== -->
+  <h2>&#128250; Further Study</h2>
+  <p>Every video was checked to make sure it exists and matches the topic. Start with the first two.</p>
+  <div class="video-grid">
+    <div class="video-card" data-yt="r_MbozD32eo" data-title="Multithreading in Java Explained in 10 Minutes">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Multithreading in Java Explained in 10 Minutes</div><div class="video-card__channel">Coding with John</div><div class="video-card__why">Parts 1&ndash;2: creating threads, start vs run, join.</div></div>
+    </div>
+    <div class="video-card" data-yt="SztE5W41on4" data-title="Learn Java threading in 10 minutes!">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Learn Java threading in 10 minutes</div><div class="video-card__channel">Bro Code</div><div class="video-card__why">Extends Thread vs Runnable, plus daemon threads (Part 6).</div></div>
+    </div>
+    <div class="video-card" data-yt="taI7G6U29L8" data-title="Learn Java multithreading in 8 minutes!">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Learn Java multithreading in 8 minutes</div><div class="video-card__channel">Bro Code</div><div class="video-card__why">A quick second explanation with examples.</div></div>
+    </div>
+    <div class="video-card" data-yt="bOnIYy3Y5OA" data-title="Virtual Threads Explained">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Virtual Threads Explained</div><div class="video-card__channel">Java (official channel)</div><div class="video-card__why">Part 7, from the people who make Java.</div></div>
+    </div>
+    <div class="video-card" data-yt="1HSdq9zvym4" data-title="Java Virtual Threads Explained - How They Work">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java Virtual Threads Explained: How They Work</div><div class="video-card__channel">Selenium Express</div><div class="video-card__why">Carrier threads and parking (Figure 4) in more depth.</div></div>
+    </div>
+    <div class="video-card" data-yt="B6ecR9Kr3Ic" data-title="Virtual Threads in Java 21 | Hands-On Tutorial">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Virtual Threads in Java 21: Hands-On Tutorial</div><div class="video-card__channel">Selenium Express</div><div class="video-card__why">Live coding and measuring, like Example 8.</div></div>
+    </div>
+  </div>
+  <h3>Read (official &amp; trusted)</h3>
+  <ul>
+    <li><a href="https://docs.oracle.com/javase/tutorial/essential/concurrency/index.html" target="_blank" rel="noopener">Oracle Tutorials &mdash; Concurrency</a> (Processes and Threads, Defining and Starting a Thread, Sleep, Interrupts, Joins)</li>
+    <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Thread.html" target="_blank" rel="noopener">Java 25 API &mdash; <code>Thread</code></a> and <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Thread.State.html" target="_blank" rel="noopener"><code>Thread.State</code></a></li>
+    <li><a href="https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html" target="_blank" rel="noopener">Oracle &mdash; Virtual Threads guide</a> and <a href="https://openjdk.org/jeps/444" target="_blank" rel="noopener">JEP 444: Virtual Threads</a></li>
+    <li><a href="https://openjdk.org/jeps/491" target="_blank" rel="noopener">JEP 491: Synchronize Virtual Threads without Pinning</a> (JDK 24, the "pinning" item in the AI checklist)</li>
+    <li><a href="https://jenkov.com/tutorials/java-concurrency/index.html" target="_blank" rel="noopener">Jakob Jenkov &mdash; Java Concurrency tutorial</a></li>
+    <li>Book: Brian Goetz et al., <em>Java Concurrency in Practice</em>, chapters 1&ndash;2 and 7 (module library reference).</li>
+  </ul>
+
+  <!-- ===== CHEAT SHEET ===================================================== -->
+  <h2>&#128203; Cheat Sheet</h2>
+  <div class="cheatsheet">
+    <h4>Create &amp; start</h4>
+<pre><code class="lang-java">Thread t = new Thread(() -&gt; doWork(), "worker");
+t.start();                       // never t.run()
+class Job implements Runnable { public void run() { ... } }
+new Thread(new Job()).start();</code></pre>
+    <h4>Wait</h4>
+<pre><code class="lang-java">t.join();          // wait until t ends
+t.join(500);       // wait at most 500 ms
+t.isAlive();</code></pre>
+    <h4>Pause</h4>
+<pre><code class="lang-java">try {
+    Thread.sleep(200);             // current thread
+} catch (InterruptedException e) {
+    return;                        // or: Thread.currentThread().interrupt();
+}</code></pre>
+    <h4>Stop politely</h4>
+<pre><code class="lang-java">t.interrupt();                               // caller
+while (!Thread.currentThread().isInterrupted()) { ... }   // worker</code></pre>
+    <h4>Info</h4>
+<pre><code class="lang-java">Thread.currentThread().getName();
+t.setName("x"); t.setPriority(Thread.MAX_PRIORITY);
+t.getState();   // NEW RUNNABLE BLOCKED WAITING TIMED_WAITING TERMINATED</code></pre>
+    <h4>Daemon</h4>
+<pre><code class="lang-java">t.setDaemon(true);   // BEFORE start()
+t.start();</code></pre>
+    <h4>Virtual threads (Java 21+)</h4>
+<pre><code class="lang-java">Thread v = Thread.ofVirtual().name("v1").start(job);
+try (var ex = Executors.newVirtualThreadPerTaskExecutor()) {
+    ex.submit(job);
+}   // close() waits for all tasks</code></pre>
+  </div>
+
+  <!-- ===== SUMMARY ========================================================= -->
+  <h2>&#127891; Session Summary</h2>
+  <ol>
+    <li>A <strong>thread</strong> is one path of execution; a process can run many at once, sharing memory. <code>Thread</code> objects represent them.</li>
+    <li>Create threads with a <strong>Runnable/lambda</strong> (preferred) or by extending <code>Thread</code>; always call <strong><code>start()</code></strong>, only once.</li>
+    <li>Six states: NEW, RUNNABLE, BLOCKED, WAITING, TIMED_WAITING, TERMINATED (<code>getState()</code>).</li>
+    <li>Key methods: <code>sleep</code>, <code>join</code>, <code>isAlive</code>, names, priorities (hints only), <code>interrupt</code>.</li>
+    <li>Manage threads by <strong>joining</strong> them and <strong>interrupting</strong> them politely. There's no safe forced stop.</li>
+    <li><strong>Daemon</strong> threads don't keep the program alive; set them before <code>start()</code>.</li>
+    <li><strong>Virtual threads</strong> make thousands of waiting tasks cheap. AI can convert old code, but you prompt precisely, review with a checklist, and test.</li>
+    <li>The order in which threads run is <strong>not guaranteed</strong>. Correct programs must not depend on it.</li>
+  </ol>
+  <div class="newwords"><b>&#128218; All new words from this session</b>
+    <dl>
+      <dt>Thread, process, main thread</dt><dd>A path of execution / a running program / the thread that runs <code>main</code>.</dd>
+      <dt>Concurrency, scheduler</dt><dd>Several things in progress at once / the OS part that decides which thread runs.</dd>
+      <dt><code>Runnable</code></dt><dd>An interface with one method, <code>run()</code>: a job a thread can do.</dd>
+      <dt><code>start()</code> / <code>run()</code></dt><dd>Begin a new thread that runs the job / the job itself.</dd>
+      <dt>Thread states</dt><dd>NEW, RUNNABLE, BLOCKED, WAITING, TIMED_WAITING, TERMINATED.</dd>
+      <dt><code>join</code>, <code>sleep</code>, <code>interrupt</code></dt><dd>Wait for another thread / pause this one / politely ask a thread to stop.</dd>
+      <dt>Priority</dt><dd>A 1&ndash;10 hint to the scheduler, never a guarantee.</dd>
+      <dt>Daemon thread / user thread</dt><dd>A background thread that doesn't keep the JVM alive / one that does.</dd>
+      <dt>Platform thread / virtual thread / carrier thread</dt><dd>A wrapper around an OS thread / a cheap thread managed by Java / the platform thread a virtual thread runs on.</dd>
+      <dt><code>ExecutorService</code></dt><dd>An object that runs submitted tasks on threads for you (more in Session 5).</dd>
+      <dt>Pinning</dt><dd>When a virtual thread can't release its carrier while waiting (mostly fixed since JDK 24).</dd>
+    </dl>
+  </div>
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Next session: Multithreading and Concurrency</b>
+      What happens when two chefs grab the same pot at the same moment? Session 5 covers race conditions, <code>synchronized</code>, <code>wait</code>/<code>notify</code>, deadlock and the <code>java.util.concurrent</code> toolbox, plus graded Assignment A3.
+    </div>
+  </div>
+
+</main>
+
+<script src="../assets/js/course.js?v=5"></script>
+<script src="../assets/js/playgrounds.js?v=5"></script>
+
+</body>
+</html>

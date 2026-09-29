@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Lab Task L2 — Generic Toolkit (STARTER).
+  Open this folder in IntelliJ (File → Open → select this folder).
+  Complete GenericToolkit.java and Shelf.java, then run SelfCheck until you see "9 passed, 0 failed".
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.aptech</groupId>
+    <artifactId>l2-generic-toolkit</artifactId>
+    <version>1.0</version>
+    <name>L2 - Generic Toolkit</name>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+</project>

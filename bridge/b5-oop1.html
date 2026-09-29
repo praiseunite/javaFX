@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bridge 5 — Classes & Objects</title>
+  <meta name="description" content="Bridge 5 of Building Rich Java Applications with JavaFX and AI Tools: Master Object-Oriented Programming foundations, classes vs objects, constructors, this keyword, encapsulation, and heap vs stack memory.">
+  <link rel="stylesheet" href="../assets/css/course.css?v=5">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "b5";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== HERO ============================================================ -->
+  <section class="hero">
+    <span class="tag">Foundation Bridge &middot; Lesson B5 &middot; 2 hours prep &middot; Self-Paced / In-Class</span>
+    <h1>Bridge 5 &mdash; Classes &amp; Objects (OOP 1)</h1>
+    <p class="lede">
+      Welcome to the defining paradigm of enterprise Java: <strong>Object-Oriented Programming (OOP)</strong>!
+      Instead of juggling disconnected variables and loose methods, OOP lets you model real-world concepts &mdash;
+      like bank accounts, user profiles, video game characters, and graphical windows &mdash; as unified packages
+      containing both <strong>State (data)</strong> and <strong>Behavior (actions)</strong>.
+      Today you master the blueprint vs. instance model, constructors, the <code>this</code> keyword, and encapsulation.
+    </p>
+    <div class="meta">
+      <span>&#128218; Core Foundation: Object-Oriented Programming &amp; Encapsulation</span>
+      <span>&#9201; ~2 hours</span>
+      <span>&#9989; Prerequisites: Bridge B4 (Methods, Parameters &amp; Stack Frames)</span>
+      <span>&#128203; Goal: Build a Secure BankAccount Class with Encapsulated Rules</span>
+    </div>
+  </section>
+
+  <!-- ===== OBJECTIVES ====================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this bridge session you can&hellip;</b>
+    <ol>
+      <li><strong>Distinguish</strong> between a <strong>Class</strong> (blueprint) and an <strong>Object</strong> (concrete instance in RAM).</li>
+      <li><strong>Diagram</strong> how Stack memory references point to objects instantiated in Heap memory.</li>
+      <li><strong>Construct</strong> objects using default and parameterized constructors with constructor overloading.</li>
+      <li><strong>Apply</strong> the <code>this</code> keyword to eliminate variable shadowing and chain constructors cleanly.</li>
+      <li><strong>Implement Encapsulation</strong> using <code>private</code> instance fields and validated <code>public</code> getters/setters.</li>
+      <li><strong>Override</strong> the <code>toString()</code> method to produce meaningful, debug-friendly console output.</li>
+    </ol>
+  </div>
+
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== ROADMAP ========================================================= -->
+  <h2>Your Learning Roadmap</h2>
+  <div class="roadmap">
+    <a href="#what-is-oop">The OOP Philosophy</a>
+    <a href="#the-visual-blueprint">Blueprint vs Object Metaphor</a>
+    <a href="#stack-vs-heap">Stack vs Heap Memory</a>
+    <a href="#constructors-and-this">Constructors &amp; this</a>
+    <a href="#encapsulation">The Pillar of Encapsulation</a>
+    <a href="#the-tostring-method">The toString Method</a>
+    <a href="#interactive-object-factory">Interactive Object Factory</a>
+    <a href="#common-traps">Common Pitfalls</a>
+    <a href="#knowledge-check">Knowledge Check</a>
+    <a href="#guided-lab">Guided Lab</a>
+  </div>
+
+  <!-- ===== CONCEPT 1 ======================================================= -->
+  <h2 id="what-is-oop">1. The Object-Oriented Philosophy</h2>
+  <p>
+    In older procedural languages (like C), data and functions were separated: you had structs holding numbers,
+    and disconnected functions operating on them.
+    In Java, we think in terms of <strong>Objects</strong>: self-governing entities that bundle both:
+  </p>
+  <ul>
+    <li><strong>State (Attributes / Fields):</strong> What the object <em>knows</em> (e.g. <code>accountNumber</code>, <code>balance</code>, <code>ownerName</code>).</li>
+    <li><strong>Behavior (Methods):</strong> What the object <em>does</em> (e.g. <code>deposit()</code>, <code>withdraw()</code>, <code>printStatement()</code>).</li>
+  </ul>
+
+  <!-- ===== VISUAL CARTOON ================================================== -->
+  <h2 id="the-visual-blueprint">2. Blueprint vs. Object: The Master Analogy</h2>
+
+  <figure class="concept-visual" aria-label="Visual cartoon: Java Class Blueprint vs Objects in Memory">
+    <img src="../assets/img/cartoons/b5_blueprint_vs_objects.jpg" alt="Architectural blueprint schematic on the left and colorful tangible 3D toy houses with addresses on the right">
+    <figcaption>
+      <span class="fig-badge fig-badge--analogy">&#127917; Visual Analogy</span>
+      <strong>Blueprint vs. House:</strong> On the left, an architect drafts a single master blueprint (the <strong>Class</strong>).
+      It specifies the room dimensions, door placements, and plumbing lines, but occupies zero physical real estate.
+      On the right, construction crews use that one blueprint to build three actual houses on the street (the <strong>Objects</strong>).
+      House #101 has blue paint, House #102 has yellow paint, and House #103 has a brick patio &mdash; they each possess their own
+      independent state, yet all share the identical architectural structure!
+    </figcaption>
+  </figure>
+
+  <!-- ===== STACK VS HEAP =================================================== -->
+  <h2 id="stack-vs-heap">3. Memory Anatomy: Stack References vs Heap Objects</h2>
+  <p>
+    When you write: <code>BankAccount acc1 = new BankAccount("Alice", 500.0);</code>, two distinct things happen in computer memory:
+  </p>
+  <ol>
+    <li><strong>The Heap:</strong> The <code>new</code> keyword allocates an active memory chunk on the <strong>Heap</strong> holding Alice's data (<code>owner="Alice"</code>, <code>balance=500.0</code>) and generates a unique hexadecimal memory address (e.g. <code>0x4F2A</code>).</li>
+    <li><strong>The Stack:</strong> Java creates a lightweight local reference variable <code>acc1</code> on the <strong>Stack</strong> that stores the address <code>0x4F2A</code> &mdash; acting like a laser pointer aimed at the Heap object!</li>
+  </ol>
+
+  <!-- ===== CONSTRUCTORS & THIS ============================================= -->
+  <h2 id="constructors-and-this">4. Constructors &amp; the <code>this</code> Keyword</h2>
+  <p>
+    A <strong>Constructor</strong> is a special method invoked automatically the exact moment an object is created with <code>new</code>.
+    Its job is to set up the object's initial state.
+  </p>
+  <ul>
+    <li>It has the <strong>exact same name as the class</strong>.</li>
+    <li>It has <strong>no return type</strong> (not even <code>void</code>).</li>
+  </ul>
+
+  <pre class="numbered" data-file="Car.java" data-hl="7,8,9,10"><code class="lang-java">public class Car {
+    // Instance Fields (State)
+    private String make;
+    private String model;
+    private int year;
+
+    // Parameterized Constructor
+    public Car(String make, String model, int year) {
+        this.make = make;   // "this.make" refers to field; "make" refers to parameter
+        this.model = model;
+        this.year = year;
+    }
+}</code></pre>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Why do we write <code>this.make = make;</code>?</b>
+      The parameter name (<code>make</code>) is identical to the field name (<code>make</code>).
+      This is called <em>variable shadowing</em>.
+      The keyword <code>this</code> means <em>"the current object whose constructor or method is currently running."</em>
+      Writing <code>this.make</code> guarantees you are assigning the value into the object's instance field, not back into the parameter!
+    </div>
+  </div>
+
+  <!-- ===== ENCAPSULATION =================================================== -->
+  <h2 id="encapsulation">5. The First Pillar of OOP: Encapsulation</h2>
+  <p>
+    <strong>Encapsulation</strong> means bundling data and methods inside a protective capsule and hiding internal state from
+    unauthorized external tampering.
+  </p>
+  <p>The golden rules of encapsulation:</p>
+  <ol>
+    <li>Declare all instance variables <strong><code>private</code></strong> so outside code cannot read or mutate them directly.</li>
+    <li>Provide <strong><code>public</code> Getters</strong> (accessors) to read values safely.</li>
+    <li>Provide <strong><code>public</code> Setters</strong> (mutators) to modify values with strict validation guardrails.</li>
+  </ol>
+
+  <pre class="numbered" data-file="BankAccount.java" data-hl="10,11,12,13,14"><code class="lang-java">public class BankAccount {
+    private String owner;
+    private double balance; // Protected from outside tampering!
+
+    public BankAccount(String owner, double initialBalance) {
+        this.owner = owner;
+        this.balance = Math.max(0.0, initialBalance);
+    }
+
+    public void deposit(double amount) {
+        if (amount <= 0) {
+            System.out.println("Deposit amount must be positive!");
+            return; // Guard clause prevents invalid state!
+        }
+        this.balance += amount;
+    }
+
+    public double getBalance() {
+        return this.balance;
+    }
+}</code></pre>
+
+  <!-- ===== TOSTRING ======================================================== -->
+  <h2 id="the-tostring-method">6. The <code>toString()</code> Method</h2>
+  <p>
+    If you print an object directly: <code>System.out.println(account);</code>, Java default output looks like:
+    <code>BankAccount@5a07e868</code> (the class name plus its memory hash code). This is useless for debugging.
+  </p>
+  <p>
+    To fix this, we override <code>toString()</code> to return a pleasant, human-readable summary of the object's state:
+  </p>
+
+  <pre class="numbered" data-file="ToStringDemo.java"><code class="lang-java">@Override
+public String toString() {
+    return "BankAccount[owner='" + owner + "', balance=$" + String.format("%.2f", balance) + "]";
+}</code></pre>
+
+  <!-- ===== INTERACTIVE OBJECT FACTORY ====================================== -->
+  <h2 id="interactive-object-factory">&#128187; Interactive Simulator: The Object Heap Inspector</h2>
+  <p>Click below to instantiate objects and inspect how Stack references target independent Heap objects:</p>
+
+  <div class="playground" id="b5Playground">
+    <div class="playground__header">&#9881;&#65039; Stack vs Heap Live Memory Inspector</div>
+    <div class="playground__body">
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+        <button class="playground__btn" onclick="createAccount('Alice', 500)">new BankAccount("Alice", 500)</button>
+        <button class="playground__btn" onclick="createAccount('Bob', 1200)">new BankAccount("Bob", 1200)</button>
+        <button class="playground__btn playground__btn--secondary" onclick="resetMemorySim()">Clear Heap Memory</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 2fr;gap:1rem;">
+        <div style="background:var(--surface-2);padding:1rem;border-radius:8px;border:1px solid var(--line);">
+          <h4 style="margin-top:0;color:var(--accent);">&#128225; Stack Frame (main)</h4>
+          <div id="stackList" style="font-family:monospace;font-size:0.85rem;">No active references.</div>
+        </div>
+        <div style="background:var(--surface-2);padding:1rem;border-radius:8px;border:1px solid var(--line);">
+          <h4 style="margin-top:0;color:#10b981;">&#127968; Heap Objects Memory</h4>
+          <div id="heapList" style="font-family:monospace;font-size:0.85rem;">Heap is empty.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var instances = [];
+    var addrSeed = 0x3A00;
+
+    function createAccount(name, bal) {
+      if (instances.length >= 3) {
+        alert("Memory simulator limit reached (3 objects max). Click Clear to reset.");
+        return;
+      }
+      var addr = "0x" + (addrSeed + instances.length * 0x42).toString(16).toUpperCase();
+      var id = instances.length + 1;
+      instances.push({ varName: "acc" + id, addr: addr, owner: name, balance: bal });
+      renderMemory();
+    }
+
+    function renderMemory() {
+      var sHtml = "";
+      var hHtml = "";
+      for (var i = 0; i < instances.length; i++) {
+        var it = instances[i];
+        sHtml += "<div style='margin-bottom:0.5rem;padding:0.4rem;background:var(--surface);border-radius:4px;'><strong>" + it.varName + "</strong> &rarr; <span style='color:var(--accent);'>" + it.addr + "</span></div>";
+        hHtml += "<div style='margin-bottom:0.5rem;padding:0.4rem;background:var(--surface);border-radius:4px;border-left:3px solid #10b981;'><strong>Address: " + it.addr + "</strong><br>Type: BankAccount<br>owner: \"" + it.owner + "\"<br>balance: $" + it.balance + ".00</div>";
+      }
+      document.getElementById("stackList").innerHTML = sHtml || "No active references.";
+      document.getElementById("heapList").innerHTML = hHtml || "Heap is empty.";
+    }
+
+    function resetMemorySim() {
+      instances = [];
+      renderMemory();
+    }
+  </script>
+
+  <!-- ===== COMMON MISTAKES ================================================= -->
+  <h2 id="common-traps">&#9888;&#65039; Top 3 Beginner Traps in Classes &amp; Objects</h2>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Trap 1: The NullPointerException (Uninstantiated Reference)</b>
+      <pre><code class="lang-java">BankAccount account; // Declared reference on stack, but NO "new" object on heap!
+account.deposit(100); // CRASH! java.lang.NullPointerException</code></pre>
+      <p><strong>The Fix:</strong> Declaring a reference variable does not create an object. You must initialize it with <code>new BankAccount(...)</code> before calling methods on it.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Trap 2: Adding a Return Type to a Constructor</b>
+      <pre><code class="lang-java">public class Student {
+    public void Student(String name) { ... } // DISASTER! This is a regular method, NOT a constructor!
+}</code></pre>
+      <p><strong>The Fix:</strong> Constructors NEVER have return types &mdash; not even <code>void</code>. If you add <code>void</code>, Java treats it as a weird method and no longer treats it as a constructor.</p>
+    </div>
+  </div>
+
+  <!-- ===== KNOWLEDGE CHECK ================================================= -->
+  <h2 id="knowledge-check">&#128221; Knowledge Check</h2>
+  <div class="quiz" id="b5-quiz">
+    <div class="quiz__title">&#128161; Verify Your Understanding</div>
+
+    <!-- Q1 -->
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__stem">1. What is the fundamental difference between a Class and an Object in Java?</div>
+      <label class="quiz__opt"><input type="radio" name="b5q1" value="a"> A class stores data in RAM; an object is just code on your disk</label>
+      <label class="quiz__opt"><input type="radio" name="b5q1" value="b"> A class is the compile-time blueprint; an object is the runtime instance living in Heap memory</label>
+      <label class="quiz__opt"><input type="radio" name="b5q1" value="c"> A class can only have one method; an object has many</label>
+      <label class="quiz__opt"><input type="radio" name="b5q1" value="d"> They are completely identical synonyms</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: B.</strong> The class defines the structure, fields, and methods (the architectural blueprint), while each object created with <code>new</code> is an independent physical entity in Heap memory.
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__stem">2. In memory management, where are Java objects created when you invoke the <code>new</code> keyword?</div>
+      <label class="quiz__opt"><input type="radio" name="b5q2" value="a"> Inside CPU L1 cache</label>
+      <label class="quiz__opt"><input type="radio" name="b5q2" value="b"> On the method call Stack</label>
+      <label class="quiz__opt"><input type="radio" name="b5q2" value="c"> In Heap memory</label>
+      <label class="quiz__opt"><input type="radio" name="b5q2" value="d"> On the computer hard disk</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: C.</strong> All Java objects live in the dynamic Heap memory region. The Stack only holds reference addresses pointing to those heap objects.
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz__q" data-answer="true">
+      <div class="quiz__stem">3. Making instance variables <code>private</code> and providing validated public getters and setters is an example of Encapsulation. True or False?</div>
+      <label class="quiz__opt"><input type="radio" name="b5q3" value="true"> True</label>
+      <label class="quiz__opt"><input type="radio" name="b5q3" value="false"> False</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: True.</strong> Encapsulation hides raw fields behind public methods so objects can enforce business validation rules and protect internal state.
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__stem">4. What does the <code>this</code> keyword refer to when used inside an instance method or constructor?</div>
+      <label class="quiz__opt"><input type="radio" name="b5q4" value="a"> The specific object instance that is currently executing the code</label>
+      <label class="quiz__opt"><input type="radio" name="b5q4" value="b"> The superclass parent</label>
+      <label class="quiz__opt"><input type="radio" name="b5q4" value="c"> The entire Java Virtual Machine</label>
+      <label class="quiz__opt"><input type="radio" name="b5q4" value="d"> The file on disk</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: A.</strong> <code>this</code> is a self-referential pointer representing the current object instance whose method or constructor is being invoked.
+      </div>
+    </div>
+
+    <div class="quiz__score" style="display:none"></div>
+  </div>
+
+  <!-- ===== GUIDED LAB ====================================================== -->
+  <h2 id="guided-lab">&#128736; Guided Lab: Robust BankAccount Class</h2>
+  <div class="steps">
+    <div class="steps__title">&#128221; Build this encapsulated class in IntelliJ:</div>
+
+    <div class="step"><div class="step__check"></div><span class="step__num">1</span>
+      <span class="step__text">Create a new class named <code>BankAccount</code> with private fields: <code>String accountNumber</code>, <code>String accountHolder</code>, and <code>double balance</code>.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">2</span>
+      <span class="step__text">Create a constructor: <code>public BankAccount(String accNum, String holder, double initialBal)</code> using <code>this</code>.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">3</span>
+      <span class="step__text">Write <code>deposit(double amount)</code>: only allow deposits greater than $0.00.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">4</span>
+      <span class="step__text">Write <code>withdraw(double amount)</code>: reject withdrawals if amount &gt; balance (overdraft protection!). Return boolean indicating success.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">5</span>
+      <span class="step__text">Override <code>toString()</code> to display the account holder and current balance cleanly formatted. Test with two separate accounts in <code>main</code>!</span>
+    </div>
+  </div>
+
+  <!-- ===== FURTHER STUDY =================================================== -->
+  <h2>&#128250; Recommended Further Study</h2>
+  <div class="video-grid">
+    <div class="video-card">
+      <div class="video-card__title">&#127916; FreeCodeCamp: Object Oriented Programming in Java</div>
+      <p style="font-size:0.9rem;color:var(--ink-soft);margin-bottom:0.75rem;">A deep architectural overview of classes, constructors, and encapsulation.</p>
+      <a class="video-card__link" href="https://www.youtube.com/watch?v=A74TOX803D0" target="_blank" rel="noopener">&#9654; Watch on YouTube</a>
+    </div>
+    <div class="video-card">
+      <div class="video-card__title">&#127916; Caleb Curry: Java Stack vs Heap Memory Explained</div>
+      <p style="font-size:0.9rem;color:var(--ink-soft);margin-bottom:0.75rem;">Visual animations showing how references live on the stack while objects reside on the heap.</p>
+      <a class="video-card__link" href="https://www.youtube.com/watch?v=kYv9y7qGZTE" target="_blank" rel="noopener">&#9654; Watch on YouTube</a>
+    </div>
+  </div>
+
+  <!-- ===== SUMMARY & NEXT ================================================== -->
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Next Up: Bridge 6 &mdash; Inheritance, Interfaces &amp; Polymorphism (OOP 2)</b>
+      Now that you know how to build a single class, what happens when you have dozens of related classes?
+      In Bridge 6, you will learn how subclasses inherit capabilities from parent classes (<code>extends</code>),
+      how interfaces define universal contracts (<code>implements</code>), and how <strong>Polymorphism</strong>
+      lets a single method treat hundreds of distinct objects uniformly!
+    </div>
+  </div>
+
+</main>
+
+<script src="../assets/js/course.js?v=5"></script>
+<script src="../assets/js/playgrounds.js?v=5"></script>
+
+</body>
+</html>

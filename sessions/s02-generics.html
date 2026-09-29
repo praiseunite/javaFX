@@ -1,0 +1,2051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session 2 — Generics</title>
+  <meta name="description" content="Session 2 of Building Rich Java Applications with JavaFX and AI Tools: why generics exist, generic classes and methods, bounded types, wildcards, inheritance with generics, type inference, and the limits of generics — explained from zero.">
+  <link rel="stylesheet" href="../assets/css/course.css?v=5">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "s02";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== HERO ============================================================ -->
+  <section class="hero">
+    <span class="tag">Week 1 &middot; Day 2 &middot; Session 2 &middot; 2 hours in class + practice at home</span>
+    <h1>Session 2 &mdash; Generics</h1>
+    <p class="lede">
+      In Session 1 you wrote <code>List&lt;String&gt;</code> and <code>Map&lt;String, Integer&gt;</code> without asking what the
+      angle brackets really do. Today you find out. More importantly, you learn to write <strong>your own</strong> classes
+      and methods with <code>&lt;T&gt;</code>: code that works for <em>any</em> type, yet is still checked by the compiler.
+      This is how the whole Collections Framework (and later JavaFX) is built.
+    </p>
+    <div class="meta">
+      <span>&#128218; Learner's Guide: SG &middot; XP &middot; TG &mdash; Session 2</span>
+      <span>&#9201; ~2 hours + 2 hours practice</span>
+      <span>&#9989; Before this: Session 1 (collections), Bridge B5&ndash;B6 (classes, inheritance, interfaces)</span>
+      <span>&#128736; Lab Task L2 (pass / fail)</span>
+    </div>
+  </section>
+
+  <!-- ===== OBJECTIVES ====================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this session you can&hellip;</b>
+    <ol>
+      <li><strong>Identify</strong> the problem generics solve and <strong>list</strong> their advantages and limitations.</li>
+      <li><strong>Declare</strong> a generic class (<code>Box&lt;T&gt;</code>, <code>Pair&lt;K, V&gt;</code>) and <strong>create</strong> objects from it.</li>
+      <li><strong>Define</strong> and <strong>call</strong> generic methods, including bounded ones (<code>&lt;T extends Comparable&lt;T&gt;&gt;</code>).</li>
+      <li><strong>Explain</strong> the wildcards <code>?</code>, <code>? extends X</code> and <code>? super X</code>, and <strong>choose</strong> the right one (PECS).</li>
+      <li><strong>Describe</strong> how inheritance works with generic types, and why <code>List&lt;Integer&gt;</code> is <em>not</em> a <code>List&lt;Number&gt;</code>.</li>
+      <li><strong>Explain</strong> type inference (the diamond <code>&lt;&gt;</code>, <code>var</code>, inferred method types) and <strong>debug</strong> the most common generics compile errors.</li>
+    </ol>
+  </div>
+
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== ROADMAP ========================================================= -->
+  <h2>Your Roadmap for Today</h2>
+  <div class="roadmap">
+    <a href="#part-1-why-do-we-need-generics">Why generics?</a>
+    <a href="#part-2-generic-classes">Generic classes</a>
+    <a href="#part-3-generic-methods">Generic methods</a>
+    <a href="#part-4-bounded-types">Bounded types</a>
+    <a href="#part-5-wildcards">Wildcards</a>
+    <a href="#part-6-inheritance-and-generics">Inheritance</a>
+    <a href="#part-7-type-inference">Type inference</a>
+    <a href="#part-8-advantages-limitations-and-type-erasure">Limits &amp; erasure</a>
+  </div>
+
+  <div class="callout callout--note"><span class="callout__i">&#128214;</span>
+    <div class="callout__b"><b>Get the code running</b>
+      Open the folder <code>code/s02-generics</code> in IntelliJ (<strong>File &rarr; Open</strong>), exactly like Session 1. The examples are in
+      <code>src/main/java/com/aptech/s02</code>: <code>Box.java</code>, <code>Pair.java</code> and <code>E01_&hellip;</code> to <code>E10_&hellip;</code>.
+      Run any of them with the green &#9654; next to <code>main</code>. Every output on this page is the real output of those files.
+    </div>
+  </div>
+
+  <!-- ===== WHY THIS MATTERS ================================================= -->
+  <h2>Why This Matters</h2>
+  <p>
+    Imagine writing a <code>StringList</code> class, then an <code>IntegerList</code>, then a <code>StudentList</code>, then a <code>ProductList</code>&hellip;
+    thousands of lines that are all <em>the same code</em> with a different type name. Or you write one list that holds <code>Object</code>,
+    but then nothing stops somebody putting a number into your list of names, and the program crashes later in front of a user.
+  </p>
+  <p>
+    <strong>Generics solve both problems at once:</strong> write the code <em>once</em> with a placeholder type <code>T</code>, and let the
+    compiler check every use of it. When you build JavaFX screens later, every table (<code>TableView&lt;Student&gt;</code>), drop-down
+    (<code>ComboBox&lt;String&gt;</code>) and chart series (<code>XYChart.Series&lt;String, Number&gt;</code>) is a generic class.
+  </p>
+
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; labelled storage boxes</b>
+      <p>When you move house, you can throw everything into plain unlabelled boxes. Packing is fast, but when you unpack you have to
+      open each box and <em>guess</em> what's inside. Sometimes you reach for plates and grab a hammer. That's <strong>Java without generics</strong>.</p>
+      <p>Or you write a label on every box: <strong>"KITCHEN: plates only"</strong>. Now the removal company refuses to put a hammer in that box
+      <em>while packing</em>, and when you unpack you know exactly what you'll find. The label is the <code>&lt;Plate&gt;</code>.
+      That's <strong>Java with generics</strong>.</p>
+    </div>
+  </div>
+
+  <figure class="concept-visual" aria-label="Visual cartoon: Generics Type Safety">
+    <img src="../assets/img/cartoons/s02_box_type_safety.jpg" alt="Without Generics Object Box vs With Generics Box of Apple Compile-Time Type Safety">
+    <figcaption>
+      <span class="fig-badge fig-badge--analogy">&#127917; Visual Analogy</span>
+      <strong>Compile-Time Type Safety:</strong> In Old Java (pre-2004), collections held raw <code>Object</code>s like mystery cardboard boxes &mdash; you reached in expecting an Apple, but pulled out a bug, causing an explosive <code>ClassCastException</code> at runtime! Modern Java generics put a clear label on the box (<code>Box&lt;Apple&gt;</code>), and the compiler acts like a security scanner ensuring only Apples can ever go inside.
+    </figcaption>
+  </figure>
+
+  <!-- ===== PART 1 ========================================================== -->
+  <span class="eyebrow">Part 1 of 8</span>
+  <h2 id="part-1-why-do-we-need-generics">Part 1 &mdash; Why Do We Need Generics?</h2>
+
+  <h3>Example 1 &mdash; life without generics</h3>
+  <p>Generics were added in Java 5 (2004). Before that, every collection held plain <code>Object</code>s. Here is what that was like. (Such a collection with no <code>&lt;&gt;</code> is called a <strong>raw type</strong>. It still compiles today, only so that very old code keeps working.)</p>
+  <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/E01_WithoutGenerics.java" hl="13,16,20"-->
+<pre class="numbered" data-file="E01_WithoutGenerics.java" data-hl="13,16,20"><code class="lang-java">package com.aptech.s02;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Example 1 — Life BEFORE generics (Java 1.4 and older).
+ * A "raw" list accepts anything, so mistakes are only discovered when the program is already running.
+ */
+public class E01_WithoutGenerics {
+    @SuppressWarnings({"rawtypes", "unchecked"})   // hides the compiler's warnings so you can see the crash
+    public static void main(String[] args) {
+        List names = new ArrayList();      // raw type: no &lt;String&gt;, so it holds plain Objects
+        names.add("Ada");
+        names.add("Ben");
+        names.add(42);                     // oops! a number slipped in - the compiler does not stop us
+
+        for (int i = 0; i &lt; names.size(); i++) {
+            try {
+                String name = (String) names.get(i);          // we must CAST every time we read
+                System.out.println("Hello, " + name.toUpperCase());
+            } catch (ClassCastException e) {
+                System.out.println("CRASH at index " + i + ": " + e.getMessage());
+            }
+        }
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>11</td><td><code>@SuppressWarnings</code> tells the compiler "don't show me warnings here". We hide them only so the program runs and you can watch it crash. <strong>Never do this in real code.</strong> The warnings were trying to help!</td></tr>
+      <tr><td>13</td><td>A <strong>raw</strong> <code>List</code>: no <code>&lt;String&gt;</code>. It will accept any object at all.</td></tr>
+      <tr><td>14&ndash;15</td><td>Two names go in. Fine.</td></tr>
+      <tr><td>16</td><td>The number <code>42</code> goes in too. <strong>The compiler says nothing</strong>, because a raw list really is allowed to hold anything.</td></tr>
+      <tr><td>20</td><td><code>get(i)</code> returns an <code>Object</code>, so we must <strong>cast</strong> it: <code>(String)</code> means "trust me, this is a String". For index 2 it isn't, so Java throws a <code>ClassCastException</code> <strong>while the program is running</strong>.</td></tr>
+      <tr><td>22&ndash;23</td><td>We catch the crash only so the example can print the message. In a real app, the user would see the program fail.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s02-generics" main="com.aptech.s02.E01_WithoutGenerics"-->
+<div class="terminal-output">Hello, ADA
+Hello, BEN
+CRASH at index 2: class java.lang.Integer cannot be cast to class java.lang.String (java.lang.Integer and java.lang.String are in module java.base of loader 'bootstrap')</div>
+<!--@end-->
+
+  <h3>Example 2 &mdash; the same program with generics</h3>
+  <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/E02_WithGenerics.java" hl="12,15,17"-->
+<pre class="numbered" data-file="E02_WithGenerics.java" data-hl="12,15,17"><code class="lang-java">package com.aptech.s02;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Example 2 — The same program WITH generics.
+ * The compiler now checks every add(), and reading needs no cast.
+ */
+public class E02_WithGenerics {
+    public static void main(String[] args) {
+        List&lt;String&gt; names = new ArrayList&lt;&gt;();   // "a list of Strings" - the compiler remembers this
+        names.add("Ada");
+        names.add("Ben");
+        // names.add(42);                        // COMPILE ERROR: int cannot be converted to String
+
+        for (String name : names) {               // no cast needed: get() already returns String
+            System.out.println("Hello, " + name.toUpperCase());
+        }
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>12</td><td><code>List&lt;String&gt;</code>: "a list of Strings". The compiler now <strong>remembers</strong> what may go in.</td></tr>
+      <tr><td>15</td><td>If you remove the <code>//</code>, IntelliJ underlines <code>42</code> in red <strong>immediately</strong>, before you can even run it: <code>incompatible types: int cannot be converted to String</code>.</td></tr>
+      <tr><td>17</td><td>Reading needs <strong>no cast</strong>: the compiler already knows every element is a String, so <code>name.toUpperCase()</code> is always safe.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s02-generics" main="com.aptech.s02.E02_WithGenerics"-->
+<div class="terminal-output">Hello, ADA
+Hello, BEN</div>
+<!--@end-->
+
+  <figure class="figure" aria-label="Timeline: errors found at compile time with generics versus at run time without">
+    <svg class="dg" viewBox="0 0 720 230" width="720" height="230" role="img" aria-labelledby="g1t">
+      <title id="g1t">Without generics the error is found at run time by the user; with generics it is found at compile time by the programmer</title>
+      <defs><marker id="g1a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker></defs>
+      <line class="ln" x1="30" y1="60" x2="690" y2="60" marker-end="url(#g1a)"/>
+      <rect class="box" x="40" y="40" width="130" height="40" rx="6"/><text x="105" y="65" text-anchor="middle" class="t-b">1. You type</text>
+      <rect class="box" x="230" y="40" width="150" height="40" rx="6"/><text x="305" y="65" text-anchor="middle" class="t-b">2. Compile (build)</text>
+      <rect class="box" x="440" y="40" width="130" height="40" rx="6"/><text x="505" y="65" text-anchor="middle" class="t-b">3. Run</text>
+      <text x="630" y="65" text-anchor="middle" class="t-b">4. Users</text>
+      <text x="360" y="22" text-anchor="middle" class="t-sm">time &#8594;</text>
+      <!-- with generics -->
+      <rect class="impl" x="200" y="104" width="210" height="46" rx="6"/>
+      <text x="305" y="124" text-anchor="middle" class="t-good t-b">WITH generics: error here &#10003;</text>
+      <text x="305" y="142" text-anchor="middle" class="t-sm">red underline, costs you 5 seconds</text>
+      <line class="ln-good" x1="305" y1="102" x2="305" y2="82"/>
+      <!-- without generics -->
+      <rect class="bad" x="420" y="164" width="270" height="46" rx="6"/>
+      <text x="555" y="184" text-anchor="middle" class="t-bad t-b">WITHOUT generics: error here &#10007;</text>
+      <text x="555" y="202" text-anchor="middle" class="t-sm">ClassCastException, maybe in front of a user</text>
+      <line class="ln-bad" x1="505" y1="162" x2="505" y2="82"/>
+    </svg>
+    <figcaption class="figure__cap"><b>Figure 1.</b> The earlier a bug is caught, the cheaper it is to fix. Generics move type errors from <b>run time</b> to <b>compile time</b>.</figcaption>
+  </figure>
+
+  <div class="newwords"><b>&#128218; New words</b>
+    <dl>
+      <dt>Compile time vs run time</dt><dd><strong>Compile time</strong> is when Java checks and translates your code, before it runs (IntelliJ does this constantly as you type). <strong>Run time</strong> is when the program is actually running.</dd>
+      <dt>Cast <code>(String) x</code></dt><dd>Telling Java "treat this object as a String". If it's not really a String, you get a <code>ClassCastException</code> at run time.</dd>
+      <dt>Raw type</dt><dd>A generic class used without its <code>&lt;&hellip;&gt;</code>, like plain <code>List</code>. Only for old code; never write it yourself.</dd>
+      <dt>Generics</dt><dd>A Java feature that lets classes, interfaces and methods take <strong>types as parameters</strong>, written in <code>&lt; &gt;</code>.</dd>
+    </dl>
+  </div>
+
+  <h3>&#128187; Try it: the Box Type-Checker</h3>
+  <p>
+    On the left is a <strong>generic</strong> <code>Box&lt;T&gt;</code>, which you'll write yourself in Part 2. On the right is an old-style <strong>raw</strong> box.
+    Pick a type for <code>T</code>, then try putting different values in. Watch <em>when</em> each mistake is caught. Things to try:
+  </p>
+  <ol>
+    <li>Choose <code>Box&lt;String&gt;</code> and put <code>95</code>. Then press <strong>String s = (String) rawBox.get()</strong>.</li>
+    <li>Choose <code>Box&lt;Double&gt;</code> and put <code>95</code>. Surprised? An <code>int</code> is auto-boxed to <code>Integer</code>, and an <code>Integer</code> is <em>not</em> a <code>Double</code>. (<code>95.0</code> would work.)</li>
+    <li>Choose <code>Box&lt;Number&gt;</code>: now both <code>95</code> and <code>3.5</code> are accepted. Why? (Both Integer and Double are Numbers.)</li>
+  </ol>
+  <div data-playground="typebox"></div>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point: the three benefits of generics</b>
+      <ol>
+        <li><strong>Type safety</strong>: wrong types are caught at <em>compile</em> time, not at run time.</li>
+        <li><strong>No casts</strong>: what you take out already has the right type.</li>
+        <li><strong>Reusable code</strong>: write a class or method once, and use it for any type.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="quiz mini-check">
+    <div class="mini-check__label">&#9889; Quick check</div>
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__stem">What is the <em>main</em> advantage of <code>List&lt;String&gt;</code> over a raw <code>List</code>?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> The program runs faster.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Adding a wrong type is caught by the compiler, and reading needs no cast.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> It can hold more elements.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> It can hold both Strings and numbers safely.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> Generics are about <em>safety</em> and <em>convenience</em>, not speed or size. Because of type erasure (Part 8), the running program is essentially the same.</div>
+    </div>
+  </div>
+
+  <!-- ===== PART 2 ========================================================== -->
+  <span class="eyebrow">Part 2 of 8</span>
+  <h2 id="part-2-generic-classes">Part 2 &mdash; Generic Classes: Declaration and Instantiation</h2>
+
+  <p>
+    A <strong>generic class</strong> is a class with a <strong>type parameter</strong>, a placeholder name (usually <code>T</code>) written in
+    angle brackets after the class name. Inside the class, you use <code>T</code> wherever you would normally write a real type.
+    When someone creates an object, they choose what <code>T</code> means.
+  </p>
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; a cookie cutter</b>
+      The generic class <code>Box&lt;T&gt;</code> is a <strong>cookie cutter</strong>: one shape, written once. When you press it into
+      chocolate dough you get a chocolate cookie (<code>Box&lt;String&gt;</code>); into ginger dough, a ginger cookie (<code>Box&lt;Integer&gt;</code>).
+      Same shape, different filling, and you always know which filling each cookie has.
+    </div>
+  </div>
+
+  <h3>Declaring a generic class: <code>Box&lt;T&gt;</code></h3>
+  <div class="anatomy" aria-label="Parts of a generic class declaration">
+    <span><code>public class</code><small>a normal class declaration</small></span>
+    <span class="a3"><code>Box</code><small>the class name</small></span>
+    <span class="a4"><code>&lt;T&gt;</code><small>type parameter: "this class works with some type I'll call T"</small></span>
+    <span><code>{ &hellip; }</code><small>inside, use T like any type: fields, parameters, return types</small></span>
+  </div>
+  <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/Box.java" hl="7,9,11,15"-->
+<pre class="numbered" data-file="Box.java" data-hl="7,9,11,15"><code class="lang-java">package com.aptech.s02;
+
+/**
+ * A generic class: a Box that can hold ONE item of any type T.
+ * T is a "type parameter" - a placeholder that is filled in when you create a Box.
+ */
+public class Box&lt;T&gt; {
+
+    private T item;                        // the item's type is whatever T turns out to be
+
+    public void put(T item) {              // only accepts a T
+        this.item = item;
+    }
+
+    public T get() {                       // gives back a T - no cast needed by the caller
+        return item;
+    }
+
+    public boolean isEmpty() {
+        return item == null;
+    }
+
+    @Override
+    public String toString() {
+        return "Box[" + item + "]";
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>7</td><td><code>public class Box&lt;T&gt;</code> declares the class and its type parameter <code>T</code>. <code>T</code> is not a real class; it is a <strong>blank to be filled in</strong> later.</td></tr>
+      <tr><td>9</td><td>A field of type <code>T</code>. For a <code>Box&lt;String&gt;</code> it will hold a String; for a <code>Box&lt;Integer&gt;</code>, an Integer.</td></tr>
+      <tr><td>11&ndash;13</td><td><code>put(T item)</code> only accepts a <code>T</code>, so the compiler blocks anything else.</td></tr>
+      <tr><td>15&ndash;17</td><td><code>get()</code> returns a <code>T</code>, so the caller gets the right type back with <strong>no cast</strong>.</td></tr>
+      <tr><td>19&ndash;21</td><td>An ordinary method. Not everything in a generic class has to mention <code>T</code>.</td></tr>
+      <tr><td>23&ndash;26</td><td><code>toString()</code> controls how a Box prints: <code>Box[Ada]</code>.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Instantiating (creating) generic objects</h3>
+  <p><strong>Instantiate</strong> means "create an object from a class". For a generic class you also choose the <strong>type argument</strong>, the real type that replaces <code>T</code>:</p>
+  <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/E03_BoxDemo.java" hl="8,13,18"-->
+<pre class="numbered" data-file="E03_BoxDemo.java" data-hl="8,13,18"><code class="lang-java">package com.aptech.s02;
+
+/**
+ * Example 3 — Creating (instantiating) objects of our generic Box class.
+ */
+public class E03_BoxDemo {
+    public static void main(String[] args) {
+        Box&lt;String&gt; nameBox = new Box&lt;&gt;();        // T becomes String
+        nameBox.put("Ada");
+        String name = nameBox.get();              // returns String - no cast
+        System.out.println(nameBox + " holds a String of length " + name.length());
+
+        Box&lt;Integer&gt; scoreBox = new Box&lt;&gt;();      // T becomes Integer
+        scoreBox.put(95);                         // autoboxing: int 95 -&gt; Integer
+        int score = scoreBox.get();               // unboxing: Integer -&gt; int
+        System.out.println(scoreBox + " holds a score, plus bonus = " + (score + 5));
+
+        Box&lt;Box&lt;String&gt;&gt; giftBox = new Box&lt;&gt;();   // a box inside a box - T is Box&lt;String&gt;
+        giftBox.put(nameBox);
+        System.out.println("Gift box: " + giftBox + ", inner item: " + giftBox.get().get());
+
+        Box&lt;Double&gt; emptyBox = new Box&lt;&gt;();
+        System.out.println("Is the Double box empty? " + emptyBox.isEmpty());
+        // scoreBox.put("ninety");                // COMPILE ERROR: String cannot be converted to Integer
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>8</td><td>Create a <code>Box&lt;String&gt;</code>: in this object, every <code>T</code> means <code>String</code>. The <code>&lt;&gt;</code> on the right (the diamond) copies <code>String</code> from the left.</td></tr>
+      <tr><td>10</td><td><code>get()</code> returns a <code>String</code>, so we can call <code>.length()</code> straight away.</td></tr>
+      <tr><td>13&ndash;15</td><td>The <em>same</em> class, now with <code>T = Integer</code>. <code>put(95)</code> auto-boxes the <code>int</code> into an <code>Integer</code>; <code>int score = get()</code> unboxes it again.</td></tr>
+      <tr><td>18&ndash;20</td><td>A type argument can itself be generic: a <code>Box</code> of <code>Box&lt;String&gt;</code>. <code>giftBox.get()</code> gives the inner box, and <code>.get()</code> again gives <code>"Ada"</code>.</td></tr>
+      <tr><td>22&ndash;23</td><td>A new, empty <code>Box&lt;Double&gt;</code>.</td></tr>
+      <tr><td>24</td><td>Putting a String into the Integer box would be a compile error: <code>String cannot be converted to Integer</code>.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s02-generics" main="com.aptech.s02.E03_BoxDemo"-->
+<div class="terminal-output">Box[Ada] holds a String of length 3
+Box[95] holds a score, plus bonus = 100
+Gift box: Box[Box[Ada]], inner item: Ada
+Is the Double box empty? true</div>
+<!--@end-->
+
+  <figure class="figure" aria-label="One generic class, many typed objects">
+    <svg class="dg" viewBox="0 0 700 220" width="700" height="220" role="img" aria-labelledby="g2t">
+      <title id="g2t">The generic class Box of T acts as a template; replacing T gives Box of String, Box of Integer and Box of Double</title>
+      <defs><marker id="g2a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker></defs>
+      <rect class="iface" x="250" y="14" width="200" height="74" rx="8"/>
+      <text x="350" y="38" text-anchor="middle" class="t-b">class Box&lt;T&gt;</text>
+      <text x="350" y="58" text-anchor="middle" class="t-mono t-sm">T item; put(T); T get()</text>
+      <text x="350" y="76" text-anchor="middle" class="t-xs">written ONCE</text>
+      <path class="ln" d="M300 90 L120 140" marker-end="url(#g2a)"/><path class="ln" d="M350 90 L350 140" marker-end="url(#g2a)"/><path class="ln" d="M400 90 L580 140" marker-end="url(#g2a)"/>
+      <text x="190" y="112" class="t-xs t-accent">T = String</text><text x="358" y="120" class="t-xs t-accent">T = Integer</text><text x="470" y="112" class="t-xs t-accent">T = Double</text>
+      <rect class="impl" x="40" y="142" width="170" height="60" rx="8"/><text x="125" y="166" text-anchor="middle" class="t-b">Box&lt;String&gt;</text><text x="125" y="186" text-anchor="middle" class="t-mono t-sm">String get()</text>
+      <rect class="impl" x="265" y="142" width="170" height="60" rx="8"/><text x="350" y="166" text-anchor="middle" class="t-b">Box&lt;Integer&gt;</text><text x="350" y="186" text-anchor="middle" class="t-mono t-sm">Integer get()</text>
+      <rect class="impl" x="490" y="142" width="170" height="60" rx="8"/><text x="575" y="166" text-anchor="middle" class="t-b">Box&lt;Double&gt;</text><text x="575" y="186" text-anchor="middle" class="t-mono t-sm">Double get()</text>
+    </svg>
+    <figcaption class="figure__cap"><b>Figure 2.</b> One class, written once. Each object fills in <code>T</code> with a real type, and the compiler checks every use.</figcaption>
+  </figure>
+
+  <h3>Naming type parameters</h3>
+  <p>You could call a type parameter anything, but Java programmers always use a <strong>single capital letter</strong>, so it can never be confused with a real class name. These letters are a convention everyone recognises:</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Letter</th><th>Stands for</th><th>You'll see it in&hellip;</th></tr></thead>
+    <tbody>
+      <tr><td><code>T</code></td><td><strong>T</strong>ype (the general default)</td><td><code>Box&lt;T&gt;</code>, <code>Optional&lt;T&gt;</code></td></tr>
+      <tr><td><code>E</code></td><td><strong>E</strong>lement (of a collection)</td><td><code>List&lt;E&gt;</code>, <code>Set&lt;E&gt;</code></td></tr>
+      <tr><td><code>K</code>, <code>V</code></td><td><strong>K</strong>ey, <strong>V</strong>alue</td><td><code>Map&lt;K, V&gt;</code></td></tr>
+      <tr><td><code>N</code></td><td><strong>N</strong>umber</td><td><code>Stats&lt;N extends Number&gt;</code></td></tr>
+      <tr><td><code>R</code></td><td><strong>R</strong>esult / return type</td><td><code>Function&lt;T, R&gt;</code></td></tr>
+      <tr><td><code>S</code>, <code>U</code></td><td>2nd, 3rd type</td><td>when you need more than one</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Example 4 &mdash; two type parameters: <code>Pair&lt;K, V&gt;</code></h3>
+  <p>A class can have several type parameters, separated by commas. <code>Pair</code> holds two values that may be of <em>different</em> types, for example a name and a score.</p>
+  <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/Pair.java" hl="6,20,25"-->
+<pre class="numbered" data-file="Pair.java" data-hl="6,20,25"><code class="lang-java">package com.aptech.s02;
+
+/**
+ * A generic class with TWO type parameters: K (key / first) and V (value / second).
+ */
+public class Pair&lt;K, V&gt; {
+
+    private final K first;
+    private final V second;
+
+    public Pair(K first, V second) {
+        this.first = first;
+        this.second = second;
+    }
+
+    public K getFirst()  { return first; }
+    public V getSecond() { return second; }
+
+    /** Returns a NEW pair with the two parts swapped. Notice the types swap too: Pair&lt;V, K&gt;. */
+    public Pair&lt;V, K&gt; swap() {
+        return new Pair&lt;&gt;(second, first);
+    }
+
+    /** A static generic "factory" method - Java works out K and V from the arguments. */
+    public static &lt;K, V&gt; Pair&lt;K, V&gt; of(K first, V second) {
+        return new Pair&lt;&gt;(first, second);
+    }
+
+    @Override
+    public String toString() {
+        return "(" + first + ", " + second + ")";
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>6</td><td>Two type parameters, <code>K</code> and <code>V</code>.</td></tr>
+      <tr><td>8&ndash;9</td><td>The first value has type <code>K</code>, the second has type <code>V</code>. <code>final</code> means they can't change after creation.</td></tr>
+      <tr><td>11&ndash;14</td><td>The constructor takes a <code>K</code> and a <code>V</code>.</td></tr>
+      <tr><td>16&ndash;17</td><td>Getters return the correct types.</td></tr>
+      <tr><td>20&ndash;22</td><td><code>swap()</code> returns a <code>Pair&lt;V, K&gt;</code>: the <em>types</em> swap along with the values. The compiler tracks this for you.</td></tr>
+      <tr><td>25&ndash;27</td><td>A <strong>static generic method</strong> (Part 3). The <code>&lt;K, V&gt;</code> before the return type declares its own type parameters, so <code>Pair.of("Ben", true)</code> works out <code>K = String</code>, <code>V = Boolean</code> by itself.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/E04_PairDemo.java" hl="11,14,20"-->
+<pre class="numbered" data-file="E04_PairDemo.java" data-hl="11,14,20"><code class="lang-java">package com.aptech.s02;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Example 4 — A class with two type parameters, and a List of Pairs.
+ */
+public class E04_PairDemo {
+    public static void main(String[] args) {
+        Pair&lt;String, Integer&gt; ada = new Pair&lt;&gt;("Ada", 95);         // K = String, V = Integer
+        System.out.println(ada.getFirst() + " scored " + ada.getSecond());
+
+        Pair&lt;Integer, String&gt; swapped = ada.swap();                 // the types are swapped too
+        System.out.println("Swapped: " + swapped);
+
+        Pair&lt;String, Boolean&gt; paid = Pair.of("Ben", true);          // factory method, types inferred
+        System.out.println("Paid? " + paid);
+
+        List&lt;Pair&lt;String, Integer&gt;&gt; results = new ArrayList&lt;&gt;();    // generics inside generics
+        results.add(ada);
+        results.add(new Pair&lt;&gt;("Chi", 71));
+        int total = 0;
+        for (Pair&lt;String, Integer&gt; p : results) {
+            total += p.getSecond();
+        }
+        System.out.println(results + " -&gt; total " + total);
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>11</td><td>A pair of a <code>String</code> and an <code>Integer</code>.</td></tr>
+      <tr><td>14</td><td>The swapped pair has type <code>Pair&lt;Integer, String&gt;</code>. If you wrote <code>Pair&lt;String, Integer&gt; swapped</code>, the compiler would refuse.</td></tr>
+      <tr><td>17</td><td>Using the factory method <code>of</code>: no <code>new</code>, and no types to write.</td></tr>
+      <tr><td>20</td><td>Generics combine: a <code>List</code> <em>of</em> <code>Pair&lt;String, Integer&gt;</code>.</td></tr>
+      <tr><td>24&ndash;26</td><td>Loop over the pairs and add up the scores. <code>p.getSecond()</code> is an <code>Integer</code>, so it can be added directly.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s02-generics" main="com.aptech.s02.E04_PairDemo"-->
+<div class="terminal-output">Ada scored 95
+Swapped: (95, Ada)
+Paid? (Ben, true)
+[(Ada, 95), (Chi, 71)] -&gt; total 166</div>
+<!--@end-->
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      <strong>Declare</strong>: <code>class Name&lt;T&gt; { &hellip; }</code>, and use <code>T</code> inside as a type.
+      <strong>Instantiate</strong>: <code>Name&lt;RealType&gt; x = new Name&lt;&gt;();</code>. Use several parameters with commas: <code>Pair&lt;K, V&gt;</code>.
+      Type arguments must be <strong>reference types</strong> (<code>Integer</code>, not <code>int</code>).
+    </div>
+  </div>
+
+  <div class="quiz mini-check">
+    <div class="mini-check__label">&#9889; Quick check</div>
+    <div class="quiz__q">
+      <div class="quiz__kind">Fill in the blanks</div>
+      <div class="quiz__stem">Complete the declaration of a generic class <code>Crate</code> that holds one item of any type:<br>
+        <code>public class Crate<input type="text" class="fill-blank" data-accept="&lt;T&gt;|&lt;E&gt;" aria-label="type parameter" style="width:6ch" placeholder="?"> { private <input type="text" class="fill-blank" data-accept="T|E" aria-label="field type" style="width:4ch" placeholder="?"> item; }</code></div>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong><code>&lt;T&gt;</code></strong> after the class name declares the type parameter, and the field has type <strong><code>T</code></strong>. (Any capital letter works if you use the same one twice, e.g. <code>&lt;E&gt;</code> and <code>E</code>.)</div>
+    </div>
+  </div>
+
+  <!-- ===== PART 3 ========================================================== -->
+  <span class="eyebrow">Part 3 of 8</span>
+  <h2 id="part-3-generic-methods">Part 3 &mdash; Generic Methods</h2>
+  <p>
+    Sometimes you don't need a whole generic class, just <strong>one method</strong> that works for any type, such as "print any array" or "swap
+    two elements of any array". A <strong>generic method</strong> declares its <em>own</em> type parameter, written <strong>just before the return type</strong>.
+  </p>
+  <div class="anatomy" aria-label="Parts of a generic method declaration">
+    <span><code>public static</code><small>normal modifiers</small></span>
+    <span class="a4"><code>&lt;T&gt;</code><small>"this method has its own type T" (always BEFORE the return type)</small></span>
+    <span class="a3"><code>T</code><small>return type (here: whatever T is)</small></span>
+    <span><code>firstOrNull</code><small>method name</small></span>
+    <span class="a2"><code>(List&lt;T&gt; list)</code><small>parameter that uses T</small></span>
+  </div>
+
+  <h3>Example 5 &mdash; three generic methods</h3>
+  <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/E05_GenericMethods.java" hl="12,20,25,42,45"-->
+<pre class="numbered" data-file="E05_GenericMethods.java" data-hl="12,20,25,42,45"><code class="lang-java">package com.aptech.s02;
+
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * Example 5 — Generic METHODS: the method has its own type parameter, written before the return type.
+ */
+public class E05_GenericMethods {
+
+    /** Prints any array, whatever the element type. */
+    public static &lt;T&gt; void printAll(T[] items) {
+        for (T item : items) {
+            System.out.print(item + " ");
+        }
+        System.out.println();
+    }
+
+    /** Returns the first element, or null if the list is empty. The return type follows T. */
+    public static &lt;T&gt; T firstOrNull(List&lt;T&gt; list) {
+        return list.isEmpty() ? null : list.get(0);
+    }
+
+    /** Swaps two positions in any array. */
+    public static &lt;T&gt; void swap(T[] items, int i, int j) {
+        T temp = items[i];
+        items[i] = items[j];
+        items[j] = temp;
+    }
+
+    public static void main(String[] args) {
+        String[] names = {"Ada", "Ben", "Chi"};
+        Integer[] scores = {72, 95, 60};
+
+        printAll(names);                               // T is inferred as String
+        printAll(scores);                              // T is inferred as Integer
+
+        swap(names, 0, 2);
+        System.out.println("After swap: " + Arrays.toString(names));
+
+        String first = firstOrNull(List.of("x", "y")); // T = String, so it returns a String
+        Integer none = firstOrNull(List.&lt;Integer&gt;of()); // explicit type witness: List.&lt;Integer&gt;of()
+        System.out.println("first = " + first + ", from empty list = " + none);
+
+        E05_GenericMethods.&lt;Double&gt;printAll(new Double[]{1.5, 2.5});   // you CAN name T yourself
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>12</td><td><code>&lt;T&gt; void printAll(T[] items)</code>: "for any type T, accept an array of T". The <code>&lt;T&gt;</code> <em>before</em> <code>void</code> is what makes the method generic.</td></tr>
+      <tr><td>13&ndash;15</td><td>Loop over the array. Each element has type <code>T</code>, and anything can be printed.</td></tr>
+      <tr><td>20&ndash;22</td><td>Here <code>T</code> is also the <strong>return type</strong>: give it a <code>List&lt;String&gt;</code> and you get a <code>String</code> back. The <code>? :</code> is a short if/else: "if empty then null, else the first element".</td></tr>
+      <tr><td>25&ndash;29</td><td>The classic swap, now for arrays of any type. <code>temp</code> has type <code>T</code>.</td></tr>
+      <tr><td>35&ndash;36</td><td>We never write <code>&lt;String&gt;</code> ourselves: Java <strong>infers</strong> (works out) <code>T</code> from the argument type.</td></tr>
+      <tr><td>42</td><td><code>List.of()</code> with no elements gives Java nothing to infer from, so we name the type ourselves with a <strong>type witness</strong>: <code>List.&lt;Integer&gt;of()</code>.</td></tr>
+      <tr><td>45</td><td>The same trick on our own method: <code>ClassName.&lt;Double&gt;printAll(&hellip;)</code>. You rarely need this, but now you'll recognise it.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s02-generics" main="com.aptech.s02.E05_GenericMethods"-->
+<div class="terminal-output">Ada Ben Chi 
+72 95 60 
+After swap: [Chi, Ben, Ada]
+first = x, from empty list = null
+1.5 2.5</div>
+<!--@end-->
+
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>Generic methods only work with object arrays</b>
+      <code>printAll(new int[]{1, 2})</code> does <strong>not</strong> compile, because <code>T</code> can't be <code>int</code>. Use <code>Integer[]</code> (as on line 33) or a <code>List&lt;Integer&gt;</code>.
+    </div>
+  </div>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128161;</span>
+    <div class="callout__b"><b>Generic class or generic method?</b>
+      <strong>Class</strong>: when an <em>object</em> must remember its type across many method calls (a Box, a Pair, a Repository).
+      <strong>Method</strong>: when a single operation should work for any type (swap, print, find the maximum). Many toolbox classes, like
+      <code>Collections</code> and <code>Arrays</code>, are just a bunch of generic static methods, e.g. <code>Collections.&lt;T&gt;max(&hellip;)</code>.
+    </div>
+  </div>
+
+  <div class="quiz mini-check">
+    <div class="mini-check__label">&#9889; Quick check</div>
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__stem">Which is a correctly declared generic method that returns the last element of any list?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>public static T last&lt;T&gt;(List&lt;T&gt; l)</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>public static T last(List&lt;T&gt; l)</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>public static &lt;T&gt; T last(List&lt;T&gt; l)</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>public static &lt;T&gt; last(List&lt;T&gt; l)</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> The type parameter <code>&lt;T&gt;</code> goes <em>before</em> the return type. B never declares <code>T</code> (the error would be "cannot find symbol T"), and D has no return type.</div>
+    </div>
+  </div>
+
+  <!-- ===== PART 4 ========================================================== -->
+  <span class="eyebrow">Part 4 of 8</span>
+  <h2 id="part-4-bounded-types">Part 4 &mdash; Bounded Types: "Any Type, As Long As&hellip;"</h2>
+  <p>
+    Inside a plain generic method, <code>T</code> could be <em>anything</em>, so the compiler only lets you do things that work for every
+    object (like printing it). Try to add two <code>T</code>s, or call <code>compareTo</code>, and you get <code>cannot find symbol</code>.
+    A <strong>bound</strong> promises more: <code>&lt;T extends Number&gt;</code> means "T can be any type, <em>as long as it is a Number</em>", so
+    now every <code>Number</code> method is allowed.
+  </p>
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; a job that needs a driving licence</b>
+      "Anyone can apply" means you can't ask applicants to drive. "Anyone can apply <em>who has a driving licence</em>" means every applicant
+      <strong>can</strong> drive. The bound (<code>extends Number</code>) is the licence requirement: it limits who may apply, but in return it
+      guarantees what they can do.
+    </div>
+  </div>
+  <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/E06_BoundedTypes.java" hl="11,14,20,23,31"-->
+<pre class="numbered" data-file="E06_BoundedTypes.java" data-hl="11,14,20,23,31"><code class="lang-java">package com.aptech.s02;
+
+import java.util.List;
+
+/**
+ * Example 6 — Bounded type parameters: "T can be any type, AS LONG AS it is a ..."
+ */
+public class E06_BoundedTypes {
+
+    /** T must be a Number (Integer, Double, Long...), so we are allowed to call doubleValue(). */
+    public static &lt;T extends Number&gt; double sum(List&lt;T&gt; numbers) {
+        double total = 0;
+        for (T n : numbers) {
+            total += n.doubleValue();              // allowed ONLY because T extends Number
+        }
+        return total;
+    }
+
+    /** T must be comparable with itself, so we are allowed to call compareTo(). */
+    public static &lt;T extends Comparable&lt;T&gt;&gt; T max(List&lt;T&gt; items) {
+        T best = items.get(0);
+        for (T item : items) {
+            if (item.compareTo(best) &gt; 0) {
+                best = item;
+            }
+        }
+        return best;
+    }
+
+    /** A generic CLASS can have a bound too. */
+    static class Stats&lt;N extends Number&gt; {
+        private final List&lt;N&gt; values;
+
+        Stats(List&lt;N&gt; values) { this.values = values; }
+
+        double average() {
+            return sum(values) / values.size();
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println("sum ints    = " + sum(List.of(1, 2, 3)));
+        System.out.println("sum doubles = " + sum(List.of(1.5, 2.5)));
+        // sum(List.of("a", "b"));                // COMPILE ERROR: String is not a Number
+
+        System.out.println("max word    = " + max(List.of("pear", "apple", "zebra", "fig")));
+        System.out.println("max number  = " + max(List.of(7, 42, 3)));
+
+        Stats&lt;Integer&gt; ages = new Stats&lt;&gt;(List.of(18, 21, 30));
+        System.out.println("average age = " + ages.average());
+        // Stats&lt;String&gt; bad;                     // COMPILE ERROR: String is not within bound Number
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>11</td><td><code>&lt;T extends Number&gt;</code>: T must be <code>Number</code> or a subclass (<code>Integer</code>, <code>Double</code>, <code>Long</code>&hellip;). Note that the word is always <code>extends</code> here, even for interfaces.</td></tr>
+      <tr><td>14</td><td>Because every T is a Number, we may call <code>doubleValue()</code>, a method every Number has. Without the bound this line would not compile.</td></tr>
+      <tr><td>20</td><td><code>&lt;T extends Comparable&lt;T&gt;&gt;</code>: T must be able to compare itself with another T. <code>String</code>, <code>Integer</code> and <code>Double</code> all are.</td></tr>
+      <tr><td>23</td><td>So <code>compareTo</code> is allowed. It returns a positive number when <code>item</code> is "bigger" than <code>best</code>.</td></tr>
+      <tr><td>31</td><td>A <strong>generic class</strong> can have a bound too: a <code>Stats&lt;N extends Number&gt;</code> can only be created for number types.</td></tr>
+      <tr><td>42&ndash;43</td><td>The same <code>sum</code> works for a list of Integers <em>and</em> a list of Doubles.</td></tr>
+      <tr><td>44</td><td><code>sum(List.of("a", "b"))</code> is rejected at compile time, because String is not a Number.</td></tr>
+      <tr><td>46&ndash;47</td><td><code>max</code> works for Strings (alphabetical: "zebra" is biggest) and numbers.</td></tr>
+      <tr><td>51</td><td><code>Stats&lt;String&gt;</code> is rejected: <code>type argument String is not within bounds of type-variable N</code>.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s02-generics" main="com.aptech.s02.E06_BoundedTypes"-->
+<div class="terminal-output">sum ints    = 6.0
+sum doubles = 4.0
+max word    = zebra
+max number  = 42
+average age = 23.0</div>
+<!--@end-->
+  <div class="callout callout--deep-dive"><span class="callout__i">&#128269;</span>
+    <div class="callout__b"><b>Deep dive (optional) &mdash; multiple bounds</b>
+      A type can need several abilities: <code>&lt;T extends Number &amp; Comparable&lt;T&gt;&gt;</code> means "a Number that is also Comparable".
+      The class (if any) must come first, then interfaces joined with <code>&amp;</code>.
+    </div>
+  </div>
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      <code>&lt;T extends X&gt;</code> <strong>restricts</strong> which types may be used, and in exchange <strong>unlocks</strong> all of X's methods on T.
+      Use it whenever your generic code needs to <em>do</em> something with its elements (add, compare, measure).
+    </div>
+  </div>
+
+  <!-- ===== PART 5 ========================================================== -->
+  <span class="eyebrow">Part 5 of 8</span>
+  <h2 id="part-5-wildcards">Part 5 &mdash; Wildcards: <code>?</code>, <code>? extends</code>, <code>? super</code></h2>
+
+  <h3>First, the surprising rule</h3>
+  <p>You know from the Bridge lessons that an <code>Integer</code> <strong>is a</strong> <code>Number</code>. So surely a list of Integers is a list of Numbers? <strong>No!</strong></p>
+  <pre><code class="lang-java">List&lt;Integer&gt; ints = new ArrayList&lt;&gt;();
+List&lt;Number&gt; nums = ints;        // COMPILE ERROR: List&lt;Integer&gt; cannot be converted to List&lt;Number&gt;</code></pre>
+  <p>Why would Java forbid this? Imagine it were allowed:</p>
+  <pre><code class="lang-java">List&lt;Number&gt; nums = ints;   // pretend this was OK...
+nums.add(3.14);             // a Double is a Number, so this looks fine...
+Integer i = ints.get(0);    // ...but ints now contains a Double! CRASH.</code></pre>
+  <figure class="concept-visual" aria-label="Why List of Integer is not a List of Number">
+    <img src="../assets/img/diagrams/s02_generics_inheritance_trap.svg" alt="The Generics Inheritance Trap Diagram">
+    <figcaption>
+      <span class="fig-badge fig-badge--hierarchy">&#9888;&#65039; Type Safety Trap</span>
+      <strong>Why <code>List&lt;Integer&gt;</code> is NOT a <code>List&lt;Number&gt;</code>:</strong> If Java allowed you to assign <code>List&lt;Integer&gt;</code> to <code>List&lt;Number&gt;</code>, you could add a <code>Double</code> into it (since Double is a Number), corrupting the integer list and causing a crash when read. Java protects you by making generic types invariant unless you explicitly use wildcards like <code>List&lt;? extends Number&gt;</code>.
+    </figcaption>
+  </figure>
+
+  <p>So how do you write <em>one</em> method that accepts a <code>List&lt;Integer&gt;</code> <em>and</em> a <code>List&lt;Double&gt;</code>? With a <strong>wildcard</strong>, the question mark <code>?</code>, which means "some type, I don't know exactly which".</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Wildcard</th><th>Read it as&hellip;</th><th>Accepts</th><th>You may</th></tr></thead>
+    <tbody>
+      <tr><td><code>List&lt;?&gt;</code></td><td>"a list of <em>something</em>"</td><td>any list</td><td>read as <code>Object</code>, call <code>size()</code>; <strong>not</strong> add</td></tr>
+      <tr><td><code>List&lt;? extends Number&gt;</code></td><td>"a list of <em>some kind of</em> Number" (upper bound)</td><td><code>List&lt;Integer&gt;</code>, <code>List&lt;Double&gt;</code>, <code>List&lt;Number&gt;</code></td><td><strong>read</strong> as <code>Number</code>; <strong>not</strong> add</td></tr>
+      <tr><td><code>List&lt;? super Integer&gt;</code></td><td>"a list that can <em>hold</em> Integers" (lower bound)</td><td><code>List&lt;Integer&gt;</code>, <code>List&lt;Number&gt;</code>, <code>List&lt;Object&gt;</code></td><td><strong>add</strong> Integers; read only as <code>Object</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Example 7 &mdash; the three wildcards in action</h3>
+  <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/E07_Wildcards.java" hl="12,20,25,30,55,56"-->
+<pre class="numbered" data-file="E07_Wildcards.java" data-hl="12,20,25,30,55,56"><code class="lang-java">package com.aptech.s02;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Example 7 — Wildcards: ?  |  ? extends X  |  ? super X
+ */
+public class E07_Wildcards {
+
+    /** Unbounded wildcard: a list of ANYTHING. We can read items (as Object) but not add. */
+    static void printList(List&lt;?&gt; list) {
+        for (Object o : list) {
+            System.out.print(o + " ");
+        }
+        System.out.println("(" + list.size() + " items)");
+    }
+
+    /** Upper bound: a list of Number OR any subtype. Safe to READ as Number (a "producer"). */
+    static double total(List&lt;? extends Number&gt; list) {
+        double sum = 0;
+        for (Number n : list) {
+            sum += n.doubleValue();
+        }
+        // list.add(1);                          // COMPILE ERROR: might be a List&lt;Double&gt;!
+        return sum;
+    }
+
+    /** Lower bound: a list of Integer OR any supertype. Safe to ADD Integers (a "consumer"). */
+    static void addOneToFive(List&lt;? super Integer&gt; list) {
+        for (int i = 1; i &lt;= 5; i++) {
+            list.add(i);
+        }
+    }
+
+    public static void main(String[] args) {
+        List&lt;Integer&gt; ints = List.of(1, 2, 3);
+        List&lt;Double&gt; doubles = List.of(0.5, 0.25);
+        List&lt;String&gt; words = List.of("hi", "there");
+
+        printList(ints);                           // List&lt;?&gt; accepts every kind of list
+        printList(words);
+
+        System.out.println("total(ints)    = " + total(ints));
+        System.out.println("total(doubles) = " + total(doubles));
+        // total(words);                           // COMPILE ERROR: String is not a Number
+
+        List&lt;Number&gt; numbers = new ArrayList&lt;&gt;();
+        List&lt;Object&gt; objects = new ArrayList&lt;&gt;();
+        addOneToFive(numbers);                     // Number is a supertype of Integer - OK
+        addOneToFive(objects);                     // Object is a supertype of Integer - OK
+        System.out.println("numbers = " + numbers + ", objects = " + objects);
+
+        // THE surprising rule: Integer IS-A Number, but List&lt;Integer&gt; is NOT a List&lt;Number&gt;
+        // List&lt;Number&gt; bad = ints;                // COMPILE ERROR: incompatible types
+        List&lt;? extends Number&gt; ok = ints;          // this is how you say "a list of some kind of Number"
+        System.out.println("first via wildcard = " + ok.get(0));
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>12&ndash;17</td><td><code>List&lt;?&gt;</code> accepts any list. We don't know the element type, so each element is treated as an <code>Object</code>, which is enough to print it.</td></tr>
+      <tr><td>20&ndash;24</td><td><code>List&lt;? extends Number&gt;</code>: whatever the list really is, each element is <em>at least</em> a Number, so reading into a <code>Number</code> variable is safe.</td></tr>
+      <tr><td>25</td><td>But <code>add(1)</code> is forbidden: the list passed in might be a <code>List&lt;Double&gt;</code>, and an Integer doesn't belong there.</td></tr>
+      <tr><td>30&ndash;33</td><td><code>List&lt;? super Integer&gt;</code>: the list might be a <code>List&lt;Integer&gt;</code>, <code>List&lt;Number&gt;</code> or <code>List&lt;Object&gt;</code>. All of them can hold an Integer, so <strong>adding</strong> Integers is safe.</td></tr>
+      <tr><td>41&ndash;42</td><td><code>printList</code> happily takes a list of Integers and a list of Strings.</td></tr>
+      <tr><td>44&ndash;46</td><td><code>total</code> takes Integers and Doubles, but not Strings (compile error).</td></tr>
+      <tr><td>48&ndash;52</td><td><code>addOneToFive</code> can fill a <code>List&lt;Number&gt;</code> and a <code>List&lt;Object&gt;</code>.</td></tr>
+      <tr><td>55&ndash;56</td><td>The surprising rule, and its fix: <code>List&lt;Number&gt;</code> refuses a <code>List&lt;Integer&gt;</code>, but <code>List&lt;? extends Number&gt;</code> accepts it.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s02-generics" main="com.aptech.s02.E07_Wildcards"-->
+<div class="terminal-output">1 2 3 (3 items)
+hi there (2 items)
+total(ints)    = 6.0
+total(doubles) = 0.75
+numbers = [1, 2, 3, 4, 5], objects = [1, 2, 3, 4, 5]
+first via wildcard = 1</div>
+<!--@end-->
+
+  <h3>PECS: the one rule to remember</h3>
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; the fruit basket</b>
+      <p>Someone hands you a basket that contains "<em>some kind of fruit</em>" (<code>? extends Fruit</code>). You can safely <strong>take</strong>
+      anything out and call it a fruit. But you can't <strong>put</strong> an apple in: it might be a basket of oranges only!</p>
+      <p>Someone else hands you a basket that "<em>can hold apples</em>" (<code>? super Apple</code>). It might be an apple basket, a fruit basket
+      or an anything basket. You can always <strong>put</strong> an apple in. But when you take something out, you can only say "it's
+      <em>something</em>" (an <code>Object</code>).</p>
+    </div>
+  </div>
+  <figure class="concept-visual" aria-label="Visual cartoon: PECS Producer Extends Consumer Super">
+    <img src="../assets/img/cartoons/s02_pecs_fruit_basket.jpg" alt="Understanding PECS in Java Generics: Producer Fruit Dispenser vs Consumer Blender">
+    <figcaption>
+      <span class="fig-badge fig-badge--analogy">&#127917; Visual Analogy</span>
+      <strong>PECS (Producer Extends, Consumer Super):</strong> Remember this rule forever! If your collection is a <strong>Producer</strong> that gives you items to read, use <code>? extends Fruit</code> (safe to read as Fruit, but read-only). If your collection is a <strong>Consumer</strong> that accepts items to write, use <code>? super Apple</code> (safe to add Apples, write-only).
+    </figcaption>
+  </figure>
+
+  <h3>&#128187; Try it: the Wildcard Explorer</h3>
+  <p>
+    Pick a parameter type for <code>process(&hellip;)</code>. The tables show which lists you may pass in, and what you may read and add inside the method.
+    <strong>Every answer was checked with the real Java compiler</strong>, so you can trust it more than your intuition! Try this order:
+    <code>List&lt;Number&gt;</code> (the surprise), then <code>? extends Number</code>, then <code>? super Integer</code>.
+  </p>
+  <div data-playground="wildcards"></div>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      <code>List&lt;Integer&gt;</code> is <strong>not</strong> a <code>List&lt;Number&gt;</code>. Use <code>? extends X</code> to <strong>read</strong> Xs from "a list of some kind of X",
+      and <code>? super X</code> to <strong>add</strong> Xs to "a list that can hold X". Use <code>?</code> when you don't care about the type at all.
+    </div>
+  </div>
+
+  <div class="quiz mini-check">
+    <div class="mini-check__label">&#9889; Quick check</div>
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__stem">You are writing <code>printAverage(&hellip; scores)</code>, which only <strong>reads</strong> numbers. It must accept a <code>List&lt;Integer&gt;</code> and a <code>List&lt;Double&gt;</code>. Best parameter type?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>List&lt;Number&gt;</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>List&lt;? extends Number&gt;</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>List&lt;? super Number&gt;</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>List&lt;Object&gt;</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> The list is a <em>producer</em> (we only read), so use <code>extends</code>. A would reject <code>List&lt;Integer&gt;</code>. C accepts only lists of Number or Object. D accepts only <code>List&lt;Object&gt;</code>, and you couldn't do maths on its elements.</div>
+    </div>
+  </div>
+
+  <!-- ===== PART 6 ========================================================== -->
+  <span class="eyebrow">Part 6 of 8</span>
+  <h2 id="part-6-inheritance-and-generics">Part 6 &mdash; Inheritance and Generics</h2>
+  <p>Generic classes and interfaces can be extended and implemented just like normal ones. There are three common patterns:</p>
+  <ol>
+    <li><strong>The subclass stays generic</strong> and passes its <code>T</code> up: <code>class LabelledBox&lt;T&gt; extends Box&lt;T&gt;</code>.</li>
+    <li><strong>The subclass fixes the type</strong>: <code>class IntBox extends Box&lt;Integer&gt;</code>. IntBox itself is not generic.</li>
+    <li><strong>A class implements a generic interface</strong> for one type: <code>class NameList implements Storage&lt;String&gt;</code>.</li>
+  </ol>
+  <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/E08_InheritanceWithGenerics.java" hl="13,19,29,34,59,64"-->
+<pre class="numbered" data-file="E08_InheritanceWithGenerics.java" data-hl="13,19,29,34,59,64"><code class="lang-java">package com.aptech.s02;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+/**
+ * Example 8 — Inheritance and generics: extending generic classes and implementing generic interfaces.
+ */
+public class E08_InheritanceWithGenerics {
+
+    /** A generic interface: anything that can store and count items of type T. */
+    interface Storage&lt;T&gt; {
+        void store(T item);
+        int count();
+    }
+
+    /** 1) The subclass stays generic: it passes its own T up to the parent. */
+    static class LabelledBox&lt;T&gt; extends Box&lt;T&gt; {
+        private final String label;
+
+        LabelledBox(String label) { this.label = label; }
+
+        @Override
+        public String toString() { return label + ": " + super.toString(); }
+    }
+
+    /** 2) The subclass FIXES the type: an IntBox is a Box&lt;Integer&gt;, and is not generic itself. */
+    static class IntBox extends Box&lt;Integer&gt; {
+        void doubleIt() { put(get() * 2); }
+    }
+
+    /** 3) A class implementing a generic interface for one specific type. */
+    static class NameList implements Storage&lt;String&gt; {
+        private final List&lt;String&gt; names = new ArrayList&lt;&gt;();
+
+        @Override public void store(String item) { names.add(item.trim()); }
+        @Override public int count() { return names.size(); }
+    }
+
+    public static void main(String[] args) {
+        LabelledBox&lt;String&gt; lunch = new LabelledBox&lt;&gt;("Lunch");
+        lunch.put("Jollof rice");
+        Box&lt;String&gt; asParent = lunch;               // a LabelledBox&lt;String&gt; IS-A Box&lt;String&gt;
+        System.out.println(asParent);
+
+        IntBox counter = new IntBox();
+        counter.put(21);
+        counter.doubleIt();
+        System.out.println("IntBox holds " + counter.get());
+
+        Storage&lt;String&gt; storage = new NameList();   // NameList IS-A Storage&lt;String&gt;
+        storage.store("  Ada ");
+        storage.store("Ben");
+        System.out.println("Stored " + storage.count() + " names");
+
+        // Same type argument -&gt; normal inheritance works:
+        ArrayList&lt;String&gt; arrayList = new ArrayList&lt;&gt;(List.of("a", "b"));
+        List&lt;String&gt; list = arrayList;              // ArrayList&lt;String&gt; IS-A List&lt;String&gt;
+        Collection&lt;String&gt; coll = list;             // List&lt;String&gt; IS-A Collection&lt;String&gt;
+        System.out.println("Collection size: " + coll.size());
+
+        // Different type argument -&gt; NOT related, even though Integer extends Number:
+        // Box&lt;Number&gt; numberBox = new Box&lt;Integer&gt;();   // COMPILE ERROR: incompatible types
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>13&ndash;16</td><td>A <strong>generic interface</strong> <code>Storage&lt;T&gt;</code>: anything that can <code>store</code> a T and <code>count</code> its items.</td></tr>
+      <tr><td>19</td><td><strong>Pattern 1</strong>: <code>LabelledBox&lt;T&gt;</code> declares its own <code>T</code> and hands it to <code>Box&lt;T&gt;</code>. It inherits <code>put</code>/<code>get</code> and adds a label.</td></tr>
+      <tr><td>25</td><td><code>super.toString()</code> calls the parent's version (<code>Box[&hellip;]</code>) and adds the label in front.</td></tr>
+      <tr><td>29&ndash;31</td><td><strong>Pattern 2</strong>: <code>IntBox extends Box&lt;Integer&gt;</code>. Inside, <code>get()</code> returns an <code>Integer</code>, so maths works: <code>get() * 2</code>.</td></tr>
+      <tr><td>34&ndash;39</td><td><strong>Pattern 3</strong>: <code>NameList implements Storage&lt;String&gt;</code>. Its <code>store</code> method must take a <code>String</code>, exactly what the interface promised for <code>T = String</code>.</td></tr>
+      <tr><td>44</td><td>A <code>LabelledBox&lt;String&gt;</code> <strong>is a</strong> <code>Box&lt;String&gt;</code> (same type argument), so this assignment is fine.</td></tr>
+      <tr><td>52</td><td>Program to the interface: the variable type is <code>Storage&lt;String&gt;</code>.</td></tr>
+      <tr><td>58&ndash;60</td><td>With the <strong>same</strong> type argument, normal inheritance works: <code>ArrayList&lt;String&gt;</code> &rarr; <code>List&lt;String&gt;</code> &rarr; <code>Collection&lt;String&gt;</code>.</td></tr>
+      <tr><td>64</td><td>With a <strong>different</strong> type argument it doesn't: <code>Box&lt;Integer&gt;</code> is not a <code>Box&lt;Number&gt;</code> (the Part 5 rule again).</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s02-generics" main="com.aptech.s02.E08_InheritanceWithGenerics"-->
+<div class="terminal-output">Lunch: Box[Jollof rice]
+IntBox holds 42
+Stored 2 names
+Collection size: 2</div>
+<!--@end-->
+  <figure class="figure" aria-label="What is-a what with generics">
+    <svg class="dg" viewBox="0 0 700 150" width="700" height="150" role="img" aria-labelledby="g5t">
+      <title id="g5t">Same type argument: ArrayList of String is a List of String is a Collection of String. Different type argument: Box of Integer is not a Box of Number</title>
+      <defs><marker id="g5a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker></defs>
+      <text x="20" y="22" class="t-b t-good">&#10003; Change the CLASS, keep the type argument: related</text>
+      <rect class="impl" x="20" y="36" width="170" height="34" rx="6"/><text x="105" y="58" text-anchor="middle" class="t-mono">ArrayList&lt;String&gt;</text>
+      <line class="ln" x1="192" y1="53" x2="238" y2="53" marker-end="url(#g5a)"/>
+      <rect class="impl" x="240" y="36" width="150" height="34" rx="6"/><text x="315" y="58" text-anchor="middle" class="t-mono">List&lt;String&gt;</text>
+      <line class="ln" x1="392" y1="53" x2="438" y2="53" marker-end="url(#g5a)"/>
+      <rect class="impl" x="440" y="36" width="210" height="34" rx="6"/><text x="545" y="58" text-anchor="middle" class="t-mono">Collection&lt;String&gt;</text>
+      <text x="20" y="104" class="t-b t-bad">&#10007; Keep the class, change the type argument: NOT related</text>
+      <rect class="bad" x="20" y="114" width="150" height="30" rx="6"/><text x="95" y="134" text-anchor="middle" class="t-mono">Box&lt;Integer&gt;</text>
+      <text x="210" y="134" text-anchor="middle" class="t-bad t-b">&#8800;</text>
+      <rect class="bad" x="250" y="114" width="150" height="30" rx="6"/><text x="325" y="134" text-anchor="middle" class="t-mono">Box&lt;Number&gt;</text>
+      <text x="420" y="134" class="t-sm">(use Box&lt;? extends Number&gt; instead)</text>
+    </svg>
+    <figcaption class="figure__cap"><b>Figure 5.</b> The rule of thumb for inheritance with generics.</figcaption>
+  </figure>
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      Subclasses can keep the type parameter (<code>LabelledBox&lt;T&gt; extends Box&lt;T&gt;</code>) or fix it (<code>IntBox extends Box&lt;Integer&gt;</code>).
+      Generic types are related only when their <strong>type arguments are the same</strong>, or when a wildcard is used.
+    </div>
+  </div>
+
+  <!-- ===== PART 7 ========================================================== -->
+  <span class="eyebrow">Part 7 of 8</span>
+  <h2 id="part-7-type-inference">Part 7 &mdash; Type Inference: Let the Compiler Work It Out</h2>
+  <p>
+    <strong>Type inference</strong> means the compiler <em>works out</em> a type you didn't write, from the information around it. It saves you from
+    repeating long types like <code>Map&lt;String, List&lt;Integer&gt;&gt;</code> twice. Crucially, <strong>the result is exactly as type-safe</strong> as if you
+    had typed it yourself: the compiler still knows the full type, and you just didn't have to write it.
+  </p>
+  <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/E09_TypeInference.java" hl="16,22,26,30,37"-->
+<pre class="numbered" data-file="E09_TypeInference.java" data-hl="16,22,26,30,37"><code class="lang-java">package com.aptech.s02;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+
+/**
+ * Example 9 — Type inference: the compiler works out the types so you don't have to repeat them.
+ */
+public class E09_TypeInference {
+    public static void main(String[] args) {
+        // 1) The diamond &lt;&gt; (Java 7): the type on the right is copied from the left
+        Map&lt;String, List&lt;Integer&gt;&gt; marks = new HashMap&lt;&gt;();   // instead of new HashMap&lt;String, List&lt;Integer&gt;&gt;()
+        marks.put("Ada", new ArrayList&lt;&gt;());                  // inferred from put()'s parameter type
+        marks.get("Ada").add(88);
+        System.out.println("marks = " + marks);
+
+        // 2) Generic METHOD calls: T is worked out from the arguments
+        Pair&lt;String, Double&gt; price = Pair.of("Bread", 950.0);  // K = String, V = Double
+        System.out.println("price = " + price);
+
+        // 3) Target typing: T is worked out from where the result is going
+        List&lt;String&gt; noNames = Collections.emptyList();       // T = String because of the variable's type
+        System.out.println("noNames is empty? " + noNames.isEmpty());
+
+        // 4) var (Java 10): the VARIABLE's type is inferred from the right-hand side
+        var scores = new ArrayList&lt;Integer&gt;();                // scores is an ArrayList&lt;Integer&gt;
+        scores.add(70);
+        scores.add(85);
+        var best = Collections.max(scores);                   // best is an Integer
+        System.out.println("best = " + best);
+
+        // 5) Lambdas: the parameter type s is inferred as String
+        Function&lt;String, Integer&gt; length = s -&gt; s.length();
+        System.out.println("length(\"JavaFX\") = " + length.apply("JavaFX"));
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>16</td><td><strong>Diamond</strong> (Java 7): the empty <code>&lt;&gt;</code> copies <code>&lt;String, List&lt;Integer&gt;&gt;</code> from the left side.</td></tr>
+      <tr><td>17</td><td>Even inside a method call: <code>put</code> expects a <code>List&lt;Integer&gt;</code>, so <code>new ArrayList&lt;&gt;()</code> becomes an <code>ArrayList&lt;Integer&gt;</code>.</td></tr>
+      <tr><td>22</td><td><strong>Generic method inference</strong>: from the arguments <code>"Bread"</code> and <code>950.0</code>, the compiler decides <code>K = String</code>, <code>V = Double</code>.</td></tr>
+      <tr><td>26</td><td><strong>Target typing</strong>: <code>emptyList()</code> has no arguments to look at, so the compiler looks at where the result <em>goes</em> (a <code>List&lt;String&gt;</code>) and picks <code>T = String</code>.</td></tr>
+      <tr><td>30</td><td><strong><code>var</code></strong> (Java 10): the <em>variable's</em> type is inferred from the right side. <code>scores</code> is an <code>ArrayList&lt;Integer&gt;</code>; if you try <code>scores.add("x")</code> it's still a compile error.</td></tr>
+      <tr><td>33</td><td><code>best</code> is inferred as <code>Integer</code> because <code>Collections.max</code> of an <code>ArrayList&lt;Integer&gt;</code> returns an Integer.</td></tr>
+      <tr><td>37</td><td><strong>Lambdas</strong>: in <code>s -&gt; s.length()</code>, the compiler knows <code>s</code> is a <code>String</code> because the target is a <code>Function&lt;String, Integer&gt;</code> (a function from String to Integer).</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s02-generics" main="com.aptech.s02.E09_TypeInference"-->
+<div class="terminal-output">marks = {Ada=[88]}
+price = (Bread, 950.0)
+noNames is empty? true
+best = 85
+length("JavaFX") = 6</div>
+<!--@end-->
+  <div class="tablewrap"><table>
+    <thead><tr><th>Form</th><th>Since</th><th>Example</th><th>Inferred from</th></tr></thead>
+    <tbody>
+      <tr><td>Diamond <code>&lt;&gt;</code></td><td>Java 7</td><td><code>List&lt;String&gt; l = new ArrayList&lt;&gt;();</code></td><td>the variable / parameter type</td></tr>
+      <tr><td>Generic method call</td><td>Java 5</td><td><code>Pair.of("a", 1)</code></td><td>the arguments</td></tr>
+      <tr><td>Target typing</td><td>Java 8</td><td><code>List&lt;String&gt; e = Collections.emptyList();</code></td><td>where the result goes</td></tr>
+      <tr><td>Lambda parameters</td><td>Java 8</td><td><code>s -&gt; s.length()</code></td><td>the functional interface</td></tr>
+      <tr><td><code>var</code></td><td>Java 10</td><td><code>var list = new ArrayList&lt;String&gt;();</code></td><td>the right-hand side</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>Don't combine <code>var</code> and the diamond</b>
+      <code>var list = new ArrayList&lt;&gt;();</code> gives the compiler <em>nothing</em> to infer from, so it becomes an <code>ArrayList&lt;Object&gt;</code>, which is almost never what you want.
+      With <code>var</code>, always write the type on the right: <code>var list = new ArrayList&lt;String&gt;();</code>.
+    </div>
+  </div>
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      Type inference lets you skip writing types (diamond, <code>var</code>, generic method calls, lambdas) <strong>without losing any safety</strong>.
+      If the compiler can't work a type out, give it a hint: write the type on the variable, or use a type witness like <code>List.&lt;Integer&gt;of()</code>.
+    </div>
+  </div>
+
+  <!-- ===== PART 8 ========================================================== -->
+  <span class="eyebrow">Part 8 of 8</span>
+  <h2 id="part-8-advantages-limitations-and-type-erasure">Part 8 &mdash; Advantages, Limitations, and Type Erasure</h2>
+
+  <h3>How generics really work: type erasure</h3>
+  <p>
+    Here is the secret behind most of the limitations: the <code>&lt;String&gt;</code> information exists <strong>only at compile time</strong>. After checking
+    your code, the compiler <strong>erases</strong> the type arguments: <code>T</code> becomes <code>Object</code> (or its bound, e.g. <code>Number</code>), and it inserts
+    the casts for you. The running program has no idea whether a list was a <code>List&lt;String&gt;</code> or a <code>List&lt;Integer&gt;</code>.
+    Java was designed this way in 2004 so that new generic code could run alongside all the old pre-generics code.
+  </p>
+  <figure class="concept-visual" aria-label="How type erasure works under the hood">
+    <img src="../assets/img/diagrams/s02_type_erasure_timeline.svg" alt="Type Erasure Pipeline Diagram">
+    <figcaption>
+      <span class="fig-badge fig-badge--hierarchy">&#9881;&#65039; Compiler Architecture</span>
+      <strong>How Type Erasure Works:</strong> You write clean, type-safe code with <code>&lt;T&gt;</code> in step 1. The compiler checks every method call in step 2. Once verified, the compiler strips the type parameters and outputs lean raw bytecode in step 3 with automatic casts inserted. That is why generics carry zero runtime memory overhead, but also why <code>new T()</code> is forbidden!
+    </figcaption>
+  </figure>
+
+  <h3>Example 10 &mdash; seeing erasure and the limits</h3>
+  <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/E10_Limitations.java" hl="13,14,19,28,33,37"-->
+<pre class="numbered" data-file="E10_Limitations.java" data-hl="13,14,19,28,33,37"><code class="lang-java">package com.aptech.s02;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Example 10 — The limits of generics, and why they exist (type erasure).
+ */
+public class E10_Limitations {
+
+    static class Shelf&lt;T&gt; {
+        private final List&lt;T&gt; items = new ArrayList&lt;&gt;();   // use a List instead of a T[] array
+        // private T[] slots = new T[10];                   // COMPILE ERROR: generic array creation
+        // private static T favourite;                      // COMPILE ERROR: static + T not allowed
+
+        void add(T item) { items.add(item); }
+
+        T make() {
+            // return new T();                              // COMPILE ERROR: Java cannot create a T
+            return null;
+        }
+    }
+
+    public static void main(String[] args) {
+        // 1) Type erasure: at run time the &lt;String&gt; / &lt;Integer&gt; part is gone.
+        List&lt;String&gt; strings = new ArrayList&lt;&gt;();
+        List&lt;Integer&gt; numbers = new ArrayList&lt;&gt;();
+        System.out.println("Same class at run time? " + (strings.getClass() == numbers.getClass()));
+        System.out.println("Class name: " + strings.getClass().getName());
+
+        // 2) So you can check "is it a List?" but NOT "is it a List&lt;String&gt;?"
+        Object thing = strings;
+        System.out.println("thing instanceof List&lt;?&gt; : " + (thing instanceof List&lt;?&gt;));
+        // thing instanceof List&lt;String&gt;                    // COMPILE ERROR: cannot check at run time
+
+        // 3) No primitives as type arguments - use the wrapper class
+        // List&lt;int&gt; bad;                                   // COMPILE ERROR: unexpected type
+        List&lt;Integer&gt; ok = List.of(1, 2, 3);
+        System.out.println("List&lt;Integer&gt; works: " + ok);
+
+        Shelf&lt;String&gt; shelf = new Shelf&lt;&gt;();
+        shelf.add("book");
+        System.out.println("make() returned " + shelf.make());
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>12</td><td>Want an array of T? Use a <code>List&lt;T&gt;</code> instead. That's the standard work-around.</td></tr>
+      <tr><td>13</td><td><code>new T[10]</code> is illegal (<code>generic array creation</code>): at run time Java wouldn't know what kind of array to make.</td></tr>
+      <tr><td>14</td><td>A <code>static</code> field of type <code>T</code> is illegal: static fields are <em>shared</em> by all objects, but a <code>Shelf&lt;String&gt;</code> and a <code>Shelf&lt;Integer&gt;</code> have different Ts.</td></tr>
+      <tr><td>19</td><td><code>new T()</code> is illegal: after erasure, Java doesn't know which class to create (and T might not even have a no-argument constructor).</td></tr>
+      <tr><td>28</td><td><strong>Proof of erasure</strong>: a <code>List&lt;String&gt;</code> and a <code>List&lt;Integer&gt;</code> have exactly the <em>same</em> class at run time, plain <code>ArrayList</code>.</td></tr>
+      <tr><td>33</td><td>So <code>instanceof</code> can ask "is it a List?" (written <code>List&lt;?&gt;</code>)&hellip;</td></tr>
+      <tr><td>34</td><td>&hellip;but not "is it a List&lt;String&gt;?". That information is gone at run time.</td></tr>
+      <tr><td>37&ndash;38</td><td>Primitives can't be type arguments; use the wrappers.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s02-generics" main="com.aptech.s02.E10_Limitations"-->
+<div class="terminal-output">Same class at run time? true
+Class name: java.util.ArrayList
+thing instanceof List&lt;?&gt; : true
+List&lt;Integer&gt; works: [1, 2, 3]
+make() returned null</div>
+<!--@end-->
+
+  <h3>Advantages and limitations at a glance</h3>
+  <div class="grid-2" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem">
+    <div class="callout callout--tip"><span class="callout__i">&#9989;</span>
+      <div class="callout__b"><b>Advantages</b>
+        <ul>
+          <li><strong>Compile-time type safety</strong>: wrong types are red underlines, not crashes.</li>
+          <li><strong>No casts</strong> when reading: cleaner, shorter code.</li>
+          <li><strong>Reusability</strong>: one <code>Box&lt;T&gt;</code> instead of <code>StringBox</code>, <code>IntBox</code>, &hellip;</li>
+          <li><strong>Clearer intent</strong>: <code>Map&lt;String, Student&gt;</code> documents itself.</li>
+          <li><strong>Generic algorithms</strong>: one <code>max</code>, <code>sort</code> or <code>swap</code> for every type.</li>
+          <li><strong>No run-time cost</strong>: erasure means the program is as fast as before.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout callout--warn"><span class="callout__i">&#9940;</span>
+      <div class="callout__b"><b>Limitations (and the work-around)</b>
+        <ul>
+          <li>No primitives: <code>List&lt;int&gt;</code> &rarr; use <code>List&lt;Integer&gt;</code>.</li>
+          <li>No <code>new T()</code> &rarr; pass in an object, or a factory (Session 9).</li>
+          <li>No <code>new T[n]</code> &rarr; use <code>List&lt;T&gt;</code>.</li>
+          <li>No <code>static T</code> fields.</li>
+          <li>No <code>instanceof List&lt;String&gt;</code> &rarr; check <code>List&lt;?&gt;</code>.</li>
+          <li>Can't overload on type argument alone: <code>m(List&lt;String&gt;)</code> and <code>m(List&lt;Integer&gt;)</code> "have the same erasure".</li>
+          <li>Can't catch or throw a generic exception class.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      Generics are checked by the compiler and then <strong>erased</strong>: at run time <code>T</code> is <code>Object</code> (or its bound).
+      That's why you can't create a <code>T</code>, a <code>T[]</code>, a <code>static T</code>, or test <code>instanceof List&lt;String&gt;</code>.
+    </div>
+  </div>
+
+  <div class="quiz mini-check">
+    <div class="mini-check__label">&#9889; Quick check</div>
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__stem">What does <code>new ArrayList&lt;String&gt;().getClass() == new ArrayList&lt;Integer&gt;().getClass()</code> evaluate to, and why?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>true</code>, because type arguments are erased at run time</label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>false</code>, because they hold different types</label>
+      <label class="quiz__opt"><input type="radio" value="c"> It doesn't compile.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A.</strong> Both are simply <code>java.util.ArrayList</code> at run time. You saw this in Example 10's output: "Same class at run time? true".</div>
+    </div>
+  </div>
+
+  <!-- ===== GUIDED LAB ====================================================== -->
+  <h2>&#128736; Guided Lab: The Lucky Draw Bag</h2>
+  <p>
+    You'll write your own generic class, <code>Bag&lt;T&gt;</code>, a bag you put things into and then draw one out at random, like a raffle.
+    Then you'll use the <em>same</em> class for names (<code>Bag&lt;String&gt;</code>) and prize amounts (<code>Bag&lt;Integer&gt;</code>).
+    Pair up: one types, one checks. <strong>Swap after step 4.</strong>
+  </p>
+  <div class="steps">
+    <div class="steps__title">&#128221; Lab checklist (about 30 minutes)</div>
+    <div class="step"><div class="step__check"></div><span class="step__num">1</span>
+      <div class="step__text"><strong>Create the class.</strong> New Java class <code>Bag</code>. Change the first line to <code>public class Bag&lt;T&gt; {</code>. You've just declared a generic class!</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">2</span>
+      <div class="step__text"><strong>Storage.</strong> Add two fields: <code>private final List&lt;T&gt; items = new ArrayList&lt;&gt;();</code> and <code>private final Random random;</code>. Add a constructor <code>public Bag(long seed)</code> that sets <code>random = new Random(seed);</code>. (A fixed seed makes the draw repeatable, handy for checking your output against ours.)</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">3</span>
+      <div class="step__text"><strong>Put things in.</strong> Write <code>public void add(T item)</code>, plus <code>size()</code> and <code>isEmpty()</code>. Notice that <code>add</code> takes a <code>T</code>, not an <code>Object</code>.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">4</span>
+      <div class="step__text"><strong>Draw one out.</strong> Write <code>public T draw()</code>: if the bag is empty return <code>null</code>; otherwise pick <code>random.nextInt(items.size())</code> and <code>return items.remove(index);</code>. The return type is <code>T</code>, so callers won't need a cast.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">5</span>
+      <div class="step__text"><strong>Use it twice.</strong> In a new class <code>LuckyDraw</code> with <code>main</code>: create <code>Bag&lt;String&gt; raffle = new Bag&lt;&gt;(7);</code>, add four names, draw a winner into a <code>String</code> variable (no cast!). Then create <code>Bag&lt;Integer&gt; prizes = new Bag&lt;&gt;(7);</code> with three amounts and draw into an <code>int</code>.<br>
+      <em>Check:</em> try <code>raffle.add(42);</code>. It should be a red underline. Read the message, then delete the line.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">6</span>
+      <div class="step__text"><strong>A generic method.</strong> In <code>Bag</code>, add <code>public static &lt;E&gt; void pourInto(Bag&lt;E&gt; from, Bag&lt;E&gt; to)</code> that moves every item from one bag into the other (draw from <code>from</code> until it's empty, adding to <code>to</code>). Use it to move the remaining raffle names into <code>nextWeek</code>.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">7</span>
+      <div class="step__text"><strong>Edge case.</strong> Print <code>raffle.draw()</code> on the now-empty bag. It must print <code>null</code>, not crash. Compare your whole output with the expected output below.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">8</span>
+      <div class="step__text"><strong>Stretch.</strong> (a) Try <code>Bag.pourInto(raffle, prizes)</code>. Why doesn't it compile? (b) Add a method <code>public List&lt;T&gt; peekAll()</code> that returns a <em>copy</em> of the items. (c) Could <code>pourInto</code> be more flexible with a wildcard? (Hint: PECS, the destination only <em>consumes</em>.)</div></div>
+  </div>
+  <details>
+    <summary>&#128064; Show the complete lab solution (try on your own first!)</summary>
+    <div>
+      <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/lab/Bag.java"-->
+<pre class="numbered" data-file="Bag.java"><code class="lang-java">package com.aptech.s02.lab;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+/**
+ * GUIDED LAB — a generic "lucky draw" bag.
+ * Put in things of type T, then draw them out at random (each item can be drawn only once).
+ */
+public class Bag&lt;T&gt; {
+
+    private final List&lt;T&gt; items = new ArrayList&lt;&gt;();   // STEP 2: storage for items of type T
+    private final Random random;
+
+    public Bag(long seed) {                            // a fixed seed makes the draw repeatable for testing
+        this.random = new Random(seed);
+    }
+
+    public void add(T item) {                          // STEP 3: only accepts a T
+        items.add(item);
+    }
+
+    public int size() {
+        return items.size();
+    }
+
+    public boolean isEmpty() {
+        return items.isEmpty();
+    }
+
+    /** STEP 4: removes and returns a random item, or null if the bag is empty. */
+    public T draw() {
+        if (items.isEmpty()) {
+            return null;
+        }
+        int index = random.nextInt(items.size());      // 0 .. size-1
+        return items.remove(index);
+    }
+
+    /** STEP 6: a generic METHOD - moves every item from one bag into another bag of the same type. */
+    public static &lt;E&gt; void pourInto(Bag&lt;E&gt; from, Bag&lt;E&gt; to) {
+        while (!from.isEmpty()) {
+            to.add(from.draw());
+        }
+    }
+}</code></pre>
+<!--@end-->
+      <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/lab/LuckyDraw.java"-->
+<pre class="numbered" data-file="LuckyDraw.java"><code class="lang-java">package com.aptech.s02.lab;
+
+/**
+ * GUIDED LAB — using the generic Bag&lt;T&gt; with different types.
+ */
+public class LuckyDraw {
+    public static void main(String[] args) {
+        // STEP 5a: a Bag of Strings - the raffle
+        Bag&lt;String&gt; raffle = new Bag&lt;&gt;(7);
+        raffle.add("Ada");
+        raffle.add("Ben");
+        raffle.add("Chi");
+        raffle.add("Dayo");
+        // raffle.add(42);                              // would not compile: 42 is not a String
+        String winner = raffle.draw();                  // no cast needed
+        System.out.println("Raffle winner: " + winner + " (" + raffle.size() + " names left)");
+
+        // STEP 5b: the SAME class, now a Bag of Integers - prize amounts
+        Bag&lt;Integer&gt; prizes = new Bag&lt;&gt;(7);
+        prizes.add(5000);
+        prizes.add(10000);
+        prizes.add(20000);
+        int prize = prizes.draw();                      // unboxing Integer -&gt; int
+        System.out.println(winner + " wins N" + prize);
+
+        // STEP 6: the generic method moves everything left into a second bag
+        Bag&lt;String&gt; nextWeek = new Bag&lt;&gt;(7);
+        Bag.pourInto(raffle, nextWeek);
+        System.out.println("Moved to next week's raffle: " + nextWeek.size() + " names, this week's bag empty? " + raffle.isEmpty());
+
+        // STEP 7: drawing from an empty bag is safe
+        System.out.println("Draw from empty bag: " + raffle.draw());
+    }
+}</code></pre>
+<!--@end-->
+      <p><strong>Expected output:</strong></p>
+      <!--@output project="code/s02-generics" main="com.aptech.s02.lab.LuckyDraw"-->
+<div class="terminal-output">Raffle winner: Chi (3 names left)
+Chi wins N10000
+Moved to next week's raffle: 3 names, this week's bag empty? true
+Draw from empty bag: null</div>
+<!--@end-->
+      <p class="text-sm"><strong>Stretch answers:</strong> (a) <code>pourInto(Bag&lt;E&gt;, Bag&lt;E&gt;)</code> needs <em>both</em> bags to have the same <code>E</code>, and String &ne; Integer. (c) <code>pourInto(Bag&lt;? extends E&gt; from, Bag&lt;? super E&gt; to)</code> would also let you pour a <code>Bag&lt;Integer&gt;</code> into a <code>Bag&lt;Number&gt;</code>.</p>
+    </div>
+  </details>
+
+  <!-- ===== COMMON MISTAKES ================================================= -->
+  <h2>&#9888;&#65039; Common Mistakes (and the Exact Compiler Message)</h2>
+  <p>Almost all generics mistakes are <strong>compile errors</strong>: IntelliJ underlines them in red before you run anything. That's a good thing! Every message below was produced by the real <code>javac</code> (JDK 25). Hover over the red line in IntelliJ to see the same text.</p>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 1 &mdash; expecting <code>List&lt;Integer&gt;</code> to be a <code>List&lt;Number&gt;</code></b>
+      <pre><code class="lang-java">List&lt;Integer&gt; ints = List.of(1);
+List&lt;Number&gt; nums = ints;</code></pre>
+      <div class="terminal-output is-error">error: incompatible types: List&lt;Integer&gt; cannot be converted to List&lt;Number&gt;</div>
+      <p><strong>Fix:</strong> <code>List&lt;? extends Number&gt; nums = ints;</code> (read-only use), or change the method parameter to <code>List&lt;? extends Number&gt;</code>.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 2 &mdash; adding to a <code>? extends</code> list</b>
+      <pre><code class="lang-java">void m(List&lt;? extends Number&gt; list) { list.add(1); }</code></pre>
+      <div class="terminal-output is-error">error: incompatible types: int cannot be converted to CAP#1
+  where CAP#1 is a fresh type-variable:
+    CAP#1 extends Number from capture of ? extends Number</div>
+      <p><strong>What "CAP#1" means:</strong> it's the compiler's name for "the unknown type behind the <code>?</code>". It can't prove that an <code>int</code> fits that unknown type (it could be Double!).
+      <strong>Fix:</strong> if the method needs to add, use <code>List&lt;? super Integer&gt;</code> (PECS) or the exact type.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 3 &mdash; calling methods on an unbounded <code>T</code></b>
+      <pre><code class="lang-java">static &lt;T&gt; T max(T a, T b) { return a.compareTo(b) &gt; 0 ? a : b; }</code></pre>
+      <div class="terminal-output is-error">error: cannot find symbol
+  symbol:   method compareTo(T)
+  location: variable a of type T</div>
+      <p><strong>Why:</strong> an unbounded <code>T</code> could be <em>any</em> object, and not every object has <code>compareTo</code>. <strong>Fix:</strong> add a bound: <code>static &lt;T extends Comparable&lt;T&gt;&gt; T max(T a, T b)</code>.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 4 &mdash; <code>new T()</code> and <code>new T[10]</code></b>
+      <pre><code class="lang-java">T make() { return new T(); }
+T[] slots = new T[10];</code></pre>
+      <div class="terminal-output is-error">error: unexpected type
+  required: class
+  found:    type parameter T
+error: generic array creation</div>
+      <p><strong>Why:</strong> type erasure (Part 8). <strong>Fix:</strong> use a <code>List&lt;T&gt;</code> instead of an array; to create objects, pass one in as a parameter.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 5 &mdash; a static field of type <code>T</code></b>
+      <pre><code class="lang-java">class Shelf&lt;T&gt; { static T favourite; }</code></pre>
+      <div class="terminal-output is-error">error: non-static type variable T cannot be referenced from a static context</div>
+      <p><strong>Why:</strong> <code>static</code> belongs to the class (shared by all objects), but each object has its own <code>T</code>. <strong>Fix:</strong> make the field non-static.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 6 &mdash; using a type outside its bound</b>
+      <pre><code class="lang-java">class Stats&lt;N extends Number&gt; { }
+Stats&lt;String&gt; bad;</code></pre>
+      <div class="terminal-output is-error">error: type argument String is not within bounds of type-variable N</div>
+      <p><strong>Fix:</strong> use a type that satisfies the bound (<code>Stats&lt;Integer&gt;</code>, <code>Stats&lt;Double&gt;</code>).</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 7 &mdash; overloading on the type argument only</b>
+      <pre><code class="lang-java">void print(List&lt;String&gt; a) { }
+void print(List&lt;Integer&gt; b) { }</code></pre>
+      <div class="terminal-output is-error">error: name clash: print(List&lt;Integer&gt;) and print(List&lt;String&gt;) have the same erasure</div>
+      <p><strong>Why:</strong> after erasure both are <code>print(List)</code>, so Java can't tell them apart. <strong>Fix:</strong> give them different names (<code>printNames</code>, <code>printScores</code>) or write one generic method.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 8 &mdash; ignoring "raw type" warnings</b>
+      <pre><code class="lang-java">List names = new ArrayList();   // forgot the &lt;String&gt;</code></pre>
+      <div class="terminal-output is-error">Note: RawWarn.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.</div>
+      <p><strong>Why it matters:</strong> it compiles, so beginners ignore it, but you've switched off all type checking and invited a <code>ClassCastException</code> (Example 1). IntelliJ highlights raw types in yellow. <strong>Fix:</strong> always write the type arguments: <code>List&lt;String&gt; names = new ArrayList&lt;&gt;();</code>.</p>
+    </div>
+  </div>
+
+  <!-- ===== KNOWLEDGE CHECK ================================================= -->
+  <h2>&#128221; Knowledge Check</h2>
+  <p>12 questions on the whole session. Aim for <strong>10/12</strong> before starting Lab Task L2. Every "does it compile?" answer was verified with the real Java compiler.</p>
+
+  <div class="quiz" id="s02-final">
+    <div class="quiz__title">&#128161; Session 2 Knowledge Check</div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">1. Without generics, where is a "wrong type in a collection" mistake usually discovered?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> At compile time, as a red underline</label>
+      <label class="quiz__opt"><input type="radio" value="b"> At run time, as a <code>ClassCastException</code> when you cast</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Never. Java converts the value automatically.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> When you save the file</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> A raw collection accepts anything; the problem only appears when you cast the element back (Example 1). Generics move this check to compile time.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">2. In <code>public class Box&lt;T&gt;</code>, what is <code>T</code>?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> A class called T that you must write</label>
+      <label class="quiz__opt"><input type="radio" value="b"> A variable that holds the item</label>
+      <label class="quiz__opt"><input type="radio" value="c"> A type parameter: a placeholder for a type chosen when a Box is created</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Short for "Text"</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> <code>T</code> is filled in with a real type (the <em>type argument</em>) when you write <code>Box&lt;String&gt;</code>, <code>Box&lt;Integer&gt;</code>, etc.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a|c">
+      <div class="quiz__kind">Select all that compile</div>
+      <div class="quiz__stem">3. Given <code>class Box&lt;T&gt; { void put(T t) {} }</code>, which lines compile?</div>
+      <label class="quiz__opt"><input type="checkbox" value="a"> <code>Box&lt;Integer&gt; b = new Box&lt;&gt;(); b.put(95);</code></label>
+      <label class="quiz__opt"><input type="checkbox" value="b"> <code>Box&lt;Double&gt; b = new Box&lt;&gt;(); b.put(95);</code></label>
+      <label class="quiz__opt"><input type="checkbox" value="c"> <code>Box&lt;Number&gt; b = new Box&lt;&gt;(); b.put(95);</code></label>
+      <label class="quiz__opt"><input type="checkbox" value="d"> <code>Box&lt;int&gt; b = new Box&lt;&gt;();</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A and C.</strong> <code>95</code> is an <code>int</code>, boxed to <code>Integer</code>. An Integer fits a <code>Box&lt;Integer&gt;</code> and a <code>Box&lt;Number&gt;</code>, but <em>not</em> a <code>Box&lt;Double&gt;</code> (<code>int cannot be converted to Double</code>). <code>Box&lt;int&gt;</code> is illegal: primitives can't be type arguments.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="d">
+      <div class="quiz__kind">Predict the output</div>
+      <div class="quiz__stem">4. Using <code>Pair</code> from this session, what is printed?</div>
+      <pre><code class="lang-java">Pair&lt;String, Integer&gt; p = Pair.of("Kemi", 21);
+System.out.println(p.swap().getFirst() + 1);</code></pre>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>Kemi1</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>211</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> It doesn't compile.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>22</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>D.</strong> <code>swap()</code> returns a <code>Pair&lt;Integer, String&gt;</code>, so <code>getFirst()</code> is the <code>Integer</code> 21, and <code>21 + 1</code> is numeric addition: 22. The compiler tracks the swapped types for you.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">5. Where does the type parameter go in a generic <em>method</em> declaration?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> After the method name: <code>void show&lt;T&gt;(T x)</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> Before the return type: <code>&lt;T&gt; void show(T x)</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> After the parameters: <code>void show(T x) &lt;T&gt;</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> It is not needed; T is always available.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> e.g. <code>public static &lt;T&gt; T firstOrNull(List&lt;T&gt; list)</code>. Without the declaration, <code>T</code> is "cannot find symbol".</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">6. Why does <code>static &lt;T&gt; T max(T a, T b) { return a.compareTo(b) &gt; 0 ? a : b; }</code> fail to compile?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Static methods can't be generic.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> You can't return a T.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> T has no bound, so the compiler doesn't know that T has a <code>compareTo</code> method.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> The <code>? :</code> operator can't be used with generics.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> Fix: <code>&lt;T extends Comparable&lt;T&gt;&gt;</code>. The bound promises that every T can compare itself.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="false">
+      <div class="quiz__kind">True / False</div>
+      <div class="quiz__stem">7. Because <code>Integer</code> is a subclass of <code>Number</code>, a <code>List&lt;Integer&gt;</code> can be passed to a method whose parameter is <code>List&lt;Number&gt;</code>.</div>
+      <label class="quiz__opt"><input type="radio" value="true"> True</label>
+      <label class="quiz__opt"><input type="radio" value="false"> False</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>False.</strong> Generic types with different type arguments are unrelated. Otherwise the method could add a Double into your list of Integers. Use <code>List&lt;? extends Number&gt;</code>.</div>
+    </div>
+
+    <div class="quiz__q">
+      <div class="quiz__kind">Matching</div>
+      <div class="quiz__stem">8. For a parameter <code>List&lt;? super Integer&gt; list</code>, which statements compile inside the method?</div>
+      <div class="quiz__matchrow"><span><code>list.add(5);</code></span>
+        <select class="quiz__match" data-correct="yes" aria-label="add 5"><option value="">choose&hellip;</option><option value="yes">compiles</option><option value="no">compile error</option></select></div>
+      <div class="quiz__matchrow"><span><code>Integer x = list.get(0);</code></span>
+        <select class="quiz__match" data-correct="no" aria-label="read Integer"><option value="">choose&hellip;</option><option value="yes">compiles</option><option value="no">compile error</option></select></div>
+      <div class="quiz__matchrow"><span><code>Object o = list.get(0);</code></span>
+        <select class="quiz__match" data-correct="yes" aria-label="read Object"><option value="">choose&hellip;</option><option value="yes">compiles</option><option value="no">compile error</option></select></div>
+      <div class="quiz__matchrow"><span><code>list.add(2.5);</code></span>
+        <select class="quiz__match" data-correct="no" aria-label="add double"><option value="">choose&hellip;</option><option value="yes">compiles</option><option value="no">compile error</option></select></div>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">A <code>? super Integer</code> list is a <strong>consumer</strong> of Integers: adding an Integer is safe; reading gives only <code>Object</code> (it might be a <code>List&lt;Object&gt;</code>); a Double doesn't belong in a list that might be a <code>List&lt;Integer&gt;</code>. Check it in the Wildcard Explorer!</div>
+    </div>
+
+    <div class="quiz__q">
+      <div class="quiz__kind">Fill in the blank</div>
+      <div class="quiz__stem">9. PECS stands for "Producer <input type="text" class="fill-blank" data-accept="extends" aria-label="first word" placeholder="?">, Consumer <input type="text" class="fill-blank" data-accept="super" aria-label="second word" placeholder="?">".</div>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>extends</strong>, <strong>super</strong>. If you only read from a structure, it produces values: use <code>? extends T</code>. If you only write into it, it consumes values: use <code>? super T</code>.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">10. Which declaration makes <code>IntBox</code> a subclass whose type is <em>fixed</em> to Integer (IntBox itself is not generic)?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>class IntBox&lt;T&gt; extends Box&lt;T&gt;</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>class IntBox extends Box&lt;Integer&gt;</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>class IntBox&lt;Integer&gt; extends Box</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>class IntBox extends Box&lt;int&gt;</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> A keeps the class generic. C is a trap: it declares a type <em>parameter</em> named "Integer" (hiding the real Integer!) and extends the raw <code>Box</code>. D uses a primitive.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">11. What is the type of <code>list</code> after <code>var list = new ArrayList&lt;&gt;();</code>?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>ArrayList&lt;String&gt;</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> It doesn't compile.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>ArrayList&lt;Object&gt;</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> a raw <code>ArrayList</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> <code>var</code> infers from the right, and the diamond infers from the left, so there is nothing to infer from and Java falls back to <code>Object</code>. Write <code>var list = new ArrayList&lt;String&gt;();</code>.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a|b|d">
+      <div class="quiz__kind">Select all that apply</div>
+      <div class="quiz__stem">12. Because of type erasure, which of these are NOT allowed in Java?</div>
+      <label class="quiz__opt"><input type="checkbox" value="a"> <code>T item = new T();</code></label>
+      <label class="quiz__opt"><input type="checkbox" value="b"> <code>if (obj instanceof List&lt;String&gt;)</code> where <code>obj</code> is an <code>Object</code></label>
+      <label class="quiz__opt"><input type="checkbox" value="c"> <code>List&lt;T&gt; items = new ArrayList&lt;&gt;();</code> inside a generic class</label>
+      <label class="quiz__opt"><input type="checkbox" value="d"> <code>T[] arr = new T[5];</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A, B and D</strong> are compile errors (unexpected type / cannot be safely cast / generic array creation). C is the standard, perfectly legal work-around for D.</div>
+    </div>
+
+    <div class="quiz__score" style="display:none"></div>
+  </div>
+
+  <!-- ===== PRACTICE ======================================================== -->
+  <h2>&#128170; Practice Exercises</h2>
+  <p>Not graded. They are your training for Lab Task L2. Try each yourself, then the hint, then the solution. Solutions are tested programs in <code>code/s02-generics/&hellip;/practice/</code>.</p>
+
+  <details>
+    <summary><span class="badge badge--easy">Easy</span>&nbsp; P1 &mdash; Print any array</summary>
+    <div>
+      <p>Write <strong>one</strong> generic method <code>printArray(String label, T[] array)</code> that prints the label, the array's length and every element. Call it with a String array, an Integer array, a Double array and a Character array.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p>Header: <code>static &lt;T&gt; void printArray(String label, T[] array)</code>. Remember: <code>Integer[]</code>, not <code>int[]</code>.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/practice/P1_PrintArray.java"-->
+<pre class="numbered" data-file="P1_PrintArray.java"><code class="lang-java">package com.aptech.s02.practice;
+
+/** Practice 1 (easy) — ONE generic method that prints ANY array, with its length. */
+public class P1_PrintArray {
+
+    static &lt;T&gt; void printArray(String label, T[] array) {
+        System.out.print(label + " (" + array.length + "): ");
+        for (T element : array) {
+            System.out.print(element + " ");
+        }
+        System.out.println();
+    }
+
+    public static void main(String[] args) {
+        printArray("Names", new String[]{"Ada", "Ben"});
+        printArray("Scores", new Integer[]{90, 75, 60});
+        printArray("Prices", new Double[]{9.99, 4.5});
+        printArray("Flags", new Character[]{'N', 'G'});
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s02-generics" main="com.aptech.s02.practice.P1_PrintArray"-->
+<div class="terminal-output">Names (2): Ada Ben 
+Scores (3): 90 75 60 
+Prices (2): 9.99 4.5 
+Flags (2): N G</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="badge badge--easy">Easy</span>&nbsp; P2 &mdash; A generic Trio</summary>
+    <div>
+      <p>Write a generic class <code>Trio&lt;T&gt;</code> that holds three values of the <em>same</em> type, with <code>first()</code>, <code>last()</code>, <code>reversed()</code> (a new Trio in reverse order) and <code>toString()</code>. Use it for a podium of names and for three dice rolls.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p><code>reversed()</code> returns <code>Trio&lt;T&gt;</code>: <code>return new Trio&lt;&gt;(c, b, a);</code></p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/practice/P2_Trio.java"-->
+<pre class="numbered" data-file="P2_Trio.java"><code class="lang-java">package com.aptech.s02.practice;
+
+/** Practice 2 (easy) — a generic class holding THREE values of the same type. */
+public class P2_Trio {
+
+    static class Trio&lt;T&gt; {
+        private final T a;
+        private final T b;
+        private final T c;
+
+        Trio(T a, T b, T c) {
+            this.a = a;
+            this.b = b;
+            this.c = c;
+        }
+
+        T first()  { return a; }
+        T last()   { return c; }
+
+        /** Returns a new Trio in reverse order. */
+        Trio&lt;T&gt; reversed() {
+            return new Trio&lt;&gt;(c, b, a);
+        }
+
+        @Override
+        public String toString() { return "[" + a + ", " + b + ", " + c + "]"; }
+    }
+
+    public static void main(String[] args) {
+        Trio&lt;String&gt; podium = new Trio&lt;&gt;("Gold: Ada", "Silver: Ben", "Bronze: Chi");
+        System.out.println(podium + " -&gt; winner " + podium.first());
+        System.out.println("Reversed: " + podium.reversed());
+
+        Trio&lt;Integer&gt; dice = new Trio&lt;&gt;(6, 2, 4);
+        int total = dice.first() + dice.last();
+        System.out.println(dice + " -&gt; first + last = " + total);
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s02-generics" main="com.aptech.s02.practice.P2_Trio"-->
+<div class="terminal-output">[Gold: Ada, Silver: Ben, Bronze: Chi] -&gt; winner Gold: Ada
+Reversed: [Bronze: Chi, Silver: Ben, Gold: Ada]
+[6, 2, 4] -&gt; first + last = 10</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="badge badge--medium">Medium</span>&nbsp; P3 &mdash; Count greater than</summary>
+    <div>
+      <p>Write <code>countGreaterThan(T[] array, T limit)</code> that returns how many elements are greater than <code>limit</code>. It must work for numbers <em>and</em> words.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p>You need <code>compareTo</code>, so T needs a bound: <code>&lt;T extends Comparable&lt;T&gt;&gt;</code>.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/practice/P3_CountGreater.java"-->
+<pre class="numbered" data-file="P3_CountGreater.java"><code class="lang-java">package com.aptech.s02.practice;
+
+/** Practice 3 (medium) — a BOUNDED generic method: count elements greater than a given one. */
+public class P3_CountGreater {
+
+    static &lt;T extends Comparable&lt;T&gt;&gt; int countGreaterThan(T[] array, T limit) {
+        int count = 0;
+        for (T element : array) {
+            if (element.compareTo(limit) &gt; 0) {       // compareTo is allowed because of the bound
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public static void main(String[] args) {
+        Integer[] scores = {45, 88, 67, 91, 50};
+        System.out.println("Scores above 60: " + countGreaterThan(scores, 60));
+
+        String[] words = {"apple", "mango", "kiwi", "banana"};
+        System.out.println("Words after \"kiwi\" in the dictionary: " + countGreaterThan(words, "kiwi"));
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s02-generics" main="com.aptech.s02.practice.P3_CountGreater"-->
+<div class="terminal-output">Scores above 60: 3
+Words after "kiwi" in the dictionary: 1</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="badge badge--medium">Medium</span>&nbsp; P4 &mdash; Average of any numbers</summary>
+    <div>
+      <p>Write <strong>one</strong> method <code>average(&hellip;)</code> that accepts a <code>List&lt;Integer&gt;</code>, a <code>List&lt;Double&gt;</code> or a <code>List&lt;Long&gt;</code> and returns the average as a <code>double</code> (0 for an empty list).</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p>The method only <em>reads</em>, so the list is a producer: <code>List&lt;? extends Number&gt;</code>.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/practice/P4_AverageOfAny.java"-->
+<pre class="numbered" data-file="P4_AverageOfAny.java"><code class="lang-java">package com.aptech.s02.practice;
+
+import java.util.List;
+
+/** Practice 4 (medium) — ONE method that averages a List&lt;Integer&gt;, List&lt;Double&gt; or List&lt;Long&gt;. */
+public class P4_AverageOfAny {
+
+    static double average(List&lt;? extends Number&gt; numbers) {
+        if (numbers.isEmpty()) {
+            return 0;
+        }
+        double sum = 0;
+        for (Number n : numbers) {
+            sum += n.doubleValue();
+        }
+        return sum / numbers.size();
+    }
+
+    public static void main(String[] args) {
+        List&lt;Integer&gt; ages = List.of(18, 22, 35);
+        List&lt;Double&gt; temps = List.of(30.5, 28.0, 31.5, 29.0);
+        List&lt;Long&gt; views = List.of(1_000_000L, 3_000_000L);
+
+        System.out.println("Average age:   " + average(ages));
+        System.out.println("Average temp:  " + average(temps));
+        System.out.println("Average views: " + average(views));
+        System.out.println("Empty list:    " + average(List.of()));
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s02-generics" main="com.aptech.s02.practice.P4_AverageOfAny"-->
+<div class="terminal-output">Average age:   25.0
+Average temp:  29.75
+Average views: 2000000.0
+Empty list:    0.0</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="badge badge--hard">Challenge</span>&nbsp; P5 &mdash; Min and max in one pass</summary>
+    <div>
+      <p>Write <code>minMax(List&lt;T&gt; items)</code> that returns a <code>Pair&lt;T, T&gt;</code> holding the smallest and largest element, looping through the list <strong>only once</strong>. Throw an <code>IllegalArgumentException</code> for an empty list.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p>Header: <code>static &lt;T extends Comparable&lt;T&gt;&gt; Pair&lt;T, T&gt; minMax(List&lt;T&gt; items)</code>. Start both min and max at the first element.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/practice/P5_MinMax.java"-->
+<pre class="numbered" data-file="P5_MinMax.java"><code class="lang-java">package com.aptech.s02.practice;
+
+import com.aptech.s02.Pair;
+
+import java.util.List;
+
+/** Practice 5 (challenge) — find the smallest AND largest in ONE pass, returned as a Pair. */
+public class P5_MinMax {
+
+    static &lt;T extends Comparable&lt;T&gt;&gt; Pair&lt;T, T&gt; minMax(List&lt;T&gt; items) {
+        if (items.isEmpty()) {
+            throw new IllegalArgumentException("list is empty");
+        }
+        T min = items.get(0);
+        T max = items.get(0);
+        for (T item : items) {
+            if (item.compareTo(min) &lt; 0) min = item;
+            if (item.compareTo(max) &gt; 0) max = item;
+        }
+        return new Pair&lt;&gt;(min, max);
+    }
+
+    public static void main(String[] args) {
+        Pair&lt;Integer, Integer&gt; nums = minMax(List.of(42, 7, 19, 88, 3));
+        System.out.println("numbers -&gt; min " + nums.getFirst() + ", max " + nums.getSecond());
+
+        Pair&lt;String, String&gt; cities = minMax(List.of("Lagos", "Abuja", "Kano", "Port Harcourt"));
+        System.out.println("cities  -&gt; first " + cities.getFirst() + ", last " + cities.getSecond());
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s02-generics" main="com.aptech.s02.practice.P5_MinMax"-->
+<div class="terminal-output">numbers -&gt; min 3, max 88
+cities  -&gt; first Abuja, last Port Harcourt</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="badge badge--hard">Challenge</span>&nbsp; P6 &mdash; A PECS copy method</summary>
+    <div>
+      <p>Write <code>copy(dest, src)</code> that copies every element of <code>src</code> into <code>dest</code>. It must be able to copy a <code>List&lt;Integer&gt;</code> into a <code>List&lt;Number&gt;</code>, and a <code>List&lt;Number&gt;</code> into a <code>List&lt;Object&gt;</code>.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p>src is a producer, dest is a consumer: <code>static &lt;T&gt; void copy(List&lt;? super T&gt; dest, List&lt;? extends T&gt; src)</code>. This is the same signature as the real <code>Collections.copy</code>!</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s02-generics/src/main/java/com/aptech/s02/practice/P6_CopyPecs.java"-->
+<pre class="numbered" data-file="P6_CopyPecs.java"><code class="lang-java">package com.aptech.s02.practice;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/** Practice 6 (challenge) — "Producer extends, Consumer super": a flexible copy method. */
+public class P6_CopyPecs {
+
+    /** Copies every element from src (a PRODUCER of T) into dest (a CONSUMER of T). */
+    static &lt;T&gt; void copy(List&lt;? super T&gt; dest, List&lt;? extends T&gt; src) {
+        for (T item : src) {
+            dest.add(item);
+        }
+    }
+
+    public static void main(String[] args) {
+        List&lt;Integer&gt; ints = List.of(1, 2, 3);
+        List&lt;Double&gt; doubles = List.of(4.5, 5.5);
+
+        List&lt;Number&gt; numbers = new ArrayList&lt;&gt;();
+        copy(numbers, ints);          // T = Integer: Integer list -&gt; Number list
+        copy(numbers, doubles);       // T = Double:  Double list  -&gt; Number list
+        System.out.println("numbers = " + numbers);
+
+        List&lt;Object&gt; everything = new ArrayList&lt;&gt;();
+        copy(everything, numbers);    // T = Number:  Number list  -&gt; Object list
+        copy(everything, List.of("done"));
+        System.out.println("everything = " + everything);
+        // copy(ints, numbers);       // COMPILE ERROR: can't put any Number into a List&lt;Integer&gt;
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s02-generics" main="com.aptech.s02.practice.P6_CopyPecs"-->
+<div class="terminal-output">numbers = [1, 2, 3, 4.5, 5.5]
+everything = [1, 2, 3, 4.5, 5.5, done]</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+
+  <!-- ===== LAB TASK L2 ===================================================== -->
+  <h2 id="lab-task-l2">&#128736; Lab Task L2 &mdash; Generic Toolkit <span class="badge badge--medium">Pass / fail</span></h2>
+  <div class="assignment-card">
+    <div class="assignment-card__header">&#128736; L2 &middot; Generic Toolkit &middot; lab task (counts towards "Labs &amp; Participation")</div>
+    <p><strong>Due:</strong> the start of Session 3. &nbsp; <strong>Time:</strong> about 1&ndash;2 hours. &nbsp; <strong>Pass</strong> = the self-check shows 9/9 and you can explain any method for one minute.</p>
+
+    <h4>&#127919; What you'll build</h4>
+    <p>A small toolbox of <strong>generic static methods</strong> (<code>GenericToolkit</code>) and one <strong>generic class</strong> (<code>Shelf&lt;T&gt;</code>). All the method headers, including the generics, are already written, so your job is the body of each method. Reading those headers carefully is half the learning.</p>
+
+    <h4>&#128230; Getting started</h4>
+    <ol>
+      <li>Open <code>code/l2-generic-toolkit-starter</code> in IntelliJ.</li>
+      <li>Run <code>SelfCheck</code>: it starts at <code>0 passed, 9 failed</code>.</li>
+      <li>Complete the <code>// TODO</code>s one by one in <code>GenericToolkit.java</code> and <code>Shelf.java</code>, running <code>SelfCheck</code> after each.</li>
+    </ol>
+
+    <h4>&#128203; Requirements</h4>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Header (given)</th><th>It must&hellip;</th><th>Concept</th></tr></thead>
+      <tbody>
+        <tr><td>R1</td><td><code>&lt;T&gt; void swap(List&lt;T&gt; list, int i, int j)</code></td><td>swap two positions</td><td>generic method</td></tr>
+        <tr><td>R2</td><td><code>&lt;T&gt; T lastOrDefault(List&lt;T&gt; list, T fallback)</code></td><td>last element, or fallback if empty</td><td>T as return type</td></tr>
+        <tr><td>R3</td><td><code>&lt;T extends Comparable&lt;T&gt;&gt; T largest(List&lt;T&gt; list)</code></td><td>largest element, <code>null</code> if empty</td><td>bounded type</td></tr>
+        <tr><td>R4</td><td><code>double total(List&lt;? extends Number&gt; numbers)</code></td><td>sum Integers, Doubles, Longs&hellip;</td><td>upper-bounded wildcard</td></tr>
+        <tr><td>R5</td><td><code>&lt;T&gt; void fill(List&lt;? super T&gt; dest, T value, int times)</code></td><td>add value n times (also into a List of a supertype)</td><td>lower-bounded wildcard</td></tr>
+        <tr><td>R6</td><td><code>&lt;T&gt; int countMatches(List&lt;T&gt; list, T target)</code></td><td>count equal elements, null-safe</td><td><code>Objects.equals</code></td></tr>
+        <tr><td>R7</td><td><code>class Shelf&lt;T&gt;</code></td><td><code>put</code> (false when full), <code>takeLast</code> (null when empty), <code>isFull</code>, <code>items()</code> returns a copy</td><td>generic class</td></tr>
+        <tr><td>R8</td><td><code>&lt;K, V&gt; Map&lt;V, K&gt; invert(Map&lt;K, V&gt; map)</code></td><td>swap keys and values, keeping order</td><td>two type parameters</td></tr>
+      </tbody>
+    </table></div>
+
+    <h4>&#9989; Done looks like this</h4>
+    <!--@output project="solutions/l2-generic-toolkit" main="com.aptech.l2.SelfCheck"-->
+<div class="terminal-output">=== L2 Self-Check ===
+
+PASS  R1 swap() works for Strings and Integers
+PASS  R2 lastOrDefault() returns the last element or the fallback
+PASS  R3 largest() uses compareTo and handles empty lists
+PASS  R4 total() adds Integers, Doubles and Longs
+PASS  R5 fill() adds a value n times, also into a List of a supertype
+PASS  R6 countMatches() counts equal elements (and nulls)
+PASS  R7 Shelf&lt;T&gt; respects its capacity
+PASS  R7 Shelf&lt;T&gt; takeLast() and items()
+PASS  R8 invert() swaps keys and values
+
+9 passed, 0 failed.
+All requirements met - great work!</div>
+<!--@end-->
+
+    <h4>&#128161; Hints</h4>
+    <details class="hint"><summary>R3 &mdash; largest with null for empty</summary><div><p>Start with <code>T best = null;</code>. In the loop: <code>if (best == null || item.compareTo(best) &gt; 0) best = item;</code></p></div></details>
+    <details class="hint"><summary>R7 &mdash; Shelf</summary><div><p><code>isFull()</code> is <code>items.size() &gt;= capacity</code>. In <code>put</code>, check <code>isFull()</code> first. <code>takeLast()</code> removes index <code>items.size() - 1</code>. <code>items()</code> returns <code>new ArrayList&lt;&gt;(items)</code>.</p></div></details>
+    <details class="hint"><summary>R8 &mdash; invert</summary><div><p>Loop over <code>map.entrySet()</code> and <code>result.put(e.getValue(), e.getKey());</code> into a <code>LinkedHashMap&lt;V, K&gt;</code>.</p></div></details>
+
+    <h4>&#11088; Bonus</h4>
+    <p>Add <code>&lt;T&gt; List&lt;T&gt; repeat(T value, int times)</code> and <code>&lt;T extends Comparable&lt;T&gt;&gt; boolean isSorted(List&lt;T&gt; list)</code>, and test them in a <code>main</code> method of your own.</p>
+    <button type="button" class="playground__btn print-btn" data-print>&#128424;&#65039; Print / save as PDF</button>
+  </div>
+
+  <!-- ===== FURTHER STUDY =================================================== -->
+  <h2>&#128250; Further Study</h2>
+  <p>Every video was checked to make sure it exists and matches the topic. Watch the first two this week; use the others when a specific part (wildcards, erasure) needs a second explanation.</p>
+  <div class="video-grid">
+    <div class="video-card" data-yt="K1iu1kXkVoA" data-title="Generics In Java - Full Simple Tutorial">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Generics In Java &mdash; Full Simple Tutorial</div><div class="video-card__channel">Coding with John</div><div class="video-card__why">Start here: generic classes, methods and bounds, very clearly explained (Parts 1&ndash;4).</div></div>
+    </div>
+    <div class="video-card" data-yt="H9vc4gTtGGA" data-title="Learn Java generics in 13 minutes!">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Learn Java generics in 13 minutes</div><div class="video-card__channel">Bro Code</div><div class="video-card__why">Short, fast recap of Parts 1&ndash;3.</div></div>
+    </div>
+    <div class="video-card" data-yt="7i3Rliqzquw" data-title="Java Generics Tutorial">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java Generics Tutorial</div><div class="video-card__channel">Programming with Mosh</div><div class="video-card__why">A longer, structured walkthrough from the problem to the solution.</div></div>
+    </div>
+    <div class="video-card" data-yt="NAZkukK5zX0" data-title="Java Generics Finally Explained (Wildcards, PECS & More)">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java Generics Finally Explained (Wildcards, PECS &amp; More)</div><div class="video-card__channel">Geekific</div><div class="video-card__why">Part 5: wildcards and PECS with good visuals.</div></div>
+    </div>
+    <div class="video-card" data-yt="Opb2q2WSyes" data-title="Wildcards in Generics | ?, ? extends, ? super">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Wildcards in Generics: ?, ? extends, ? super</div><div class="video-card__channel">Coder Army</div><div class="video-card__why">A second, slower explanation of Part 5.</div></div>
+    </div>
+    <div class="video-card" data-yt="fBUuoXfkIFo" data-title="What is Type Erasure in Generics | How it Works | Java">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">What is Type Erasure in Generics?</div><div class="video-card__channel">CoedMaster</div><div class="video-card__why">Part 8: why the limitations exist.</div></div>
+    </div>
+    <div class="video-card" data-yt="BrBKp2qcXYU" data-title="Java Generics for Serious Developers">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java Generics for Serious Developers</div><div class="video-card__channel">Selenium Express</div><div class="video-card__why">Deep dive for keen students: bounds, wildcards, PECS in depth.</div></div>
+    </div>
+  </div>
+  <h3>Read (official &amp; trusted)</h3>
+  <ul>
+    <li><a href="https://dev.java/learn/generics/" target="_blank" rel="noopener">dev.java &mdash; Generics</a> (official Java learning site)</li>
+    <li><a href="https://docs.oracle.com/javase/tutorial/java/generics/index.html" target="_blank" rel="noopener">Oracle Java Tutorials &mdash; Generics trail</a></li>
+    <li><a href="https://docs.oracle.com/javase/tutorial/java/generics/wildcardGuidelines.html" target="_blank" rel="noopener">Oracle &mdash; Guidelines for Wildcard Use</a> (the official PECS advice)</li>
+    <li><a href="https://docs.oracle.com/javase/tutorial/java/generics/erasure.html" target="_blank" rel="noopener">Oracle &mdash; Type Erasure</a> and <a href="https://docs.oracle.com/javase/tutorial/java/generics/restrictions.html" target="_blank" rel="noopener">Restrictions on Generics</a></li>
+    <li><a href="https://jenkov.com/tutorials/java-generics/index.html" target="_blank" rel="noopener">Jakob Jenkov &mdash; Java Generics tutorial</a></li>
+    <li>Book: Cay S. Horstmann, <em>Core Java, Volume I</em>, chapter "Generic Programming" (module library reference).</li>
+  </ul>
+
+  <!-- ===== CHEAT SHEET ===================================================== -->
+  <h2>&#128203; Cheat Sheet</h2>
+  <div class="cheatsheet">
+    <h4>Generic class</h4>
+<pre><code class="lang-java">public class Box&lt;T&gt; {
+    private T item;
+    public void put(T item) { this.item = item; }
+    public T get() { return item; }
+}
+Box&lt;String&gt; b = new Box&lt;&gt;();       // instantiate
+class Pair&lt;K, V&gt; { ... }             // two parameters</code></pre>
+    <h4>Generic method</h4>
+<pre><code class="lang-java">public static &lt;T&gt; T firstOrNull(List&lt;T&gt; list) { ... }
+firstOrNull(names);                  // T inferred
+Util.&lt;String&gt;firstOrNull(names);     // explicit witness</code></pre>
+    <h4>Bounds</h4>
+<pre><code class="lang-java">&lt;T extends Number&gt;                  // T is a Number
+&lt;T extends Comparable&lt;T&gt;&gt;           // T can compareTo
+&lt;T extends Number &amp; Comparable&lt;T&gt;&gt; // both</code></pre>
+    <h4>Wildcards (PECS)</h4>
+<pre><code class="lang-java">List&lt;?&gt;                 // any list: read as Object
+List&lt;? extends Number&gt;  // READ Numbers (producer)
+List&lt;? super Integer&gt;   // ADD Integers (consumer)
+&lt;T&gt; void copy(List&lt;? super T&gt; dst, List&lt;? extends T&gt; src)</code></pre>
+    <h4>Inheritance</h4>
+<pre><code class="lang-java">class LabelledBox&lt;T&gt; extends Box&lt;T&gt; {}   // stays generic
+class IntBox extends Box&lt;Integer&gt; {}      // fixes T
+class Names implements Storage&lt;String&gt; {} // generic interface
+// List&lt;Integer&gt; is NOT a List&lt;Number&gt;</code></pre>
+    <h4>Inference</h4>
+<pre><code class="lang-java">Map&lt;String, List&lt;Integer&gt;&gt; m = new HashMap&lt;&gt;();  // diamond
+var list = new ArrayList&lt;String&gt;();                // var
+Pair&lt;String, Integer&gt; p = Pair.of("a", 1);         // method</code></pre>
+    <h4>Not allowed (erasure)</h4>
+<pre><code class="lang-java">List&lt;int&gt;          new T()        new T[10]
+static T field     x instanceof List&lt;String&gt;
+m(List&lt;String&gt;) + m(List&lt;Integer&gt;)   // same erasure</code></pre>
+  </div>
+
+  <!-- ===== SUMMARY ========================================================= -->
+  <h2>&#127891; Session Summary</h2>
+  <ol>
+    <li><strong>Why</strong>: generics give compile-time type safety, no casts and reusable code.</li>
+    <li><strong>Generic class</strong>: <code>class Box&lt;T&gt;</code>; instantiate with <code>new Box&lt;&gt;()</code>; several parameters with <code>&lt;K, V&gt;</code>.</li>
+    <li><strong>Generic method</strong>: <code>&lt;T&gt;</code> goes before the return type; T is usually inferred.</li>
+    <li><strong>Bounds</strong>: <code>&lt;T extends X&gt;</code> restricts T and unlocks X's methods.</li>
+    <li><strong>Wildcards</strong>: <code>?</code>, <code>? extends X</code> (read), <code>? super X</code> (add). PECS.</li>
+    <li><strong>Inheritance</strong>: <code>List&lt;Integer&gt;</code> is not a <code>List&lt;Number&gt;</code>; subclasses may keep or fix T.</li>
+    <li><strong>Inference</strong>: diamond, <code>var</code>, method calls, lambdas: less typing, same safety.</li>
+    <li><strong>Erasure</strong>: types vanish at run time, hence no <code>new T()</code>, <code>new T[]</code>, <code>static T</code> or <code>instanceof List&lt;String&gt;</code>.</li>
+  </ol>
+  <div class="newwords"><b>&#128218; All new words from this session</b>
+    <dl>
+      <dt>Generics</dt><dd>Classes, interfaces and methods that take types as parameters.</dd>
+      <dt>Type parameter / type argument</dt><dd>The placeholder (<code>T</code> in <code>Box&lt;T&gt;</code>) / the real type that fills it (<code>String</code> in <code>Box&lt;String&gt;</code>).</dd>
+      <dt>Generic class, generic interface, generic method</dt><dd>A class / interface / method that declares its own type parameter(s).</dd>
+      <dt>Instantiate</dt><dd>Create an object from a class: <code>new Box&lt;&gt;()</code>.</dd>
+      <dt>Raw type</dt><dd>A generic type used without <code>&lt;&hellip;&gt;</code>, like <code>List</code>. Unsafe; only for old code.</dd>
+      <dt>Bounded type</dt><dd><code>&lt;T extends X&gt;</code>: T must be X or a subtype of X.</dd>
+      <dt>Wildcard <code>?</code></dt><dd>"Some unknown type." Upper-bounded <code>? extends X</code>, lower-bounded <code>? super X</code>, unbounded <code>?</code>.</dd>
+      <dt>PECS</dt><dd>Producer Extends, Consumer Super: the rule for choosing a wildcard.</dd>
+      <dt>Type inference</dt><dd>The compiler working out a type you didn't write.</dd>
+      <dt>Type witness</dt><dd>Naming the type yourself on a generic method call: <code>List.&lt;Integer&gt;of()</code>.</dd>
+      <dt>Type erasure</dt><dd>The compiler removes type arguments after checking them; at run time T is Object (or its bound).</dd>
+      <dt>Compile time / run time</dt><dd>When code is checked and translated / when it actually runs.</dd>
+    </dl>
+  </div>
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Next session: File Handling, Streams and Serialization</b>
+      You'll save your data to files and read it back: text files, binary files, and whole objects (serialization). Graded Assignment A2 (Student Record File Manager) comes with it.
+    </div>
+  </div>
+
+</main>
+
+<script src="../assets/js/course.js?v=5"></script>
+<script src="../assets/js/playgrounds.js?v=5"></script>
+
+</body>
+</html>

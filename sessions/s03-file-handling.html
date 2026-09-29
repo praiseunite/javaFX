@@ -1,0 +1,2121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session 3 — File Handling, Streams and Serialization</title>
+  <meta name="description" content="Session 3 of Building Rich Java Applications with JavaFX and AI Tools: data streams, the File class, byte and character streams, buffering, DataInput/DataOutput, serialization and the Console class — explained from zero.">
+  <link rel="stylesheet" href="../assets/css/course.css?v=5">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "s03";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== HERO ============================================================ -->
+  <section class="hero">
+    <span class="tag">Week 1 &middot; Day 3 &middot; Session 3 &middot; 2 hours in class + practice at home</span>
+    <h1>Session 3 &mdash; File Handling, Streams and Serialization</h1>
+    <p class="lede">
+      Until now, everything your programs knew disappeared the moment they stopped: every student added, every score counted.
+      Today you learn to <strong>save data to files and read it back</strong>, as text, as raw bytes, as Java values, and even as whole
+      objects. This is the first step towards programs that remember.
+    </p>
+    <div class="meta">
+      <span>&#128218; Learner's Guide: SG &middot; XP &middot; TG &mdash; Session 3</span>
+      <span>&#9201; ~2 hours + 3&ndash;4 hours for Assignment A2</span>
+      <span>&#9989; Before this: Sessions 1&ndash;2, Bridge B7 (exceptions, try/catch)</span>
+      <span>&#128203; Graded: Assignment A2</span>
+    </div>
+  </section>
+
+  <!-- ===== OBJECTIVES ====================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this session you can&hellip;</b>
+    <ol>
+      <li><strong>Define</strong> a data stream and <strong>explain</strong> the difference between input and output streams.</li>
+      <li><strong>Use</strong> the <code>File</code> class to create, inspect, list, rename and delete files and folders.</li>
+      <li><strong>Distinguish</strong> byte streams (<code>InputStream</code>/<code>OutputStream</code>) from character streams (<code>Reader</code>/<code>Writer</code>) and <strong>choose</strong> the right one.</li>
+      <li><strong>Explain</strong> why <code>BufferedInputStream</code>/<code>BufferedOutputStream</code> (and <code>BufferedReader</code>/<code>BufferedWriter</code>) are faster.</li>
+      <li><strong>Use</strong> the <code>DataInput</code>/<code>DataOutput</code> interfaces to save and load Java values in binary.</li>
+      <li><strong>Define</strong> serialization, <strong>explain</strong> why it's needed, and <strong>use</strong> <code>Serializable</code>, <code>transient</code> and <code>serialVersionUID</code>.</li>
+      <li><strong>Use</strong> the <code>Console</code> class, and <strong>build</strong> a file manager program (Assignment A2).</li>
+    </ol>
+  </div>
+
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== ROADMAP ========================================================= -->
+  <h2>Your Roadmap for Today</h2>
+  <div class="roadmap">
+    <a href="#part-1-what-is-a-data-stream">Data streams</a>
+    <a href="#part-2-the-file-class">The File class</a>
+    <a href="#part-3-byte-streams">Byte streams</a>
+    <a href="#part-4-buffered-streams">Buffering</a>
+    <a href="#part-5-datainput-and-dataoutput">DataInput/Output</a>
+    <a href="#part-6-character-streams">Character streams</a>
+    <a href="#part-7-serialization">Serialization</a>
+    <a href="#part-8-the-console-class">Console</a>
+    <a href="#part-9-dont-confuse-the-stream-api">Stream API (taste)</a>
+  </div>
+
+  <div class="callout callout--note"><span class="callout__i">&#128214;</span>
+    <div class="callout__b"><b>Get the code running &mdash; and where do the files go?</b>
+      <p>Open <code>code/s03-files-streams</code> in IntelliJ. The examples are in <code>src/main/java/com/aptech/s03</code>.</p>
+      <p>The examples create their files in a folder called <code>sandbox</code> <strong>inside the project folder</strong>. When you run a program in IntelliJ, "the current folder" (the <strong>working directory</strong>) is the project folder, so a path like <code>"sandbox/notes.txt"</code> means <code>&hellip;/s03-files-streams/sandbox/notes.txt</code>. After running an example, right-click the project in the Project panel &rarr; <strong>Reload from Disk</strong> to see the new files, and double-click a text file to look inside.</p>
+    </div>
+  </div>
+
+  <!-- ===== WHY THIS MATTERS ================================================= -->
+  <h2>Why This Matters</h2>
+  <p>
+    A program's variables live in <strong>memory (RAM)</strong>, which is fast but temporary: switch off the program (or the computer) and it's all gone.
+    <strong>Files</strong> live on the <strong>disk</strong>, which is slower but <em>permanent</em>. Every app you use saves something: your game progress, your
+    settings, your documents, your photos. In the final JavaFX project, your app will save and load its data; in Sessions 7&ndash;8 you'll use a database, which is itself built on files.
+  </p>
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; water pipes</b>
+      <p>A <strong>stream</strong> is a pipe that data flows through, one drop at a time. An <strong>input stream</strong> is a pipe bringing water <em>into</em> your
+      house (data coming <em>into</em> your program from a file); an <strong>output stream</strong> takes water <em>out</em> (data going <em>from</em> your program to a file).</p>
+      <p>You can attach extra fittings to a pipe: a <strong>tank</strong> that collects lots of water so you don't turn the tap a million times (a <em>buffer</em>),
+      or a <strong>filter</strong> that turns raw water into something useful (turning bytes into characters, or into <code>int</code>s). In Java you build a stream by
+      connecting pieces like this, and you'll see it all session.</p>
+    </div>
+  </div>
+
+  <!-- ===== PART 1 ========================================================== -->
+  <span class="eyebrow">Part 1 of 9</span>
+  <h2 id="part-1-what-is-a-data-stream">Part 1 &mdash; What Is a Data Stream?</h2>
+  <p>
+    A <strong>data stream</strong> is a <strong>sequence of data, read or written one piece after another, in order</strong>. You don't get the whole file at once;
+    you take the next piece, then the next, until the stream says "that's the end". Java's streams all live in the package <code>java.io</code> ("input/output").
+  </p>
+  <figure class="figure" aria-label="Input and output streams diagram">
+    <svg class="dg" viewBox="0 0 720 200" width="720" height="200" role="img" aria-labelledby="h1t">
+      <title id="h1t">An input stream carries data from a source such as a file into the program; an output stream carries data from the program to a destination</title>
+      <defs><marker id="h1a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="head-accent"/></marker></defs>
+      <rect class="box" x="20" y="60" width="140" height="70" rx="8"/><text x="90" y="90" text-anchor="middle" class="t-b">SOURCE</text><text x="90" y="112" text-anchor="middle" class="t-sm">file, keyboard, network</text>
+      <rect class="warm" x="290" y="50" width="140" height="90" rx="10"/><text x="360" y="90" text-anchor="middle" class="t-b">YOUR PROGRAM</text><text x="360" y="112" text-anchor="middle" class="t-sm">(variables in RAM)</text>
+      <rect class="box" x="560" y="60" width="140" height="70" rx="8"/><text x="630" y="90" text-anchor="middle" class="t-b">DESTINATION</text><text x="630" y="112" text-anchor="middle" class="t-sm">file, screen, network</text>
+      <line class="ln-accent" x1="162" y1="95" x2="284" y2="95" marker-end="url(#h1a)"/>
+      <line class="ln-accent" x1="432" y1="95" x2="554" y2="95" marker-end="url(#h1a)"/>
+      <text x="224" y="80" text-anchor="middle" class="t-b t-accent">INPUT stream</text><text x="224" y="118" text-anchor="middle" class="t-mono t-sm">read()</text>
+      <text x="494" y="80" text-anchor="middle" class="t-b t-accent">OUTPUT stream</text><text x="494" y="118" text-anchor="middle" class="t-mono t-sm">write()</text>
+      <g class="t-mono">
+        <rect class="impl" x="186" y="140" width="22" height="22" rx="3"/><text x="197" y="156" text-anchor="middle" class="t-xs">72</text>
+        <rect class="impl" x="212" y="140" width="22" height="22" rx="3"/><text x="223" y="156" text-anchor="middle" class="t-xs">105</text>
+        <rect class="impl" x="238" y="140" width="22" height="22" rx="3"/><text x="249" y="156" text-anchor="middle" class="t-xs">33</text>
+      </g>
+      <text x="224" y="184" text-anchor="middle" class="t-sm">one piece at a time, in order</text>
+      <text x="494" y="184" text-anchor="middle" class="t-sm">"in" and "out" are from the PROGRAM's point of view</text>
+    </svg>
+    <figcaption class="figure__cap"><b>Figure 1.</b> Streams connect your program to the outside world. Input = into the program; output = out of the program.</figcaption>
+  </figure>
+
+  <h3>Example 1 &mdash; watch a stream, one byte at a time</h3>
+  <p>To see what "one piece at a time" means without any files yet, this example uses a stream whose source is simply an array in memory.</p>
+  <!--@code src="code/s03-files-streams/src/main/java/com/aptech/s03/E01_WhatIsAStream.java" hl="15,18,21,24"-->
+<pre class="numbered" data-file="E01_WhatIsAStream.java" data-hl="15,18,21,24"><code class="lang-java">package com.aptech.s03;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+/**
+ * Example 1 — A stream is a sequence of data that flows one piece at a time.
+ * Here the "source" is just an array in memory, so you can see exactly what read() does.
+ */
+public class E01_WhatIsAStream {
+    public static void main(String[] args) throws IOException {
+        byte[] source = {72, 105, 33};                 // the bytes for the letters H, i and !
+        InputStream in = new ByteArrayInputStream(source);
+
+        int b;
+        while ((b = in.read()) != -1) {                // read ONE byte; -1 means "no more data"
+            System.out.println("read() gave " + b + "  which is the character '" + (char) b + "'");
+        }
+        System.out.println("read() gave " + in.read() + "  -&gt; the end of the stream");
+
+        // Writing is the same idea in the other direction
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        out.write(74);                                 // J
+        out.write(97);                                 // a
+        out.write("va".getBytes());                    // a whole array of bytes at once
+        System.out.println("Bytes written: " + out.size() + " -&gt; as text: " + out);
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>13</td><td><code>throws IOException</code>: almost every stream method can fail (disk full, file missing&hellip;), so Java forces us to handle or pass on <code>IOException</code>. We'll deal with it properly in Part 3.</td></tr>
+      <tr><td>14</td><td>Three bytes. Every character on your keyboard has a number: <code>H</code> = 72, <code>i</code> = 105, <code>!</code> = 33.</td></tr>
+      <tr><td>15</td><td>An <code>InputStream</code> that reads from that array. The variable type is <code>InputStream</code>, the parent class of all byte input streams.</td></tr>
+      <tr><td>18</td><td>The most important loop of the session: <code>in.read()</code> returns the <strong>next byte</strong> (a number 0&ndash;255), or <strong>&minus;1</strong> when there is nothing left. <code>(b = in.read()) != -1</code> means "read a byte into <code>b</code>, and keep going while it isn't &minus;1".</td></tr>
+      <tr><td>19</td><td><code>(char) b</code> turns the number back into the character it stands for.</td></tr>
+      <tr><td>21</td><td>Reading again after the end just gives &minus;1 again.</td></tr>
+      <tr><td>24&ndash;27</td><td>An <code>OutputStream</code> that collects bytes in memory. <code>write(74)</code> writes one byte; <code>write(bytes)</code> writes a whole array.</td></tr>
+      <tr><td>28</td><td><code>size()</code> = how many bytes were written; printing it turns the bytes back into text.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s03-files-streams" main="com.aptech.s03.E01_WhatIsAStream"-->
+<div class="terminal-output">read() gave 72  which is the character 'H'
+read() gave 105  which is the character 'i'
+read() gave 33  which is the character '!'
+read() gave -1  -&gt; the end of the stream
+Bytes written: 4 -&gt; as text: Java</div>
+<!--@end-->
+  <div class="newwords"><b>&#128218; New words</b>
+    <dl>
+      <dt>Stream</dt><dd>A one-way flow of data, read or written in order, one piece at a time.</dd>
+      <dt>Input stream / output stream</dt><dd>Data coming <em>into</em> your program / going <em>out of</em> your program.</dd>
+      <dt>Byte</dt><dd>The smallest unit of stored data: a number from 0 to 255 (8 bits). Every file, whether text, image or music, is just a long list of bytes.</dd>
+      <dt><code>java.io</code></dt><dd>The package holding Java's classic input/output classes.</dd>
+      <dt>End of stream (&minus;1)</dt><dd>The signal <code>read()</code> gives when there's no more data.</dd>
+    </dl>
+  </div>
+
+  <!-- ===== PART 2 ========================================================== -->
+  <span class="eyebrow">Part 2 of 9</span>
+  <h2 id="part-2-the-file-class">Part 2 &mdash; The <code>File</code> Class</h2>
+  <p>
+    Before reading a file, you need a way to <em>point at</em> it. <code>java.io.File</code> represents a <strong>path</strong>, the address of a file or folder.
+    Creating a <code>File</code> object does <strong>not</strong> create anything on the disk and does <strong>not</strong> read the contents. It's like writing an
+    address on an envelope: the house may or may not exist. <code>File</code> lets you ask questions about that address (does it exist? how big is it?) and do
+    housekeeping (create, rename, delete, list folders).
+  </p>
+  <!--@code src="code/s03-files-streams/src/main/java/com/aptech/s03/E02_FileClass.java" hl="13,15,17,18,32,37"-->
+<pre class="numbered" data-file="E02_FileClass.java" data-hl="13,15,17,18,32,37"><code class="lang-java">package com.aptech.s03;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Arrays;
+
+/**
+ * Example 2 — The File class describes a file or folder PATH. It does not read or write contents.
+ */
+public class E02_FileClass {
+    public static void main(String[] args) throws IOException {
+        File folder = new File("sandbox/e02");          // just a path - nothing is created yet
+        System.out.println("Folder exists? " + folder.exists());
+        System.out.println("mkdirs() created it? " + folder.mkdirs());   // makes sandbox AND e02
+
+        File notes = new File(folder, "notes.txt");     // a file INSIDE that folder
+        System.out.println("createNewFile(): " + notes.createNewFile());
+        System.out.println("createNewFile() again: " + notes.createNewFile());  // already exists
+
+        try (FileWriter w = new FileWriter(notes)) {    // put 5 characters in it (explained in Example 6)
+            w.write("Hello");
+        }
+
+        System.out.println("getName():     " + notes.getName());
+        System.out.println("getPath():     " + notes.getPath());
+        System.out.println("isFile():      " + notes.isFile() + ", isDirectory(): " + notes.isDirectory());
+        System.out.println("length():      " + notes.length() + " bytes");
+        System.out.println("canRead():     " + notes.canRead() + ", canWrite(): " + notes.canWrite());
+
+        new File(folder, "todo.txt").createNewFile();
+        String[] names = folder.list();                 // names of everything inside the folder
+        Arrays.sort(names);
+        System.out.println("Folder contains: " + Arrays.toString(names));
+
+        File renamed = new File(folder, "diary.txt");
+        System.out.println("renameTo(): " + notes.renameTo(renamed) + " -&gt; now exists? " + renamed.exists());
+
+        for (File f : folder.listFiles()) {             // clean up so the example can run again
+            f.delete();
+        }
+        System.out.println("delete() folder: " + folder.delete() + ", exists now? " + folder.exists());
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>13</td><td>A <code>File</code> for the path <code>sandbox/e02</code>. It's a <strong>relative path</strong> (no drive letter), so it's measured from the working directory, the project folder.</td></tr>
+      <tr><td>14</td><td><code>exists()</code> asks the disk "is there really something here?" Not yet: <code>false</code>.</td></tr>
+      <tr><td>15</td><td><code>mkdirs()</code> creates the folder <em>and</em> any missing parent folders (<code>sandbox</code>, then <code>e02</code>). (<code>mkdir()</code>, without the "s", only creates the last one.)</td></tr>
+      <tr><td>17</td><td>The two-argument constructor <code>new File(folder, "notes.txt")</code> points at a file <em>inside</em> a folder, with no need to glue paths together yourself.</td></tr>
+      <tr><td>18&ndash;19</td><td><code>createNewFile()</code> creates an empty file and returns <code>true</code>; if it already exists it returns <code>false</code> and changes nothing.</td></tr>
+      <tr><td>21&ndash;23</td><td>We write "Hello" into it so it has some content (how this works comes in Part 6).</td></tr>
+      <tr><td>25&ndash;29</td><td>Questions you can ask: the name, the path, is it a file or a folder, its size in bytes, and whether we may read/write it.</td></tr>
+      <tr><td>32&ndash;34</td><td><code>list()</code> gives the <strong>names</strong> of everything in a folder (<code>listFiles()</code> gives <code>File</code> objects). We sort them because the order isn't guaranteed.</td></tr>
+      <tr><td>37</td><td><code>renameTo()</code> renames (or moves) a file.</td></tr>
+      <tr><td>39&ndash;42</td><td><code>delete()</code> removes a file, or a folder <strong>only if it's empty</strong>, so we delete the files first.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s03-files-streams" main="com.aptech.s03.E02_FileClass"-->
+<div class="terminal-output">Folder exists? false
+mkdirs() created it? true
+createNewFile(): true
+createNewFile() again: false
+getName():     notes.txt
+getPath():     sandbox\e02\notes.txt
+isFile():      true, isDirectory(): false
+length():      5 bytes
+canRead():     true, canWrite(): true
+Folder contains: [notes.txt, todo.txt]
+renameTo(): true -&gt; now exists? true
+delete() folder: true, exists now? false</div>
+<!--@end-->
+  <div class="callout callout--note"><span class="callout__i">&#8505;&#65039;</span>
+    <div class="callout__b"><b>Why does <code>getPath()</code> show <code>sandbox\e02\notes.txt</code>?</b>
+      Windows separates folders with a <strong>backslash</strong> <code>\</code>; macOS and Linux use a forward slash <code>/</code>. You can always <em>type</em> forward slashes in
+      Java (Windows accepts them), and Java shows the path the way your operating system writes it. On a Mac you would see <code>sandbox/e02/notes.txt</code>.
+    </div>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Method</th><th>What it does</th><th>Returns</th></tr></thead>
+    <tbody>
+      <tr><td><code>exists()</code></td><td>Is there a file or folder at this path?</td><td><code>boolean</code></td></tr>
+      <tr><td><code>isFile()</code> / <code>isDirectory()</code></td><td>Is it a file? A folder?</td><td><code>boolean</code></td></tr>
+      <tr><td><code>getName()</code> / <code>getPath()</code> / <code>getAbsolutePath()</code></td><td>Just the name / the path as given / the full path from the drive root</td><td><code>String</code></td></tr>
+      <tr><td><code>getParentFile()</code></td><td>The folder this file is in</td><td><code>File</code></td></tr>
+      <tr><td><code>length()</code></td><td>Size in bytes (0 if it doesn't exist)</td><td><code>long</code></td></tr>
+      <tr><td><code>createNewFile()</code></td><td>Create an empty file if none exists</td><td><code>boolean</code> (throws <code>IOException</code>)</td></tr>
+      <tr><td><code>mkdir()</code> / <code>mkdirs()</code></td><td>Create a folder / a folder and all missing parents</td><td><code>boolean</code></td></tr>
+      <tr><td><code>list()</code> / <code>listFiles()</code></td><td>Contents of a folder (names / File objects); <code>null</code> if not a folder</td><td><code>String[]</code> / <code>File[]</code></td></tr>
+      <tr><td><code>renameTo(File)</code></td><td>Rename or move</td><td><code>boolean</code></td></tr>
+      <tr><td><code>delete()</code></td><td>Delete a file, or an <em>empty</em> folder</td><td><code>boolean</code></td></tr>
+      <tr><td><code>canRead()</code> / <code>canWrite()</code></td><td>Permissions</td><td><code>boolean</code></td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout callout--tip"><span class="callout__i">&#128161;</span>
+    <div class="callout__b"><b>"Where did my file go?"</b>
+      If you can't find a file your program created, print <code>new File("notes.txt").getAbsolutePath()</code>. It shows exactly where Java put it.
+      (In Session 9 you'll meet the newer <code>java.nio.file.Path</code> and <code>Files</code> classes, which do the same jobs with more features.)
+    </div>
+  </div>
+  <div class="quiz mini-check">
+    <div class="mini-check__label">&#9889; Quick check</div>
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__stem">After running <code>File f = new File("report.txt");</code> on a fresh computer, what is true?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> An empty file called report.txt now exists on the disk.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Nothing changed on the disk; <code>f.exists()</code> returns <code>false</code>.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> The program crashes with FileNotFoundException.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> A <code>File</code> object is just a path, like an address on an envelope. You need <code>createNewFile()</code> or an output stream to actually create the file.</div>
+    </div>
+  </div>
+
+  <!-- ===== PART 3 ========================================================== -->
+  <span class="eyebrow">Part 3 of 9</span>
+  <h2 id="part-3-byte-streams">Part 3 &mdash; Byte Streams: <code>InputStream</code> and <code>OutputStream</code></h2>
+  <p>
+    <strong>Byte streams</strong> read and write <strong>raw bytes</strong>, exactly as they are on the disk. They work for <em>every</em> kind of file: images, music, zip files, and text too.
+    All byte streams come from two abstract parent classes: <code>InputStream</code> (reading) and <code>OutputStream</code> (writing). For files you use
+    <code>FileInputStream</code> and <code>FileOutputStream</code>.
+  </p>
+  <figure class="concept-visual" aria-label="The four families of Java I/O streams">
+    <img src="../assets/img/diagrams/s03_io_stream_hierarchy.svg" alt="The four families of Java I/O streams" loading="lazy">
+    <figcaption>
+      <span class="fig-badge fig-badge--hierarchy">&#128202; Class Hierarchy</span>
+      <strong>Figure 2. The four families of java.io:</strong> <code>InputStream</code>/<code>OutputStream</code> move raw bytes (any file); <code>Reader</code>/<code>Writer</code> move text characters. The class name tells you the family: names ending in <em>Stream</em> = bytes, <em>Reader/Writer</em> = characters.
+    </figcaption>
+  </figure>
+
+  <h3>Example 3 &mdash; write bytes, read bytes, copy a file</h3>
+  <!--@code src="code/s03-files-streams/src/main/java/com/aptech/s03/E03_ByteStreams.java" hl="18,31,45,46,55"-->
+<pre class="numbered" data-file="E03_ByteStreams.java" data-hl="18,31,45,46,55"><code class="lang-java">package com.aptech.s03;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+/**
+ * Example 3 — Byte streams: FileOutputStream writes raw bytes, FileInputStream reads them.
+ * Also shows try-with-resources, which closes the stream for you.
+ */
+public class E03_ByteStreams {
+    public static void main(String[] args) {
+        new File("sandbox").mkdirs();
+        File file = new File("sandbox/bytes.bin");
+
+        // 1) WRITE: try-with-resources - the stream in ( ) is closed automatically at the end
+        try (FileOutputStream out = new FileOutputStream(file)) {
+            out.write(65);                               // one byte: 65 is 'A'
+            out.write(new byte[]{66, 67, 10});           // B, C and a new-line character
+            out.write("Java".getBytes());                // the bytes of a String
+        } catch (IOException e) {
+            System.out.println("Could not write: " + e.getMessage());
+        }
+        System.out.println("File size: " + file.length() + " bytes");
+
+        // 2) READ: one byte at a time until read() returns -1
+        try (FileInputStream in = new FileInputStream(file)) {
+            int b;
+            StringBuilder numbers = new StringBuilder();
+            while ((b = in.read()) != -1) {
+                numbers.append(b).append(' ');
+            }
+            System.out.println("Bytes read: " + numbers);
+        } catch (IOException e) {
+            System.out.println("Could not read: " + e.getMessage());
+        }
+
+        // 3) COPY: read into a byte[] "bucket" and write the bucket out
+        try (FileInputStream in = new FileInputStream(file);
+             FileOutputStream out = new FileOutputStream("sandbox/bytes-copy.bin")) {
+            byte[] bucket = new byte[4];
+            int count;
+            int trips = 0;
+            while ((count = in.read(bucket)) != -1) {    // count = how many bytes landed in the bucket
+                out.write(bucket, 0, count);             // write only those bytes
+                trips++;
+            }
+            System.out.println("Copied in " + trips + " trips with a 4-byte bucket");
+        } catch (IOException e) {
+            System.out.println("Could not copy: " + e.getMessage());
+        }
+
+        // 4) What happens with a file that does not exist?
+        try (FileInputStream in = new FileInputStream("sandbox/missing.bin")) {
+            System.out.println("This line never runs: " + in.read());
+        } catch (IOException e) {
+            System.out.println("Caught " + e.getClass().getSimpleName() + ": " + e.getMessage());
+        }
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>18</td><td><strong>try-with-resources</strong>: the stream is created inside <code>try ( &hellip; )</code>. When the block ends (normally <em>or</em> because of an error), Java <strong>closes the stream automatically</strong>. Opening <code>FileOutputStream</code> creates the file, or <strong>empties</strong> it if it already exists.</td></tr>
+      <tr><td>19&ndash;21</td><td>Three ways to write: one byte, an array of bytes, or the bytes of a String. <code>10</code> is the "new line" character.</td></tr>
+      <tr><td>22&ndash;24</td><td>If anything goes wrong, we catch the <code>IOException</code> and print a friendly message instead of crashing.</td></tr>
+      <tr><td>25</td><td>8 bytes were written: A B C newline J a v a.</td></tr>
+      <tr><td>28&ndash;33</td><td>Read the file with the same <code>read() != -1</code> loop as Example 1, now from a real file.</td></tr>
+      <tr><td>40&ndash;41</td><td>try-with-resources can open <strong>two</strong> streams at once (separated by <code>;</code>). Both are closed at the end, in reverse order.</td></tr>
+      <tr><td>42</td><td>A <strong>bucket</strong>: an array that holds several bytes. Real programs use 1024, 4096 or more; 4 makes it easy to count.</td></tr>
+      <tr><td>45</td><td><code>read(bucket)</code> fills the bucket and returns <strong>how many</strong> bytes it put in (maybe fewer than 4 at the end), or &minus;1 at the end.</td></tr>
+      <tr><td>46</td><td><code>write(bucket, 0, count)</code>: write only the <code>count</code> bytes that were actually read. Writing the whole bucket would copy leftovers from the previous trip!</td></tr>
+      <tr><td>55&ndash;59</td><td>Opening a missing file throws <code>FileNotFoundException</code> (a kind of <code>IOException</code>). The message says exactly which file and why.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s03-files-streams" main="com.aptech.s03.E03_ByteStreams"-->
+<div class="terminal-output">File size: 8 bytes
+Bytes read: 65 66 67 10 74 97 118 97 
+Copied in 2 trips with a 4-byte bucket
+Caught FileNotFoundException: sandbox\missing.bin (The system cannot find the file specified)</div>
+<!--@end-->
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point: always use try-with-resources</b>
+      <pre><code class="lang-java">try (FileInputStream in = new FileInputStream("data.bin")) {
+    // use the stream
+} catch (IOException e) {
+    System.out.println("Problem: " + e.getMessage());
+}   // in.close() is called for you, even if an exception happened</code></pre>
+      An open stream holds on to the file (other programs may not be able to change or delete it), and for output streams some data may still be
+      waiting in memory and <strong>never reach the disk</strong> (Mistake 2). try-with-resources makes forgetting to close impossible.
+    </div>
+  </div>
+  <figure class="concept-visual" aria-label="Cartoon: forgetting close() floods the room; try-with-resources closes the valve automatically">
+    <img src="../assets/img/cartoons/s03_try_with_resources.jpg" alt="Cartoon: forgetting close() floods the room; try-with-resources closes the valve automatically" loading="lazy">
+    <figcaption>
+      <span class="fig-badge fig-badge--analogy">&#127917; Visual Analogy</span>
+      <strong>Manual close() vs try-with-resources:</strong> forget to close a stream and resources leak (left). With <code>try ( &hellip; )</code>, Java closes every resource for you, even when an exception happens (right).
+    </figcaption>
+  </figure>
+  <div class="newwords"><b>&#128218; New words</b>
+    <dl>
+      <dt>Checked exception (<code>IOException</code>)</dt><dd>An error Java <em>forces</em> you to deal with, either by catching it (<code>try/catch</code>) or by declaring it (<code>throws IOException</code>). File operations can always fail, so their methods throw <code>IOException</code>.</dd>
+      <dt>try-with-resources</dt><dd><code>try (Resource r = &hellip;) { }</code>: Java closes <code>r</code> automatically when the block ends.</dd>
+      <dt>Close</dt><dd>Telling the operating system you're finished with a file, so it can finish writing and release it.</dd>
+    </dl>
+  </div>
+
+  <!-- ===== PART 4 ========================================================== -->
+  <span class="eyebrow">Part 4 of 9</span>
+  <h2 id="part-4-buffered-streams">Part 4 &mdash; Buffered Streams: Fewer Trips to the Disk</h2>
+  <p>
+    Every time a plain <code>FileInputStream.read()</code> is called, your program asks the operating system to fetch data from the disk. Each request is
+    slow compared with working in memory. Reading a 1 MB file one byte at a time means a million requests!
+  </p>
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; fetching water with a cup or a bucket</b>
+      You need 100 litres of water from a well at the end of the garden. Walking there with a <strong>cup</strong> means hundreds of trips. Walking there with a
+      big <strong>bucket</strong> and pouring from the bucket into your cup at home means only a few trips. A <strong>buffer</strong> is that bucket: a block of memory
+      (8192 bytes by default) that the stream fills in one trip, then hands you one byte at a time from memory.
+    </div>
+  </div>
+  <figure class="concept-visual" aria-label="Cartoon: carrying water one drop at a time versus in an 8 KB bucket">
+    <img src="../assets/img/cartoons/s03_buffered_stream_bucket.jpg" alt="Cartoon: carrying water one drop at a time versus in an 8 KB bucket" loading="lazy">
+    <figcaption>
+      <span class="fig-badge fig-badge--analogy">&#127917; Visual Analogy</span>
+      <strong>Unbuffered vs buffered:</strong> without a buffer, every byte is its own trip to the source (left). A buffered stream carries 8,192 bytes per trip, the 8 KB bucket (right). Example 4 below measures the difference: 100,001 trips vs 14.
+    </figcaption>
+  </figure>
+  <p>
+    <code>BufferedInputStream</code> and <code>BufferedOutputStream</code> <strong>wrap</strong> another stream and add a buffer. Your code doesn't change at all: you still call
+    <code>read()</code> and <code>write()</code>. It just gets much faster. The example below proves it with a tiny "counting" stream that counts every request that reaches the file.
+  </p>
+  <!--@code src="code/s03-files-streams/src/main/java/com/aptech/s03/E04_BufferedByteStreams.java" hl="34,38,44,50,51"-->
+<pre class="numbered" data-file="E04_BufferedByteStreams.java" data-hl="34,38,44,50,51"><code class="lang-java">package com.aptech.s03;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+/**
+ * Example 4 — Buffered byte streams: fewer trips to the disk.
+ * A small "counting" stream shows how many times the real FILE is asked for data.
+ */
+public class E04_BufferedByteStreams {
+
+    /** Wraps any InputStream and counts every call that reaches the file. */
+    static class CountingInputStream extends FilterInputStream {
+        int calls = 0;
+
+        CountingInputStream(InputStream in) { super(in); }
+
+        @Override public int read() throws IOException { calls++; return super.read(); }
+
+        @Override public int read(byte[] b, int off, int len) throws IOException { calls++; return super.read(b, off, len); }
+    }
+
+    public static void main(String[] args) throws IOException {
+        new File("sandbox").mkdirs();
+        File file = new File("sandbox/100k.bin");
+
+        // Write 100,000 bytes through a BufferedOutputStream
+        try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
+            for (int i = 0; i &lt; 100_000; i++) {
+                out.write(i % 256);                      // goes into the buffer, not straight to disk
+            }
+        }                                                // close() flushes the last part of the buffer
+        System.out.println("File size: " + file.length() + " bytes");
+
+        // 1) NO buffer: every read() goes to the file
+        CountingInputStream plain = new CountingInputStream(new FileInputStream(file));
+        try (plain) {
+            while (plain.read() != -1) { /* read every byte */ }
+        }
+        System.out.println("Unbuffered: the file was asked " + plain.calls + " times");
+
+        // 2) WITH a buffer: BufferedInputStream fetches 8192 bytes at a time
+        CountingInputStream counted = new CountingInputStream(new FileInputStream(file));
+        try (BufferedInputStream buffered = new BufferedInputStream(counted)) {
+            while (buffered.read() != -1) { /* read every byte - same code as above! */ }
+        }
+        System.out.println("Buffered:   the file was asked " + counted.calls + " times");
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>19&ndash;27</td><td>A helper class that <strong>wraps</strong> any InputStream (<code>FilterInputStream</code> is the parent class made for wrapping) and adds 1 to <code>calls</code> every time data is requested from the file. It's our "trip counter".</td></tr>
+      <tr><td>34</td><td>Writing: <code>new BufferedOutputStream(new FileOutputStream(file))</code>. Read it from the inside out: a file stream, <em>wrapped in</em> a buffer.</td></tr>
+      <tr><td>35&ndash;37</td><td>100,000 single-byte writes, all going into the buffer in memory. Only when the buffer is full (8192 bytes) does it go to the disk.</td></tr>
+      <tr><td>38</td><td>Closing <strong>flushes</strong>: the last, half-full buffer is written to the disk. Without closing (or <code>flush()</code>), those last bytes would be lost.</td></tr>
+      <tr><td>42&ndash;46</td><td>Unbuffered: our counter wraps the file directly, so every <code>read()</code> is a trip. (<code>try (plain)</code> means "close this existing variable at the end", a Java 9 shortcut.)</td></tr>
+      <tr><td>49&ndash;52</td><td>Buffered: the <em>same loop</em>, but reading through a <code>BufferedInputStream</code>. The buffer fetches 8192 bytes per trip.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s03-files-streams" main="com.aptech.s03.E04_BufferedByteStreams"-->
+<div class="terminal-output">File size: 100000 bytes
+Unbuffered: the file was asked 100001 times
+Buffered:   the file was asked 14 times</div>
+<!--@end-->
+  <p><strong>Where do those numbers come from?</strong> Unbuffered: 100,000 bytes = 100,000 trips, plus one final trip that returns &minus;1. Buffered: 100,000 &divide; 8,192 = 12.2, so 13 full-or-partial trips, plus the final &minus;1 trip = <strong>14</strong>. That's about <strong>7,000 times fewer</strong> requests, for the same result.</p>
+  <figure class="concept-visual" aria-label="How BufferedInputStream sits between the disk and your code">
+    <img src="../assets/img/diagrams/s03_buffered_io_pipeline.svg" alt="How BufferedInputStream sits between the disk and your code" loading="lazy">
+    <figcaption>
+      <span class="fig-badge fig-badge--memory">&#129504; Under the Hood</span>
+      <strong>How buffering works:</strong> one big read fills the 8 KB buffer; your <code>read()</code> calls are then served from memory until the buffer is empty.
+    </figcaption>
+  </figure>
+
+  <h3>&#128187; Try it: count the trips</h3>
+  <p>Choose a file size and compare the four ways of reading it. The numbers use the same formula as the counting stream, and were checked against the real JDK for 40 combinations.</p>
+  <div data-playground="buffering"></div>
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      Wrap file streams in a buffer: <code>new BufferedInputStream(new FileInputStream(f))</code>, <code>new BufferedOutputStream(new FileOutputStream(f))</code>.
+      Output buffers must be <strong>flushed</strong>, and closing does that for you, which is one more reason for try-with-resources.
+    </div>
+  </div>
+
+  <!-- ===== PART 5 ========================================================== -->
+  <span class="eyebrow">Part 5 of 9</span>
+  <h2 id="part-5-datainput-and-dataoutput">Part 5 &mdash; <code>DataInput</code> and <code>DataOutput</code>: Saving Java Values</h2>
+  <p>
+    Byte streams only understand bytes. But you usually want to save an <code>int</code> like 1500, a <code>double</code> like 87.5, or a <code>String</code>. The
+    <strong><code>DataOutput</code></strong> interface adds methods such as <code>writeInt</code>, <code>writeDouble</code>, <code>writeBoolean</code> and <code>writeUTF</code>
+    (for Strings), and <strong><code>DataInput</code></strong> adds the matching <code>readInt</code>, <code>readDouble</code>&hellip; The classes you use are
+    <code>DataOutputStream</code> and <code>DataInputStream</code>, which implement those interfaces and wrap another byte stream.
+  </p>
+  <!--@code src="code/s03-files-streams/src/main/java/com/aptech/s03/E05_DataStreams.java" hl="19,20,21,28,37"-->
+<pre class="numbered" data-file="E05_DataStreams.java" data-hl="19,20,21,28,37"><code class="lang-java">package com.aptech.s03;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+/**
+ * Example 5 — DataOutputStream / DataInputStream (the DataOutput and DataInput interfaces):
+ * save Java values (int, double, boolean, String) in binary form and read them back.
+ */
+public class E05_DataStreams {
+    public static void main(String[] args) throws IOException {
+        new File("sandbox").mkdirs();
+        File file = new File("sandbox/player.dat");
+
+        try (DataOutputStream out = new DataOutputStream(new FileOutputStream(file))) {
+            out.writeUTF("Ada");          // a String: 2 bytes for its length + 3 bytes of text
+            out.writeInt(1500);           // an int: always 4 bytes
+            out.writeDouble(87.5);        // a double: always 8 bytes
+            out.writeBoolean(true);       // a boolean: 1 byte
+        }
+        System.out.println("File size: " + file.length() + " bytes (5 + 4 + 8 + 1)");
+
+        try (DataInputStream in = new DataInputStream(new FileInputStream(file))) {
+            String name = in.readUTF();   // read back in EXACTLY the same order
+            int points = in.readInt();
+            double accuracy = in.readDouble();
+            boolean online = in.readBoolean();
+            System.out.println(name + " has " + points + " points, " + accuracy + "% accuracy, online=" + online);
+        }
+
+        // The wrong order does not give an error - it gives nonsense!
+        try (DataInputStream in = new DataInputStream(new FileInputStream(file))) {
+            int wrong = in.readInt();      // reads the first 4 bytes of "Ada" as a number
+            System.out.println("Reading in the wrong order gives: " + wrong);
+        }
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>19</td><td>A <code>DataOutputStream</code> wrapped around a file stream: it turns Java values into bytes and passes them down.</td></tr>
+      <tr><td>20</td><td><code>writeUTF("Ada")</code> writes 2 bytes saying "3 bytes of text follow", then the 3 bytes. That length prefix is how <code>readUTF</code> later knows where the String ends.</td></tr>
+      <tr><td>21&ndash;23</td><td>An <code>int</code> is always 4 bytes, a <code>double</code> always 8, a <code>boolean</code> 1, <em>whatever the value</em>. 1500 and 7 both take 4 bytes.</td></tr>
+      <tr><td>25</td><td>Total: 5 + 4 + 8 + 1 = 18 bytes.</td></tr>
+      <tr><td>27&ndash;32</td><td>Read back with the matching methods, <strong>in exactly the same order</strong> they were written. The file has no labels: it's just 18 bytes in a row.</td></tr>
+      <tr><td>36&ndash;38</td><td>Read in the wrong order (<code>readInt</code> first) and Java happily takes the first 4 bytes (the length 3, then "Ad") and turns them into the number 213348. <strong>No error, just garbage.</strong></td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s03-files-streams" main="com.aptech.s03.E05_DataStreams"-->
+<div class="terminal-output">File size: 18 bytes (5 + 4 + 8 + 1)
+Ada has 1500 points, 87.5% accuracy, online=true
+Reading in the wrong order gives: 213348</div>
+<!--@end-->
+  <figure class="figure" aria-label="The 18 bytes of player.dat">
+    <svg class="dg" viewBox="0 0 740 150" width="740" height="150" role="img" aria-labelledby="h3t">
+      <title id="h3t">The file player.dat: 5 bytes for writeUTF Ada, 4 bytes for writeInt 1500, 8 bytes for writeDouble 87.5 and 1 byte for writeBoolean true</title>
+      <rect class="map" x="20" y="40" width="175" height="44" rx="4"/><text x="107" y="60" text-anchor="middle" class="t-b">writeUTF("Ada")</text><text x="107" y="76" text-anchor="middle" class="t-xs">2 (length) + 3 = 5 bytes</text>
+      <rect class="impl" x="195" y="40" width="140" height="44" rx="4"/><text x="265" y="60" text-anchor="middle" class="t-b">writeInt(1500)</text><text x="265" y="76" text-anchor="middle" class="t-xs">4 bytes</text>
+      <rect class="warm" x="335" y="40" width="280" height="44" rx="4"/><text x="475" y="60" text-anchor="middle" class="t-b">writeDouble(87.5)</text><text x="475" y="76" text-anchor="middle" class="t-xs">8 bytes</text>
+      <rect class="iface" x="615" y="40" width="105" height="44" rx="4"/><text x="667" y="60" text-anchor="middle" class="t-b">Boolean</text><text x="667" y="76" text-anchor="middle" class="t-xs">1 byte</text>
+      <text x="20" y="28" class="t-sm">byte 0</text><text x="720" y="28" text-anchor="end" class="t-sm">byte 17</text>
+      <text x="20" y="116" class="t-sm">The file stores NO names and NO types: just 18 bytes in a row. Only the ORDER of your read calls</text>
+      <text x="20" y="136" class="t-sm">tells Java how to cut them up again. Write and read in the same order, always.</text>
+    </svg>
+    <figcaption class="figure__cap"><b>Figure 3.</b> What <code>player.dat</code> really contains.</figcaption>
+  </figure>
+  <div class="callout callout--tip"><span class="callout__i">&#128161;</span>
+    <div class="callout__b"><b>Saving a whole list? Write the count first.</b>
+      To save 3 players, first <code>writeInt(3)</code>, then each player's fields. When loading, <code>readInt()</code> tells you how many times to loop.
+      You'll use exactly this in Practice 4 and in Assignment A2 (R4/R5).
+    </div>
+  </div>
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      <code>DataOutputStream</code>/<code>DataInputStream</code> (the <code>DataOutput</code>/<code>DataInput</code> interfaces) save Java values as compact bytes.
+      Fixed sizes: int 4, long 8, double 8, boolean 1; Strings via <code>writeUTF</code>. <strong>Read in the same order you wrote.</strong> The file isn't human-readable: open it in Notepad and you'll see gibberish.
+    </div>
+  </div>
+
+  <!-- ===== PART 6 ========================================================== -->
+  <span class="eyebrow">Part 6 of 9</span>
+  <h2 id="part-6-character-streams">Part 6 &mdash; Character Streams: Reading and Writing Text</h2>
+  <p>
+    Text is special. A character such as <code>A</code> is stored as 1 byte, but <code>&eacute;</code> needs 2 bytes and the Naira sign <code>&#8358;</code> needs 3 (in the
+    <strong>UTF-8</strong> encoding that Java uses by default). If you read text byte by byte, you'd chop <code>&#8358;</code> into three meaningless numbers.
+    <strong>Character streams</strong> (<code>Reader</code> and <code>Writer</code>) solve this: they turn bytes into whole characters for you, and back again.
+  </p>
+  <figure class="concept-visual" aria-label="Cartoon: a robot handling raw bytes versus a translator reading characters">
+    <img src="../assets/img/cartoons/s03_byte_vs_character_stream.jpg" alt="Cartoon: a robot handling raw bytes versus a translator reading characters" loading="lazy">
+    <figcaption>
+      <span class="fig-badge fig-badge--analogy">&#127917; Visual Analogy</span>
+      <strong>Byte streams vs character streams:</strong> byte streams pass raw bytes through untouched, which is right for images, audio and zip files. Character streams translate those bytes into text characters using an encoding such as UTF-8.
+    </figcaption>
+  </figure>
+  <h3>Example 6 &mdash; the same file as characters and as bytes</h3>
+  <!--@code src="code/s03-files-streams/src/main/java/com/aptech/s03/E06_CharacterStreams.java" hl="16,18,29,37,46"-->
+<pre class="numbered" data-file="E06_CharacterStreams.java" data-hl="16,18,29,37,46"><code class="lang-java">package com.aptech.s03;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+
+/**
+ * Example 6 — Character streams (Reader / Writer) work with TEXT characters, not raw bytes.
+ */
+public class E06_CharacterStreams {
+    public static void main(String[] args) throws IOException {
+        new File("sandbox").mkdirs();
+        File file = new File("sandbox/price.txt");
+        String text = "₦500 café";
+
+        try (FileWriter writer = new FileWriter(file)) {     // Writer = characters out (UTF-8 by default)
+            writer.write(text);
+        }
+        System.out.println("The text has " + text.length() + " characters");
+        System.out.println("The file has " + file.length() + " bytes");
+
+        // Read it back as CHARACTERS
+        try (FileReader reader = new FileReader(file)) {
+            int c;
+            int count = 0;
+            StringBuilder sb = new StringBuilder();
+            while ((c = reader.read()) != -1) {             // read() returns one CHARACTER (or -1)
+                sb.append((char) c);
+                count++;
+            }
+            System.out.println("FileReader read " + count + " characters: " + sb);
+        }
+
+        // Read the same file as BYTES
+        try (FileInputStream in = new FileInputStream(file)) {
+            int count = 0;
+            while (in.read() != -1) {
+                count++;
+            }
+            System.out.println("FileInputStream read " + count + " bytes");
+        }
+
+        // FileWriter with append = true adds to the end instead of replacing the file
+        try (FileWriter writer = new FileWriter(file, true)) {
+            writer.write(" - sold!");
+        }
+        try (FileReader reader = new FileReader(file)) {
+            char[] buffer = new char[100];
+            int n = reader.read(buffer);                     // read up to 100 chars at once
+            System.out.println("After appending: " + new String(buffer, 0, n));
+        }
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>16</td><td>9 characters, including two that aren't plain English letters: <code>&#8358;</code> and <code>&eacute;</code>.</td></tr>
+      <tr><td>18&ndash;20</td><td><code>FileWriter</code> is the character version of <code>FileOutputStream</code>: you give it text, and it encodes it as UTF-8 bytes.</td></tr>
+      <tr><td>21&ndash;22</td><td>9 characters became <strong>12 bytes</strong>: 7 plain characters (1 byte each) + <code>&eacute;</code> (2) + <code>&#8358;</code> (3).</td></tr>
+      <tr><td>25&ndash;33</td><td><code>FileReader.read()</code> returns one whole <strong>character</strong> (as an <code>int</code>), or &minus;1 at the end. We get all 9 characters back perfectly.</td></tr>
+      <tr><td>37&ndash;42</td><td>The same file through a <em>byte</em> stream: 12 reads, because it sees the raw bytes.</td></tr>
+      <tr><td>46</td><td><code>new FileWriter(file, true)</code>: the <code>true</code> means <strong>append</strong> (add to the end). Without it, opening a FileWriter <strong>erases</strong> the file first.</td></tr>
+      <tr><td>50&ndash;52</td><td>Readers can also read into a <code>char[]</code> bucket; <code>n</code> is how many characters were read.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s03-files-streams" main="com.aptech.s03.E06_CharacterStreams"-->
+<div class="terminal-output">The text has 9 characters
+The file has 12 bytes
+FileReader read 9 characters: ₦500 café
+FileInputStream read 12 bytes
+After appending: ₦500 café - sold!</div>
+<!--@end-->
+
+  <h3>&#128187; Try it: Bytes vs Characters</h3>
+  <p>Type anything, in any language, with emoji, and see exactly what a <code>FileInputStream</code> and a <code>FileReader</code> would get from a file containing it. (Checked against the real JDK for 150+ strings.) Notice that an emoji like &#128512; counts as <strong>2</strong> Java characters!</p>
+  <div data-playground="bytes"></div>
+
+  <h3>Example 7 &mdash; the everyday tools: BufferedReader, BufferedWriter, PrintWriter</h3>
+  <p>In real programs you almost always read text <strong>line by line</strong>. <code>BufferedReader</code> adds a buffer <em>and</em> the very useful <code>readLine()</code>; <code>BufferedWriter</code> adds <code>newLine()</code>; <code>PrintWriter</code> gives you <code>println</code> and <code>printf</code>, just like <code>System.out</code>. Here they save and load a small <strong>CSV</strong> file (comma-separated values), the format spreadsheets like Excel can open.</p>
+  <!--@code src="code/s03-files-streams/src/main/java/com/aptech/s03/E07_BufferedTextFiles.java" hl="23,25,33,41,45,46"-->
+<pre class="numbered" data-file="E07_BufferedTextFiles.java" data-hl="23,25,33,41,45,46"><code class="lang-java">package com.aptech.s03;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Example 7 — The everyday way to handle text files: BufferedWriter / PrintWriter to write,
+ * BufferedReader.readLine() to read line by line. Saves and loads a small CSV file.
+ */
+public class E07_BufferedTextFiles {
+    public static void main(String[] args) throws IOException {
+        new File("sandbox").mkdirs();
+        File csv = new File("sandbox/students.csv");
+
+        // 1) WRITE lines with BufferedWriter
+        try (BufferedWriter out = new BufferedWriter(new FileWriter(csv))) {
+            out.write("id,name,score");
+            out.newLine();                               // the correct line ending for this computer
+            out.write("S1,Ada,95");
+            out.newLine();
+            out.write("S2,Ben,78");
+            out.newLine();
+        }
+
+        // 2) APPEND with PrintWriter, which has println and printf like System.out
+        try (PrintWriter out = new PrintWriter(new FileWriter(csv, true))) {
+            out.println("S3,Chi,88");
+            out.printf("%s,%s,%d%n", "S4", "Dayo", 61);
+        }
+
+        // 3) READ line by line with BufferedReader
+        List&lt;String&gt; names = new ArrayList&lt;&gt;();
+        int total = 0;
+        try (BufferedReader in = new BufferedReader(new FileReader(csv))) {
+            String header = in.readLine();               // first line: the column names
+            System.out.println("Header: " + header);
+            String line;
+            while ((line = in.readLine()) != null) {     // readLine() returns null at the end
+                String[] parts = line.split(",");        // "S1,Ada,95" -&gt; ["S1", "Ada", "95"]
+                names.add(parts[1]);
+                total += Integer.parseInt(parts[2]);
+            }
+        }
+        System.out.println("Students: " + names);
+        System.out.println("Average score: " + (double) total / names.size());
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>23</td><td>A <code>FileWriter</code> wrapped in a <code>BufferedWriter</code>: characters are collected in memory and written in big chunks.</td></tr>
+      <tr><td>24&ndash;29</td><td><code>write</code> a line of text, then <code>newLine()</code>, which writes the correct line ending for your operating system (Windows uses 2 characters, <code>\r\n</code>; Mac/Linux use 1, <code>\n</code>).</td></tr>
+      <tr><td>33</td><td>Reopen in <strong>append</strong> mode, wrapped in a <code>PrintWriter</code>.</td></tr>
+      <tr><td>34&ndash;35</td><td><code>println</code> writes a line; <code>printf</code> formats one: <code>%s</code> = a String, <code>%d</code> = a whole number, <code>%n</code> = a new line.</td></tr>
+      <tr><td>41</td><td>A <code>BufferedReader</code> wrapping a <code>FileReader</code>.</td></tr>
+      <tr><td>42</td><td>The first <code>readLine()</code> reads the header line, which we just print.</td></tr>
+      <tr><td>45</td><td>The standard line-reading loop: <code>readLine()</code> returns the next line <em>without</em> its line ending, or <strong><code>null</code></strong> at the end of the file.</td></tr>
+      <tr><td>46</td><td><code>split(",")</code> cuts <code>"S1,Ada,95"</code> into <code>{"S1", "Ada", "95"}</code>.</td></tr>
+      <tr><td>47&ndash;48</td><td>Take the name (index 1) and turn the score text (index 2) into a number with <code>Integer.parseInt</code>.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s03-files-streams" main="com.aptech.s03.E07_BufferedTextFiles"-->
+<div class="terminal-output">Header: id,name,score
+Students: [Ada, Ben, Chi, Dayo]
+Average score: 80.5</div>
+<!--@end-->
+  <div class="tablewrap"><table>
+    <thead><tr><th>You want to&hellip;</th><th>Use</th><th>Key methods</th></tr></thead>
+    <tbody>
+      <tr><td>Read text line by line</td><td><code>new BufferedReader(new FileReader(f))</code></td><td><code>readLine()</code> &rarr; String or <code>null</code></td></tr>
+      <tr><td>Write lines of text</td><td><code>new BufferedWriter(new FileWriter(f))</code></td><td><code>write(s)</code>, <code>newLine()</code></td></tr>
+      <tr><td>Write formatted text</td><td><code>new PrintWriter(new FileWriter(f))</code></td><td><code>println</code>, <code>printf</code></td></tr>
+      <tr><td>Add to an existing file</td><td><code>new FileWriter(f, true)</code></td><td>(append mode)</td></tr>
+      <tr><td>Turn a <em>byte</em> stream into a character stream</td><td><code>new InputStreamReader(byteStream)</code> / <code>new OutputStreamWriter(byteStream)</code></td><td>the "bridge" classes</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>&#128187; Try it: the Stream Builder</h3>
+  <p>By now you've seen that Java streams are built like Russian dolls: each class wraps the one inside it and adds a skill. Pick what's in your file and whether you're reading or writing, and the builder gives you the correct combination. (All 16 combinations it can produce were compiled with <code>javac</code>.)</p>
+  <div data-playground="streamchain"></div>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      <strong>Text? Use Readers and Writers</strong>, which handle characters and encodings correctly. <strong>Anything else (images, binary data)? Use InputStream/OutputStream.</strong>
+      For text files, the everyday pair is <code>BufferedReader</code> (<code>readLine()</code> until <code>null</code>) and <code>BufferedWriter</code>/<code>PrintWriter</code>.
+    </div>
+  </div>
+
+  <div class="quiz mini-check">
+    <div class="mini-check__label">&#9889; Quick check</div>
+    <div class="quiz__q">
+      <div class="quiz__stem">Match each job to the best stream.</div>
+      <div class="quiz__matchrow"><span>Copy a photo (.jpg) to a backup folder</span>
+        <select class="quiz__match" data-correct="bis" aria-label="copy photo"><option value="">choose&hellip;</option><option value="bis">BufferedInputStream / BufferedOutputStream</option><option value="br">BufferedReader / BufferedWriter</option><option value="dis">DataInputStream / DataOutputStream</option></select></div>
+      <div class="quiz__matchrow"><span>Read a list of names from names.txt, one per line</span>
+        <select class="quiz__match" data-correct="br" aria-label="read names"><option value="">choose&hellip;</option><option value="bis">BufferedInputStream / BufferedOutputStream</option><option value="br">BufferedReader / BufferedWriter</option><option value="dis">DataInputStream / DataOutputStream</option></select></div>
+      <div class="quiz__matchrow"><span>Save a game's level (int) and health (double) compactly</span>
+        <select class="quiz__match" data-correct="dis" aria-label="save game"><option value="">choose&hellip;</option><option value="bis">BufferedInputStream / BufferedOutputStream</option><option value="br">BufferedReader / BufferedWriter</option><option value="dis">DataInputStream / DataOutputStream</option></select></div>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">A photo is raw bytes &rarr; <strong>byte streams</strong>. Lines of text &rarr; <strong>BufferedReader</strong>. Java values like int/double &rarr; <strong>Data streams</strong>.</div>
+    </div>
+  </div>
+
+  <!-- ===== PART 7 ========================================================== -->
+  <span class="eyebrow">Part 7 of 9</span>
+  <h2 id="part-7-serialization">Part 7 &mdash; Serialization: Saving Whole Objects</h2>
+  <h3>Why do we need it?</h3>
+  <p>
+    Saving a <code>Student</code> with a Data stream means writing each field one by one, and reading them back in the same order. Now imagine an
+    <code>Account</code> that holds a <code>List</code> of transactions, each holding a date and an amount&hellip; Writing all that by hand is tedious and
+    easy to get wrong. <strong>Serialization</strong> does it for you: <strong>it turns a whole object, including every object it refers to, into a stream of bytes</strong>,
+    and <strong>deserialization</strong> turns those bytes back into brand-new objects later, even in another program or on another computer.
+  </p>
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; flat-pack furniture</b>
+      To ship a wardrobe across the country, the shop takes it apart into a flat box of labelled pieces plus instructions (<strong>serialize</strong>). At your house you
+      follow the instructions and rebuild an identical wardrobe (<strong>deserialize</strong>). It's not the <em>same</em> wardrobe (that one's still at the shop), but it's
+      a perfect copy. The instructions only work if both sides agree on the design: that's the <code>serialVersionUID</code>.
+    </div>
+  </div>
+  <figure class="concept-visual" aria-label="Cartoon: serialization freezes an object into bytes on disk; deserialization brings it back to life">
+    <img src="../assets/img/cartoons/s03_serialization_freeze_ray.jpg" alt="Cartoon: serialization freezes an object into bytes on disk; deserialization brings it back to life" loading="lazy">
+    <figcaption>
+      <span class="fig-badge fig-badge--analogy">&#127917; Visual Analogy</span>
+      <strong>Serialization and deserialization:</strong> <code>ObjectOutputStream</code> turns a live object into a stream of bytes saved in a file; <code>ObjectInputStream</code> rebuilds a new, equal object from those bytes later.
+    </figcaption>
+  </figure>
+  <figure class="figure" aria-label="Serialization and deserialization">
+    <svg class="dg" viewBox="0 0 740 170" width="740" height="170" role="img" aria-labelledby="h4t">
+      <title id="h4t">writeObject turns an object in memory into bytes in a file; readObject turns the bytes back into a new, equal object</title>
+      <defs><marker id="h4a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="head-accent"/></marker></defs>
+      <rect class="impl" x="20" y="40" width="170" height="80" rx="8"/><text x="105" y="64" text-anchor="middle" class="t-b">Account object</text>
+      <text x="105" y="84" text-anchor="middle" class="t-sm t-mono">owner="Ada"</text><text x="105" y="102" text-anchor="middle" class="t-sm t-mono">pin="1234" (transient)</text>
+      <line class="ln-accent" x1="195" y1="80" x2="285" y2="80" marker-end="url(#h4a)"/><text x="240" y="70" text-anchor="middle" class="t-xs t-mono">writeObject</text>
+      <rect class="muted" x="290" y="40" width="160" height="80" rx="8"/><text x="370" y="66" text-anchor="middle" class="t-b">accounts.ser</text>
+      <text x="370" y="88" text-anchor="middle" class="t-mono t-xs">AC ED 00 05 73 72 ...</text><text x="370" y="106" text-anchor="middle" class="t-xs">bytes on the disk</text>
+      <line class="ln-accent" x1="455" y1="80" x2="545" y2="80" marker-end="url(#h4a)"/><text x="500" y="70" text-anchor="middle" class="t-xs t-mono">readObject</text>
+      <rect class="impl" x="550" y="40" width="170" height="80" rx="8"/><text x="635" y="64" text-anchor="middle" class="t-b">NEW Account object</text>
+      <text x="635" y="84" text-anchor="middle" class="t-sm t-mono">owner="Ada"</text><text x="635" y="102" text-anchor="middle" class="t-sm t-mono t-bad">pin=null</text>
+      <text x="105" y="148" text-anchor="middle" class="t-sm">SERIALIZE (save)</text><text x="635" y="148" text-anchor="middle" class="t-sm">DESERIALIZE (load)</text>
+      <text x="370" y="148" text-anchor="middle" class="t-sm">can wait days, travel anywhere</text>
+    </svg>
+    <figcaption class="figure__cap"><b>Figure 4.</b> Serialization: object &rarr; bytes &rarr; a new copy of the object. <code>transient</code> fields are not saved.</figcaption>
+  </figure>
+
+  <h3>Example 8 &mdash; saving and loading a list of accounts</h3>
+  <!--@code src="code/s03-files-streams/src/main/java/com/aptech/s03/E08_Serialization.java" hl="19,20,25,52,59"-->
+<pre class="numbered" data-file="E08_Serialization.java" data-hl="19,20,25,52,59"><code class="lang-java">package com.aptech.s03;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Example 8 — Serialization: save WHOLE OBJECTS to a file and bring them back later.
+ */
+public class E08_Serialization {
+
+    /** "implements Serializable" is Java's permission slip: objects of this class may be saved. */
+    static class Account implements Serializable {
+        private static final long serialVersionUID = 1L;   // the class's "version number"
+
+        private final String owner;
+        private final double balance;
+        private final ArrayList&lt;String&gt; history = new ArrayList&lt;&gt;();   // ArrayList is Serializable
+        private transient String pin;                      // transient = NEVER saved
+
+        Account(String owner, double balance, String pin) {
+            this.owner = owner;
+            this.balance = balance;
+            this.pin = pin;
+        }
+
+        @Override
+        public String toString() {
+            return owner + " balance=" + balance + " history=" + history + " pin=" + pin;
+        }
+    }
+
+    public static void main(String[] args) throws IOException, ClassNotFoundException {
+        new File("sandbox").mkdirs();
+        File file = new File("sandbox/accounts.ser");
+
+        List&lt;Account&gt; accounts = new ArrayList&lt;&gt;();
+        Account ada = new Account("Ada", 2500.0, "1234");
+        ada.history.add("deposit 500");
+        accounts.add(ada);
+        accounts.add(new Account("Ben", 90.5, "9999"));
+        System.out.println("Before saving: " + accounts);
+
+        // SERIALIZE: object -&gt; bytes -&gt; file
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(file))) {
+            out.writeObject(accounts);                     // the whole list, and everything inside it
+        }
+        System.out.println("Saved " + file.length() + " bytes");
+
+        // DESERIALIZE: file -&gt; bytes -&gt; brand-new objects
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file))) {
+            @SuppressWarnings("unchecked")
+            List&lt;Account&gt; loaded = (List&lt;Account&gt;) in.readObject();   // readObject returns Object, so cast
+            System.out.println("After loading: " + loaded);
+            System.out.println("Same object as before? " + (loaded.get(0) == ada));
+        }
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>19</td><td><code>implements Serializable</code> is Java's <strong>permission slip</strong>. The interface has no methods at all (a <em>marker interface</em>); it just says "objects of this class may be serialized". Without it: <code>NotSerializableException</code>.</td></tr>
+      <tr><td>20</td><td><code>serialVersionUID</code> is the class's <strong>version number</strong>. It's saved inside the file; when loading, Java checks it matches the class it has now. Always declare it yourself (start with <code>1L</code>).</td></tr>
+      <tr><td>22&ndash;24</td><td>Normal fields are saved. The list <code>history</code> is saved <em>along with</em> its contents, because ArrayList and String are Serializable too.</td></tr>
+      <tr><td>25</td><td><code>transient</code> means "<strong>don't save this field</strong>". Use it for secrets (PINs, passwords) and things that make no sense later (open files, network connections). After loading, a transient field holds its default: <code>null</code>, 0 or false.</td></tr>
+      <tr><td>51&ndash;53</td><td><code>ObjectOutputStream.writeObject(accounts)</code> saves the <strong>whole list</strong>, and every Account and String inside it, in one call.</td></tr>
+      <tr><td>57&ndash;59</td><td><code>readObject()</code> rebuilds the objects. It returns plain <code>Object</code>, so we cast it back to <code>List&lt;Account&gt;</code>. (Generics are erased, Session 2 Part 8, so Java can't check the cast; <code>@SuppressWarnings("unchecked")</code> says "I know".)</td></tr>
+      <tr><td>60</td><td>Everything came back except the PINs, which are <code>null</code>, exactly what <code>transient</code> promised.</td></tr>
+      <tr><td>61</td><td>The loaded Account is a <strong>new object</strong>, an exact copy rather than the original. So <code>==</code> is <code>false</code>.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s03-files-streams" main="com.aptech.s03.E08_Serialization"-->
+<div class="terminal-output">Before saving: [Ada balance=2500.0 history=[deposit 500] pin=1234, Ben balance=90.5 history=[] pin=9999]
+Saved 270 bytes
+After loading: [Ada balance=2500.0 history=[deposit 500] pin=null, Ben balance=90.5 history=[] pin=null]
+Same object as before? false</div>
+<!--@end-->
+
+  <h3>&#128187; Try it: the Serialization Lab</h3>
+  <p>Mark fields as <code>transient</code>, then <strong>save</strong> and <strong>load</strong>. Then try the two classic failures: remove <code>implements Serializable</code>, or change the <code>serialVersionUID</code> <em>after</em> saving (as if you edited the class and then loaded an old file). The error messages shown are the real ones from the JDK.</p>
+  <div data-playground="serialize"></div>
+
+  <div class="tablewrap"><table>
+    <thead><tr><th>Keyword / interface</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>implements Serializable</code></td><td>"Objects of this class may be saved." Every object inside must be Serializable too.</td></tr>
+      <tr><td><code>private static final long serialVersionUID = 1L;</code></td><td>The class version. Change it when you change the class in a way old files can't handle.</td></tr>
+      <tr><td><code>transient</code></td><td>"Don't save this field." It comes back as <code>null</code>/0/false.</td></tr>
+      <tr><td><code>static</code> fields</td><td>Never saved: they belong to the class, not the object.</td></tr>
+      <tr><td><code>ObjectOutputStream.writeObject(obj)</code></td><td>Serialize.</td></tr>
+      <tr><td><code>ObjectInputStream.readObject()</code></td><td>Deserialize. Returns <code>Object</code> (cast it); may throw <code>ClassNotFoundException</code>.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>Security: never deserialize files you don't trust</b>
+      A deserialized file can recreate <em>any</em> Serializable object, and attackers have used carefully crafted files to take over programs. Only load <code>.ser</code>
+      files that <em>your own program</em> wrote. For sharing data with other programs or the internet, professionals use text formats like CSV or JSON instead.
+    </div>
+  </div>
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      <strong>Serialization</strong> saves whole objects (and everything they refer to) with <code>ObjectOutputStream.writeObject</code>; <strong>deserialization</strong> rebuilds
+      a <em>copy</em> with <code>ObjectInputStream.readObject</code>. The class must <code>implement Serializable</code>; declare a <code>serialVersionUID</code>; mark secrets <code>transient</code>.
+    </div>
+  </div>
+
+  <!-- ===== PART 8 ========================================================== -->
+  <span class="eyebrow">Part 8 of 9</span>
+  <h2 id="part-8-the-console-class">Part 8 &mdash; The <code>Console</code> Class</h2>
+  <p>
+    <code>java.io.Console</code> reads from, and writes to, the real text terminal that started your program. Its special power is
+    <strong><code>readPassword()</code></strong>: what you type is <strong>not shown</strong> on screen. You get a console with <code>System.console()</code>, but here's the catch:
+    it returns <strong><code>null</code></strong> when there is no real terminal, for example when you press &#9654; in IntelliJ, whose Run window isn't a real terminal.
+    So a good program always checks for <code>null</code> and has a fallback.
+  </p>
+  <!--@code src="code/s03-files-streams/src/main/java/com/aptech/s03/E09_ConsoleClass.java" hl="13,15,27,28,30"-->
+<pre class="numbered" data-file="E09_ConsoleClass.java" data-hl="13,15,27,28,30"><code class="lang-java">package com.aptech.s03;
+
+import java.io.Console;
+import java.util.Arrays;
+import java.util.Scanner;
+
+/**
+ * Example 9 — The Console class: reading from a REAL terminal, including hidden passwords.
+ * Run it twice: once with the green ▶ (IntelliJ), once from a terminal window (see the lesson).
+ */
+public class E09_ConsoleClass {
+    public static void main(String[] args) {
+        Console console = System.console();            // null when there is no real terminal
+
+        if (console == null) {
+            System.out.println("No console available (are you running inside an IDE?)");
+            System.out.println("Falling back to Scanner - the password WILL be visible.");
+            Scanner in = new Scanner(System.in);
+            System.out.print("Username: ");
+            String user = in.hasNextLine() ? in.nextLine() : "";
+            System.out.print("Password: ");
+            String pass = in.hasNextLine() ? in.nextLine() : "";
+            System.out.println("Welcome, " + user + " (password length " + pass.length() + ")");
+            return;
+        }
+
+        String user = console.readLine("Username: ");          // like Scanner, but with a prompt built in
+        char[] pass = console.readPassword("Password: ");      // typing is HIDDEN, returns char[]
+        console.printf("Welcome, %s (password length %d)%n", user, pass.length);
+        Arrays.fill(pass, ' ');                                // wipe the password from memory
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>13</td><td>Ask for the console. You get <code>null</code> if the program isn't connected to a real terminal.</td></tr>
+      <tr><td>15&ndash;25</td><td>The fallback: warn the user and use a <code>Scanner</code> instead. It works, but the password is visible as it's typed. <code>return</code> ends <code>main</code> early.</td></tr>
+      <tr><td>27</td><td><code>console.readLine(prompt)</code> shows the prompt and reads a line: one call instead of <code>print</code> + <code>nextLine</code>.</td></tr>
+      <tr><td>28</td><td><code>readPassword</code> reads without showing the letters and returns a <code>char[]</code>, not a <code>String</code>&hellip;</td></tr>
+      <tr><td>29</td><td><code>console.printf</code> works like <code>System.out.printf</code>.</td></tr>
+      <tr><td>30</td><td>&hellip; so that we can <strong>wipe</strong> it from memory straight after use. A String can't be wiped; it stays in memory until Java cleans up.</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Real output when run with the &#9654; button in IntelliJ</strong> (no terminal, so the fallback runs; here the user typed <code>ada</code> and <code>secret</code>):</p>
+  <!--@output project="code/s03-files-streams" main="com.aptech.s03.E09_ConsoleClass" stdin="ada\nsecret\n"-->
+<div class="terminal-output">No console available (are you running inside an IDE?)
+Falling back to Scanner - the password WILL be visible.
+Username: Password: Welcome, ada (password length 6)</div>
+<!--@end-->
+  <div class="steps">
+    <div class="steps__title">&#128736; See the real Console: run it from a terminal</div>
+    <div class="step"><div class="step__check"></div><span class="step__num">1</span>
+      <span class="step__text">Build the project once: <strong>Build &rarr; Build Project</strong> (<kbd>Ctrl</kbd>+<kbd>F9</kbd>). The compiled classes go to <code>target/classes</code>.</span></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">2</span>
+      <span class="step__text">Open IntelliJ's terminal: <strong>View &rarr; Tool Windows &rarr; Terminal</strong> (<kbd>Alt</kbd>+<kbd>F12</kbd>). It opens in the project folder.</span></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">3</span>
+      <span class="step__text">Type <code>java -cp target/classes com.aptech.s03.E09_ConsoleClass</code> and press <kbd>Enter</kbd>. Type a username, then a password. Notice that <strong>nothing appears</strong> while you type the password.</span></div>
+  </div>
+  <div class="terminal-output">Username: ada
+Password:
+Welcome, ada (password length 6)</div>
+  <p class="text-sm text-faint">(What you should see in a real terminal. The password line stays blank while you type.)</p>
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      <code>System.console()</code> gives you a <code>Console</code> <em>only</em> in a real terminal, and <code>null</code> otherwise, so always check. Use <code>readLine(prompt)</code> for text and
+      <code>readPassword(prompt)</code> for hidden input (returns <code>char[]</code>; wipe it after use).
+    </div>
+  </div>
+
+  <!-- ===== PART 9 ========================================================== -->
+  <span class="eyebrow">Part 9 of 9 &middot; optional</span>
+  <h2 id="part-9-dont-confuse-the-stream-api">Part 9 &mdash; Don't Confuse This with the "Stream API"</h2>
+  <p>
+    Java uses the word "stream" for two <strong>completely different</strong> things. Everything above is <code>java.io</code>: streams that move bytes and characters to and from
+    files. Since Java 8 there is also <code>java.util.stream</code>, the <strong>Stream API</strong>, which processes the elements of a <em>collection</em> in a pipeline
+    (filter, sort, map, collect). You'll use it more later; here's a taste so you recognise it.
+  </p>
+  <!--@code src="code/s03-files-streams/src/main/java/com/aptech/s03/E10_StreamApiTaste.java" hl="15,16,18"-->
+<pre class="numbered" data-file="E10_StreamApiTaste.java" data-hl="15,16,18"><code class="lang-java">package com.aptech.s03;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * Example 10 — Don't confuse the two kinds of "stream"!
+ * java.io streams move BYTES/CHARACTERS in and out of files (this session).
+ * java.util.stream (the Stream API) processes the ELEMENTS of a collection in a pipeline.
+ */
+public class E10_StreamApiTaste {
+    public static void main(String[] args) {
+        List&lt;Integer&gt; scores = List.of(95, 42, 78, 61, 88, 30);
+
+        List&lt;Integer&gt; passed = scores.stream()          // 1) turn the list into a Stream
+                .filter(s -&gt; s &gt;= 50)                   // 2) keep only the passes
+                .sorted()                               // 3) sort them
+                .collect(Collectors.toList());          // 4) gather the result into a new List
+        System.out.println("Passed, sorted: " + passed);
+
+        double average = scores.stream()
+                .mapToInt(Integer::intValue)            // Integer -&gt; int so we can do maths
+                .average()
+                .orElse(0);
+        System.out.println("Average: " + average);
+
+        String report = scores.stream()
+                .map(s -&gt; s &gt;= 50 ? "P" : "F")          // turn each score into a letter
+                .collect(Collectors.joining(""));
+        System.out.println("Pass/fail pattern: " + report);
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>15</td><td><code>scores.stream()</code> starts a pipeline over the list's elements. Nothing to do with files!</td></tr>
+      <tr><td>16&ndash;18</td><td>Keep elements where <code>s &gt;= 50</code>, sort them, and collect the result into a new List. The original list is unchanged.</td></tr>
+      <tr><td>21&ndash;24</td><td>Turn the Integers into <code>int</code>s, average them, and use 0 if the list were empty.</td></tr>
+      <tr><td>27&ndash;29</td><td><code>map</code> transforms each element (score &rarr; "P" or "F"); <code>joining</code> glues the results into one String.</td></tr>
+    </tbody>
+  </table></div>
+  <!--@output project="code/s03-files-streams" main="com.aptech.s03.E10_StreamApiTaste"-->
+<div class="terminal-output">Passed, sorted: [61, 78, 88, 95]
+Average: 65.66666666666667
+Pass/fail pattern: PFPPPF</div>
+<!--@end-->
+  <div class="tablewrap"><table>
+    <thead><tr><th></th><th><code>java.io</code> streams (this session)</th><th><code>java.util.stream</code> (Stream API)</th></tr></thead>
+    <tbody>
+      <tr><td>Moves</td><td>bytes / characters</td><td>elements of a collection</td></tr>
+      <tr><td>To / from</td><td>files, keyboard, network</td><td>Lists, Sets, arrays (in memory)</td></tr>
+      <tr><td>Typical code</td><td><code>in.read()</code>, <code>readLine()</code>, <code>write()</code></td><td><code>.filter()</code>, <code>.map()</code>, <code>.collect()</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- ===== GUIDED LAB ====================================================== -->
+  <h2>&#128736; Guided Lab: The Notes Keeper</h2>
+  <p>You'll build a small class that saves notes to a text file, reads them back, counts the words and makes a backup copy, using File, character streams, buffering and byte streams together. Pair up; swap the typist after step 4.</p>
+  <div class="steps">
+    <div class="steps__title">&#128221; Lab checklist (about 30 minutes)</div>
+    <div class="step"><div class="step__check"></div><span class="step__num">1</span>
+      <div class="step__text"><strong>Set up.</strong> New class <code>NotesKeeper</code> with a field <code>private final File file;</code> and a constructor that receives the <code>File</code>. In <code>main</code>, create <code>new NotesKeeper(new File("sandbox/notes/diary.txt"))</code>.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">2</span>
+      <div class="step__text"><strong><code>reset()</code></strong>: create the folder with <code>file.getParentFile().mkdirs()</code>, then open a <code>FileWriter</code> <em>without</em> append (in try-with-resources) and write <code>""</code>. That empties the file, so every run starts fresh. Add <code>throws IOException</code> to the method (and to <code>main</code>).</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">3</span>
+      <div class="step__text"><strong><code>addNote(String note)</code></strong>: open <code>new BufferedWriter(new FileWriter(file, true))</code>. The <code>true</code> is essential! Write the note and <code>newLine()</code>. Add three notes from <code>main</code>. Then open <code>diary.txt</code> in IntelliJ (Reload from Disk) and check it.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">4</span>
+      <div class="step__text"><strong><code>readAll()</code></strong>: return a <code>List&lt;String&gt;</code> with every line, using a <code>BufferedReader</code> and the <code>while ((line = in.readLine()) != null)</code> loop. Print the notes numbered from 1.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">5</span>
+      <div class="step__text"><strong><code>countWords()</code></strong>: for each non-blank line, <code>note.trim().split("\\s+").length</code> gives its word count (<code>\\s+</code> means "one or more spaces").</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">6</span>
+      <div class="step__text"><strong><code>backupTo(File backup)</code></strong>: copy the file <em>byte by byte</em> with <code>BufferedInputStream</code> and <code>BufferedOutputStream</code> (both in one try-with-resources), counting the bytes. Return the count, and in <code>main</code> check that both files have the same <code>length()</code>.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">7</span>
+      <div class="step__text"><strong>Test the edge case</strong>: comment out the <code>reset()</code> call and run twice. What happens to the notes? Why? (Then put it back.)</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">8</span>
+      <div class="step__text"><strong>Stretch</strong>: add <code>search(String word)</code> that returns only the notes containing <code>word</code> (ignore upper/lower case), and <code>deleteNote(int number)</code> that rewrites the file without that line.</div></div>
+  </div>
+  <details>
+    <summary>&#128064; Show the complete lab solution (try on your own first!)</summary>
+    <div>
+      <!--@code src="code/s03-files-streams/src/main/java/com/aptech/s03/lab/NotesKeeper.java"-->
+<pre class="numbered" data-file="NotesKeeper.java"><code class="lang-java">package com.aptech.s03.lab;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * GUIDED LAB — Notes Keeper: save notes to a text file, read them back, count them, and back them up.
+ */
+public class NotesKeeper {
+
+    private final File file;
+
+    public NotesKeeper(File file) {
+        this.file = file;
+    }
+
+    /** STEP 2 — make sure the folder exists and start with an empty notes file. */
+    public void reset() throws IOException {
+        file.getParentFile().mkdirs();
+        try (FileWriter w = new FileWriter(file)) {       // opening WITHOUT append empties the file
+            w.write("");
+        }
+    }
+
+    /** STEP 3 — add one note at the END of the file (append mode). */
+    public void addNote(String note) throws IOException {
+        try (BufferedWriter out = new BufferedWriter(new FileWriter(file, true))) {
+            out.write(note);
+            out.newLine();
+        }
+    }
+
+    /** STEP 4 — read every line back into a List. */
+    public List&lt;String&gt; readAll() throws IOException {
+        List&lt;String&gt; notes = new ArrayList&lt;&gt;();
+        try (BufferedReader in = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = in.readLine()) != null) {
+                notes.add(line);
+            }
+        }
+        return notes;
+    }
+
+    /** STEP 5 — count all the words in all the notes. */
+    public int countWords() throws IOException {
+        int words = 0;
+        for (String note : readAll()) {
+            if (!note.isBlank()) {
+                words += note.trim().split("\\s+").length;   // split on one or more spaces
+            }
+        }
+        return words;
+    }
+
+    /** STEP 6 — copy the file byte by byte (with buffers) and return how many bytes were copied. */
+    public long backupTo(File backup) throws IOException {
+        long copied = 0;
+        try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(file));
+             BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(backup))) {
+            int b;
+            while ((b = in.read()) != -1) {
+                out.write(b);
+                copied++;
+            }
+        }
+        return copied;
+    }
+
+    public static void main(String[] args) throws IOException {
+        NotesKeeper keeper = new NotesKeeper(new File("sandbox/notes/diary.txt"));
+        keeper.reset();
+
+        keeper.addNote("Learned about byte and character streams");
+        keeper.addNote("Buffered streams make fewer trips to the disk");
+        keeper.addNote("Remember: close your streams with try-with-resources");
+
+        List&lt;String&gt; notes = keeper.readAll();
+        for (int i = 0; i &lt; notes.size(); i++) {
+            System.out.println((i + 1) + ". " + notes.get(i));
+        }
+        System.out.println("Notes: " + notes.size() + ", words: " + keeper.countWords());
+
+        File backup = new File("sandbox/notes/diary-backup.txt");
+        long copied = keeper.backupTo(backup);
+        System.out.println("Backed up " + copied + " bytes; sizes match? "
+                + (backup.length() == new File("sandbox/notes/diary.txt").length()));
+    }
+}</code></pre>
+<!--@end-->
+      <p><strong>Expected output</strong> (on Windows):</p>
+      <!--@output project="code/s03-files-streams" main="com.aptech.s03.lab.NotesKeeper"-->
+<div class="terminal-output">1. Learned about byte and character streams
+2. Buffered streams make fewer trips to the disk
+3. Remember: close your streams with try-with-resources
+Notes: 3, words: 20
+Backed up 143 bytes; sizes match? true</div>
+<!--@end-->
+      <p class="text-sm"><strong>Why 143 bytes?</strong> The notes have 137 characters plus 3 line endings. On Windows <code>newLine()</code> writes 2 characters (<code>\r\n</code>) = 6 &rarr; 143. On a Mac or Linux it writes 1 (<code>\n</code>) = 3 &rarr; 140. Your number depends on your operating system, and that's correct. <strong>Step 7 answer:</strong> without <code>reset()</code> the file is never emptied, and append mode keeps adding, so the notes appear twice.</p>
+    </div>
+  </details>
+
+  <!-- ===== COMMON MISTAKES ================================================= -->
+  <h2>&#9888;&#65039; Common Mistakes (and the Exact Error You'll See)</h2>
+  <p>Every message below was produced on JDK 25. File paths show backslashes because they were run on Windows.</p>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 1 &mdash; not handling IOException (compile error)</b>
+      <pre><code class="lang-java">void load() {
+    FileReader r = new FileReader("x.txt");
+}</code></pre>
+      <div class="terminal-output is-error">error: unreported exception FileNotFoundException; must be caught or declared to be thrown</div>
+      <p><strong>Why:</strong> opening a file can fail, and Java insists you plan for it. <strong>Fix:</strong> either wrap the code in <code>try { &hellip; } catch (IOException e) { &hellip; }</code>, or add <code>throws IOException</code> to the method header and let the caller handle it.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 2 &mdash; forgetting to close (or flush) an output stream</b>
+      <pre><code class="lang-java">BufferedWriter w = new BufferedWriter(new FileWriter("sandbox/forgot.txt"));
+w.write("important data");
+System.out.println(new File("sandbox/forgot.txt").length());   // no close()!</code></pre>
+      <div class="terminal-output">File size without close(): 0
+File size after close():   14</div>
+      <p><strong>Why:</strong> the text is still sitting in the buffer in memory. If the program ends now, it's <strong>lost</strong> and your file stays empty, with no error message at all. <strong>Fix:</strong> try-with-resources, always.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 3 &mdash; writing into a folder that doesn't exist</b>
+      <pre><code class="lang-java">new FileWriter("reports/2026/june.txt");   // the folders reports/2026 don't exist</code></pre>
+      <div class="terminal-output is-error">java.io.FileNotFoundException: reports\2026\june.txt (The system cannot find the path specified)</div>
+      <p><strong>Why:</strong> output streams create <em>files</em>, not <em>folders</em>. <strong>Fix:</strong> <code>new File("reports/2026").mkdirs();</code> first. (Compare "cannot find the <em>path</em>" here with "cannot find the <em>file</em>" when reading a missing file.)</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 4 &mdash; accidentally erasing a file</b>
+      <pre><code class="lang-java">new FileWriter("diary.txt");         // wipes the file!
+new FileWriter("diary.txt", true);   // adds to the end</code></pre>
+      <p>No error at all, just lost data. Opening a <code>FileWriter</code> or <code>FileOutputStream</code> <strong>without</strong> <code>true</code> empties the file immediately, even before you write anything.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 5 &mdash; reading past the end with a Data stream</b>
+      <pre><code class="lang-java">out.writeInt(7);            // wrote ONE int
+in.readInt(); in.readInt(); // tried to read TWO</code></pre>
+      <div class="terminal-output is-error">Exception in thread "main" java.io.EOFException</div>
+      <p><strong>Why:</strong> EOF = "End Of File". Unlike <code>read()</code>, the Data methods can't return &minus;1 (it could be a real value), so they throw instead. <strong>Fix:</strong> write a count first and read exactly that many; read in the same order you wrote.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 6 &mdash; serializing a class that isn't Serializable</b>
+      <pre><code class="lang-java">class Person { String name = "Ada"; }         // no "implements Serializable"
+out.writeObject(new Person());</code></pre>
+      <div class="terminal-output is-error">Exception in thread "main" java.io.NotSerializableException: NotSer$Person</div>
+      <p><strong>Fix:</strong> <code>class Person implements Serializable</code>. Remember that <em>every</em> object inside it must be Serializable too (or marked <code>transient</code>).</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 7 &mdash; changing the class, then loading an old file</b>
+      <p>You saved <code>Pet</code> objects with <code>serialVersionUID = 1L</code>, then edited the class and changed it to <code>2L</code>:</p>
+      <div class="terminal-output is-error">java.io.InvalidClassException: Pet; local class incompatible: stream classdesc serialVersionUID = 1, local class serialVersionUID = 2</div>
+      <p><strong>Why:</strong> the file says "made with version 1", but the class is now version 2. <strong>Fix:</strong> keep the same UID when your changes are compatible (e.g. adding a field); if you <em>don't</em> declare a UID, Java calculates one from the class, so almost any edit breaks old files. That's why you always declare it.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 8 &mdash; using byte streams for text (or text streams for binary)</b>
+      <p>Reading <code>&#8358;500</code> byte by byte and casting each byte to <code>char</code> gives three strange symbols instead of <code>&#8358;</code>. Reading a photo with a <code>FileReader</code> "decodes" bytes that were never text and corrupts the copy.
+      <strong>Rule:</strong> text &rarr; Reader/Writer; everything else &rarr; InputStream/OutputStream.</p>
+    </div>
+  </div>
+
+  <!-- ===== KNOWLEDGE CHECK ================================================= -->
+  <h2>&#128221; Knowledge Check</h2>
+  <p>12 questions on the whole session. Aim for <strong>10/12</strong> before starting Assignment A2.</p>
+  <div class="quiz" id="s03-final">
+    <div class="quiz__title">&#128161; Session 3 Knowledge Check</div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">1. What does <code>in.read()</code> return when a byte stream has no more data?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>0</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>null</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>-1</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> It throws EOFException.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> Real bytes are 0&ndash;255, so &minus;1 can safely mean "end". (<code>readLine()</code> returns <code>null</code> at the end; the Data stream methods throw <code>EOFException</code>.)</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">2. What does <code>new File("reports/june.txt")</code> do on its own?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Creates the folder and the file.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Creates an object representing that path; nothing on the disk changes.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Opens the file for reading.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Deletes any existing file with that name.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> A File is just a path. Use <code>mkdirs()</code>, <code>createNewFile()</code> or a stream to touch the disk.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a|d">
+      <div class="quiz__kind">Select all that apply</div>
+      <div class="quiz__stem">3. Which of these are <strong>byte</strong> streams?</div>
+      <label class="quiz__opt"><input type="checkbox" value="a"> <code>FileInputStream</code></label>
+      <label class="quiz__opt"><input type="checkbox" value="b"> <code>FileReader</code></label>
+      <label class="quiz__opt"><input type="checkbox" value="c"> <code>BufferedWriter</code></label>
+      <label class="quiz__opt"><input type="checkbox" value="d"> <code>DataOutputStream</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A and D.</strong> Names ending in <code>InputStream</code>/<code>OutputStream</code> are byte streams; <code>Reader</code>/<code>Writer</code> are character streams.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Predict</div>
+      <div class="quiz__stem">4. A file contains exactly the text <code>&#8358;5</code> (saved as UTF-8). How many values does a <code>FileInputStream</code> read before &minus;1, and how many does a <code>FileReader</code> read?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> 2 and 2</label>
+      <label class="quiz__opt"><input type="radio" value="b"> 2 and 4</label>
+      <label class="quiz__opt"><input type="radio" value="c"> 4 and 2</label>
+      <label class="quiz__opt"><input type="radio" value="d"> 3 and 1</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> <code>&#8358;</code> takes 3 bytes in UTF-8 and <code>5</code> takes 1, so 4 bytes. But they are 2 characters. Try it in the Bytes vs Characters demo.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">5. Why is <code>BufferedInputStream</code> faster than a plain <code>FileInputStream</code> when reading one byte at a time?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> It compresses the file.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> It fetches a large block (8192 bytes by default) per trip to the disk, then serves bytes from memory.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> It skips bytes it doesn't need.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> It reads several files at once.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> Example 4: 100,001 trips unbuffered vs 14 buffered, for the same data.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="true">
+      <div class="quiz__kind">True / False</div>
+      <div class="quiz__stem">6. If you write with a <code>BufferedWriter</code> and your program ends without closing or flushing it, the file can end up empty, and Java shows no error.</div>
+      <label class="quiz__opt"><input type="radio" value="true"> True</label>
+      <label class="quiz__opt"><input type="radio" value="false"> False</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>True.</strong> Mistake 2 measured it: 0 bytes before <code>close()</code>, 14 after. Use try-with-resources.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Predict</div>
+      <div class="quiz__stem">7. How big is the file after this code?</div>
+      <pre><code class="lang-java">try (DataOutputStream out = new DataOutputStream(new FileOutputStream("t.dat"))) {
+    out.writeInt(5);
+    out.writeDouble(2.5);
+    out.writeBoolean(false);
+}</code></pre>
+      <label class="quiz__opt"><input type="radio" value="a"> 3 bytes</label>
+      <label class="quiz__opt"><input type="radio" value="b"> 9 bytes</label>
+      <label class="quiz__opt"><input type="radio" value="c"> 13 bytes</label>
+      <label class="quiz__opt"><input type="radio" value="d"> It depends on the values.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> int = 4, double = 8, boolean = 1, so 13 bytes, whatever the values are.</div>
+    </div>
+
+    <div class="quiz__q">
+      <div class="quiz__kind">Fill in the blank</div>
+      <div class="quiz__stem">8. Complete the standard line-reading loop: <br><code>while ((line = in.readLine()) != <input type="text" class="fill-blank" data-accept="null" aria-label="end value" placeholder="?" style="width:6ch">) { &hellip; }</code></div>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong><code>null</code></strong>. <code>readLine()</code> returns <code>null</code> at the end of the file (an empty line is <code>""</code>, not <code>null</code>).</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">9. What does the keyword <code>transient</code> do on a field of a Serializable class?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Makes the field read-only.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Excludes the field from serialization; it comes back as <code>null</code>/0/false.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Encrypts the field in the file.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Saves the field twice for safety.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> Example 8: the PINs came back as <code>null</code>.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="d">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">10. You saved objects, then changed the class's <code>serialVersionUID</code> from 1L to 2L. What happens when you load the old file?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> The objects load normally.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> The new fields are filled with defaults.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>NotSerializableException</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>InvalidClassException</code> (local class incompatible)</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>D.</strong> The version in the file doesn't match the class. That's the whole point of the UID: to refuse incompatible data (Mistake 7).</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">11. <code>System.console()</code> returned <code>null</code>. What is the most likely reason?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> The program was started from an IDE's Run window rather than a real terminal.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> The keyboard is unplugged.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> You forgot <code>import java.io.Console</code>.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Console only works on Linux.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A.</strong> No real terminal means no console. (A missing import is a compile error, not <code>null</code>.) Always check for <code>null</code> and provide a fallback.</div>
+    </div>
+
+    <div class="quiz__q">
+      <div class="quiz__kind">Matching</div>
+      <div class="quiz__stem">12. Match each error to its most likely cause.</div>
+      <div class="quiz__matchrow"><span><code>FileNotFoundException &hellip; cannot find the path specified</code> (when writing)</span>
+        <select class="quiz__match" data-correct="folder" aria-label="path"><option value="">choose&hellip;</option><option value="folder">a folder in the path doesn't exist</option><option value="eof">read more values than were written</option><option value="ser">class lacks implements Serializable</option><option value="checked">IOException neither caught nor declared</option></select></div>
+      <div class="quiz__matchrow"><span><code>EOFException</code></span>
+        <select class="quiz__match" data-correct="eof" aria-label="eof"><option value="">choose&hellip;</option><option value="folder">a folder in the path doesn't exist</option><option value="eof">read more values than were written</option><option value="ser">class lacks implements Serializable</option><option value="checked">IOException neither caught nor declared</option></select></div>
+      <div class="quiz__matchrow"><span><code>NotSerializableException</code></span>
+        <select class="quiz__match" data-correct="ser" aria-label="notser"><option value="">choose&hellip;</option><option value="folder">a folder in the path doesn't exist</option><option value="eof">read more values than were written</option><option value="ser">class lacks implements Serializable</option><option value="checked">IOException neither caught nor declared</option></select></div>
+      <div class="quiz__matchrow"><span><code>error: unreported exception &hellip; must be caught or declared to be thrown</code></span>
+        <select class="quiz__match" data-correct="checked" aria-label="unreported"><option value="">choose&hellip;</option><option value="folder">a folder in the path doesn't exist</option><option value="eof">read more values than were written</option><option value="ser">class lacks implements Serializable</option><option value="checked">IOException neither caught nor declared</option></select></div>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">These are Mistakes 3, 5, 6 and 1. Learning to recognise error messages is half of programming!</div>
+    </div>
+
+    <div class="quiz__score" style="display:none"></div>
+  </div>
+
+  <!-- ===== PRACTICE ======================================================== -->
+  <h2>&#128170; Practice Exercises</h2>
+  <p>Not graded. Do at least P1, P2 and P4 before starting A2; they are the building blocks of R1&ndash;R8. Solutions are tested programs in <code>code/s03-files-streams/&hellip;/practice/</code>.</p>
+
+  <details>
+    <summary><span class="badge badge--easy">Easy</span>&nbsp; P1 &mdash; Line, word and character counter</summary>
+    <div>
+      <p>Write a short poem to <code>sandbox/poem.txt</code> (include one empty line), then read it back and print how many lines, words and characters it has.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p>PrintWriter to write. BufferedReader + readLine() to read. Skip blank lines when counting words (<code>line.isBlank()</code>).</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s03-files-streams/src/main/java/com/aptech/s03/practice/P1_LineWordCounter.java"-->
+<pre class="numbered" data-file="P1_LineWordCounter.java"><code class="lang-java">package com.aptech.s03.practice;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+
+/** Practice 1 (easy) — count the lines, words and characters of a text file (like the "wc" tool). */
+public class P1_LineWordCounter {
+    public static void main(String[] args) throws IOException {
+        new File("sandbox").mkdirs();
+        File poem = new File("sandbox/poem.txt");
+        try (PrintWriter out = new PrintWriter(new FileWriter(poem))) {
+            out.println("Twinkle twinkle little star");
+            out.println("How I wonder what you are");
+            out.println("");
+            out.println("Up above the world so high");
+        }
+
+        int lines = 0, words = 0, chars = 0;
+        try (BufferedReader in = new BufferedReader(new FileReader(poem))) {
+            String line;
+            while ((line = in.readLine()) != null) {
+                lines++;
+                chars += line.length();
+                if (!line.isBlank()) {
+                    words += line.trim().split("\\s+").length;
+                }
+            }
+        }
+        System.out.println("Lines: " + lines + ", words: " + words + ", characters (without line breaks): " + chars);
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s03-files-streams" main="com.aptech.s03.practice.P1_LineWordCounter"-->
+<div class="terminal-output">Lines: 4, words: 16, characters (without line breaks): 78</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="badge badge--easy">Easy</span>&nbsp; P2 &mdash; A copy method for any file</summary>
+    <div>
+      <p>Write <code>long copy(File source, File target)</code> that copies any file using buffered byte streams and a 1024-byte bucket, returning the number of bytes copied. Test it on a generated 5000-byte file, and on a missing file (handle the exception).</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p>Example 3, part 3, with the streams wrapped in buffers. Remember <code>write(bucket, 0, n)</code>, not <code>write(bucket)</code>.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s03-files-streams/src/main/java/com/aptech/s03/practice/P2_FileCopier.java"-->
+<pre class="numbered" data-file="P2_FileCopier.java"><code class="lang-java">package com.aptech.s03.practice;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+/** Practice 2 (easy) — a reusable copy method that works for ANY file (text, image, video...). */
+public class P2_FileCopier {
+
+    static long copy(File source, File target) throws IOException {
+        long total = 0;
+        try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(source));
+             BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(target))) {
+            byte[] bucket = new byte[1024];
+            int n;
+            while ((n = in.read(bucket)) != -1) {
+                out.write(bucket, 0, n);
+                total += n;
+            }
+        }
+        return total;
+    }
+
+    public static void main(String[] args) throws IOException {
+        new File("sandbox").mkdirs();
+        File original = new File("sandbox/photo.bin");
+        try (FileOutputStream out = new FileOutputStream(original)) {
+            for (int i = 0; i &lt; 5000; i++) {
+                out.write(i % 200);                      // pretend this is an image
+            }
+        }
+        File copy = new File("sandbox/photo-copy.bin");
+        long bytes = copy(original, copy);
+        System.out.println("Copied " + bytes + " bytes. Same size? " + (original.length() == copy.length()));
+
+        try {
+            copy(new File("sandbox/nope.bin"), new File("sandbox/nope-copy.bin"));
+        } catch (IOException e) {
+            System.out.println("Error handled: " + e.getMessage());
+        }
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s03-files-streams" main="com.aptech.s03.practice.P2_FileCopier"-->
+<div class="terminal-output">Copied 5000 bytes. Same size? true
+Error handled: sandbox\nope.bin (The system cannot find the file specified)</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="badge badge--medium">Medium</span>&nbsp; P3 &mdash; A formatted times table</summary>
+    <div>
+      <p>Write the 7 times table (1&ndash;5) to a file with <code>PrintWriter.printf</code> so the numbers line up in columns, then read the file back and print each line with a <code>| </code> in front.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p><code>%2d</code> prints a number right-aligned in 2 spaces; <code>%3d</code> in 3.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s03-files-streams/src/main/java/com/aptech/s03/practice/P3_TimesTable.java"-->
+<pre class="numbered" data-file="P3_TimesTable.java"><code class="lang-java">package com.aptech.s03.practice;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+
+/** Practice 3 (medium) — write a formatted times table to a file with PrintWriter, then read it back. */
+public class P3_TimesTable {
+    public static void main(String[] args) throws IOException {
+        new File("sandbox").mkdirs();
+        File file = new File("sandbox/table-7.txt");
+        int n = 7;
+
+        try (PrintWriter out = new PrintWriter(new FileWriter(file))) {
+            out.printf("Times table for %d%n", n);
+            for (int i = 1; i &lt;= 5; i++) {
+                out.printf("%2d x %d = %3d%n", i, n, i * n);    // %2d = a number in 2 spaces, right-aligned
+            }
+        }
+
+        try (BufferedReader in = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = in.readLine()) != null) {
+                System.out.println("| " + line);
+            }
+        }
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s03-files-streams" main="com.aptech.s03.practice.P3_TimesTable"-->
+<div class="terminal-output">| Times table for 7
+|  1 x 7 =   7
+|  2 x 7 =  14
+|  3 x 7 =  21
+|  4 x 7 =  28
+|  5 x 7 =  35</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="badge badge--medium">Medium</span>&nbsp; P4 &mdash; High scores in binary</summary>
+    <div>
+      <p>Write <code>save(Map&lt;String,Integer&gt;, File)</code> and <code>load(File)</code> for a high-score table using Data streams: first the number of entries, then each name (<code>writeUTF</code>) and score (<code>writeInt</code>).</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p>"Write the count first" (Part 5 tip). Use a <code>LinkedHashMap</code> when loading so the order is kept.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s03-files-streams/src/main/java/com/aptech/s03/practice/P4_HighScores.java"-->
+<pre class="numbered" data-file="P4_HighScores.java"><code class="lang-java">package com.aptech.s03.practice;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+/** Practice 4 (medium) — save a high-score table in binary: first the COUNT, then each name + score. */
+public class P4_HighScores {
+
+    static void save(Map&lt;String, Integer&gt; scores, File file) throws IOException {
+        try (DataOutputStream out = new DataOutputStream(new FileOutputStream(file))) {
+            out.writeInt(scores.size());                 // write how many entries follow
+            for (Map.Entry&lt;String, Integer&gt; e : scores.entrySet()) {
+                out.writeUTF(e.getKey());
+                out.writeInt(e.getValue());
+            }
+        }
+    }
+
+    static Map&lt;String, Integer&gt; load(File file) throws IOException {
+        Map&lt;String, Integer&gt; scores = new LinkedHashMap&lt;&gt;();
+        try (DataInputStream in = new DataInputStream(new FileInputStream(file))) {
+            int count = in.readInt();                    // read the count first
+            for (int i = 0; i &lt; count; i++) {
+                String name = in.readUTF();
+                int score = in.readInt();
+                scores.put(name, score);
+            }
+        }
+        return scores;
+    }
+
+    public static void main(String[] args) throws IOException {
+        new File("sandbox").mkdirs();
+        File file = new File("sandbox/highscores.dat");
+        Map&lt;String, Integer&gt; scores = new LinkedHashMap&lt;&gt;();
+        scores.put("Kemi", 9800);
+        scores.put("Musa", 7200);
+        scores.put("Ada", 6100);
+
+        save(scores, file);
+        System.out.println("Saved " + scores.size() + " scores in " + file.length() + " bytes");
+        System.out.println("Loaded: " + load(file));
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s03-files-streams" main="com.aptech.s03.practice.P4_HighScores"-->
+<div class="terminal-output">Saved 3 scores in 33 bytes
+Loaded: {Kemi=9800, Musa=7200, Ada=6100}</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="badge badge--hard">Challenge</span>&nbsp; P5 &mdash; Serialize a shop inventory</summary>
+    <div>
+      <p>Store items (name, quantity, price) in a <code>TreeMap&lt;String, Item&gt;</code> keyed by product code, serialize the <em>whole map</em> in one call, load it back, and compute the total stock value.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p><code>Item</code> must be Serializable. A <code>record</code> (a compact data class, Session 9) can simply write <code>implements Serializable</code>. TreeMap is Serializable already.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s03-files-streams/src/main/java/com/aptech/s03/practice/P5_InventorySerializer.java"-->
+<pre class="numbered" data-file="P5_InventorySerializer.java"><code class="lang-java">package com.aptech.s03.practice;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.TreeMap;
+
+/** Practice 5 (challenge) — serialize a whole shop inventory (a TreeMap of Item objects) and restore it. */
+public class P5_InventorySerializer {
+
+    record Item(String name, int quantity, double price) implements Serializable { }
+
+    public static void main(String[] args) throws IOException, ClassNotFoundException {
+        new File("sandbox").mkdirs();
+        File file = new File("sandbox/inventory.ser");
+
+        TreeMap&lt;String, Item&gt; stock = new TreeMap&lt;&gt;();
+        stock.put("P01", new Item("Pen", 120, 150.0));
+        stock.put("B07", new Item("Notebook", 40, 900.0));
+        stock.put("C12", new Item("Calculator", 5, 12500.0));
+
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(file))) {
+            out.writeObject(stock);
+        }
+
+        TreeMap&lt;String, Item&gt; restored;
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file))) {
+            @SuppressWarnings("unchecked")
+            TreeMap&lt;String, Item&gt; read = (TreeMap&lt;String, Item&gt;) in.readObject();
+            restored = read;
+        }
+
+        double value = 0;
+        for (Item item : restored.values()) {
+            value += item.quantity() * item.price();
+        }
+        System.out.println("Restored " + restored.size() + " items: " + restored.keySet());
+        System.out.println("Calculator: " + restored.get("C12"));
+        System.out.println("Total stock value: N" + value);
+        System.out.println("Equal to the original? " + restored.equals(stock));
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s03-files-streams" main="com.aptech.s03.practice.P5_InventorySerializer"-->
+<div class="terminal-output">Restored 3 items: [B07, C12, P01]
+Calculator: Item[name=Calculator, quantity=5, price=12500.0]
+Total stock value: N116500.0
+Equal to the original? true</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="badge badge--hard">Challenge</span>&nbsp; P6 &mdash; Log file analyser</summary>
+    <div>
+      <p>Given a log file where each line starts with a level (<code>INFO</code>, <code>WARN</code>, <code>ERROR</code>), count the lines per level (sorted by level), find the longest line, and write a neat report to <code>report.txt</code>.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p>This combines Session 1 (a <code>TreeMap</code> and the counting pattern) with today's BufferedReader and PrintWriter. <code>printf("%-6s %d%n", ...)</code> left-aligns the level in 6 spaces.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s03-files-streams/src/main/java/com/aptech/s03/practice/P6_LogAnalyzer.java"-->
+<pre class="numbered" data-file="P6_LogAnalyzer.java"><code class="lang-java">package com.aptech.s03.practice;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Map;
+import java.util.TreeMap;
+
+/** Practice 6 (challenge) — analyse a log file: count lines per level and write a report file. */
+public class P6_LogAnalyzer {
+    public static void main(String[] args) throws IOException {
+        new File("sandbox").mkdirs();
+        File log = new File("sandbox/app.log");
+        try (PrintWriter out = new PrintWriter(new FileWriter(log))) {
+            out.println("INFO  app started");
+            out.println("WARN  disk 80% full");
+            out.println("INFO  user ada logged in");
+            out.println("ERROR database timeout");
+            out.println("INFO  user ben logged in");
+            out.println("ERROR database timeout");
+        }
+
+        Map&lt;String, Integer&gt; perLevel = new TreeMap&lt;&gt;();        // Session 1 counting pattern
+        String longest = "";
+        try (BufferedReader in = new BufferedReader(new FileReader(log))) {
+            String line;
+            while ((line = in.readLine()) != null) {
+                String level = line.split("\\s+")[0];
+                perLevel.put(level, perLevel.getOrDefault(level, 0) + 1);
+                if (line.length() &gt; longest.length()) {
+                    longest = line;
+                }
+            }
+        }
+
+        File report = new File("sandbox/report.txt");
+        try (PrintWriter out = new PrintWriter(new FileWriter(report))) {
+            out.println("LOG REPORT");
+            for (Map.Entry&lt;String, Integer&gt; e : perLevel.entrySet()) {
+                out.printf("%-6s %d%n", e.getKey(), e.getValue());
+            }
+            out.println("Longest line: " + longest);
+        }
+
+        try (BufferedReader in = new BufferedReader(new FileReader(report))) {
+            in.lines().forEach(System.out::println);            // BufferedReader can also give a Stream of lines
+        }
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s03-files-streams" main="com.aptech.s03.practice.P6_LogAnalyzer"-->
+<div class="terminal-output">LOG REPORT
+ERROR  2
+INFO   3
+WARN   1
+Longest line: INFO  user ada logged in</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+
+  <!-- ===== ASSIGNMENT A2 =================================================== -->
+  <h2 id="assignment-a2">&#128203; Assignment A2 &mdash; Student Record File Manager <span class="badge badge--graded">Graded</span></h2>
+  <div class="assignment-card">
+    <div class="assignment-card__header">&#128203; A2 &middot; Student Record File Manager &middot; worth 10% of your course grade</div>
+    <p><strong>Due:</strong> before the start of Session 5 (your teacher will confirm). &nbsp; <strong>Time:</strong> about 3&ndash;4 hours. &nbsp; <strong>Work:</strong> individual.</p>
+
+    <h4>&#127919; Objective</h4>
+    <p>
+      The front desk's student list from A1 disappears every time the program closes. Your job is to give it a memory: save and load the students in
+      <strong>three different formats</strong> (CSV text, binary Data stream, serialized objects), make backups, and list the data files.
+      The menu program is <strong>already written</strong>; you complete the class <code>StudentFileManager</code>. This uses every part of today's session.
+    </p>
+
+    <h4>&#128230; Getting started</h4>
+    <ol>
+      <li>Open <code>code/a2-student-file-manager-starter</code> in IntelliJ.</li>
+      <li>Files given complete (don't change them): <code>Student.java</code> (now <code>implements Serializable</code>), <code>Main.java</code> (the menu), <code>SelfCheck.java</code> (the tester).</li>
+      <li>Run <code>SelfCheck</code>: <code>0 passed, 10 failed</code>. Complete the TODOs in <code>StudentFileManager.java</code> one by one, running <code>SelfCheck</code> each time.</li>
+      <li>Finally run <code>Main</code> and try every menu option. Your files appear in a <code>data</code> folder in the project.</li>
+    </ol>
+
+    <h4>&#128203; Requirements</h4>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Method</th><th>It must&hellip;</th><th>Session 3 skill</th></tr></thead>
+      <tbody>
+        <tr><td>R1</td><td><code>saveCsv(list, file)</code></td><td>write the header <code>id,name,course,score</code>, then one line per student; create missing folders</td><td>BufferedWriter, File.mkdirs</td></tr>
+        <tr><td>R2</td><td><code>loadCsv(file)</code></td><td>read the students back; skip the header and blank lines; skip <em>bad</em> lines (not 4 values, or score not a number); trim spaces; throw <code>IOException</code> if the file is missing</td><td>BufferedReader, split, parseInt</td></tr>
+        <tr><td>R3</td><td><code>getLastSkipped()</code></td><td>report how many bad lines the last load skipped (given; you update the counter in R2)</td><td></td></tr>
+        <tr><td>R4</td><td><code>saveBinary(list, file)</code></td><td>write the count, then each student's id, name, course (<code>writeUTF</code>) and score (<code>writeInt</code>)</td><td>DataOutputStream + buffer</td></tr>
+        <tr><td>R5</td><td><code>loadBinary(file)</code></td><td>read that format back in the same order</td><td>DataInputStream</td></tr>
+        <tr><td>R6</td><td><code>saveObjects(list, file)</code></td><td>serialize the whole list</td><td>ObjectOutputStream</td></tr>
+        <tr><td>R7</td><td><code>loadObjects(file)</code></td><td>deserialize it; turn <code>ClassNotFoundException</code> into an <code>IOException</code></td><td>ObjectInputStream, cast</td></tr>
+        <tr><td>R8</td><td><code>copyFile(source, target)</code></td><td>copy any file with buffered byte streams; return the number of bytes</td><td>Buffered byte streams</td></tr>
+        <tr><td>R9</td><td><code>listFiles(folder, ext)</code></td><td>names of the <em>files</em> ending in <code>ext</code>, sorted; empty list if the folder is missing</td><td>File.list, isFile</td></tr>
+      </tbody>
+    </table></div>
+
+    <h4>&#128229; Sample run (the finished program)</h4>
+<pre><code>=== Student Record File Manager ===
+Choose: 1  ID: S1  Name: Zara  Course: java  Score: 72     -&gt; Added. 1 students in memory.
+Choose: 1  ID: S2  Name: Musa  Course: sql   Score: sixty  -&gt; Error: the score must be a whole number.
+Choose: 1  ID: S2  Name: Musa  Course: sql   Score: 64     -&gt; Added. 2 students in memory.
+Choose: 2    -&gt;  S1    Zara       JAVA     72
+                 S2    Musa       SQL      64
+Choose: 3    -&gt; Saved 2 students to data/students.csv
+Choose: 9    -&gt; Backed up 55 bytes to data/students-backup.csv   (52 on Mac/Linux)
+Choose: 10   -&gt; .csv files: [students-backup.csv, students.csv]   .dat files: []   .ser files: []
+Choose: 4    -&gt; Loaded 2 students (skipped 0 bad lines)
+Choose: 5, 6 -&gt; Saved to data/students.dat / Loaded 2 students from data/students.dat
+Choose: 7, 8 -&gt; Saved to data/students.ser / Loaded 2 students from data/students.ser</code></pre>
+
+    <h4>&#9989; What SelfCheck shows when you're done</h4>
+    <!--@output project="solutions/a2-student-file-manager" main="com.aptech.a2.SelfCheck"-->
+<div class="terminal-output">=== A2 Self-Check ===
+
+PASS  R1 saveCsv() writes a header and one line per student
+PASS  R1 saveCsv() creates missing folders
+PASS  R2 loadCsv() reads back exactly what saveCsv() wrote
+PASS  R2+R3 loadCsv() skips blank and bad lines, and counts the bad ones
+PASS  R2 loadCsv() of a missing file throws an IOException
+PASS  R4+R5 saveBinary()/loadBinary() round trip
+PASS  R4 binary format is: count, then id, name, course (writeUTF) and score (writeInt)
+PASS  R6+R7 saveObjects()/loadObjects() round trip
+PASS  R8 copyFile() copies every byte and returns the count
+PASS  R9 listFiles() filters by extension and sorts
+
+10 passed, 0 failed.
+All requirements met - now check the style rubric before submitting.</div>
+<!--@end-->
+
+    <h4>&#128161; Hints (open only when stuck)</h4>
+    <details class="hint"><summary>R2 &mdash; the load loop</summary><div><p>Read the header once with <code>in.readLine()</code>. Then in the loop: <code>if (line.isBlank()) continue;</code>, then split. If <code>parts.length != 4</code>: <code>lastSkipped++; continue;</code>. Put <code>Integer.parseInt(parts[3].trim())</code> inside a <code>try</code>; in the <code>catch (NumberFormatException e)</code> add 1 to <code>lastSkipped</code>.</p></div></details>
+    <details class="hint"><summary>R4/R5 &mdash; binary format</summary><div><p><code>new DataOutputStream(new BufferedOutputStream(new FileOutputStream(file)))</code>. Loop exactly <code>readInt()</code> times when loading. The SelfCheck even checks the exact size: one student with one-letter fields must be 17 bytes.</p></div></details>
+    <details class="hint"><summary>R7 &mdash; the two exceptions</summary><div><p><code>try (ObjectInputStream in = &hellip;) { return (List&lt;Student&gt;) in.readObject(); } catch (ClassNotFoundException e) { throw new IOException("File does not contain a student list", e); }</code>. The IOException from opening the file simply passes through, because the method <code>throws IOException</code>.</p></div></details>
+    <details class="hint"><summary>R9 &mdash; listing</summary><div><p><code>String[] names = folder.list();</code> is <code>null</code> for a missing folder: check that first. Sort with <code>Arrays.sort(names)</code>, then keep names where <code>name.endsWith(ext) &amp;&amp; new File(folder, name).isFile()</code>.</p></div></details>
+
+    <h4>&#11088; Bonus (up to +10 points, max 100)</h4>
+    <ul>
+      <li><strong>+5</strong> <code>appendCsv(Student s, File file)</code> that adds one student to the end of an existing CSV (writing the header only if the file is new).</li>
+      <li><strong>+5</strong> A menu option that imports a CSV and reports how many students were loaded and how many lines were skipped, <em>and which line numbers</em> were bad.</li>
+    </ul>
+
+    <h4>&#128221; Before you submit: checklist</h4>
+    <ul>
+      <li>&#9744; <code>SelfCheck</code> shows <strong>10 passed, 0 failed</strong>.</li>
+      <li>&#9744; You ran <code>Main</code>, saved in all three formats, opened <code>students.csv</code> in IntelliJ (it should be readable text), and loaded each one back.</li>
+      <li>&#9744; <strong>Every</strong> stream is opened in try-with-resources (no manual <code>close()</code>).</li>
+      <li>&#9744; Your name and ID are in the header comment; the code is formatted (<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>L</kbd>); no leftover placeholder <code>return</code>s.</li>
+      <li>&#9744; A short comment on each method explains <em>why</em> you chose that stream.</li>
+      <li>&#9744; Submit the whole project folder as a ZIP (<strong>without</strong> the <code>data</code> folder) on ProConnect, or push it to your GitHub repo.</li>
+    </ul>
+
+    <h4>&#128202; Rubric (100 points)</h4>
+    <div class="tablewrap"><table class="rubric-table">
+      <thead><tr><th>Criterion</th><th>Excellent</th><th>Good</th><th>Needs work</th><th>Missing</th></tr></thead>
+      <tbody>
+        <tr><td>Correctness (50)</td><td>50: all 10 self-checks pass; the menu works, including bad input</td><td>35: 8&ndash;9 pass</td><td>20: 4&ndash;7 pass</td><td>0&ndash;10: &lt; 4 pass or doesn't compile</td></tr>
+        <tr><td>Stream use (20)</td><td>20: the right stream family for each job; buffered; try-with-resources everywhere</td><td>14: one weak choice (e.g. no buffer)</td><td>8: streams not closed / byte streams for text</td><td>0</td></tr>
+        <tr><td>Style (15)</td><td>15: clear names, consistent formatting, no dead code</td><td>10</td><td>5</td><td>0</td></tr>
+        <tr><td>Explanation (15)</td><td>15: every method commented with the reason; can explain any line in a viva</td><td>10</td><td>5</td><td>0</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout callout--warn"><span class="callout__i">&#9878;&#65039;</span>
+      <div class="callout__b"><b>Academic honesty &amp; AI tools</b>
+        Discuss ideas freely, but type and understand your own code. You may ask an AI to <em>explain</em> an exception message, not to write your methods.
+        Your teacher may ask you to explain any line (a short viva).
+      </div>
+    </div>
+    <button type="button" class="playground__btn print-btn" data-print>&#128424;&#65039; Print / save as PDF</button>
+  </div>
+
+  <!-- ===== FURTHER STUDY =================================================== -->
+  <h2>&#128250; Further Study</h2>
+  <p>Every video was checked to make sure it exists and matches the topic. Start with the first two.</p>
+  <div class="video-grid">
+    <div class="video-card" data-yt="e_S2yJKpTaw" data-title="Java File Handling Explained | Streams, Buffers, Readers & Writers">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java File Handling Explained: Streams, Buffers, Readers &amp; Writers</div><div class="video-card__channel">Concept &amp;&amp; Coding</div><div class="video-card__why">The big picture of Parts 1&ndash;6 in one video.</div></div>
+    </div>
+    <div class="video-card" data-yt="Pg0aoSbrqOE" data-title="How to WRITE FILES with Java in 8 minutes!">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">How to WRITE FILES with Java in 8 minutes</div><div class="video-card__channel">Bro Code</div><div class="video-card__why">Short and practical: writing text files.</div></div>
+    </div>
+    <div class="video-card" data-yt="DmMnfP2hYEo" data-title="BufferedReader and BufferedWriter in Java">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">BufferedReader and BufferedWriter in Java</div><div class="video-card__channel">Satish C J</div><div class="video-card__why">Part 6: line-by-line reading and writing.</div></div>
+    </div>
+    <div class="video-card" data-yt="wQySSkhQujw" data-title="Java File Input Stream Class Examples">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java FileInputStream Class Examples</div><div class="video-card__channel">Programming For Beginners</div><div class="video-card__why">Part 3: reading bytes.</div></div>
+    </div>
+    <div class="video-card" data-yt="ikK3hl_QLGU" data-title="Java FileOutputStream Class Examples | Write in File">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java FileOutputStream Class Examples</div><div class="video-card__channel">Programming For Beginners</div><div class="video-card__why">Part 3: writing bytes.</div></div>
+    </div>
+    <div class="video-card" data-yt="DfbFTVNfkeI" data-title="Java serialization is easy!">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java serialization is easy!</div><div class="video-card__channel">Bro Code</div><div class="video-card__why">Part 7: serialization from scratch.</div></div>
+    </div>
+    <div class="video-card" data-yt="XRHtOqGSH-Y" data-title="What is serialVersionUID in Java Serialization?">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">What is serialVersionUID in Java Serialization?</div><div class="video-card__channel">Ram N Java</div><div class="video-card__why">Part 7 / Mistake 7: why the version number matters.</div></div>
+    </div>
+  </div>
+  <h3>Read (official &amp; trusted)</h3>
+  <ul>
+    <li><a href="https://dev.java/learn/java-io/" target="_blank" rel="noopener">dev.java &mdash; Java I/O</a> (official Java learning site)</li>
+    <li><a href="https://docs.oracle.com/javase/tutorial/essential/io/index.html" target="_blank" rel="noopener">Oracle Tutorials &mdash; Basic I/O</a>: <a href="https://docs.oracle.com/javase/tutorial/essential/io/bytestreams.html" target="_blank" rel="noopener">Byte Streams</a>, <a href="https://docs.oracle.com/javase/tutorial/essential/io/charstreams.html" target="_blank" rel="noopener">Character Streams</a>, <a href="https://docs.oracle.com/javase/tutorial/essential/io/buffers.html" target="_blank" rel="noopener">Buffered Streams</a>, <a href="https://docs.oracle.com/javase/tutorial/essential/io/datastreams.html" target="_blank" rel="noopener">Data Streams</a>, <a href="https://docs.oracle.com/javase/tutorial/essential/io/objectstreams.html" target="_blank" rel="noopener">Object Streams</a>, <a href="https://docs.oracle.com/javase/tutorial/essential/io/cl.html" target="_blank" rel="noopener">I/O from the Command Line (Console)</a></li>
+    <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/io/package-summary.html" target="_blank" rel="noopener">Java 25 API &mdash; the <code>java.io</code> package</a></li>
+    <li><a href="https://jenkov.com/tutorials/java-io/index.html" target="_blank" rel="noopener">Jakob Jenkov &mdash; Java IO tutorial</a> (one clear page per class)</li>
+    <li>Book: Cay S. Horstmann, <em>Core Java, Volume II</em>, chapter "Input and Output".</li>
+  </ul>
+
+  <!-- ===== CHEAT SHEET ===================================================== -->
+  <h2>&#128203; Cheat Sheet</h2>
+  <div class="cheatsheet">
+    <h4>File</h4>
+<pre><code class="lang-java">File f = new File("data/a.txt");     // just a path
+f.exists(); f.isFile(); f.length(); f.getName();
+new File("data").mkdirs();           // create folders
+f.createNewFile(); f.delete(); f.renameTo(other);
+String[] names = folder.list();      // null if not a folder</code></pre>
+    <h4>Read / write text</h4>
+<pre><code class="lang-java">try (BufferedReader in = new BufferedReader(new FileReader(f))) {
+    String line;
+    while ((line = in.readLine()) != null) { ... }
+}
+try (PrintWriter out = new PrintWriter(new FileWriter(f, true))) {
+    out.println("appended line");     // true = append
+}</code></pre>
+    <h4>Read / write bytes</h4>
+<pre><code class="lang-java">try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(a));
+     BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(b))) {
+    byte[] bucket = new byte[4096];
+    int n;
+    while ((n = in.read(bucket)) != -1) out.write(bucket, 0, n);
+}</code></pre>
+    <h4>Java values (DataInput / DataOutput)</h4>
+<pre><code class="lang-java">out.writeInt(n); out.writeDouble(d); out.writeUTF(s); out.writeBoolean(b);
+in.readInt();    in.readDouble();    in.readUTF();    in.readBoolean();
+// same ORDER both ways; write a count before a list</code></pre>
+    <h4>Objects (serialization)</h4>
+<pre><code class="lang-java">class Student implements Serializable {
+    private static final long serialVersionUID = 1L;
+    private transient String password;     // not saved
+}
+out.writeObject(list);                     // ObjectOutputStream
+List&lt;Student&gt; l = (List&lt;Student&gt;) in.readObject();</code></pre>
+    <h4>Console</h4>
+<pre><code class="lang-java">Console c = System.console();       // null inside an IDE!
+if (c != null) {
+    String u = c.readLine("User: ");
+    char[] p = c.readPassword("Pass: ");
+}</code></pre>
+    <h4>End-of-data signals</h4>
+<pre><code class="lang-java">read()      -&gt; -1
+readLine()  -&gt; null
+readInt()   -&gt; EOFException</code></pre>
+  </div>
+
+  <!-- ===== SUMMARY ========================================================= -->
+  <h2>&#127891; Session Summary</h2>
+  <ol>
+    <li>A <strong>stream</strong> is an ordered flow of data: input = into your program, output = out of it.</li>
+    <li><strong><code>File</code></strong> represents a path: check, create, list, rename, delete. It doesn't read contents.</li>
+    <li><strong>Byte streams</strong> (<code>InputStream</code>/<code>OutputStream</code>) move raw bytes and work for any file.</li>
+    <li><strong>Buffered streams</strong> make far fewer trips to the disk; output buffers must be flushed (close does it).</li>
+    <li><strong><code>DataInput</code>/<code>DataOutput</code></strong> save Java values as bytes: same order in and out.</li>
+    <li><strong>Character streams</strong> (<code>Reader</code>/<code>Writer</code>) handle text and encodings; <code>BufferedReader.readLine()</code> is the everyday tool.</li>
+    <li><strong>Serialization</strong> saves whole objects: <code>Serializable</code>, <code>serialVersionUID</code>, <code>transient</code>.</li>
+    <li><strong><code>Console</code></strong> reads from a real terminal (with hidden passwords); it's <code>null</code> inside an IDE.</li>
+    <li><strong>Always</strong> use try-with-resources.</li>
+  </ol>
+  <div class="newwords"><b>&#128218; All new words from this session</b>
+    <dl>
+      <dt>Stream, input stream, output stream</dt><dd>An ordered flow of data into / out of a program.</dd>
+      <dt>Byte, byte stream</dt><dd>A value 0&ndash;255 / a stream that moves raw bytes (<code>InputStream</code>/<code>OutputStream</code>).</dd>
+      <dt>Character stream, encoding, UTF-8</dt><dd>A stream of text characters (<code>Reader</code>/<code>Writer</code>) / the rule that turns characters into bytes / the standard encoding (1&ndash;4 bytes per character).</dd>
+      <dt>Path, relative path, working directory</dt><dd>A file's address / an address measured from the current folder / the current folder (the project folder in IntelliJ).</dd>
+      <dt>Buffer, flush</dt><dd>A block of memory that collects data to reduce disk trips / forcing buffered data out to the disk.</dd>
+      <dt>Wrapping (Decorator)</dt><dd>Building a stream by putting one inside another, each adding a skill.</dd>
+      <dt>Checked exception, try-with-resources</dt><dd>An error you must catch or declare (<code>IOException</code>) / <code>try (&hellip;)</code>, which closes resources automatically.</dd>
+      <dt>CSV</dt><dd>Comma-separated values: a simple text format for tables.</dd>
+      <dt>Serialization / deserialization</dt><dd>Turning an object into bytes / rebuilding a copy from them.</dd>
+      <dt>Marker interface, <code>serialVersionUID</code>, <code>transient</code></dt><dd>An interface with no methods (<code>Serializable</code>) / a class's version number / "don't save this field".</dd>
+      <dt>Console</dt><dd>The class for talking to a real terminal, including hidden password input.</dd>
+      <dt>EOF</dt><dd>End Of File.</dd>
+    </dl>
+  </div>
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Next session: Threading</b>
+      Your programs have always done one thing at a time. In Session 4 you'll make them do several things at once, for example saving a big file <em>while</em> the user keeps working.
+    </div>
+  </div>
+
+</main>
+
+<script src="../assets/js/course.js?v=5"></script>
+<script src="../assets/js/playgrounds.js?v=5"></script>
+
+</body>
+</html>

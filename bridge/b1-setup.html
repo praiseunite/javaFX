@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bridge 1 — Setup: JDK & IntelliJ</title>
+  <meta name="description" content="Bridge 1 of Building Rich Java Applications with JavaFX and AI Tools: Installing JDK 21+, setting up IntelliJ IDEA Community, understanding JDK vs JVM, and writing your first Hello World.">
+  <link rel="stylesheet" href="../assets/css/course.css?v=5">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "b1";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== HERO ============================================================ -->
+  <section class="hero">
+    <span class="tag">Foundation Bridge &middot; Lesson B1 &middot; 2 hours prep &middot; Self-Paced / In-Class</span>
+    <h1>Bridge 1 &mdash; Setup: JDK &amp; IntelliJ IDEA</h1>
+    <p class="lede">
+      Welcome to your software engineering journey! Before building graphical interfaces or AI-assisted desktop tools,
+      you need a solid developer workstation. Today you will understand what makes Java special, how the
+      <strong>Java Virtual Machine (JVM)</strong> lets code run on any operating system, and how to write, compile,
+      and run your very first program using <strong>IntelliJ IDEA Community Edition</strong>.
+    </p>
+    <div class="meta">
+      <span>&#128218; Core Foundation: Environment Setup &amp; Architecture</span>
+      <span>&#9201; ~2 hours</span>
+      <span>&#9989; Prerequisites: None &mdash; starting from scratch!</span>
+      <span>&#128203; Goal: Verified JDK 21+ and IntelliJ Workspace</span>
+    </div>
+  </section>
+
+  <!-- ===== OBJECTIVES ====================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this bridge session you can&hellip;</b>
+    <ol>
+      <li><strong>Explain</strong> the difference between the <strong>JDK</strong>, <strong>JRE</strong>, and <strong>JVM</strong>, and why Java is platform-independent.</li>
+      <li><strong>Install and verify</strong> OpenJDK 21 LTS on your computer using command-line diagnostics (<code>java -version</code> and <code>javac -version</code>).</li>
+      <li><strong>Install and configure</strong> IntelliJ IDEA Community Edition for clean, modern Java development.</li>
+      <li><strong>Write, compile, and execute</strong> a canonical <code>HelloWorld.java</code> program from both the terminal and the IDE.</li>
+      <li><strong>Deconstruct</strong> the exact meaning of every word in <code>public static void main(String[] args)</code>.</li>
+      <li><strong>Diagnose and fix</strong> the top 4 beginner setup and syntax traps (file name mismatch, case sensitivity, missing main method, unconfigured SDK).</li>
+    </ol>
+  </div>
+
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== ROADMAP ========================================================= -->
+  <h2>Your Learning Roadmap</h2>
+  <div class="roadmap">
+    <a href="#the-java-trinity-jdk-jre-jvm">The Java Trinity: JDK, JRE &amp; JVM</a>
+    <a href="#the-universal-translator-analogy">The Visual Concept</a>
+    <a href="#installing-your-tools">Installing JDK 21 &amp; IntelliJ</a>
+    <a href="#your-first-java-program">Your First Program</a>
+    <a href="#anatomy-of-a-java-file">Deconstructing Main</a>
+    <a href="#interactive-compilation-pipeline">Interactive Pipeline</a>
+    <a href="#common-beginner-traps">Common Pitfalls</a>
+    <a href="#knowledge-check">Knowledge Check</a>
+    <a href="#guided-lab">Guided Lab</a>
+  </div>
+
+  <!-- ===== CONCEPT 1: THE TRINITY ========================================== -->
+  <h2 id="the-java-trinity-jdk-jre-jvm">1. The Java Trinity: JDK, JRE &amp; JVM</h2>
+  <p>
+    When you start learning Java, you immediately run into three acronyms: <strong>JDK</strong>, <strong>JRE</strong>, and <strong>JVM</strong>.
+    Beginners often confuse them, but their relationship is simple and hierarchical &mdash; like nested Russian nesting dolls:
+  </p>
+
+  <div class="callout callout--note"><span class="callout__i">&#128214;</span>
+    <div class="callout__b"><b>The 3 Layers Explained in Plain English</b>
+      <ul>
+        <li><strong>JVM (Java Virtual Machine):</strong> The engine that actually executes your program. It reads compiled <em>bytecode</em> and translates it into machine code for the physical CPU under the hood.</li>
+        <li><strong>JRE (Java Runtime Environment):</strong> The bundle required to <em>run</em> Java programs. It contains the JVM plus standard Java class libraries (like math, text, and networking). (Note: since Java 11, the JRE is integrated directly into the JDK).</li>
+        <li><strong>JDK (Java Development Kit):</strong> The complete toolbox for software developers. It includes everything in the JRE, plus the compiler (<code>javac</code>), documentation tools (<code>javadoc</code>), archiver (<code>jar</code>), and debuggers.</li>
+      </ul>
+    </div>
+  </div>
+
+  <table class="walkthrough-table">
+    <thead>
+      <tr>
+        <th>Component</th>
+        <th>What It Stands For</th>
+        <th>Who Needs It?</th>
+        <th>Key Tool Inside</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>JVM</strong></td>
+        <td>Java Virtual Machine</td>
+        <td>Everyone running Java software</td>
+        <td>Bytecode Execution Engine &amp; Garbage Collector</td>
+      </tr>
+      <tr>
+        <td><strong>JRE</strong></td>
+        <td>Java Runtime Environment</td>
+        <td>End users running programs</td>
+        <td>Standard Library (<code>java.lang</code>, <code>java.util</code>) + JVM</td>
+      </tr>
+      <tr>
+        <td><strong>JDK</strong></td>
+        <td>Java Development Kit</td>
+        <td><strong>You (The Software Developer)</strong></td>
+        <td>Compiler (<code>javac</code>), Packager (<code>jar</code>), Debugger</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ===== VISUAL CARTOON ================================================== -->
+  <h2 id="the-universal-translator-analogy">2. How Java Works: Write Once, Run Anywhere</h2>
+  <p>
+    In languages like C or C++, code is compiled directly into machine instructions tailored to a specific CPU architecture
+    (e.g., Intel x86 or ARM64). A program compiled on Windows will crash or refuse to load on a Mac.
+  </p>
+  <p>
+    Java solved this problem with a revolutionary invention: <strong>Bytecode</strong>.
+    Instead of translating your <code>.java</code> code directly into physical machine code, the Java compiler (<code>javac</code>)
+    translates it into an intermediate, universal language called <strong>Java Bytecode</strong> stored in a <code>.class</code> file.
+    Every operating system has its own custom JVM that reads this exact same bytecode and runs it smoothly!
+  </p>
+
+  <figure class="concept-visual" aria-label="Visual cartoon: Java Virtual Machine Write Once Run Anywhere">
+    <img src="../assets/img/cartoons/b1_jvm_write_once_run_anywhere.jpg" alt="JVM Universal Translator Robot translating Java Bytecode to Windows, Mac, and Linux">
+    <figcaption>
+      <span class="fig-badge fig-badge--analogy">&#127917; Visual Analogy</span>
+      <strong>The Universal Translator:</strong> You write your code once in human-readable Java (<code>.java</code>).
+      The compiler transforms it into an international passport of Bytecode (<code>.class</code>).
+      Then, friendly local JVM robots on Windows, macOS, and Linux translate those exact same passport instructions into
+      native machine actions. Write once, run everywhere!
+    </figcaption>
+  </figure>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point &mdash; WORA (Write Once, Run Anywhere)</b>
+      The programmer writes <code>.java</code> files. The compiler <code>javac</code> produces <code>.class</code> bytecode.
+      The JVM runs the <code>.class</code> bytecode. <strong>Your code never talks directly to the hardware &mdash; the JVM manages everything.</strong>
+    </div>
+  </div>
+
+  <!-- ===== INSTALLATION ==================================================== -->
+  <h2 id="installing-your-tools">3. Installing Your Developer Tools</h2>
+  <p>To write professional Java applications, you need two pieces of software installed on your computer:</p>
+  <ol>
+    <li><strong>OpenJDK 21 LTS:</strong> The engine and compiler. We use Java 21 because it is a Long-Term Support (LTS) release used throughout modern industry.</li>
+    <li><strong>IntelliJ IDEA Community Edition:</strong> The world's leading Java Integrated Development Environment (IDE), free and open-source by JetBrains.</li>
+  </ol>
+
+  <div class="steps">
+    <div class="steps__title">&#128736; Step-by-Step Installation Guide</div>
+
+    <div class="step"><div class="step__check"></div><span class="step__num">1</span>
+      <span class="step__text">
+        <strong>Download JDK 21:</strong> Visit <a href="https://adoptium.net" target="_blank" rel="noopener">Adoptium (Eclipse Temurin 21 LTS)</a>.
+        Choose the installer for your operating system (Windows <code>.msi</code>, macOS <code>.pkg</code>, or Linux package).
+        Run the installer and ensure <strong>"Set JAVA_HOME variable"</strong> and <strong>"Add to PATH"</strong> are checked.
+      </span>
+    </div>
+
+    <div class="step"><div class="step__check"></div><span class="step__num">2</span>
+      <span class="step__text">
+        <strong>Verify JDK in Terminal:</strong> Open Command Prompt (Windows: press <kbd>Win</kbd>+<kbd>R</kbd>, type <code>cmd</code>, press Enter)
+        or Terminal (macOS/Linux). Type:
+        <pre><code class="lang-bash">javac -version
+java -version</code></pre>
+        Both commands should report version <code>21</code> (e.g., <code>openjdk version "21.0.x"</code>).
+      </span>
+    </div>
+
+    <div class="step"><div class="step__check"></div><span class="step__num">3</span>
+      <span class="step__text">
+        <strong>Download IntelliJ IDEA:</strong> Visit <a href="https://www.jetbrains.com/idea/download/" target="_blank" rel="noopener">jetbrains.com/idea/download/</a>.
+        Scroll down to <strong>IntelliJ IDEA Community Edition</strong> (free, open source). Download and run the installer.
+        Keep all default options checked.
+      </span>
+    </div>
+
+    <div class="step"><div class="step__check"></div><span class="step__num">4</span>
+      <span class="step__text">
+        <strong>Launch IntelliJ &amp; Link SDK:</strong> Open IntelliJ IDEA. Click <strong>New Project</strong>.
+        Select <strong>Java</strong> on the left. In the <strong>JDK</strong> dropdown, make sure <strong>JDK 21</strong> is selected.
+        If it says <em>"No SDK"</em>, click <strong>Download JDK</strong> &rarr; Version 21 &rarr; Vendor: Eclipse Temurin.
+      </span>
+    </div>
+  </div>
+
+  <!-- ===== YOUR FIRST PROGRAM ============================================== -->
+  <h2 id="your-first-java-program">4. Your First Java Program: Hello, World!</h2>
+  <p>
+    By time-honored programming tradition dating back to 1978, the first program you write in any language simply displays
+    a greeting to the screen. Here is the complete code:
+  </p>
+
+  <pre class="numbered" data-file="HelloWorld.java" data-hl="2,3"><code class="lang-java">public class HelloWorld {
+    public static void main(String[] args) {
+        System.out.println("Hello, Aptech Java Developer!");
+    }
+}</code></pre>
+
+  <div class="terminal-output">Hello, Aptech Java Developer!</div>
+
+  <!-- ===== WALKTHROUGH ===================================================== -->
+  <h2 id="anatomy-of-a-java-file">5. Deconstructing Every Single Word</h2>
+  <p>
+    Java is an explicitly typed, object-oriented language. Unlike Python or JavaScript where you can just write <code>print("Hello")</code>,
+    Java requires structure. Let us break down every token so there are zero mysteries:
+  </p>
+
+  <div class="walkthrough">
+    <table>
+      <thead>
+        <tr>
+          <th>Token / Keyword</th>
+          <th>What It Means in Plain English</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>public</code></td>
+          <td><strong>Access Modifier:</strong> Anyone, anywhere (including the JVM outside your project) is allowed to access and call this class or method.</td>
+        </tr>
+        <tr>
+          <td><code>class HelloWorld</code></td>
+          <td><strong>Class Definition:</strong> In Java, all code must live inside a class. The file name <em>must</em> match this name exactly: <code>HelloWorld.java</code>.</td>
+        </tr>
+        <tr>
+          <td><code>static</code></td>
+          <td><strong>Class-Level Method:</strong> The JVM can run this method immediately without first creating an instance or object with <code>new</code>.</td>
+        </tr>
+        <tr>
+          <td><code>void</code></td>
+          <td><strong>Return Type:</strong> This method performs actions (like printing text) and finishes without returning any numeric or text value back to the caller.</td>
+        </tr>
+        <tr>
+          <td><code>main</code></td>
+          <td><strong>Entry Point:</strong> The magical name the JVM searches for when starting your application. If a class lacks a <code>main</code> method, it cannot run standalone.</td>
+        </tr>
+        <tr>
+          <td><code>String[] args</code></td>
+          <td><strong>Command-Line Arguments:</strong> An array of text parameters passed into your program if you launch it with extra options from the command line.</td>
+        </tr>
+        <tr>
+          <td><code>System.out.println(...)</code></td>
+          <td>
+            <code>System</code> is a built-in Java class; <code>out</code> is the standard console output stream;
+            <code>println</code> is short for <em>"print line"</em> &mdash; it writes text to your console and then moves the cursor to the next line.
+          </td>
+        </tr>
+        <tr>
+          <td><code>;</code> (semicolon)</td>
+          <td><strong>Statement Terminator:</strong> Just as an English sentence ends with a period (.), every complete Java instruction ends with a semicolon.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== INTERACTIVE PIPELINE WIDGET ===================================== -->
+  <h2 id="interactive-compilation-pipeline">&#128187; Interactive Simulator: The Bytecode Pipeline</h2>
+  <p>
+    Use this interactive tool to see what happens step-by-step between typing code on your keyboard and seeing output appear on the screen:
+  </p>
+
+  <div class="playground" id="b1PipelineDemo">
+    <div class="playground__header">&#9881;&#65039; Java Compilation &amp; Execution Step-Through</div>
+    <div class="playground__body">
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+        <button class="playground__btn" id="btnStep1" onclick="runPipelineStep(1)">1. Write Source (.java)</button>
+        <button class="playground__btn" id="btnStep2" onclick="runPipelineStep(2)">2. javac (Compile)</button>
+        <button class="playground__btn" id="btnStep3" onclick="runPipelineStep(3)">3. JVM (Translate)</button>
+        <button class="playground__btn" id="btnStep4" onclick="runPipelineStep(4)">4. CPU (Execute)</button>
+        <button class="playground__btn playground__btn--secondary" onclick="resetPipeline()">Reset</button>
+      </div>
+
+      <div id="pipelineStatus" style="font-weight:600;margin-bottom:0.75rem;color:var(--accent);">Current Stage: Ready to start. Click Step 1.</div>
+      <div id="pipelineGraphic" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:0.75rem;margin-bottom:1rem;">
+        <div id="stage1" style="padding:0.75rem;border:2px dashed var(--line);border-radius:8px;text-align:center;">
+          <div style="font-size:1.5rem;">&#128221;</div>
+          <b>HelloWorld.java</b>
+          <div style="font-size:0.75rem;color:var(--ink-soft);">Human Code</div>
+        </div>
+        <div id="stage2" style="padding:0.75rem;border:2px dashed var(--line);border-radius:8px;text-align:center;">
+          <div style="font-size:1.5rem;">&#9881;&#65039;</div>
+          <b>javac Compiler</b>
+          <div style="font-size:0.75rem;color:var(--ink-soft);">Syntax &amp; Type Check</div>
+        </div>
+        <div id="stage3" style="padding:0.75rem;border:2px dashed var(--line);border-radius:8px;text-align:center;">
+          <div style="font-size:1.5rem;">&#129302;</div>
+          <b>HelloWorld.class</b>
+          <div style="font-size:0.75rem;color:var(--ink-soft);">JVM Bytecode</div>
+        </div>
+        <div id="stage4" style="padding:0.75rem;border:2px dashed var(--line);border-radius:8px;text-align:center;">
+          <div style="font-size:1.5rem;">&#128187;</div>
+          <b>Host OS / CPU</b>
+          <div style="font-size:0.75rem;color:var(--ink-soft);">Machine Action</div>
+        </div>
+      </div>
+
+      <div class="playground__output" id="pipelineLog" style="min-height:90px;font-family:monospace;white-space:pre-wrap;background:var(--surface-2);padding:0.75rem;border-radius:6px;">Waiting for step...</div>
+    </div>
+  </div>
+
+  <script>
+    function runPipelineStep(step) {
+      var log = document.getElementById("pipelineLog");
+      var status = document.getElementById("pipelineStatus");
+      for (var i = 1; i <= 4; i++) {
+        var box = document.getElementById("stage" + i);
+        if (i <= step) {
+          box.style.borderColor = "var(--accent)";
+          box.style.background = "var(--surface)";
+        } else {
+          box.style.borderColor = "var(--line)";
+          box.style.background = "transparent";
+        }
+      }
+
+      if (step === 1) {
+        status.textContent = "Stage 1: Source code written in HelloWorld.java";
+        log.textContent = "[SOURCE]\npublic class HelloWorld {\n    public static void main(String[] args) {\n        System.out.println(\"Hello, World!\");\n    }\n}\n// Plain text readable by humans.";
+      } else if (step === 2) {
+        status.textContent = "Stage 2: javac compiles code into Bytecode";
+        log.textContent = "$ javac HelloWorld.java\n[COMPILER] Checking syntax...\n[COMPILER] Checking types and semicolons... OK\n[OUTPUT] Generating binary HelloWorld.class";
+      } else if (step === 3) {
+        status.textContent = "Stage 3: Bytecode loaded into Java Virtual Machine";
+        log.textContent = "$ java HelloWorld\n[JVM ClassLoader] Reading HelloWorld.class magic bytes (0xCAFEBABE)\n[JVM Bytecode Verifier] Confirming memory safety...\n[JVM JIT Engine] Preparing machine code for host OS.";
+      } else if (step === 4) {
+        status.textContent = "Stage 4: Program executed! Output printed to terminal";
+        log.textContent = "[EXECUTION RESULT]\n------------------------------------\nHello, World!\n------------------------------------\nProcess finished with exit code 0";
+      }
+    }
+
+    function resetPipeline() {
+      for (var i = 1; i <= 4; i++) {
+        var box = document.getElementById("stage" + i);
+        box.style.borderColor = "var(--line)";
+        box.style.background = "transparent";
+      }
+      document.getElementById("pipelineStatus").textContent = "Current Stage: Ready to start. Click Step 1.";
+      document.getElementById("pipelineLog").textContent = "Waiting for step...";
+    }
+  </script>
+
+  <!-- ===== COMMON MISTAKES ================================================= -->
+  <h2 id="common-beginner-traps">&#9888;&#65039; Top 4 Beginner Setup Traps &amp; How to Fix Them</h2>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Trap 1: Class Name Does Not Match File Name</b>
+      <pre><code class="lang-java">// Saved in a file called "hello.java" (lowercase) or "Main.java"
+public class HelloWorld { // ERROR!
+    public static void main(String[] args) {}
+}</code></pre>
+      <p><strong>Error Message:</strong> <code>class HelloWorld is public, should be declared in a file named HelloWorld.java</code></p>
+      <p><strong>The Golden Rule:</strong> Java is strictly case-sensitive. The file name on your hard drive must match the public class name letter-for-letter, capitalization included!</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Trap 2: Forgetting Semicolons or Mismatched Braces</b>
+      <pre><code class="lang-java">System.out.println("Hello World") // Missing semicolon!
+// or forgetting a closing curly brace } at the end of the class</code></pre>
+      <p><strong>Error Message:</strong> <code>';' expected</code> or <code>reached end of file while parsing</code></p>
+      <p><strong>The Fix:</strong> Always verify that every opening <code>{</code> has a matching closing <code>}</code>, and every statement ends with a <code>;</code>.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Trap 3: IntelliJ Says "Project SDK is not defined"</b>
+      <p>When opening a new project, a yellow banner might appear across the top of your editor saying <em>"Project SDK is not defined"</em>.</p>
+      <p><strong>The Fix:</strong> Click the blue <strong>Setup SDK</strong> link on the right of the yellow banner, and select <strong>21 (Temurin or OpenJDK)</strong>. Within 3 seconds, all red underlines will disappear!</p>
+    </div>
+  </div>
+
+  <!-- ===== KNOWLEDGE CHECK ================================================= -->
+  <h2 id="knowledge-check">&#128221; Knowledge Check</h2>
+  <div class="quiz" id="b1-quiz">
+    <div class="quiz__title">&#128161; Verify Your Understanding</div>
+
+    <!-- Q1 -->
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__stem">1. What does the Java compiler (<code>javac</code>) output after compiling a <code>.java</code> source file?</div>
+      <label class="quiz__opt"><input type="radio" name="b1q1" value="a"> An executable <code>.exe</code> file for Windows</label>
+      <label class="quiz__opt"><input type="radio" name="b1q1" value="b"> A universal bytecode <code>.class</code> file for the JVM</label>
+      <label class="quiz__opt"><input type="radio" name="b1q1" value="c"> Raw C++ source code</label>
+      <label class="quiz__opt"><input type="radio" name="b1q1" value="d"> A compressed ZIP archive</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: B.</strong> <code>javac</code> compiles human-readable Java code into intermediate bytecode (<code>.class</code> files), which can then be executed by any JVM on any operating system.
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__stem">2. Which component contains the compiler (<code>javac</code>), debuggers, and developer documentation tools?</div>
+      <label class="quiz__opt"><input type="radio" name="b1q2" value="a"> JVM</label>
+      <label class="quiz__opt"><input type="radio" name="b1q2" value="b"> JRE</label>
+      <label class="quiz__opt"><input type="radio" name="b1q2" value="c"> JDK</label>
+      <label class="quiz__opt"><input type="radio" name="b1q2" value="d"> CPU</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: C.</strong> The JDK (Java Development Kit) contains the complete development toolchain including <code>javac</code>. The JRE and JVM are for running code.
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz__q" data-answer="true">
+      <div class="quiz__stem">3. If a class is declared as <code>public class StudentRecord</code>, the source file must be named <code>StudentRecord.java</code> exactly. True or False?</div>
+      <label class="quiz__opt"><input type="radio" name="b1q3" value="true"> True</label>
+      <label class="quiz__opt"><input type="radio" name="b1q3" value="false"> False</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: True.</strong> Java strictly enforces that the public class name and file name must match letter-for-letter including case sensitivity.
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__stem">4. Why is the <code>main</code> method declared as <code>static</code> in Java?</div>
+      <label class="quiz__opt"><input type="radio" name="b1q4" value="a"> To prevent other programs from reading your variables</label>
+      <label class="quiz__opt"><input type="radio" name="b1q4" value="b"> So the JVM can invoke it directly without needing to instantiate an object of the class first</label>
+      <label class="quiz__opt"><input type="radio" name="b1q4" value="c"> Because static methods run 10x faster</label>
+      <label class="quiz__opt"><input type="radio" name="b1q4" value="d"> It is optional; Java doesn't actually require it</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: B.</strong> The JVM calls <code>ClassName.main()</code> at startup before any objects exist in memory. The <code>static</code> keyword allows the method to be invoked without creating an instance.
+      </div>
+    </div>
+
+    <div class="quiz__score" style="display:none"></div>
+  </div>
+
+  <!-- ===== GUIDED LAB ====================================================== -->
+  <h2 id="guided-lab">&#128736; Guided Lab: Workstation Certification</h2>
+  <div class="steps">
+    <div class="steps__title">&#128221; Complete these tasks in IntelliJ to earn your Bridge 1 badge:</div>
+
+    <div class="step"><div class="step__check"></div><span class="step__num">1</span>
+      <span class="step__text">Launch IntelliJ IDEA and create a new project named <code>aptech-bridge</code> using JDK 21.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">2</span>
+      <span class="step__text">In the <code>src</code> directory, create a new Java Class named <code>DeveloperProfile</code>.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">3</span>
+      <span class="step__text">
+        Inside the class, write the <code>main</code> method and print a 3-line developer badge containing:
+        your name, your career goal (e.g. <em>"Future JavaFX &amp; AI Software Engineer"</em>), and today's date.
+      </span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">4</span>
+      <span class="step__text">Click the green play button (&#9654;) next to <code>main</code> and verify clean output in the console.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">5</span>
+      <span class="step__text">
+        <strong>Terminal Challenge:</strong> Open IntelliJ's built-in Terminal tab (at the bottom) and run:
+        <code>javac src/DeveloperProfile.java -d out/</code> followed by <code>java -cp out DeveloperProfile</code>.
+      </span>
+    </div>
+  </div>
+
+  <!-- ===== FURTHER STUDY =================================================== -->
+  <h2>&#128250; Recommended Further Study</h2>
+  <div class="video-grid">
+    <div class="video-card">
+      <div class="video-card__title">&#127916; CS50 / Harvard: How Computers Run Programs</div>
+      <p style="font-size:0.9rem;color:var(--ink-soft);margin-bottom:0.75rem;">A legendary breakdown of compiling, binary code, and CPU execution by David J. Malan.</p>
+      <a class="video-card__link" href="https://www.youtube.com/watch?v=LfaMVlDaQ24" target="_blank" rel="noopener">&#9654; Watch on YouTube</a>
+    </div>
+    <div class="video-card">
+      <div class="video-card__title">&#127916; JetBrains: IntelliJ IDEA Tutorial for Beginners</div>
+      <p style="font-size:0.9rem;color:var(--ink-soft);margin-bottom:0.75rem;">Official quick tour of the IntelliJ editor, shortcuts, project tree, and running code.</p>
+      <a class="video-card__link" href="https://www.youtube.com/watch?v=B-q_1aRjU_4" target="_blank" rel="noopener">&#9654; Watch on YouTube</a>
+    </div>
+  </div>
+
+  <!-- ===== SUMMARY & NEXT ================================================== -->
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Next Up: Bridge 2 &mdash; Variables, Types &amp; Operators</b>
+      Now that your workstation is verified and your first program ran cleanly, you are ready to explore
+      how Java stores numbers, text, and true/false decisions in computer memory.
+    </div>
+  </div>
+
+</main>
+
+<script src="../assets/js/course.js?v=5"></script>
+<script src="../assets/js/playgrounds.js?v=5"></script>
+
+</body>
+</html>

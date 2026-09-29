@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bridge 6 — Inheritance & Interfaces</title>
+  <meta name="description" content="Bridge 6 of Building Rich Java Applications with JavaFX and AI Tools: Master OOP Part 2: inheritance (extends), super keyword, method overriding, abstract classes, interfaces (implements), and polymorphism.">
+  <link rel="stylesheet" href="../assets/css/course.css?v=5">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "b6";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== HERO ============================================================ -->
+  <section class="hero">
+    <span class="tag">Foundation Bridge &middot; Lesson B6 &middot; 2 hours prep &middot; Self-Paced / In-Class</span>
+    <h1>Bridge 6 &mdash; Inheritance, Interfaces &amp; Polymorphism (OOP 2)</h1>
+    <p class="lede">
+      In professional software architecture, building every class in isolation causes massive code duplication.
+      Through <strong>Inheritance (extends)</strong>, child classes automatically inherit superpowers from parent classes.
+      Through <strong>Interfaces (implements)</strong>, completely unrelated classes plug into standard contracts like USB-C devices.
+      And through <strong>Polymorphism</strong>, a single line of code can command thousands of distinct objects to perform their own unique actions.
+    </p>
+    <div class="meta">
+      <span>&#128218; Core Foundation: OOP Hierarchy, Contracts &amp; Dynamic Dispatch</span>
+      <span>&#9201; ~2 hours</span>
+      <span>&#9989; Prerequisites: Bridge B5 (Classes, Objects, Constructors &amp; Encapsulation)</span>
+      <span>&#128203; Goal: Build an Extensible Enterprise Payroll Hierarchy</span>
+    </div>
+  </section>
+
+  <!-- ===== OBJECTIVES ====================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this bridge session you can&hellip;</b>
+    <ol>
+      <li><strong>Construct</strong> class hierarchies using <strong>Inheritance</strong> (<code>extends</code>) to share common state and behavior.</li>
+      <li><strong>Invoke</strong> parent constructors and superclass methods using the <code>super</code> keyword.</li>
+      <li><strong>Override</strong> parent methods with <code>@Override</code> to specialize child behavior while avoiding accidental method hiding.</li>
+      <li><strong>Contrast</strong> when to use an <strong>Abstract Class</strong> (partial template) versus an <strong>Interface</strong> (pure contract).</li>
+      <li><strong>Explain</strong> why Java supports single class inheritance but allows multiple interface implementations.</li>
+      <li><strong>Harness Polymorphism</strong> to process arrays and collections of diverse subclass objects uniformly through a common parent reference.</li>
+    </ol>
+  </div>
+
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== ROADMAP ========================================================= -->
+  <h2>Your Learning Roadmap</h2>
+  <div class="roadmap">
+    <a href="#inheritance-is-a">Inheritance &amp; IS-A</a>
+    <a href="#the-visual-inheritance-interface">The Visual Metaphor</a>
+    <a href="#the-super-keyword">The super Keyword</a>
+    <a href="#method-overriding">Method Overriding (@Override)</a>
+    <a href="#abstract-classes">Abstract Classes</a>
+    <a href="#interfaces-contracts">Interfaces (The USB-C Contract)</a>
+    <a href="#polymorphism-dynamic-dispatch">Polymorphism in Action</a>
+    <a href="#interactive-polymorphic-dispatcher">Interactive Dispatcher</a>
+    <a href="#common-traps">Common Pitfalls</a>
+    <a href="#knowledge-check">Knowledge Check</a>
+    <a href="#guided-lab">Guided Lab</a>
+  </div>
+
+  <!-- ===== CONCEPT 1 ======================================================= -->
+  <h2 id="inheritance-is-a">1. Inheritance: The "IS-A" Relationship</h2>
+  <p>
+    <strong>Inheritance</strong> allows a new class (the <em>Subclass</em> or <em>Child</em>) to absorb fields and methods
+    from an existing class (the <em>Superclass</em> or <em>Parent</em>) using the <code>extends</code> keyword.
+  </p>
+  <p>
+    Always test inheritance with the <strong>"IS-A" Rule</strong>:
+  </p>
+  <ul>
+    <li>A <code>Dog</code> <strong>IS-A</strong> <code>Animal</code> &rarr; Valid inheritance!</li>
+    <li>A <code>Manager</code> <strong>IS-A</strong> <code>Employee</code> &rarr; Valid inheritance!</li>
+    <li>A <code>Car</code> <strong>IS-A</strong> <code>Engine</code> &rarr; <strong>FALSE!</strong> A car <em>has an</em> engine (Composition), not is an engine!</li>
+  </ul>
+
+  <!-- ===== VISUAL CARTOON ================================================== -->
+  <h2 id="the-visual-inheritance-interface">2. Superhero Inheritance vs. Universal USB-C Interface</h2>
+
+  <figure class="concept-visual" aria-label="Visual cartoon: OOP Inheritance vs Interface">
+    <img src="../assets/img/cartoons/b6_inheritance_and_interface.jpg" alt="Superhero robot parent and child illustrating extends on left and universal USB-C docking station illustrating implements on right">
+    <figcaption>
+      <span class="fig-badge fig-badge--analogy">&#127917; Visual Analogy</span>
+      <strong>Inheritance vs. Interface:</strong>
+      On the left, <strong>Inheritance (extends)</strong> models genetic lineage: a golden Superhero Robot (Parent Class)
+      shares its cape, glowing chest emblem, and rocket boots with its junior sidekick (Child Class).
+      On the right, an <strong>Interface (implements)</strong> models a universal standard: a high-tech USB-C docking station.
+      A flying drone, a smart toaster, and a digital camera have zero biological relation, yet all plug into the exact same charging
+      dock because they all adhere to the identical physical connector contract!
+    </figcaption>
+  </figure>
+
+  <!-- ===== THE SUPER KEYWORD =============================================== -->
+  <h2 id="the-super-keyword">3. The <code>super</code> Keyword</h2>
+  <p>
+    When a child class is born, its parent class must be constructed first.
+    The keyword <code>super</code> allows the child to communicate with its parent:
+  </p>
+  <ol>
+    <li><code>super(arguments)</code>: Calls the parent class constructor (<strong>must be the very first line of the child constructor!</strong>).</li>
+    <li><code>super.methodName()</code>: Calls the parent's original version of a method that you may have overridden.</li>
+  </ol>
+
+  <pre class="numbered" data-file="InheritanceDemo.java" data-hl="12,13"><code class="lang-java">// Parent Class (Superclass)
+public class Vehicle {
+    protected String brand;
+    public Vehicle(String brand) {
+        this.brand = brand;
+    }
+}
+
+// Child Class (Subclass)
+public class ElectricCar extends Vehicle {
+    private int batteryCapacity;
+
+    public ElectricCar(String brand, int batteryCapacity) {
+        super(brand); // Must call parent constructor first!
+        this.batteryCapacity = batteryCapacity;
+    }
+}</code></pre>
+
+  <!-- ===== METHOD OVERRIDING =============================================== -->
+  <h2 id="method-overriding">4. Method Overriding (<code>@Override</code>)</h2>
+  <p>
+    When a subclass provides its own specific implementation of a method already declared in its superclass,
+    it <strong>overrides</strong> that method. Always add the <code>@Override</code> annotation so the compiler verifies
+    you did not make a typo in the method signature:
+  </p>
+
+  <pre class="numbered" data-file="OverrideDemo.java" data-hl="10,11,12"><code class="lang-java">public class Animal {
+    public void makeSound() {
+        System.out.println("Some generic animal sound...");
+    }
+}
+
+public class Dog extends Animal {
+    @Override
+    public void makeSound() {
+        System.out.println("Woof! Woof!"); // Specialized child behavior
+    }
+}</code></pre>
+
+  <!-- ===== ABSTRACT CLASSES ================================================ -->
+  <h2 id="abstract-classes">5. Abstract Classes: Incomplete Blueprints</h2>
+  <p>
+    What sound does a generic "Animal" or "Shape" make? It has none &mdash; only concrete animals or shapes do!
+    An <strong>Abstract Class</strong> is a class that cannot be directly instantiated with <code>new</code>.
+    It serves as a foundational template for subclasses.
+  </p>
+  <ul>
+    <li>Declared with <code>public abstract class Shape</code>.</li>
+    <li>Can declare <strong>abstract methods</strong> (methods with no body): <code>public abstract double calculateArea();</code>.</li>
+    <li>Any non-abstract child class <em>must</em> provide a body for all inherited abstract methods.</li>
+  </ul>
+
+  <!-- ===== INTERFACES ====================================================== -->
+  <h2 id="interfaces-contracts">6. Interfaces: The Universal Contract</h2>
+  <p>
+    An <strong>Interface</strong> is a formal contract specifying what methods a class must support,
+    without specifying how they are implemented.
+  </p>
+
+  <pre class="numbered" data-file="Payable.java"><code class="lang-java">// The Interface Contract
+public interface Payable {
+    double calculatePayment(); // Implicitly public and abstract
+}
+
+// A completely different class implementing the contract
+public class FreelanceConsultant implements Payable {
+    private double hours;
+    private double hourlyRate;
+
+    public FreelanceConsultant(double hours, double hourlyRate) {
+        this.hours = hours;
+        this.hourlyRate = hourlyRate;
+    }
+
+    @Override
+    public double calculatePayment() {
+        return this.hours * this.hourlyRate;
+    }
+}</code></pre>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Abstract Class vs Interface: The Quick Decision Guide</b>
+      <ul>
+        <li>Use an <strong>Abstract Class</strong> when classes share common code and state (fields like <code>id</code>, <code>name</code>) and have a true parent-child identity.</li>
+        <li>Use an <strong>Interface</strong> when defining a capability or role (like <code>Payable</code>, <code>AutoCloseable</code>, <code>Comparable</code>) that can be plugged into completely unrelated classes.</li>
+        <li>Remember: Java classes can only <code>extend</code> <strong>ONE</strong> parent class, but can <code>implement</code> <strong>MULTIPLE</strong> interfaces!</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== POLYMORPHISM ==================================================== -->
+  <h2 id="polymorphism-dynamic-dispatch">7. Polymorphism &amp; Dynamic Method Dispatch</h2>
+  <p>
+    <strong>Polymorphism</strong> comes from Greek meaning <em>"many forms."</em>
+    It means you can refer to a subclass object using its superclass or interface reference type:
+  </p>
+
+  <pre class="numbered" data-file="PolymorphismDemo.java" data-hl="3,4,8"><code class="lang-java">public class PolymorphismDemo {
+    public static void main(String[] args) {
+        // Polymorphic Array: Holds diverse subclasses under one common parent reference!
+        Payable[] payroll = new Payable[2];
+        payroll[0] = new FullTimeEmployee("Sarah", 5000.0);
+        payroll[1] = new FreelanceConsultant(40, 65.0);
+
+        for (Payable worker : payroll) {
+            // DYNAMIC DISPATCH: Java automatically invokes the child's specific calculatePayment()!
+            System.out.println("Processing pay: $" + worker.calculatePayment());
+        }
+    }
+}</code></pre>
+
+  <!-- ===== INTERACTIVE DISPATCHER ========================================== -->
+  <h2 id="interactive-polymorphic-dispatcher">&#128187; Interactive Simulator: The Polymorphic Fleet Dispatcher</h2>
+  <p>Command the diverse units below using a single polymorphic interface call:</p>
+
+  <div class="playground" id="b6Playground">
+    <div class="playground__header">&#9881;&#65039; Polymorphic Array: <code>List&lt;SmartDevice&gt; fleet</code></div>
+    <div class="playground__body">
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+        <button class="playground__btn" onclick="dispatchCommand('activate')">&#9654; fleet.forEach(d -&gt; d.activate())</button>
+        <button class="playground__btn" onclick="dispatchCommand('battery')">&#128267; fleet.forEach(d -&gt; d.checkBattery())</button>
+        <button class="playground__btn playground__btn--secondary" onclick="resetFleetConsole()">Clear Log</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:0.75rem;margin-bottom:1rem;">
+        <div style="background:var(--surface-2);border-radius:8px;padding:0.75rem;border-top:3px solid #0ea5e9;">
+          <b>&#128641; Drone</b>
+          <div style="font-size:0.8rem;color:var(--ink-soft);">implements SmartDevice</div>
+        </div>
+        <div style="background:var(--surface-2);border-radius:8px;padding:0.75rem;border-top:3px solid #f59e0b;">
+          <b>&#127838; Smart Toaster</b>
+          <div style="font-size:0.8rem;color:var(--ink-soft);">implements SmartDevice</div>
+        </div>
+        <div style="background:var(--surface-2);border-radius:8px;padding:0.75rem;border-top:3px solid #10b981;">
+          <b>&#128247; Security Camera</b>
+          <div style="font-size:0.8rem;color:var(--ink-soft);">implements SmartDevice</div>
+        </div>
+      </div>
+
+      <div id="fleetConsole" style="background:var(--surface-2);padding:1rem;border-radius:8px;font-family:monospace;white-space:pre-wrap;min-height:90px;">Click a polymorphic command above to execute.</div>
+    </div>
+  </div>
+
+  <script>
+    function dispatchCommand(cmd) {
+      var log = "[DYNAMIC DISPATCH INITIATED: fleet.forEach(device -> device." + cmd + "())]\n";
+      if (cmd === 'activate') {
+        log += "-> [Drone.activate()] Propellers spinning at 4,200 RPM! Taking off.\n";
+        log += "-> [SmartToaster.activate()] Heating coils engaged to 350F! Slices lowered.\n";
+        log += "-> [SecurityCamera.activate()] Infrared night vision enabled! Streaming 4K.";
+      } else {
+        log += "-> [Drone.checkBattery()] Flight battery at 88% (Est. 24 mins hover)\n";
+        log += "-> [SmartToaster.checkBattery()] Hardwired AC power (220V active)\n";
+        log += "-> [SecurityCamera.checkBattery()] Solar backup battery at 97%";
+      }
+      document.getElementById("fleetConsole").textContent = log;
+    }
+
+    function resetFleetConsole() {
+      document.getElementById("fleetConsole").textContent = "Click a polymorphic command above to execute.";
+    }
+  </script>
+
+  <!-- ===== COMMON MISTAKES ================================================= -->
+  <h2 id="common-traps">&#9888;&#65039; Top 3 Beginner Traps in Inheritance &amp; Interfaces</h2>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Trap 1: Placing <code>super()</code> Anywhere Other Than Line 1</b>
+      <pre><code class="lang-java">public Subclass(String name) {
+    int x = 10;
+    super(name); // COMPILER ERROR: call to super must be first statement in constructor!
+}</code></pre>
+      <p><strong>The Fix:</strong> The parent object must be initialized before the child can touch any variables. <code>super()</code> must always be the very first instruction.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Trap 2: Attempting to Directly Instantiate an Abstract Class or Interface</b>
+      <pre><code class="lang-java">Shape s = new Shape();     // ERROR: Shape is abstract; cannot be instantiated!
+Payable p = new Payable(); // ERROR: Payable is an interface; cannot be instantiated!</code></pre>
+      <p><strong>The Fix:</strong> You can only instantiate concrete subclasses that implement all required methods: <code>Payable p = new FreelanceConsultant(40, 50);</code>.</p>
+    </div>
+  </div>
+
+  <!-- ===== KNOWLEDGE CHECK ================================================= -->
+  <h2 id="knowledge-check">&#128221; Knowledge Check</h2>
+  <div class="quiz" id="b6-quiz">
+    <div class="quiz__title">&#128161; Verify Your Understanding</div>
+
+    <!-- Q1 -->
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__stem">1. How many classes can a single Java class directly extend with the <code>extends</code> keyword?</div>
+      <label class="quiz__opt"><input type="radio" name="b6q1" value="a"> Unlimited classes</label>
+      <label class="quiz__opt"><input type="radio" name="b6q1" value="b"> Exactly ONE class (Single Inheritance)</label>
+      <label class="quiz__opt"><input type="radio" name="b6q1" value="c"> Up to 3 classes</label>
+      <label class="quiz__opt"><input type="radio" name="b6q1" value="d"> Zero; Java does not allow inheritance</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: B.</strong> Java enforces single class inheritance to prevent the infamous "Diamond Problem" of multiple inheritance found in C++. However, a class can implement unlimited interfaces!
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz__q" data-answer="true">
+      <div class="quiz__stem">2. An abstract class cannot be instantiated using the <code>new</code> keyword. True or False?</div>
+      <label class="quiz__opt"><input type="radio" name="b6q2" value="true"> True</label>
+      <label class="quiz__opt"><input type="radio" name="b6q2" value="false"> False</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: True.</strong> Abstract classes are incomplete blueprints; you must instantiate a concrete subclass that implements all abstract methods.
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__stem">3. What is the fundamental difference between method Overriding and method Overloading?</div>
+      <label class="quiz__opt"><input type="radio" name="b6q3" value="a"> Overloading requires inheritance; overriding happens in the same class</label>
+      <label class="quiz__opt"><input type="radio" name="b6q3" value="b"> They are two different names for the exact same technique</label>
+      <label class="quiz__opt"><input type="radio" name="b6q3" value="c"> Overriding replaces an inherited method with the exact same signature; overloading creates multiple methods with different parameters</label>
+      <label class="quiz__opt"><input type="radio" name="b6q3" value="d"> Overriding is only used in interfaces</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: C.</strong> Overloading provides alternative argument options in the same class. Overriding replaces or specializes a parent method's behavior in a subclass.
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__stem">4. What is Polymorphism in Java?</div>
+      <label class="quiz__opt"><input type="radio" name="b6q4" value="a"> Converting strings to numbers automatically</label>
+      <label class="quiz__opt"><input type="radio" name="b6q4" value="b"> The ability to treat diverse child objects uniformly through a common parent class or interface reference</label>
+      <label class="quiz__opt"><input type="radio" name="b6q4" value="c"> A special loop that runs backwards</label>
+      <label class="quiz__opt"><input type="radio" name="b6q4" value="d"> Encapsulating private variables with public getters</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain">
+        <strong>Correct: B.</strong> Polymorphism allows a parent or interface reference to hold any child instance, automatically executing the child's customized overridden method at runtime via dynamic dispatch.
+      </div>
+    </div>
+
+    <div class="quiz__score" style="display:none"></div>
+  </div>
+
+  <!-- ===== GUIDED LAB ====================================================== -->
+  <h2 id="guided-lab">&#128736; Guided Lab: Enterprise Payroll Hierarchy</h2>
+  <div class="steps">
+    <div class="steps__title">&#128221; Construct this polymorphic hierarchy in IntelliJ:</div>
+
+    <div class="step"><div class="step__check"></div><span class="step__num">1</span>
+      <span class="step__text">Create an interface <code>Payable</code> with one method: <code>double calculateMonthlyPay();</code>.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">2</span>
+      <span class="step__text">Create an abstract class <code>Employee implements Payable</code> with fields: <code>String id</code>, <code>String name</code>, and constructor.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">3</span>
+      <span class="step__text">Create <code>FullTimeEmployee extends Employee</code> with <code>double annualSalary</code>. Implement <code>calculateMonthlyPay()</code> as <code>annualSalary / 12</code>.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">4</span>
+      <span class="step__text">Create <code>Contractor extends Employee</code> with <code>double hourlyRate</code> and <code>double hoursWorked</code>. Implement <code>calculateMonthlyPay()</code> as <code>hourlyRate * hoursWorked</code>.</span>
+    </div>
+    <div class="step"><div class="step__check"></div><span class="step__num">5</span>
+      <span class="step__text">In a <code>PayrollMain</code> test class, create a <code>Payable[] staff</code> array holding both types. Loop through and print the payroll ledger polymorphically!</span>
+    </div>
+  </div>
+
+  <!-- ===== FURTHER STUDY =================================================== -->
+  <h2>&#128250; Recommended Further Study</h2>
+  <div class="video-grid">
+    <div class="video-card">
+      <div class="video-card__title">&#127916; Telusko: Java Inheritance &amp; Polymorphism Full Course</div>
+      <p style="font-size:0.9rem;color:var(--ink-soft);margin-bottom:0.75rem;">Comprehensive visual guide to extends, super, and dynamic method dispatch.</p>
+      <a class="video-card__link" href="https://www.youtube.com/watch?v=zbds_vGgG8c" target="_blank" rel="noopener">&#9654; Watch on YouTube</a>
+    </div>
+    <div class="video-card">
+      <div class="video-card__title">&#127916; Amigoscode: Java Interfaces Explained</div>
+      <p style="font-size:0.9rem;color:var(--ink-soft);margin-bottom:0.75rem;">Clear explanation of why interfaces are essential for clean architecture and decoupled systems.</p>
+      <a class="video-card__link" href="https://www.youtube.com/watch?v=YpZ3zI9jR-c" target="_blank" rel="noopener">&#9654; Watch on YouTube</a>
+    </div>
+  </div>
+
+  <!-- ===== SUMMARY & NEXT ================================================== -->
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Next Up: Bridge 7 &mdash; Strings, Exceptions &amp; Packages</b>
+      You have mastered core Object-Oriented Programming! In the final bridge lesson before Session 1,
+      you will learn the internal magic of the <strong>String Constant Pool</strong>, how to safely catch
+      runtime errors with <strong>try-catch-finally</strong>, and how Java organizes enterprise codebases
+      using <strong>Packages</strong>.
+    </div>
+  </div>
+
+</main>
+
+<script src="../assets/js/course.js?v=5"></script>
+<script src="../assets/js/playgrounds.js?v=5"></script>
+
+</body>
+</html>
