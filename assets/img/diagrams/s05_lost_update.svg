@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" width="100%" height="100%">
+  <defs>
+    <filter id="raceShadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.1"/>
+    </filter>
+    <marker id="raceArr" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .lane { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 800; fill: #1e293b; }
+    .lane-sub { font-family: system-ui, -apple-system, sans-serif; font-size: 10.5px; fill: #64748b; }
+    .step { font-family: ui-monospace, monospace; font-size: 11.5px; font-weight: 700; }
+    .val { font-family: ui-monospace, monospace; font-size: 12.5px; font-weight: 700; }
+    .tick { font-family: ui-monospace, monospace; font-size: 10px; fill: #94a3b8; }
+    .note { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; fill: #475569; }
+  </style>
+
+  <rect width="900" height="400" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">The Lost Update — why count++ loses increments</text>
+  <text x="30" y="54" class="sub">Both threads read the same value before either one writes. The second write overwrites the first, so an increment simply disappears.</text>
+
+  <!-- time guides -->
+  <g stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3 3">
+    <line x1="200" y1="92" x2="200" y2="292"/>
+    <line x1="280" y1="92" x2="280" y2="292"/>
+    <line x1="360" y1="92" x2="360" y2="292"/>
+    <line x1="440" y1="92" x2="440" y2="292"/>
+    <line x1="520" y1="92" x2="520" y2="292"/>
+    <line x1="600" y1="92" x2="600" y2="292"/>
+    <line x1="680" y1="92" x2="680" y2="292"/>
+  </g>
+  <g class="tick" text-anchor="middle">
+    <text x="200" y="86">t1</text>
+    <text x="280" y="86">t2</text>
+    <text x="360" y="86">t3</text>
+    <text x="440" y="86">t4</text>
+    <text x="520" y="86">t5</text>
+    <text x="600" y="86">t6</text>
+    <text x="680" y="86">t7</text>
+  </g>
+
+  <!-- ===== Ada lane ===== -->
+  <text x="30" y="106" class="lane">Thread A</text>
+  <text x="30" y="121" class="lane-sub">Ada</text>
+
+  <g filter="url(#raceShadow)">
+    <rect x="152" y="98" width="96" height="42" rx="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+  </g>
+  <text x="200" y="116" class="step" fill="#1d4ed8" text-anchor="middle">read count</text>
+  <text x="200" y="132" class="val" fill="#1d4ed8" text-anchor="middle">&#8594; 0</text>
+
+  <g filter="url(#raceShadow)">
+    <rect x="392" y="98" width="96" height="42" rx="6" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+  </g>
+  <text x="440" y="116" class="step" fill="#1d4ed8" text-anchor="middle">add 1 in CPU</text>
+  <text x="440" y="132" class="val" fill="#1d4ed8" text-anchor="middle">0 + 1 = 1</text>
+
+  <g filter="url(#raceShadow)">
+    <rect x="552" y="98" width="96" height="42" rx="6" fill="#f0fdf4" stroke="#10b981" stroke-width="1.8"/>
+  </g>
+  <text x="600" y="116" class="step" fill="#047857" text-anchor="middle">write 1</text>
+  <text x="600" y="132" class="val" fill="#047857" text-anchor="middle">count = 1</text>
+
+  <path d="M 248 119 L 386 119" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#raceArr)"/>
+  <path d="M 488 119 L 546 119" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#raceArr)"/>
+
+  <!-- ===== shared memory strip ===== -->
+  <text x="30" y="172" class="lane">shared</text>
+  <text x="30" y="187" class="lane-sub">one variable</text>
+
+  <g>
+    <rect x="164" y="150" width="72" height="42" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+    <rect x="244" y="150" width="72" height="42" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+    <rect x="324" y="150" width="72" height="42" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+    <rect x="404" y="150" width="72" height="42" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+    <rect x="484" y="150" width="72" height="42" rx="6" fill="#f8fafc" stroke="#cbd5e1"/>
+    <rect x="564" y="150" width="72" height="42" rx="6" fill="#d1fae5" stroke="#10b981" stroke-width="1.8"/>
+    <rect x="644" y="150" width="72" height="42" rx="6" fill="#fee2e2" stroke="#ef4444" stroke-width="2"/>
+  </g>
+  <g class="val" text-anchor="middle" fill="#475569">
+    <text x="200" y="177">0</text>
+    <text x="280" y="177">0</text>
+    <text x="360" y="177">0</text>
+    <text x="440" y="177">0</text>
+    <text x="520" y="177">0</text>
+  </g>
+  <text x="600" y="177" class="val" fill="#047857" text-anchor="middle">1</text>
+  <text x="680" y="177" class="val" fill="#b91c1c" text-anchor="middle">1</text>
+  <text x="680" y="206" class="note" fill="#b91c1c" text-anchor="middle">should be 2!</text>
+
+  <!-- ===== Ben lane ===== -->
+  <text x="30" y="240" class="lane">Thread B</text>
+  <text x="30" y="255" class="lane-sub">Ben</text>
+
+  <g filter="url(#raceShadow)">
+    <rect x="312" y="232" width="96" height="42" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  </g>
+  <text x="360" y="250" class="step" fill="#b45309" text-anchor="middle">read count</text>
+  <text x="360" y="266" class="val" fill="#b45309" text-anchor="middle">&#8594; 0</text>
+
+  <g filter="url(#raceShadow)">
+    <rect x="472" y="232" width="96" height="42" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  </g>
+  <text x="520" y="250" class="step" fill="#b45309" text-anchor="middle">add 1 in CPU</text>
+  <text x="520" y="266" class="val" fill="#b45309" text-anchor="middle">0 + 1 = 1</text>
+
+  <g filter="url(#raceShadow)">
+    <rect x="632" y="232" width="96" height="42" rx="6" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+  </g>
+  <text x="680" y="250" class="step" fill="#b91c1c" text-anchor="middle">write 1</text>
+  <text x="680" y="266" class="val" fill="#b91c1c" text-anchor="middle">count = 1</text>
+
+  <path d="M 408 253 L 466 253" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#raceArr)"/>
+  <path d="M 568 253 L 626 253" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#raceArr)"/>
+
+  <!-- red highlight: Ben read stale 0 -->
+  <path d="M 360 150 L 360 232" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="368" y="296" class="note" fill="#b91c1c">Ben still sees the old value 0, because Ada has not written yet.</text>
+
+  <!-- ===== verdict ===== -->
+  <g transform="translate(30, 316)">
+    <rect width="840" height="62" rx="8" fill="#fef2f2" stroke="#fecaca"/>
+    <text x="16" y="24" class="note" fill="#0f172a"><tspan font-weight="bold" fill="#b91c1c">Two increments happened, but the count went up by one.</tspan> Ada&#8217;s write was overwritten by Ben&#8217;s write &#8212; one update was lost.</text>
+    <text x="16" y="46" class="note" fill="#475569">The three steps are not one step. Anything that could switch threads between the read and the write can lose an update &#8212; run <tspan font-family="ui-monospace, monospace" font-weight="bold" fill="#b91c1c">Example 2</tspan> and watch it happen 100,000 times.</text>
+  </g>
+</svg>

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session 6 — Try It Yourself: Sessions 1–5</title>
+  <meta name="description" content="Session 6 of Building Rich Java Applications with JavaFX and AI Tools: A comprehensive review of Utility APIs, Generics, Files & Streams, Threading, and Concurrency.">
+  <link rel="stylesheet" href="../assets/css/course.css">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "s06";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== HERO ============================================================ -->
+  <section class="hero">
+    <span class="tag">Week 2 &middot; Day 2 &middot; Session 6 &middot; 2 hours in class</span>
+    <h1>Session 6 &mdash; Try It Yourself: Sessions 1&ndash;5</h1>
+    <p class="lede">
+      You've covered the most important foundations of modern Java: how to store data (Collections), how to ensure type safety (Generics), how to save data to disk (I/O Streams), and how to do many things at once (Multithreading). Today is all about testing your knowledge, fixing broken code, and ensuring you are ready for the Capstone Project.
+    </p>
+    <div class="meta">
+      <span>&#128218; Learner's Guide: SG &middot; XP &middot; TG &mdash; Session 6</span>
+      <span>&#9201; ~2 hours</span>
+      <span>&#9989; Before this: Sessions 1&ndash;5</span>
+      <span>&#128736; Assignment: Continue working on A3</span>
+    </div>
+  </section>
+
+
+  <!-- ===== ROADMAP ========================================================= -->
+  <h2>Your Roadmap for Today</h2>
+  <div class="roadmap">
+    <a href="#part-1-debugging">Part 1: Debugging Drills</a>
+    <a href="#part-2-mega-quiz">Part 2: The Mega-Quiz</a>
+  </div>
+
+  <!-- ===== PART 1: DEBUGGING DRILLS ======================================== -->
+  <h2 id="part-1-debugging">Part 1 &mdash; Debugging Drills</h2>
+  <p>
+    A huge part of being a developer is reading code and figuring out why it doesn't work. The code snippets below have subtle bugs. Can you spot them?
+  </p>
+  
+  <figure class="concept-visual">
+    <img src="../assets/img/cartoons/s06_debugging_review.jpg" alt="A chef looking closely at a messy recipe blueprint through a giant magnifying glass." />
+    <figcaption><strong>Figure 1.</strong> Debugging is like finding a typo in a complex recipe before you bake the cake!</figcaption>
+  </figure>
+
+  <h3>Drill 1: The Forgetful Collection</h3>
+  <pre><code class="lang-java">Set&lt;String&gt; names = new HashSet&lt;&gt;();
+names.add("Alice");
+names.add("Bob");
+names.add("alice");
+
+System.out.println("We have " + names.size() + " unique names.");
+// Output says: We have 3 unique names. 
+// Wait, isn't Alice a duplicate? Why did the Set keep it?</code></pre>
+  <details>
+    <summary>&#128161; See the Bug &amp; Fix</summary>
+    <div>
+      <p><strong>The Bug:</strong> Sets are case-sensitive. "Alice" and "alice" have different hash codes and are not <code>equals()</code> to each other in Java.</p>
+      <p><strong>The Fix:</strong> Convert everything to lowercase (or uppercase) before adding it to the Set.</p>
+<pre><code class="lang-java">names.add(name.toLowerCase());</code></pre>
+    </div>
+  </details>
+
+  <h3>Drill 2: The Generics Crash</h3>
+  <pre><code class="lang-java">public static void addFruits(List&lt;? extends Fruit&gt; basket) {
+    basket.add(new Apple()); 
+    // ERROR: compiler refuses to compile this line!
+}</code></pre>
+  <details>
+    <summary>&#128161; See the Bug &amp; Fix</summary>
+    <div>
+      <p><strong>The Bug:</strong> You cannot <code>add()</code> to a list declared with <code>? extends</code>. PECS (Producer Extends, Consumer Super). <code>extends</code> is for reading (producing) data. The compiler doesn't know what specific type of Fruit list was passed in (it might be a <code>List&lt;Banana&gt;</code>!), so it prevents you from adding an Apple.</p>
+      <p><strong>The Fix:</strong> If you want to <em>consume</em> (add) items, use <code>super</code>.</p>
+<pre><code class="lang-java">public static void addFruits(List&lt;? super Apple&gt; basket) {
+    basket.add(new Apple()); 
+}</code></pre>
+    </div>
+  </details>
+
+  <h3>Drill 3: The Leaky File</h3>
+  <pre><code class="lang-java">public void writeLog(String msg) throws IOException {
+    FileWriter writer = new FileWriter("app.log");
+    writer.write(msg);
+    // the end of the method
+}</code></pre>
+  <details>
+    <summary>&#128161; See the Bug &amp; Fix</summary>
+    <div>
+      <p><strong>The Bug:</strong> The <code>FileWriter</code> is never closed! This causes a resource leak. Worse, the data might be stuck in a buffer and never actually written to the disk.</p>
+      <p><strong>The Fix:</strong> Use a try-with-resources block so Java closes it automatically.</p>
+<pre><code class="lang-java">public void writeLog(String msg) throws IOException {
+    try (FileWriter writer = new FileWriter("app.log")) {
+        writer.write(msg);
+    }
+}</code></pre>
+    </div>
+  </details>
+
+  <h3>Drill 4: The Frozen App</h3>
+  <pre><code class="lang-java">Object key = new Object();
+
+public void doWork() {
+    synchronized(key) {
+        System.out.println("Doing work...");
+        try {
+            Thread.sleep(5000); // 5 second pause
+        } catch (InterruptedException e) {}
+    }
+}</code></pre>
+  <details>
+    <summary>&#128161; See the Bug &amp; Fix</summary>
+    <div>
+      <p><strong>The Bug:</strong> <code>Thread.sleep()</code> <em>does not release the lock</em>! While this thread sleeps for 5 seconds, every other thread that needs the <code>key</code> lock is completely blocked. This kills performance.</p>
+      <p><strong>The Fix:</strong> Never sleep while holding a lock. If you need a thread to wait and give up the lock, use <code>key.wait()</code> instead of <code>Thread.sleep()</code>.</p>
+    </div>
+  </details>
+
+
+  <!-- ===== PART 2: THE MEGA-QUIZ =========================================== -->
+  <h2 id="part-2-mega-quiz">Part 2 &mdash; The Mega-Quiz (Sessions 1&ndash;5)</h2>
+  <p>Test your knowledge. Take your time. Discuss with your partner if you disagree on an answer!</p>
+  
+  <div class="quiz">
+    <!-- Session 1: Collections -->
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">1. Which collection would you use to store a line of people waiting for a bus?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>HashSet</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>Queue</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>HashMap</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>Stack</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> A Queue is FIFO (First-In-First-Out), exactly like a real-life line (queue).</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">2. In a <code>HashMap</code>, what is required of the Keys?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> They must be Integers.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> They can be duplicates.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> They must be unique, and their class should correctly implement <code>hashCode()</code> and <code>equals()</code>.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> They must implement the <code>Comparable</code> interface.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> Keys must be unique, and HashMap relies on hashCode() and equals() to find the right "bucket".</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">3. Which Collection allows NO duplicates and does NOT guarantee insertion order?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>ArrayList</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>LinkedHashSet</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>HashSet</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>TreeSet</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> HashSet has no duplicates and no order. (LinkedHashSet keeps insertion order, TreeSet sorts them).</div>
+    </div>
+
+    <!-- Session 2: Generics -->
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">4. What is the main benefit of Java Generics (e.g., <code>List&lt;String&gt;</code>)?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> It provides compile-time type safety and prevents <code>ClassCastException</code>.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> It makes the program run 10x faster.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> It allows you to use primitive types like <code>int</code> directly in Collections.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> It encrypts the data inside the list.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A.</strong> Generics catch type errors at compile time before you run the code.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="true">
+      <div class="quiz__kind">True / False</div>
+      <div class="quiz__stem">5. Because of "Type Erasure", a <code>List&lt;String&gt;</code> and a <code>List&lt;Integer&gt;</code> look exactly the same to the JVM at runtime.</div>
+      <label class="quiz__opt"><input type="radio" value="true"> True</label>
+      <label class="quiz__opt"><input type="radio" value="false"> False</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>True.</strong> Generics are a compile-time feature. The JVM just sees a raw <code>List</code> of <code>Object</code>s.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">6. If you want a method to ACCEPT a List of Numbers OR ANY SUBCLASS of Number (like Integer, Double), what syntax do you use?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>List&lt;Number&gt;</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>List&lt;? extends Number&gt;</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>List&lt;? super Number&gt;</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>List&lt;Object&gt;</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> <code>? extends Number</code> is an Upper Bounded Wildcard. It accepts Number and anything below it.</div>
+    </div>
+
+    <!-- Session 3: Files & Streams -->
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">7. Which class is best for reading a text file (.txt) line-by-line?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>BufferedReader</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>FileInputStream</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>BufferedInputStream</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>DataOutputStream</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A.</strong> Readers/Writers handle characters (text). Input/OutputStreams handle raw bytes. <code>BufferedReader</code> provides the handy <code>readLine()</code> method.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="d">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">8. What is the primary purpose of the <code>Serializable</code> interface?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> To compress a file.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> To encrypt a file password.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> To write data to a database.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> To tell Java it is allowed to convert an object into a byte stream (to save it or send it over a network).</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>D.</strong> Serialization is the process of turning objects into bytes.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">9. If you want to prevent a specific field (like a password) from being saved during Serialization, what keyword do you use?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>volatile</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>transient</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>private</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>static</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> The <code>transient</code> keyword tells the JVM to ignore this field when serializing the object.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="false">
+      <div class="quiz__kind">True / False</div>
+      <div class="quiz__stem">10. With "try-with-resources", you MUST explicitly write a <code>finally</code> block to call <code>.close()</code> on your file streams.</div>
+      <label class="quiz__opt"><input type="radio" value="true"> True</label>
+      <label class="quiz__opt"><input type="radio" value="false"> False</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>False.</strong> That's the whole point of try-with-resources! It automatically closes <code>AutoCloseable</code> resources for you.</div>
+    </div>
+
+    <!-- Session 4: Threading -->
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">11. What is the preferred way to create a Thread in Java?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Create a class that extends <code>Thread</code>.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Write a new <code>main()</code> method.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Implement the <code>Runnable</code> interface (or pass a lambda) to a new <code>Thread</code>.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Use <code>Thread.create()</code>.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> Separating the "Job" (Runnable) from the "Worker" (Thread) is preferred.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">12. What happens if you call <code>myThread.run()</code> instead of <code>myThread.start()</code>?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> The code runs in a new thread.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> No new thread is created; the code just runs normally in the current thread.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Java throws an exception.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> The program exits.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> <code>start()</code> tells the OS to branch into a new thread. <code>run()</code> is just a normal method call.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">13. Which method do you call if you want the Main Thread to pause and wait for Thread A to finish completely?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>threadA.join()</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>threadA.sleep()</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>threadA.wait()</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>threadA.stop()</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A.</strong> <code>join()</code> means "wait here until this thread terminates".</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">14. What defines a <strong>Daemon Thread</strong>?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> It is an evil thread that corrupts data.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> It has the highest priority.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> It runs in the background and does NOT stop the JVM from shutting down if all normal user threads finish.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> It is a virtual thread.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> Daemon threads (like the garbage collector) automatically die when the main program finishes.</div>
+    </div>
+
+    <!-- Session 5: Multithreading & Concurrency -->
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">15. What is a "Race Condition"?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> When threads try to run as fast as possible.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> When a thread gets permanently stuck waiting for a lock.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> When multiple threads modify shared data concurrently, and the result depends on exact timing.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> When a thread is interrupted.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> It causes unpredictable data corruption.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="d">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">16. How do you prevent a Race Condition in Java?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Use <code>Thread.sleep()</code>.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Set the thread's priority to MAX_PRIORITY.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Use the <code>transient</code> keyword.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Use the <code>synchronized</code> keyword to create a lock around the critical section.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>D.</strong> <code>synchronized</code> ensures only one thread can access the code block at a time.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">17. A Deadlock occurs when...</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Two threads are waiting for locks held by each other, causing both to freeze permanently.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> A thread takes too long to run.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> The JVM runs out of memory.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> A thread tries to unlock an object it doesn't own.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A.</strong> It's a standoff where neither thread will yield.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">18. Why is an <code>ExecutorService</code> (Thread Pool) better than making a new <code>Thread</code> every time?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Because it makes the code longer.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Because ExecutorService doesn't use locks.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Creating/destroying threads is expensive. A Thread Pool reuses a small number of threads for many tasks.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Because it prevents all Deadlocks automatically.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> Thread Pools are much more efficient for system resources.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">19. If you need a thread-safe List, which class should you use?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>ArrayList</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>CopyOnWriteArrayList</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>LinkedList</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>HashSet</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> <code>CopyOnWriteArrayList</code> is from <code>java.util.concurrent</code> and is thread-safe.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">20. What is the correct way to make a thread stop waiting and resume work?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>thread.resume()</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> Another thread calls <code>notify()</code> or <code>notifyAll()</code> on the same object the first thread is waiting on.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> You can't, it must timeout.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Call <code>thread.start()</code> again.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> <code>notify()</code> and <code>notifyAll()</code> are the standard ways to wake up threads from <code>wait()</code>.</div>
+    </div>
+
+    <div class="quiz__score" style="display:none"></div>
+  </div>
+
+</main>
+
+<script src="../assets/js/course.js"></script>
+
+</body>
+</html>

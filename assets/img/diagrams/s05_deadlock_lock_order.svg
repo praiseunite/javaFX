@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" width="100%" height="100%">
+  <defs>
+    <filter id="lockShadow" x="-5%" y="-5%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.1"/>
+    </filter>
+    <marker id="lockGreen" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981"/>
+    </marker>
+    <marker id="lockRed" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#ef4444"/>
+    </marker>
+    <marker id="lockAmber" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#f59e0b"/>
+    </marker>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .card-title { font-family: system-ui, -apple-system, sans-serif; font-size: 13.5px; font-weight: 800; }
+    .box { font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; }
+    .tag { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 700; }
+    .note { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; fill: #475569; }
+  </style>
+
+  <rect width="900" height="400" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">Deadlock, and the one-line rule that prevents it</text>
+  <text x="30" y="54" class="sub">A deadlock needs a circular wait: every thread holds one lock and waits for a lock another thread is holding.</text>
+
+  <!-- ============================== LEFT: THE DEADLOCK ============================== -->
+  <g transform="translate(24, 74)">
+    <rect width="412" height="306" rx="10" fill="#fef2f2" stroke="#fecaca" stroke-width="1.5"/>
+    <text x="16" y="28" class="card-title" fill="#b91c1c">&#10007; Opposite order &#8212; deadlock</text>
+
+    <!-- lock boxes -->
+    <g filter="url(#lockShadow)">
+      <rect x="30" y="60" width="150" height="44" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-width="1.8"/>
+      <rect x="232" y="60" width="150" height="44" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-width="1.8"/>
+    </g>
+    <text x="105" y="80" class="box" fill="#334155" text-anchor="middle">lock whisk</text>
+    <text x="105" y="96" class="tag" fill="#64748b" text-anchor="middle">held by Ada</text>
+    <text x="307" y="80" class="box" fill="#334155" text-anchor="middle">lock oven</text>
+    <text x="307" y="96" class="tag" fill="#64748b" text-anchor="middle">held by Ben</text>
+
+    <!-- holds arrows -->
+    <path d="M 105 180 L 105 110" stroke="#10b981" stroke-width="2.5" marker-end="url(#lockGreen)"/>
+    <path d="M 307 180 L 307 110" stroke="#10b981" stroke-width="2.5" marker-end="url(#lockGreen)"/>
+    <text x="112" y="148" class="tag" fill="#047857">holds</text>
+    <text x="314" y="148" class="tag" fill="#047857">holds</text>
+
+    <!-- thread boxes -->
+    <rect x="30" y="180" width="150" height="44" rx="6" fill="#eef2ff" stroke="#6366f1" stroke-width="1.6"/>
+    <rect x="232" y="180" width="150" height="44" rx="6" fill="#eef2ff" stroke="#6366f1" stroke-width="1.6"/>
+    <text x="105" y="200" class="box" fill="#3730a3" text-anchor="middle">Ada</text>
+    <text x="105" y="216" class="tag" fill="#6366f1" text-anchor="middle">whisk &#8594; oven</text>
+    <text x="307" y="200" class="box" fill="#3730a1" text-anchor="middle">Ben</text>
+    <text x="307" y="216" class="tag" fill="#6366f1" text-anchor="middle">oven &#8594; whisk</text>
+
+    <!-- wants arrows, crossing = the cycle -->
+    <path d="M 176 180 L 240 110" stroke="#ef4444" stroke-width="2.5" stroke-dasharray="5 3" marker-end="url(#lockRed)"/>
+    <path d="M 236 180 L 172 110" stroke="#ef4444" stroke-width="2.5" stroke-dasharray="5 3" marker-end="url(#lockRed)"/>
+    <text x="206" y="140" class="tag" fill="#b91c1c" text-anchor="middle">wants</text>
+
+    <text x="16" y="256" class="note" fill="#b91c1c" font-weight="bold">Ada waits for Ben&#8217;s lock. Ben waits for Ada&#8217;s lock.</text>
+    <text x="16" y="276" class="note">Neither will ever move again. The program stops responding</text>
+    <text x="16" y="292" class="note">until you press Stop.</text>
+  </g>
+
+  <!-- ============================== RIGHT: THE FIX ============================== -->
+  <g transform="translate(464, 74)">
+    <rect width="412" height="306" rx="10" fill="#f0fdf4" stroke="#a7f3d0" stroke-width="1.5"/>
+    <text x="16" y="28" class="card-title" fill="#047857">&#10003; Same order everywhere &#8212; no deadlock</text>
+
+    <g filter="url(#lockShadow)">
+      <rect x="30" y="60" width="150" height="44" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-width="1.8"/>
+      <rect x="232" y="60" width="150" height="44" rx="6" fill="#ffffff" stroke="#94a3b8" stroke-width="1.8"/>
+    </g>
+    <text x="105" y="80" class="box" fill="#334155" text-anchor="middle">lock whisk</text>
+    <text x="105" y="96" class="tag" fill="#64748b" text-anchor="middle">always taken first</text>
+    <text x="307" y="80" class="box" fill="#334155" text-anchor="middle">lock oven</text>
+    <text x="307" y="96" class="tag" fill="#64748b" text-anchor="middle">always taken second</text>
+
+    <path d="M 105 180 L 105 110" stroke="#10b981" stroke-width="2.5" marker-end="url(#lockGreen)"/>
+    <text x="112" y="148" class="tag" fill="#047857">holds</text>
+    <path d="M 176 180 L 240 110" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="5 3" marker-end="url(#lockAmber)"/>
+    <text x="214" y="166" class="tag" fill="#b45309">wants, waits</text>
+    <path d="M 307 180 L 307 110" stroke="#cbd5e1" stroke-width="2.5" stroke-dasharray="5 3"/>
+    <text x="314" y="148" class="tag" fill="#94a3b8">not yet</text>
+
+    <rect x="30" y="180" width="150" height="44" rx="6" fill="#eef2ff" stroke="#6366f1" stroke-width="1.6"/>
+    <rect x="232" y="180" width="150" height="44" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.6"/>
+    <text x="105" y="200" class="box" fill="#3730a3" text-anchor="middle">Ada</text>
+    <text x="105" y="216" class="tag" fill="#6366f1" text-anchor="middle">whisk &#8594; oven</text>
+    <text x="307" y="200" class="box" fill="#64748b" text-anchor="middle">Ben</text>
+    <text x="307" y="216" class="tag" fill="#94a3b8" text-anchor="middle">whisk &#8594; oven</text>
+
+    <path d="M 236 200 L 172 200" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="5 3" marker-end="url(#lockAmber)"/>
+    <text x="204" y="194" class="tag" fill="#b45309" text-anchor="middle">blocked</text>
+
+    <text x="16" y="256" class="note" fill="#047857" font-weight="bold">Ben &#8220;holds nothing and waits for whisk&#8221;. That is safe.</text>
+    <text x="16" y="276" class="note">Ada finishes, releases both locks, and only then does Ben</text>
+    <text x="16" y="292" class="note">start &#8212; whisk, then oven. Nobody is stuck.</text>
+  </g>
+
+  <!-- rule bar -->
+  <g transform="translate(24, 390)">
+    <rect width="852" height="0" fill="none"/>
+  </g>
+  <text x="450" y="393" class="note" fill="#0f172a" text-anchor="middle"><tspan font-weight="bold">The rule:</tspan> agree on one order for your locks and use it in every thread &#8212; then a circular wait is impossible.</text>
+</svg>

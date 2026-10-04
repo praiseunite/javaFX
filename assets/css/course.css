@@ -560,6 +560,7 @@ tr:hover td { background:var(--surface-2); }
   transition:all var(--transition);
 }
 .playground__btn:hover { filter:brightness(1.1); }
+.playground__btn:disabled { opacity:.45; cursor:not-allowed; filter:none; }
 .playground__btn--secondary {
   background:var(--surface-2); color:var(--ink);
   border:1px solid var(--line);
@@ -971,6 +972,7 @@ table code { white-space:nowrap; }
 .viz-arrow { color:var(--ink-faint); font-size:.85rem; }
 .viz-empty { color:var(--ink-faint); font-size:.85rem; font-style:italic; }
 .viz-print { margin-top:.5rem; font:.78rem var(--font-mono); color:var(--ink-soft); word-break:break-word; }
+.viz-print.is-bad { color:var(--error); font-weight:700; }
 .viz-extra { margin-top:.4rem; }
 .viz-buckets { display:flex; flex-wrap:wrap; gap:.25rem; }
 .viz-bucket { font:.72rem var(--font-mono); padding:.1rem .4rem; border-radius:var(--radius-xs); background:var(--surface-2); }

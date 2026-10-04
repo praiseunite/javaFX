@@ -1,0 +1,2485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session 5 — Multithreading &amp; Concurrency</title>
+  <meta name="description" content="Session 5 of Building Rich Java Applications with JavaFX and AI Tools: multithreading, isAlive and join, race conditions, the intrinsic lock and synchronized, atomic access, wait and notify, deadlock and lock ordering, java.util.concurrent collections, thread pools, virtual threads and CompletableFuture — plus AI-driven detection of thread blocking.">
+  <link rel="stylesheet" href="../assets/css/course.css">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "s05";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== HERO ============================================================ -->
+  <section class="hero">
+    <span class="tag">Week 2 &middot; Day 1 &middot; Session 5 &middot; 2 hours in class + practice at home</span>
+    <h1>Session 5 &mdash; Multithreading &amp; Concurrency</h1>
+    <p class="lede">
+      In Session 4 we hired more chefs. Today they all reach for the same mixing bowl.
+      When two threads change the same data at the same moment, the answer comes out <strong>wrong</strong> &mdash; and it is wrong
+      only <em>some</em> of the time, which is what makes it the hardest bug in programming. Today you learn to
+      <strong>share data safely</strong>: locks, atomic access, coordination, deadlock avoidance, and the
+      <code>java.util.concurrent</code> toolbox that does most of this work for you.
+    </p>
+    <div class="meta">
+      <span>&#128218; Learner's Guide: SG &middot; XP &middot; TG &mdash; Session 5</span>
+      <span>&#9201; ~2 hours + 2 hours practice</span>
+      <span>&#9989; Before this: Session 4 (Threading), Bridge B7 (exceptions)</span>
+      <span>&#128736; Assignment A3 (Concurrent File Processor)</span>
+    </div>
+  </section>
+
+  <!-- ===== OBJECTIVES ====================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this session you can&hellip;</b>
+    <ol>
+      <li><strong>Define</strong> multithreading, and <strong>use</strong> <code>isAlive()</code> and <code>join()</code> to check on a thread and wait for it.</li>
+      <li><strong>Identify</strong> a race condition, and <strong>explain</strong> why <code>count++</code> is three steps rather than one.</li>
+      <li><strong>Use</strong> the intrinsic lock &mdash; <code>synchronized</code> methods and blocks &mdash; to make a critical section safe.</li>
+      <li><strong>Apply</strong> atomic access (<code>AtomicInteger</code>, <code>LongAdder</code>) where one variable needs protecting.</li>
+      <li><strong>Coordinate</strong> threads with <code>wait()</code>, <code>notify()</code> and <code>notifyAll()</code>, always inside a <code>while</code> loop.</li>
+      <li><strong>Explain</strong> deadlock and <strong>avoid</strong> it with one agreed lock order.</li>
+      <li><strong>Apply</strong> the <code>java.util.concurrent</code> collections (<code>ConcurrentHashMap</code>, <code>BlockingQueue</code>, <code>CopyOnWriteArrayList</code>).</li>
+      <li><strong>Use</strong> modern concurrency: thread pools, virtual threads, and <code>CompletableFuture</code>.</li>
+      <li><strong>Describe</strong> AI-driven detection of thread blocking in virtual threads, and <strong>check</strong> an AI's diagnosis against the evidence.</li>
+    </ol>
+  </div>
+
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== ROADMAP ========================================================= -->
+  <h2>Your Roadmap for Today</h2>
+  <div class="roadmap">
+    <a href="#part-1-multithreading">Multithreading, <code>isAlive()</code>, <code>join()</code></a>
+    <a href="#part-2-race-conditions">Race conditions</a>
+    <a href="#part-3-synchronized">The intrinsic lock</a>
+    <a href="#part-4-atomic-access">Atomic access</a>
+    <a href="#part-5-wait-and-notify"><code>wait()</code> and <code>notify()</code></a>
+    <a href="#part-6-deadlock">Deadlocks</a>
+    <a href="#part-7-concurrent-collections">Concurrent collections</a>
+    <a href="#part-8-pools-and-virtual-threads">Pools &amp; virtual threads</a>
+    <a href="#part-9-ai-blocking-detection">AI blocking detection</a>
+  </div>
+
+  <div class="callout callout--note"><span class="callout__i">&#128214;</span>
+    <div class="callout__b"><b>Get the code running</b>
+      Open <code>code/s05-multithreading</code> in IntelliJ. The examples are in <code>src/main/java/com/aptech/s05</code>. You need <strong>JDK 21 or newer</strong> (Part 8 uses virtual threads; Part 9 uses JDK 24+ behaviour).
+    </div>
+  </div>
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>Some of these examples give a <em>different answer every run</em> &mdash; and that is the point</b>
+      Wherever this page says the number changes, run it again and watch. The wrong totals depend on your machine, your core count and how busy it is.
+      The page shows one real run; <strong>your numbers will differ, but the <em>kind</em> of wrongness will not.</strong>
+    </div>
+  </div>
+
+  <!-- ===== WHY THIS MATTERS ================================================= -->
+  <h2>Why This Matters</h2>
+  <p>
+    If threads never share anything, multithreading is easy. But real programs <em>must</em> share: a web server's threads share a connection pool, a game's workers share the player's position,
+    a shop's checkout threads share the stock count. When two threads change the same data at the same moment, they can overwrite each other's work and corrupt it.
+    This is the hardest kind of bug to fix because it <strong>does not fail every time</strong> &mdash; it passes your tests, then breaks in front of a customer.
+  </p>
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; the shared bank account</b>
+      <p>You and your partner share an account with &#8358;100 in it.</p>
+      <ul>
+        <li><strong>You</strong> go to an ATM, check the balance (&#8358;100), and decide to take out &#8358;50.</li>
+        <li><strong>At the exact same moment</strong>, your partner goes to another ATM, checks the balance (&#8358;100), and takes out &#8358;50.</li>
+        <li>Each machine works out &#8358;100 &minus; &#8358;50 = &#8358;50 and saves that as the new balance.</li>
+        <li>The account now says &#8358;50, but &#8358;100 has walked out of the door. The bank just lost &#8358;50.</li>
+      </ul>
+      <p>That is a <strong>race condition</strong>. Neither machine did anything silly &mdash; they simply <em>both read before either wrote</em>.
+      The fix is for one customer at a time to <strong>lock</strong> the account until their transaction is completely finished.</p>
+    </div>
+  </div>
+
+  <!-- ===== PART 1 ========================================================== -->
+  <span class="eyebrow">Part 1 of 9</span>
+  <h2 id="part-1-multithreading">Part 1 &mdash; Multithreading, <code>isAlive()</code> and <code>join()</code></h2>
+  <p>
+    <strong>Multithreading</strong> is one program doing several jobs at the same time. Each job runs on its own <strong>thread</strong>:
+    a single path of execution through your code. In Session 4 you learned to create those threads; today you learn what happens when
+    they touch the same data. First, two methods you will use in every concurrent program:
+  </p>
+  <ul>
+    <li><code>isAlive()</code> &mdash; asks <em>"is this thread still running?"</em> It returns <code>true</code> from the moment <code>start()</code> is called until the thread finishes, then <code>false</code> forever.</li>
+    <li><code>join()</code> &mdash; tells the <em>current</em> thread to <em>"wait right here until that thread has finished."</em> Without it you may read a result before it has been written &mdash; or print a report before the work is done.</li>
+  </ul>
+
+  <h3>Example 1 &mdash; one chef, then three chefs</h3>
+  <p>
+    The same three dishes are cooked twice: first by a single thread, one dish after another, then by three threads at the same time.
+    The clock shows the difference, and <code>isAlive()</code>/<code>join()</code> let <code>main</code> watch and wait.
+  </p>
+  <!--@code src="code/s05-multithreading/src/main/java/com/aptech/s05/E01_Multithreading.java" hl="35,46,51,53"-->
+<pre class="numbered" data-file="E01_Multithreading.java" data-hl="35,46,51,53"><code class="lang-java">package com.aptech.s05;
+
+/**
+ * Multithreading is one program doing several jobs at the same time.
+ * The two methods you need first are isAlive() and join().
+ *
+ * One chef cooks one dish after another (single-threaded), then three chefs
+ * cook at the same time (multithreaded) - and the clock proves the difference.
+ */
+public class E01_Multithreading {
+
+    /** The JOB one chef does: plate a dish in a number of steps. */
+    static class Cook implements Runnable {
+        private final String dish;
+        private final int steps;
+
+        Cook(String dish, int steps) {
+            this.dish = dish;
+            this.steps = steps;
+        }
+
+        @Override
+        public void run() {
+            for (int i = 1; i &lt;= steps; i++) {
+                sleep(200);
+                System.out.println("    " + Thread.currentThread().getName()
+                        + " -&gt; " + dish + " step " + i + "/" + steps);
+            }
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        System.out.println("A) ONE chef, one dish after another (this is a single thread):");
+        long start = System.currentTimeMillis();
+        new Cook("Jollof rice", 3).run();          // run() = this thread does the work now
+        new Cook("Puff-puff", 2).run();            // and only then the next dish starts
+        long oneChef = System.currentTimeMillis() - start;
+        System.out.println("    Took " + oneChef + " ms. The two jobs never overlapped.\n");
+
+        System.out.println("B) THREE chefs at the same time (this is multithreading):");
+        Thread ada = new Thread(new Cook("Jollof rice", 3), "Chef Ada");
+        Thread ben = new Thread(new Cook("Pepper soup", 3), "Chef Ben");
+        Thread chi = new Thread(new Cook("Puff-puff", 3), "Chef Chi");
+
+        start = System.currentTimeMillis();
+        ada.start();                                // start() = "begin this job on a NEW thread"
+        ben.start();
+        chi.start();
+
+        // isAlive() asks: is this thread still running?
+        System.out.println("    Just after start(): ada.isAlive() = " + ada.isAlive());
+
+        ada.join();                                 // join() = "wait here until Ada has finished"
+        System.out.println("    After ada.join():  ada.isAlive() = " + ada.isAlive());
+        ben.join();
+        chi.join();
+
+        long threeChefs = System.currentTimeMillis() - start;
+        System.out.println("    Took " + threeChefs + " ms for the same 9 steps.");
+        System.out.printf("    Doing it one after another would take about %d ms (%.1fx slower).%n",
+                9 * 200, (9 * 200) / (double) threeChefs);
+    }
+
+    static void sleep(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();      // never swallow an interrupt
+        }
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>35</td><td><code>new Cook("Jollof rice", 3).run()</code> &mdash; calling <code>run()</code> directly means <em>this</em> thread does the work, right now. No new thread is created, so the next dish cannot start until this one is finished.</td></tr>
+      <tr><td>46</td><td><code>ada.start()</code> &mdash; <em>this</em> is what creates the new thread. Ada begins working while <code>main</code> carries straight on to the next line.</td></tr>
+      <tr><td>51</td><td><code>ada.isAlive()</code> &mdash; asked straight after <code>start()</code>, the answer is <code>true</code>: Ada is running somewhere.</td></tr>
+      <tr><td>53</td><td><code>ada.join()</code> &mdash; <code>main</code> stops here until Ada's <code>run()</code> returns. Only then does the next line run &mdash; which is why the second <code>isAlive()</code> prints <code>false</code>.</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Real output of one run.</strong> The millisecond figures depend on your computer; the <em>relationship</em> between them is what matters:</p>
+  <!--@output project="code/s05-multithreading" main="com.aptech.s05.E01_Multithreading"-->
+<div class="terminal-output">A) ONE chef, one dish after another (this is a single thread):
+    main -&gt; Jollof rice step 1/3
+    main -&gt; Jollof rice step 2/3
+    main -&gt; Jollof rice step 3/3
+    main -&gt; Puff-puff step 1/2
+    main -&gt; Puff-puff step 2/2
+    Took 1121 ms. The two jobs never overlapped.
+
+B) THREE chefs at the same time (this is multithreading):
+    Just after start(): ada.isAlive() = true
+    Chef Ada -&gt; Jollof rice step 1/3
+    Chef Ben -&gt; Pepper soup step 1/3
+    Chef Chi -&gt; Puff-puff step 1/3
+    Chef Ada -&gt; Jollof rice step 2/3
+    Chef Ben -&gt; Pepper soup step 2/3
+    Chef Chi -&gt; Puff-puff step 2/3
+    Chef Ada -&gt; Jollof rice step 3/3
+    After ada.join():  ada.isAlive() = false
+    Chef Ben -&gt; Pepper soup step 3/3
+    Chef Chi -&gt; Puff-puff step 3/3
+    Took 688 ms for the same 9 steps.
+    Doing it one after another would take about 1800 ms (2.6x slower).</div>
+<!--@end-->
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>The number to look at</b>
+      Both runs do exactly <strong>9 steps of 200 ms</strong>. One chef takes about <strong>1800 ms</strong> because the steps take turns; three chefs take about <strong>700 ms</strong> because the steps overlap.
+      That is a speed-up of roughly 2.6&times; from doing the same work &mdash; and it is also the reason the next part is dangerous: those three chefs now share a kitchen.
+    </div>
+  </div>
+
+  <!-- ===== PART 2 ========================================================== -->
+  <span class="eyebrow">Part 2 of 9</span>
+  <h2 id="part-2-race-conditions">Part 2 &mdash; Race Conditions</h2>
+  <p>
+    A <strong>race condition</strong> is a bug where the <em>timing</em> of two threads corrupts shared data. The word "race" is exact:
+    the threads are racing to read and write the same value, and whoever wins changes the answer.
+  </p>
+
+  <figure class="concept-visual">
+    <img src="../assets/img/cartoons/s05_race_condition.jpg" alt="Two chefs fighting to write on the exact same ticket on a spike, causing chaos and tearing the paper." loading="lazy">
+    <figcaption><strong>Figure 1.</strong> A race condition in action. Two threads (chefs) try to write to the same shared resource (the ticket) at the same moment. The result is garbage.</figcaption>
+  </figure>
+
+  <h3>Example 2 &mdash; the broken tally</h3>
+  <p>
+    Eight chefs each add 100,000 orders to the <em>same</em> tally. The answer must be 800,000 &mdash; every single time.
+    Nothing here is protected, so it never is.
+  </p>
+  <!--@code src="code/s05-multithreading/src/main/java/com/aptech/s05/E02_RaceCondition.java" hl="38,39,40"-->
+<pre class="numbered" data-file="E02_RaceCondition.java" data-hl="38,39,40"><code class="lang-java">package com.aptech.s05;
+
+import java.util.concurrent.CountDownLatch;
+
+/**
+ * A race condition you can see with your own eyes.
+ *
+ * Eight chefs each add 100,000 orders to the SAME tally. The answer should be
+ * 800,000 every single time. It never is - and the wrong number is different on
+ * every run.
+ *
+ * WHY THE THREE STEPS ARE WRITTEN OUT
+ * -----------------------------------
+ * Real code says  count++  and looks like one step. It is really three:
+ *
+ *     int current = count;      // 1. READ the shared value into the processor
+ *     current = current + 1;    // 2. ADD one
+ *     count = current;          // 3. WRITE it back to memory
+ *
+ * Below, those three steps are spelled out, with a tiny pause in the middle.
+ * The pause is NOT a fix and NOT something you need in real code: it only holds
+ * the window between READ and WRITE open long enough for you to watch another
+ * chef walk in and overwrite the value. Without it the processor is so quick
+ * that the three steps look like one - and a hot JIT-compiled loop can hide the
+ * problem completely, which is exactly why this bug reaches production.
+ *
+ * The CountDownLatch is only a starting gate: it makes all eight chefs begin at
+ * the same instant so they really do collide. (We meet the rest of
+ * java.util.concurrent in Part 7.)
+ */
+public class E02_RaceCondition {
+
+    /** A shared tally. Nothing here protects it. */
+    static class Tally {
+        int count = 0;
+
+        void addOne() {
+            int current = count;        // READ  - every chef may read the same value
+            Thread.yield();             // (demonstration aid: hold the window open)
+            count = current + 1;        // WRITE - and now they overwrite each other
+        }
+    }
+
+    static final int CHEFS = 8;
+    static final int ORDERS_EACH = 100_000;
+
+    public static void main(String[] args) throws InterruptedException {
+        Tally tally = new Tally();
+        CountDownLatch startGate = new CountDownLatch(1);
+
+        Runnable job = () -&gt; {
+            try {
+                startGate.await();                 // stand still until the starting signal
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+            for (int i = 0; i &lt; ORDERS_EACH; i++) {
+                tally.addOne();
+            }
+        };
+
+        Thread[] chefs = new Thread[CHEFS];
+        for (int i = 0; i &lt; CHEFS; i++) {
+            chefs[i] = new Thread(job, "Chef " + (char) ('A' + i));
+            chefs[i].start();
+        }
+
+        startGate.countDown();                     // GO! all eight run at the same moment
+        for (Thread chef : chefs) {
+            chef.join();                           // wait for every chef to finish
+        }
+
+        int expected = CHEFS * ORDERS_EACH;
+        int lost = expected - tally.count;
+
+        System.out.println(CHEFS + " chefs x " + String.format("%,d", ORDERS_EACH) + " orders each");
+        System.out.println("Expected:     " + String.format("%,d", expected));
+        System.out.println("Actual:       " + String.format("%,d", tally.count));
+        System.out.println("Lost updates: " + String.format("%,d", lost));
+        System.out.println();
+        System.out.println("Same code. Same " + String.format("%,d", expected) + " orders. A different answer.");
+        System.out.println("A race condition does not fail every time; it fails SOME time.");
+        System.out.println("That is why it survives testing and then breaks in front of a customer.");
+    }
+}</code></pre>
+<!--@end-->
+  <p><strong>Real output of one run</strong> &mdash; then run it again, and again:</p>
+  <!--@output project="code/s05-multithreading" main="com.aptech.s05.E02_RaceCondition"-->
+<div class="terminal-output">8 chefs x 100,000 orders each
+Expected:     800,000
+Actual:       189,658
+Lost updates: 610,342
+
+Same code. Same 800,000 orders. A different answer.
+A race condition does not fail every time; it fails SOME time.
+That is why it survives testing and then breaks in front of a customer.</div>
+<!--@end-->
+
+  <p>Why? Because <code>count++</code> only <em>looks</em> like one step. For the processor it is <strong>three</strong>:</p>
+  <ol>
+    <li><strong>READ</strong> the current value of <code>count</code> into the processor.</li>
+    <li><strong>ADD</strong> one to it.</li>
+    <li><strong>WRITE</strong> the new value back to memory.</li>
+  </ol>
+  <p>
+    If Chef Ada and Chef Ben both READ <code>0</code> before either WRITEs, they both compute <code>1</code>, and both write <code>1</code>.
+    Two increments happened; the tally went up by one. That lost increment is called a <strong>lost update</strong>.
+  </p>
+
+  <figure class="concept-visual">
+    <img src="../assets/img/diagrams/s05_lost_update.svg" alt="Two thread lanes, Ada and Ben, over seven ticks, with a shared count strip showing the value stuck one behind what it should be." loading="lazy">
+    <figcaption><strong>Figure 2.</strong> The lost update, tick by tick. Ben reads <code>0</code> at t3 &mdash; a value that is already out of date by the time he writes it. Two increments, count only goes up by one.</figcaption>
+  </figure>
+
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>About that <code>Thread.yield()</code> in the example</b>
+      <p>
+        In <code>E02</code> the three steps are written out with <code>Thread.yield()</code> between READ and WRITE. <strong>That yield is a demonstration aid, not a fix, and not something you need in real code.</strong>
+        It only holds the window between the read and the write open long enough for you to <em>watch</em> another chef walk in and overwrite the value.
+      </p>
+      <p>
+        Without it, the processor is so quick that the three steps look like one &mdash; and a hot, JIT-compiled loop can hide the problem <em>completely</em>.
+        That is exactly why this bug reaches production: your test run of a simple <code>count++</code> loop may print the correct answer every time, and the bug is still real.
+        <strong>Never rely on seeing it to believe it.</strong>
+      </p>
+    </div>
+  </div>
+
+  <h3>&#128187; Try it: the Lost Update Lab</h3>
+  <p>
+    Now <em>you</em> are the scheduler. Two threads, one shared <code>count</code>, three increments each &mdash; so the answer must be <strong>6</strong>.
+    Step the threads yourself and try to lose an increment; then switch the counter to <code>synchronized</code>, then to <code>AtomicInteger</code>, and try again.
+  </p>
+  <div data-playground="race"></div>
+
+  <div class="quiz mini-check">
+    <div class="mini-check__label">&#9889; Quick check</div>
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__stem">A tally must reach 800,000 but prints 137,204. What is the most likely explanation?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> A thread threw an exception and stopped early.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> The <code>for</code> loop counted wrong.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Two threads read the same value before either wrote it back, so some increments were overwritten.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> The computer is faulty.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> That is a lost update. <code>count++</code> is a READ, an ADD and a WRITE; if two threads interleave those three steps, one WRITE overwrites the other. Nothing crashed, and the total is simply wrong.</div>
+    </div>
+  </div>
+
+  <!-- ===== PART 3 ========================================================== -->
+  <span class="eyebrow">Part 3 of 9</span>
+  <h2 id="part-3-synchronized">Part 3 &mdash; The Intrinsic Lock and <code>synchronized</code></h2>
+  <p>
+    To fix a race condition we must make the critical section &mdash; the few lines that touch the shared data &mdash; run for <strong>one thread at a time</strong>.
+    The tool is a <strong>lock</strong>. In Java every object carries one built-in lock, called its <strong>intrinsic lock</strong> or <strong>monitor</strong>, and
+    <code>synchronized</code> is how you use it: <em>"before a thread may enter this section, it must hold this object's lock; if another thread holds it, wait outside."</em>
+  </p>
+
+  <h3>Example 3 &mdash; three safe ways to write the same counter</h3>
+  <p>The same 20,000 increments, reached three ways. All three are correct; they differ in <em>what</em> gets locked.</p>
+  <!--@code src="code/s05-multithreading/src/main/java/com/aptech/s05/E03_Synchronized.java" hl="21,27,35"-->
+<pre class="numbered" data-file="E03_Synchronized.java" data-hl="21,27,35"><code class="lang-java">package com.aptech.s05;
+
+import java.util.function.Consumer;
+
+/**
+ * The cure for the race condition: the intrinsic lock.
+ *
+ * Every Java object has a built-in lock. synchronized says "only one thread
+ * at a time may hold this object's lock", which makes the READ-ADD-WRITE
+ * of count++ happen as one whole step again.
+ *
+ * The same 20,000 is reached three ways below.
+ */
+public class E03_Synchronized {
+
+    static class Tally {
+        int count = 0;
+        private final Object lock = new Object();     // our own private lock object
+
+        // 1. synchronized on the method: locks the object you called it on (this)
+        synchronized void addWithMethod() {
+            count++;
+        }
+
+        // 2. synchronized on a block: lock only the few lines that need it
+        void addWithBlock() {
+            synchronized (this) {
+                count++;
+            }
+        }
+
+        // 3. synchronized on a private lock object - the style experts recommend,
+        //    because nobody outside this class can accidentally lock it
+        void addWithLockObject() {
+            synchronized (lock) {
+                count++;
+            }
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        System.out.println("synchronized method       -&gt; " + race(Tally::addWithMethod));
+        System.out.println("synchronized (this) block -&gt; " + race(Tally::addWithBlock));
+        System.out.println("private lock object       -&gt; " + race(Tally::addWithLockObject));
+        System.out.println("Expected every time:        20000");
+        System.out.println();
+        System.out.println("Same two threads, same 20,000 increments - but now no update is ever lost.");
+    }
+
+    /** Runs the given action 10,000 times on each of two threads and returns the tally. */
+    static int race(Consumer&lt;Tally&gt; action) throws InterruptedException {
+        Tally tally = new Tally();
+        Runnable job = () -&gt; {
+            for (int i = 0; i &lt; 10_000; i++) {
+                action.accept(tally);
+            }
+        };
+        Thread ada = new Thread(job, "Chef Ada");
+        Thread ben = new Thread(job, "Chef Ben");
+        ada.start();
+        ben.start();
+        ada.join();
+        ben.join();
+        return tally.count;
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>21</td><td><code>synchronized void addWithMethod()</code> &mdash; locks the object the method was called on, i.e. <code>this</code>. Simple, and correct as long as everyone goes through this method.</td></tr>
+      <tr><td>27</td><td><code>synchronized (this) { &hellip; }</code> &mdash; a <strong>block</strong>. Locks only these few lines instead of the whole method, so unsynchronised work around it can still run in parallel.</td></tr>
+      <tr><td>35</td><td><code>synchronized (lock)</code> on a <code>private final Object</code> &mdash; the style experts recommend. Nobody outside the class can even see the lock, so no other code can accidentally hold it and block you.</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Real output.</strong> Nothing is lost now &mdash; and it is exactly 20000 every single time:</p>
+  <!--@output project="code/s05-multithreading" main="com.aptech.s05.E03_Synchronized"-->
+<div class="terminal-output">synchronized method       -&gt; 20000
+synchronized (this) block -&gt; 20000
+private lock object       -&gt; 20000
+Expected every time:        20000
+
+Same two threads, same 20,000 increments - but now no update is ever lost.</div>
+<!--@end-->
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>What a lock really guarantees</b>
+      <p>Two things at once, and both matter:</p>
+      <ul>
+        <li><strong>Mutual exclusion</strong> &mdash; only one thread is inside the block at a time, so the three steps cannot interleave.</li>
+        <li><strong>Visibility</strong> &mdash; when a thread releases a lock, its changes are visible to the next thread that takes it. Without this, another thread might keep reading a stale copy.</li>
+      </ul>
+      <p>And the cost: threads that want in must <em>queue</em>. That is why you lock the smallest piece of code that is actually critical, not the whole method "to be safe".</p>
+    </div>
+  </div>
+
+  <h3>Lock the right object</h3>
+  <p>
+    A lock only excludes threads that ask for <em>the same</em> lock. Two threads that each lock a <em>different</em> object are not excluded at all &mdash; and this mistake is common enough that it has its own entry in Common Mistakes below.
+    Two rules keep you safe:
+  </p>
+  <ul>
+    <li>Use <strong>one</strong> lock object for <strong>one</strong> piece of shared data, and use the same lock in every method that touches it.</li>
+    <li>Prefer a <code>private final Object lock = new Object();</code> over <code>this</code>, so nothing outside the class can share your lock by accident.</li>
+  </ul>
+
+  <!-- ===== PART 4 ========================================================== -->
+  <span class="eyebrow">Part 4 of 9</span>
+  <h2 id="part-4-atomic-access">Part 4 &mdash; Atomic Access</h2>
+  <p>
+    For a single counter you do not need to write a lock at all. The classes in <code>java.util.concurrent.atomic</code> do the
+    read&ndash;add&ndash;write as <strong>one indivisible (atomic) step</strong>, so no update can be lost. Because you never write
+    <code>synchronized</code> yourself, there is nothing to get wrong &mdash; and they are usually faster than a lock, because a thread that finds
+    no contention never has to queue.
+  </p>
+
+  <h3>Example 4 &mdash; the same four chefs, and no lost orders</h3>
+  <p>
+    Compare this with Example 2: same four chefs, same 400,000 orders, same shared total &mdash; but the total is now exactly right, and there is not one
+    <code>synchronized</code> keyword in sight.
+  </p>
+  <!--@code src="code/s05-multithreading/src/main/java/com/aptech/s05/E04_AtomicAccess.java" hl="25,29"-->
+<pre class="numbered" data-file="E04_AtomicAccess.java" data-hl="25,29"><code class="lang-java">package com.aptech.s05;
+
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.function.IntSupplier;
+
+/**
+ * Atomic access: the race condition is gone without writing a single
+ * synchronized keyword.
+ *
+ * An atomic class does its read-modify-write as ONE indivisible step, so no
+ * update can be lost. LongAdder is the high-throughput version: when many
+ * threads hammer it, it spreads the work over several cells instead of making
+ * everyone fight over one value.
+ *
+ * Compare this run with E02_RaceCondition - same four chefs, same 400,000 orders.
+ */
+public class E04_AtomicAccess {
+
+    static final int CHEFS = 4;
+    static final int ORDERS_EACH = 100_000;
+
+    public static void main(String[] args) throws InterruptedException {
+        AtomicInteger counter = new AtomicInteger();
+        System.out.println("AtomicInteger.incrementAndGet() -&gt; "
+                + race(counter::incrementAndGet, counter::get) + "   (expected 400000)");
+
+        LongAdder adder = new LongAdder();
+        System.out.println("LongAdder.increment()           -&gt; "
+                + race(adder::increment, adder::intValue) + "   (expected 400000)");
+
+        System.out.println();
+        System.out.println("Use an atomic class when ONE variable is all you are protecting.");
+        System.out.println("Use synchronized when several variables must change together and");
+        System.out.println("a half-finished change must never be visible to another thread.");
+    }
+
+    /** Runs addOne on four threads at once and returns the final total. */
+    static int race(Runnable addOne, IntSupplier total) throws InterruptedException {
+        Thread[] chefs = new Thread[CHEFS];
+        for (int i = 0; i &lt; CHEFS; i++) {
+            chefs[i] = new Thread(() -&gt; {
+                for (int n = 0; n &lt; ORDERS_EACH; n++) {
+                    addOne.run();
+                }
+            }, "Chef " + (char) ('A' + i));
+            chefs[i].start();
+        }
+        for (Thread chef : chefs) {
+            chef.join();
+        }
+        return total.getAsInt();
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>25</td><td><code>AtomicInteger.incrementAndGet()</code> &mdash; one indivisible operation. Two threads calling it at the same instant cannot both read the same value; one of them simply goes first. Expected: <code>400000</code>.</td></tr>
+      <tr><td>29</td><td><code>LongAdder.increment()</code> &mdash; the high-throughput version. When many threads hammer it, it spreads the work over several internal cells instead of making everyone fight over one value, then adds them up when you ask. Also <code>400000</code>.</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Real output:</strong></p>
+  <!--@output project="code/s05-multithreading" main="com.aptech.s05.E04_AtomicAccess"-->
+<div class="terminal-output">AtomicInteger.incrementAndGet() -&gt; 400000   (expected 400000)
+LongAdder.increment()           -&gt; 400000   (expected 400000)
+
+Use an atomic class when ONE variable is all you are protecting.
+Use synchronized when several variables must change together and
+a half-finished change must never be visible to another thread.</div>
+<!--@end-->
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Atomic class or <code>synchronized</code>? Ask how many variables.</b>
+      <ul>
+        <li><strong>One variable</strong> (a counter, a total, a flag) &rarr; use an <strong>atomic class</strong>. Less code, less to get wrong, usually faster.</li>
+        <li><strong>Several variables that must change together</strong> (a balance and a history list; a position and a status) &rarr; use <strong><code>synchronized</code></strong>, so another thread can never see a half-finished change.</li>
+      </ul>
+      <p>An atomic class protects <em>one</em> variable. It cannot make two separate changes happen as a pair.</p>
+    </div>
+  </div>
+
+  <!-- ===== PART 5 ========================================================== -->
+  <span class="eyebrow">Part 5 of 9</span>
+  <h2 id="part-5-wait-and-notify">Part 5 &mdash; <code>wait()</code> and <code>notify()</code></h2>
+  <p>
+    <code>synchronized</code> stops threads from crashing into each other. But sometimes threads must <strong>take turns</strong>: a baker cannot bake onto a counter that is still full,
+    and a customer cannot eat bread that does not exist yet. Each one has to <em>wait</em> for the other to change the world.
+  </p>
+  <p>
+    Every Java object has three more methods for this conversation, and <strong>you may only call them while holding that object's lock</strong> &mdash; i.e. inside a
+    <code>synchronized</code> block or method:
+  </p>
+  <ul>
+    <li><code>wait()</code> &mdash; gives the lock back and goes to sleep until another thread signals this object. (Handing the lock back is the crucial part: if it kept the lock, nobody could ever change anything to wake it.)</li>
+    <li><code>notify()</code> &mdash; wakes <strong>one</strong> thread waiting on this object. Which one is not specified.</li>
+    <li><code>notifyAll()</code> &mdash; wakes <strong>all</strong> of them. They then compete for the lock again. This is the safer choice, and the one to reach for by default.</li>
+  </ul>
+
+  <h3>Example 5 &mdash; a counter that holds one loaf</h3>
+  <!--@code src="code/s05-multithreading/src/main/java/com/aptech/s05/E05_WaitNotify.java" hl="18,20,24"-->
+<pre class="numbered" data-file="E05_WaitNotify.java" data-hl="18,20,24"><code class="lang-java">package com.aptech.s05;
+
+/**
+ * wait() and notifyAll(): two threads taking turns.
+ *
+ * The counter holds at most ONE loaf. The customer cannot eat bread that does
+ * not exist, and the baker cannot bake onto a counter that is still full - so
+ * each one waits for the other. wait() gives the lock back and sleeps;
+ * notifyAll() wakes the other side up.
+ */
+public class E05_WaitNotify {
+
+    /** A kitchen pass that holds at most one loaf. */
+    static class Bakery {
+        private String bread = null;            // null means the counter is empty
+
+        synchronized void bake(String type) throws InterruptedException {
+            while (bread != null) {             // still bread on the counter: we cannot bake
+                System.out.println("  Baker waits: " + bread + " is still on the counter.");
+                wait();                         // give up the lock and sleep until told otherwise
+            }
+            bread = type;
+            System.out.println("  Baker baked " + type + ".");
+            notifyAll();                        // tell the customer the bread is ready
+        }
+
+        synchronized void eat() throws InterruptedException {
+            while (bread == null) {             // nothing to eat yet
+                System.out.println("  Customer waits: the counter is empty.");
+                wait();
+            }
+            System.out.println("  Customer ate " + bread + ".");
+            bread = null;
+            notifyAll();                        // tell the baker the counter is free again
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        Bakery bakery = new Bakery();
+
+        Thread customer = new Thread(() -&gt; {
+            try {
+                bakery.eat();
+                bakery.eat();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, "customer");
+
+        Thread baker = new Thread(() -&gt; {
+            try {
+                bakery.bake("Croissant");
+                bakery.bake("Baguette");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, "baker");
+
+        customer.start();
+        Thread.sleep(50);                       // let the customer reach wait() first
+        baker.start();
+
+        customer.join();
+        baker.join();
+
+        System.out.println();
+        System.out.println("Both finished. Neither thread was busy-waiting: while they waited");
+        System.out.println("they were asleep and used no CPU. The exact order of the lines can");
+        System.out.println("differ between runs - that is the scheduler choosing, not a bug.");
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>18</td><td><code>while (bread != null)</code> &mdash; the <em>condition</em>, checked before waiting. Only wait when the thing you want is genuinely not available yet.</td></tr>
+      <tr><td>20</td><td><code>wait()</code> &mdash; "the counter is full; I give up the lock and sleep until somebody tells me it changed."</td></tr>
+      <tr><td>24</td><td><code>notifyAll()</code> &mdash; "I have just changed the counter, so anyone waiting on it should wake up and look again."</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Real output of one run.</strong> The <em>order</em> of the lines can differ between runs &mdash; that is the scheduler choosing, not a bug:</p>
+  <!--@output project="code/s05-multithreading" main="com.aptech.s05.E05_WaitNotify"-->
+<div class="terminal-output">  Customer waits: the counter is empty.
+  Baker baked Croissant.
+  Customer ate Croissant.
+  Customer waits: the counter is empty.
+  Baker baked Baguette.
+  Customer ate Baguette.
+
+Both finished. Neither thread was busy-waiting: while they waited
+they were asleep and used no CPU. The exact order of the lines can
+differ between runs - that is the scheduler choosing, not a bug.</div>
+<!--@end-->
+
+  <div class="callout callout--tip"><span class="callout__i">&#128161;</span>
+    <div class="callout__b"><b>Why <code>while</code>, and never <code>if</code>?</b>
+      <p>
+        When a thread wakes from <code>wait()</code>, the condition may already be <em>false again</em>: another thread can sneak in and take the bread first.
+        Also, <code>wait()</code> is allowed to wake up on its own &mdash; a <strong>spurious wake-up</strong>. For both reasons you must re-check the condition, and re-checking means a loop.
+      </p>
+      <p><code>if (bread == null) wait();</code> is the classic bug: it checks once and charges ahead on a condition that may no longer hold. <strong>Always <code>while</code>.</strong></p>
+    </div>
+  </div>
+
+  <div class="quiz mini-check">
+    <div class="mini-check__label">&#9889; Quick check</div>
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__stem">A thread is inside <code>wait()</code>. What is it doing with the object's lock?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Holding it, so nobody else can change the data.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> It has released it, so other threads can enter and change the data.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> It never had the lock.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> The lock no longer exists.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> Giving the lock back while asleep is the whole point: the producer must be able to get in and change the data that the consumer is waiting for. When the thread wakes, it must take the lock again before returning from <code>wait()</code>.</div>
+    </div>
+  </div>
+
+  <!-- ===== PART 6 ========================================================== -->
+  <span class="eyebrow">Part 6 of 9</span>
+  <h2 id="part-6-deadlock">Part 6 &mdash; Deadlocks, and How to Avoid Them</h2>
+  <p>
+    Locks fix race conditions, but they bring their own danger. A <strong>deadlock</strong> is two or more threads frozen forever, each holding a lock the other one needs.
+    Nothing is being computed, nothing crashes, and no error is printed: the program simply stops making progress. Worse, each thread is behaving perfectly correctly on its own &mdash; the deadlock is in the <em>combination</em>.
+  </p>
+
+  <figure class="concept-visual">
+    <img src="../assets/img/cartoons/s05_deadlock.jpg" alt="Two chefs stuck facing each other, each holding one tool and demanding the other." loading="lazy">
+    <figcaption><strong>Figure 3.</strong> A deadlock. Chef Ada has the pot and is waiting for the spoon. Chef Ben has the spoon and is waiting for the pot. Neither will let go. The kitchen halts forever.</figcaption>
+  </figure>
+
+  <h3>Example 6 &mdash; a deadlock, caught in the act</h3>
+  <p>
+    Ada takes the pot and then wants the spoon; Ben takes the spoon and then wants the pot. Both are asleep waiting for a lock the other will never release.
+    A <strong>watchdog</strong> thread notices that nothing is moving, asks the JVM who is stuck, and stops the program so we are not left staring at a frozen window.
+  </p>
+  <!--@code src="code/s05-multithreading/src/main/java/com/aptech/s05/E06_Deadlock.java" hl="29,39,47"-->
+<pre class="numbered" data-file="E06_Deadlock.java" data-hl="29,39,47"><code class="lang-java">package com.aptech.s05;
+
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
+
+/**
+ * A deadlock, caught in the act.
+ *
+ * The JVM itself knows when threads have stopped forever, and this is the same
+ * report you will see in IntelliJ's console or in a .jfr recording. Here a
+ * watchdog asks the JVM for the deadlocked threads and then stops the program,
+ * so we are not left staring at a frozen window.
+ */
+public class E06_Deadlock {
+
+    private static final Object POT = new Object();
+    private static final Object SPOON = new Object();
+
+    public static void main(String[] args) throws InterruptedException {
+        Thread ada = new Thread(() -&gt; cook("Chef Ada", "pot", POT, "spoon", SPOON), "Chef Ada");
+        Thread ben = new Thread(() -&gt; cook("Chef Ben", "spoon", SPOON, "pot", POT), "Chef Ben");
+
+        // The watchdog. Without it this program would hang forever.
+        Thread watchdog = new Thread(() -&gt; {
+            sleep(1500);
+
+            ThreadMXBean bean = ManagementFactory.getThreadMXBean();
+            long[] stuck = bean.findDeadlockedThreads();
+            if (stuck == null) {
+                System.out.println("Watchdog: no deadlock found after 1500 ms.");
+                return;
+            }
+
+            System.out.println();
+            System.out.println("Watchdog: DEADLOCK DETECTED - " + stuck.length + " threads will never move again:");
+            for (ThreadInfo info : bean.getThreadInfo(stuck)) {
+                if (info != null) {
+                    System.out.println("  " + info.getThreadName() + " is " + info.getThreadState()
+                            + ", waiting for the lock held by " + info.getLockOwnerName());
+                }
+            }
+            System.out.println("The kitchen is frozen; nothing can unlock it from inside.");
+            System.out.println("The watchdog stops the program instead.");
+            System.exit(0);
+        }, "watchdog");
+        watchdog.setDaemon(true);
+
+        ada.start();
+        ben.start();
+        watchdog.start();
+
+        ada.join();                 // these two never return, so only the watchdog can end the run
+        ben.join();
+        System.out.println("Both chefs finished - no deadlock this run.");
+    }
+
+    /** Reach for the first utensil, then the second, then cook. */
+    private static void cook(String chef, String first, Object firstLock,
+                             String second, Object secondLock) {
+        System.out.println(chef + " picks up the " + first + ".");
+        synchronized (firstLock) {
+            sleep(300);             // gives the other chef time to pick up the other utensil
+            System.out.println(chef + " now needs the " + second + " ...");
+            synchronized (secondLock) {
+                System.out.println(chef + " is cooking.");
+            }
+        }
+        System.out.println(chef + " puts everything down.");
+    }
+
+    private static void sleep(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+}</code></pre>
+<!--@end-->
+  <p><strong>Real output.</strong> The last two lines are the JVM's own report &mdash; the same facts you will see in a thread dump or a Java Flight Recorder file:</p>
+  <!--@output project="code/s05-multithreading" main="com.aptech.s05.E06_Deadlock"-->
+<div class="terminal-output">Chef Ada picks up the pot.
+Chef Ben picks up the spoon.
+Chef Ada now needs the spoon ...
+Chef Ben now needs the pot ...
+
+Watchdog: DEADLOCK DETECTED - 2 threads will never move again:
+  Chef Ada is BLOCKED, waiting for the lock held by Chef Ben
+  Chef Ben is BLOCKED, waiting for the lock held by Chef Ada
+The kitchen is frozen; nothing can unlock it from inside.
+The watchdog stops the program instead.</div>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>29</td><td><code>bean.findDeadlockedThreads()</code> &mdash; the JVM tracks the wait-for graph, so it can tell you which threads are in a cycle. It returns <code>null</code> when there is no deadlock.</td></tr>
+      <tr><td>39</td><td><code>info.getLockOwnerName()</code> &mdash; the name of the thread holding the lock this one is waiting for. That single field is what turns "it's hung" into "Ada is waiting for Ben".</td></tr>
+      <tr><td>47</td><td><code>watchdog.setDaemon(true)</code> &mdash; a daemon thread must be marked <em>before</em> <code>start()</code>. As a daemon it will not itself keep the program alive.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Example 7 &mdash; the same program, one rule added</h3>
+  <p>
+    Nothing about the locking changed. Not a single extra lock, not a longer sleep. The only difference is that both chefs now reach for the
+    <strong>pot first</strong>, every time.
+  </p>
+  <!--@code src="code/s05-multithreading/src/main/java/com/aptech/s05/E07_DeadlockFixed.java" hl="34,37,40"-->
+<pre class="numbered" data-file="E07_DeadlockFixed.java" data-hl="34,37,40"><code class="lang-java">package com.aptech.s05;
+
+/**
+ * The same two chefs, the same two utensils, the same locks - and no deadlock.
+ *
+ * Nothing about the locking changed except the ORDER: every chef now reaches
+ * for the pot first. Because a thread can never be holding the spoon and
+ * waiting for the pot at the same time, the circle that causes a deadlock
+ * cannot close.
+ */
+public class E07_DeadlockFixed {
+
+    private static final Object POT = new Object();
+    private static final Object SPOON = new Object();
+
+    public static void main(String[] args) throws InterruptedException {
+        Thread ada = new Thread(() -&gt; cook("Chef Ada"), "Chef Ada");
+        Thread ben = new Thread(() -&gt; cook("Chef Ben"), "Chef Ben");
+
+        ada.start();
+        ben.start();
+
+        ada.join();
+        ben.join();
+
+        System.out.println();
+        System.out.println("Both chefs finished and the program exited on its own.");
+        System.out.println("The rule: agree on one order for taking locks, and always follow it.");
+    }
+
+    /** Both chefs use the SAME order: pot first, spoon second. */
+    private static void cook(String chef) {
+        System.out.println(chef + " reaches for the pot.");
+        synchronized (POT) {
+            System.out.println(chef + ": I have the pot, now I need the spoon.");
+            sleep(300);
+            synchronized (SPOON) {
+                System.out.println(chef + " is cooking.");
+            }
+            System.out.println(chef + " puts everything down.");
+        }
+    }
+
+    private static void sleep(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+}</code></pre>
+<!--@end-->
+  <p><strong>Real output.</strong> The program now finishes and exits by itself:</p>
+  <!--@output project="code/s05-multithreading" main="com.aptech.s05.E07_DeadlockFixed"-->
+<div class="terminal-output">Chef Ada reaches for the pot.
+Chef Ben reaches for the pot.
+Chef Ada: I have the pot, now I need the spoon.
+Chef Ada is cooking.
+Chef Ada puts everything down.
+Chef Ben: I have the pot, now I need the spoon.
+Chef Ben is cooking.
+Chef Ben puts everything down.
+
+Both chefs finished and the program exited on its own.
+The rule: agree on one order for taking locks, and always follow it.</div>
+<!--@end-->
+
+  <figure class="concept-visual">
+    <img src="../assets/img/diagrams/s05_deadlock_lock_order.svg" alt="Two panels: on the left, opposite lock order creates a cycle between Ada and Ben; on the right, the same order everywhere means a thread simply waits and no cycle can form." loading="lazy">
+    <figcaption><strong>Figure 4.</strong> Why one agreed order removes the deadlock. Left (red): opposite orders &mdash; Ada holds the whisk and wants the oven while Ben holds the oven and wants the whisk, so the "wants" arrows form a <em>circle</em>. Right (green): everyone takes the whisk first, so a chef can never be holding the second thing while waiting for the first, and the circle cannot close.</figcaption>
+  </figure>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>How to avoid deadlocks: one order, applied everywhere</b>
+      <p>A deadlock needs a <em>circular</em> wait. So break the circle: <strong>agree on one order for taking your locks and follow it in every thread.</strong></p>
+      <ul>
+        <li>Be consistent. If one method takes <code>pot</code> then <code>spoon</code>, no method anywhere may take <code>spoon</code> then <code>pot</code>.</li>
+        <li>Hold one lock at a time when you can. Locking less cannot deadlock.</li>
+        <li>Take the lock, use it, release it. Do not call out to unrelated code &mdash; a method that takes a lock you did not know about &mdash; while holding a lock.</li>
+        <li>Remember the order is <em>a decision your team makes</em>, so write it down where the next person will see it.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== PART 7 ========================================================== -->
+  <span class="eyebrow">Part 7 of 9</span>
+  <h2 id="part-7-concurrent-collections">Part 7 &mdash; The <code>java.util.concurrent</code> Toolbox</h2>
+  <p>
+    Writing <code>synchronized</code>, <code>wait()</code> and <code>notifyAll()</code> by hand is difficult and easy to get wrong &mdash; as Parts 3 to 6 have shown.
+    In modern Java we rarely write it. The classes in <code>java.util.concurrent</code> were written and tested by the people who built the JVM, and they
+    <strong>do the locking, the waiting and the waking for you</strong>. Reach for these first; write <code>synchronized</code> by hand only when no class already solves your problem.
+  </p>
+
+  <h3>Example 8 &mdash; three collections that are safe to share</h3>
+  <!--@code src="code/s05-multithreading/src/main/java/com/aptech/s05/E08_ConcurrentCollections.java" hl="25,45,56"-->
+<pre class="numbered" data-file="E08_ConcurrentCollections.java" data-hl="25,45,56"><code class="lang-java">package com.aptech.s05;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+/**
+ * The java.util.concurrent toolbox: thread-safe collections that do the locking
+ * for you. These are the classes to reach for before writing synchronized
+ * yourself - they were written and tested by the people who built the JVM.
+ */
+public class E08_ConcurrentCollections {
+
+    public static void main(String[] args) throws Exception {
+        System.out.println("1. ConcurrentHashMap - four chefs record orders at the same time");
+        Map&lt;String, Integer&gt; orders = new ConcurrentHashMap&lt;&gt;();
+        Thread[] chefs = new Thread[4];
+        for (int i = 0; i &lt; chefs.length; i++) {
+            String name = "Chef " + (char) ('A' + i);
+            chefs[i] = new Thread(() -&gt; {
+                for (int n = 0; n &lt; 1_000; n++) {
+                    orders.merge(name, 1, Integer::sum);
+                }
+            }, name);
+            chefs[i].start();
+        }
+        for (Thread chef : chefs) {
+            chef.join();
+        }
+        int total = orders.values().stream().mapToInt(Integer::intValue).sum();
+        System.out.println("   " + orders);
+        System.out.println("   total = " + total + "   (expected 4000 - not one order lost)");
+        System.out.println();
+
+        System.out.println("2. BlockingQueue - a real kitchen pass that holds at most 2 dishes");
+        BlockingQueue&lt;String&gt; pass = new ArrayBlockingQueue&lt;&gt;(2);
+
+        Thread baker = new Thread(() -&gt; {
+            try {
+                for (String dish : List.of("Croissant", "Baguette", "Puff-puff")) {
+                    System.out.println("   baker wants to put " + dish + " on the pass ...");
+                    pass.put(dish);                 // blocks by itself when the pass is full
+                    System.out.println("   baker put " + dish + " on the pass");
+                }
+                pass.put("CLOSED");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, "baker");
+
+        Thread waiter = new Thread(() -&gt; {
+            try {
+                for (String dish = pass.take(); !dish.equals("CLOSED"); dish = pass.take()) {
+                    System.out.println("   waiter served " + dish);
+                    Thread.sleep(40);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, "waiter");
+
+        baker.start();
+        waiter.start();
+        baker.join();
+        waiter.join();
+        System.out.println("   put() and take() did all the waiting and waking for us - no wait(), no notify().");
+        System.out.println();
+
+        System.out.println("3. CopyOnWriteArrayList - a list read far more often than it is changed");
+        List&lt;String&gt; guests = new CopyOnWriteArrayList&lt;&gt;(List.of("Ada", "Ben"));
+        guests.add("Chi");
+        System.out.println("   guests = " + guests);
+        System.out.println();
+        System.out.println("Same jobs as Parts 2 to 4, none of the danger. Reach for java.util.concurrent");
+        System.out.println("first; write synchronized by hand only when no class already solves it.");
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>25</td><td><code>orders.merge(name, 1, Integer::sum)</code> &mdash; an atomic read&ndash;modify&ndash;write <em>inside the map</em>. Four chefs record 1,000 orders each; the total is 4,000, and not one order is lost. A plain <code>HashMap</code> here would lose counts and can even corrupt its internal structure.</td></tr>
+      <tr><td>45</td><td><code>pass.put(dish)</code> on an <code>ArrayBlockingQueue&lt;&gt;(2)</code> &mdash; <strong>blocks by itself</strong> when the queue is full. The baker is parked until a waiter takes something out. No <code>wait()</code>, no <code>notify()</code>.</td></tr>
+      <tr><td>56</td><td><code>pass.take()</code> &mdash; the other half. Blocks by itself when the queue is empty, and wakes as soon as something arrives. <code>put</code> and <code>take</code> together <em>are</em> the whole producer&ndash;consumer pattern.</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Real output:</strong></p>
+  <!--@output project="code/s05-multithreading" main="com.aptech.s05.E08_ConcurrentCollections"-->
+<div class="terminal-output">1. ConcurrentHashMap - four chefs record orders at the same time
+   {Chef C=1000, Chef B=1000, Chef D=1000, Chef A=1000}
+   total = 4000   (expected 4000 - not one order lost)
+
+2. BlockingQueue - a real kitchen pass that holds at most 2 dishes
+   baker wants to put Croissant on the pass ...
+   baker put Croissant on the pass
+   baker wants to put Baguette on the pass ...
+   baker put Baguette on the pass
+   baker wants to put Puff-puff on the pass ...
+   baker put Puff-puff on the pass
+   waiter served Croissant
+   waiter served Baguette
+   waiter served Puff-puff
+   put() and take() did all the waiting and waking for us - no wait(), no notify().
+
+3. CopyOnWriteArrayList - a list read far more often than it is changed
+   guests = [Ada, Ben, Chi]
+
+Same jobs as Parts 2 to 4, none of the danger. Reach for java.util.concurrent
+first; write synchronized by hand only when no class already solves it.</div>
+<!--@end-->
+
+  <div class="callout callout--note"><span class="callout__i">&#128214;</span>
+    <div class="callout__b"><b>The three to remember</b>
+      <ul>
+        <li><strong><code>ConcurrentHashMap</code></strong> &mdash; a thread-safe <code>Map</code>. Several threads read and write at once without locking the whole map. The default choice for shared key&ndash;value data.</li>
+        <li><strong><code>BlockingQueue</code></strong> (e.g. <code>ArrayBlockingQueue</code>, <code>LinkedBlockingQueue</code>) &mdash; the producer&ndash;consumer tool. <code>put()</code> blocks when full, <code>take()</code> blocks when empty.</li>
+        <li><strong><code>CopyOnWriteArrayList</code></strong> &mdash; safe reads with no locking at all, because every change rebuilds the list. Ideal when reads vastly outnumber writes (a list of listeners, a cache of settings).</li>
+      </ul>
+      <p>Contrast with the plain collections: <code>ArrayList</code>, <code>HashMap</code> and <code>StringBuilder</code> are <strong>not</strong> thread-safe. Sharing one between threads is the bug from Part 2, hiding inside a class.</p>
+    </div>
+  </div>
+
+  <!-- ===== PART 8 ========================================================== -->
+  <span class="eyebrow">Part 8 of 9</span>
+  <h2 id="part-8-pools-and-virtual-threads">Part 8 &mdash; Recent Concurrency: Pools, Virtual Threads, <code>CompletableFuture</code></h2>
+  <p>
+    The last piece of the toolbox is about <em>managing</em> threads rather than sharing data between them. Creating a brand-new <code>Thread</code> for every small job costs
+    time and memory, and an unmanaged thread is easy to leak. Modern Java gives you three better answers.
+  </p>
+
+  <h3>Example 9 &mdash; a pool, virtual threads, and a promise</h3>
+  <!--@code src="code/s05-multithreading/src/main/java/com/aptech/s05/E09_ThreadPools.java" hl="23,28,49,66"-->
+<pre class="numbered" data-file="E09_ThreadPools.java" data-hl="23,28,49,66"><code class="lang-java">package com.aptech.s05;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * Thread pools: stop creating a new Thread for every little job.
+ *
+ * A pool keeps a few threads alive and reuses them, so you pay the cost of
+ * creating threads once. Then the modern twist: for jobs that mostly WAIT
+ * (network calls, file reads, database queries) one virtual thread per job is
+ * both simpler and far more scalable.
+ */
+public class E09_ThreadPools {
+
+    public static void main(String[] args) throws Exception {
+        System.out.println("A fixed pool of 3 workers handles 10 jobs");
+        ExecutorService pool = Executors.newFixedThreadPool(3);
+
+        List&lt;Future&lt;Integer&gt;&gt; pending = new ArrayList&lt;&gt;();
+        for (int job = 1; job &lt;= 10; job++) {
+            int n = job;
+            pending.add(pool.submit(() -&gt; {
+                Thread.sleep(50);                 // pretend each job takes a little time
+                return n * n;
+            }));
+        }
+
+        pool.shutdown();                          // accept no new jobs; finish the running ones
+        if (!pool.awaitTermination(5, TimeUnit.SECONDS)) {
+            pool.shutdownNow();                   // last resort if a job refuses to finish
+        }
+
+        List&lt;Integer&gt; squares = new ArrayList&lt;&gt;();
+        for (Future&lt;Integer&gt; f : pending) {
+            squares.add(f.get());                 // f.get() waits for that job's result
+        }
+        System.out.println("   results: " + squares + "   (in submission order, whatever order they ran in)");
+        System.out.println("   pool is shut down: " + pool.isShutdown());
+        System.out.println();
+
+        System.out.println("One virtual thread per job (JDK 21+) - for jobs that mostly WAIT");
+        List&lt;Future&lt;Boolean&gt;&gt; ranOnVirtualThread = new ArrayList&lt;&gt;();
+        try (ExecutorService virtual = Executors.newVirtualThreadPerTaskExecutor()) {
+            for (int job = 1; job &lt;= 5; job++) {
+                ranOnVirtualThread.add(virtual.submit(() -&gt; {
+                    Thread.sleep(20);
+                    return Thread.currentThread().isVirtual();
+                }));
+            }
+        }                                         // close() waits for every job, like shutdown() + awaitTermination()
+        boolean allVirtual = true;
+        for (Future&lt;Boolean&gt; f : ranOnVirtualThread) {
+            allVirtual = allVirtual &amp;&amp; f.get();
+        }
+        System.out.println("   5 jobs, every one on a virtual thread: " + allVirtual);
+        System.out.println();
+
+        System.out.println("CompletableFuture - a promise of a result that arrives later");
+        CompletableFuture&lt;String&gt; order =
+                CompletableFuture.supplyAsync(() -&gt; "croissant")     // runs on a pool thread
+                        .thenApply(String::toUpperCase)              // change the result when it arrives
+                        .thenApply(dish -&gt; dish + " + coffee");      // chain the next step
+        System.out.println("   chained result: " + order.get());
+        System.out.println();
+        System.out.println("Ask for a pool, or one virtual thread per task, and let Java keep the");
+        System.out.println("books. New code should almost never call new Thread(...) directly.");
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>23</td><td><code>Executors.newFixedThreadPool(3)</code> &mdash; a <strong>thread pool</strong>: three workers kept alive and reused. A thousand jobs are queued to those three threads instead of a thousand threads being created.</td></tr>
+      <tr><td>28</td><td><code>pool.submit(&hellip;)</code> &mdash; hands a job to the pool and returns a <code>Future&lt;Integer&gt;</code>, a receipt. <code>f.get()</code> later waits for that job's result &mdash; and gives it back in <em>submission</em> order, whatever order the jobs actually ran in.</td></tr>
+      <tr><td>49</td><td><code>Executors.newVirtualThreadPerTaskExecutor()</code> &mdash; <strong>one virtual thread per job</strong> (JDK 21+). For work that mostly <em>waits</em> &mdash; network calls, file reads, database queries &mdash; this scales to tens of thousands of tasks without a huge pool. The try-with-resources block waits for every job to finish.</td></tr>
+      <tr><td>66</td><td><code>CompletableFuture.supplyAsync(&hellip;).thenApply(&hellip;)</code> &mdash; a <strong>promise</strong>: a result that will arrive later, plus the next steps to run when it does. You describe the chain; Java decides which thread runs each link.</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Real output:</strong></p>
+  <!--@output project="code/s05-multithreading" main="com.aptech.s05.E09_ThreadPools"-->
+<div class="terminal-output">A fixed pool of 3 workers handles 10 jobs
+   results: [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]   (in submission order, whatever order they ran in)
+   pool is shut down: true
+
+One virtual thread per job (JDK 21+) - for jobs that mostly WAIT
+   5 jobs, every one on a virtual thread: true
+
+CompletableFuture - a promise of a result that arrives later
+   chained result: CROISSANT + coffee
+
+Ask for a pool, or one virtual thread per task, and let Java keep the
+books. New code should almost never call new Thread(...) directly.</div>
+<!--@end-->
+
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>Always close your executor</b>
+      <p>A pool holds <strong>non-daemon</strong> threads, so a pool that is never shut down keeps your program running forever after <code>main</code> has finished. Two safe ways:</p>
+      <ul>
+        <li><code>pool.shutdown();</code> then <code>pool.awaitTermination(&hellip;)</code> &mdash; finish the running jobs, then stop.</li>
+        <li><code>try (ExecutorService pool = &hellip;) { &hellip; }</code> &mdash; close() does both steps for you. The modern, preferred style.</li>
+      </ul>
+      <p>Forgetting this is Mistake 5 below, and it is the most common "why won't my program stop?" question in this whole course.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Platform threads, virtual threads &mdash; which one?</b>
+      <ul>
+        <li><strong>Virtual threads</strong> for jobs that mostly <em>wait</em>: they are cheap, so you can have thousands, and a waiting virtual thread releases its carrier thread for someone else to use.</li>
+        <li><strong>Platform threads</strong> (including a fixed pool) for jobs that mostly <em>compute</em>: they map to real CPU cores, and a pool of <em>core-count</em> workers keeps the CPU busy without thrashing.</li>
+      </ul>
+      <p>New code should almost never call <code>new Thread(&hellip;)</code> by hand. Ask for a pool, or one virtual thread per task, and let Java keep the books.</p>
+    </div>
+  </div>
+
+  <!-- ===== PART 9 ========================================================== -->
+  <span class="eyebrow">Part 9 of 9</span>
+  <h2 id="part-9-ai-blocking-detection">Part 9 &mdash; AI-Driven Detection of Thread Blocking</h2>
+  <p>
+    Here is a real production problem. Many <strong>virtual threads</strong> share a small pool of <strong>carrier threads</strong>.
+    A virtual thread that waits normally releases its carrier, so tens of thousands can be in flight at once. But a virtual thread that is
+    <em>stuck</em> &mdash; parked in a long <code>synchronized</code> block, or burning CPU in a tight loop &mdash; keeps its carrier, and the jobs queued behind it <strong>starve</strong>.
+    The application looks hung, and nothing in the logs says why.
+  </p>
+  <p>
+    You can now ask an AI assistant to diagnose it. That is genuinely useful &mdash; and it is only useful if you can <strong>check the answer</strong>.
+    Any tool that finds the culprit, AI or otherwise, works from <strong>evidence</strong>: each job reports what it is doing, and a watchdog samples those reports and prints them.
+    This example <em>is</em> that watchdog in miniature.
+  </p>
+
+  <h3>Example 10 &mdash; the evidence a tool needs to find the culprit</h3>
+  <!--@code src="code/s05-multithreading/src/main/java/com/aptech/s05/E10_VirtualThreadBlocking.java" hl="45,53,77,86"-->
+<pre class="numbered" data-file="E10_VirtualThreadBlocking.java" data-hl="45,53,77,86"><code class="lang-java">package com.aptech.s05;
+
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+/**
+ * AI-driven detection of thread blocking in virtual threads.
+ *
+ * Many virtual threads share a small pool of carrier threads. A virtual thread
+ * that waits normally releases its carrier, so tens of thousands can be in
+ * flight at once. But a virtual thread that is stuck - in a long synchronized
+ * block, or burning CPU in a tight loop - keeps its carrier, and the jobs
+ * behind it starve.
+ *
+ * Any tool that finds the culprit - including an AI assistant asked to
+ * diagnose a hung application - works from evidence: each job reports what it
+ * is doing, and a watchdog samples that evidence and prints a report. This
+ * program is that watchdog in miniature.
+ */
+public class E10_VirtualThreadBlocking {
+
+    /** Every job writes its current state here, so the watchdog can see the whole kitchen. */
+    static final Map&lt;String, String&gt; state = new ConcurrentHashMap&lt;&gt;();
+
+    static final List&lt;String&gt; JOBS = List.of("Ada (holding the oven)", "Ben", "Chi", "Dayo");
+
+    public static void main(String[] args) throws Exception {
+        Object oven = new Object();
+        CountDownLatch adaIsInTheOven = new CountDownLatch(1);
+
+        System.out.println("The AI was asked: \"which virtual threads are stuck, and on what?\"");
+        System.out.println("Here is the evidence a watchdog collects to answer it:");
+        System.out.println();
+
+        try (ExecutorService kitchen = Executors.newVirtualThreadPerTaskExecutor()) {
+            // Ada goes first and holds the oven for 700 ms. We only send the others in
+            // once she is really inside, so the queue below is guaranteed, not a coin toss.
+            kitchen.submit(() -&gt; {
+                state.put(JOBS.get(0), "blocked - waiting for the oven");
+                synchronized (oven) {
+                    state.put(JOBS.get(0), "WORKING - in the oven (700 ms)");
+                    adaIsInTheOven.countDown();
+                    sleep(700);
+                }
+                state.put(JOBS.get(0), "done");
+            });
+
+            adaIsInTheOven.await();                 // Ada has the oven; now the queue forms
+
+            for (String name : JOBS.subList(1, JOBS.size())) {
+                kitchen.submit(() -&gt; useOven(name, oven, 50));
+            }
+
+            Thread.sleep(200);
+            report("200 ms in - Ada is still in the oven");
+            Thread.sleep(900);
+            report("1100 ms in - everyone is finished");
+        }
+
+        System.out.println("Every job finished. Nothing is stuck any more.");
+        System.out.println();
+        System.out.println("Read the report the way a tool does: one thread is WORKING and holding the");
+        System.out.println("lock, the rest are BLOCKED on that same lock. That is the answer to \"what is");
+        System.out.println("blocking what?\" - and it is the claim you check an AI's answer against");
+        System.out.println("before you change anything. Real tools print exactly the same facts: the");
+        System.out.println("IntelliJ thread dump, jcmd Thread.dump_to_file, and Java Flight Recorder.");
+    }
+
+    /** Try to take the oven, report what we are doing, work, then report that we are done. */
+    static void useOven(String name, Object oven, long ms) {
+        state.put(name, "blocked - waiting for the oven");
+        synchronized (oven) {                       // a monitor: one holder at a time
+            state.put(name, "WORKING - in the oven (" + ms + " ms)");
+            sleep(ms);
+        }
+        state.put(name, "done");
+    }
+
+    /** The watchdog's sample: print every job's latest report, sorted so it reads the same each time. */
+    static void report(String when) {
+        System.out.println("--- " + when + " ---");
+        TreeMap&lt;String, String&gt; sorted = new TreeMap&lt;&gt;(state);
+        for (Map.Entry&lt;String, String&gt; entry : sorted.entrySet()) {
+            System.out.printf("  %-22s : %s%n", entry.getKey(), entry.getValue());
+        }
+        System.out.println();
+    }
+
+    static void sleep(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+}</code></pre>
+<!--@end-->
+  <div class="walkthrough"><table>
+    <thead><tr><th>Line</th><th>What it does, in plain English</th></tr></thead>
+    <tbody>
+      <tr><td>45</td><td><code>synchronized (oven)</code> &mdash; a monitor: one holder at a time. Ada takes the oven and holds it for 700 ms, so the other three will queue behind it.</td></tr>
+      <tr><td>53</td><td><code>adaIsInTheOven.await()</code> &mdash; a starting gate. We do not send the other jobs in until Ada is <em>really</em> inside, so the queue is guaranteed rather than a coin toss.</td></tr>
+      <tr><td>77</td><td>The lock inside <code>useOven</code> &mdash; each waiter reports "blocked &mdash; waiting for the oven" <em>before</em> it tries to take the lock, so its state is on record while it waits.</td></tr>
+      <tr><td>86</td><td><code>report(&hellip;)</code> &mdash; the watchdog's sample: print every job's latest report. The map is a <code>ConcurrentHashMap</code> (Part 7) because jobs update it from several threads at once.</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Real output.</strong> Read it the way a tool does &mdash; one thread <code>WORKING</code> and holding the lock, the rest <code>blocked</code> on that same lock:</p>
+  <!--@output project="code/s05-multithreading" main="com.aptech.s05.E10_VirtualThreadBlocking"-->
+<div class="terminal-output">The AI was asked: "which virtual threads are stuck, and on what?"
+Here is the evidence a watchdog collects to answer it:
+
+--- 200 ms in - Ada is still in the oven ---
+  Ada (holding the oven) : WORKING - in the oven (700 ms)
+  Ben                    : blocked - waiting for the oven
+  Chi                    : blocked - waiting for the oven
+  Dayo                   : blocked - waiting for the oven
+
+--- 1100 ms in - everyone is finished ---
+  Ada (holding the oven) : done
+  Ben                    : done
+  Chi                    : done
+  Dayo                   : done
+
+Every job finished. Nothing is stuck any more.
+
+Read the report the way a tool does: one thread is WORKING and holding the
+lock, the rest are BLOCKED on that same lock. That is the answer to "what is
+blocking what?" - and it is the claim you check an AI's answer against
+before you change anything. Real tools print exactly the same facts: the
+IntelliJ thread dump, jcmd Thread.dump_to_file, and Java Flight Recorder.</div>
+<!--@end-->
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>How to use an AI's diagnosis without being fooled by it</b>
+      <ol>
+        <li><strong>Collect the evidence first.</strong> A thread dump is real data: IntelliJ's thread dump, <code>jcmd &lt;pid&gt; Thread.dump_to_file</code>, or a Java Flight Recorder recording. Copy it into the prompt &mdash; do not describe it from memory.</li>
+        <li><strong>Ask a specific question:</strong> "which thread is holding the lock that the others are blocked on, and what code is it running?" A vague "why is my app slow?" gets a vague answer.</li>
+        <li><strong>Check the claim against the evidence.</strong> The dump names the lock owner and the blocked threads. If the AI says "Ada is blocked", but the dump shows Ada as <code>RUNNABLE</code> holding the monitor, the answer is wrong &mdash; and you caught it, because you looked.</li>
+        <li><strong>Change one thing and measure.</strong> Shorten the critical section, remove the long <code>synchronized</code> block, or move the blocking call out of it. Then run the watchdog again and compare.</li>
+      </ol>
+      <p>On JDK 24+ many of these pinned cases are gone (JEP 491 lets a virtual thread release its carrier inside <code>synchronized</code>), but long CPU-bound work in a lock still starves carriers &mdash; so the reasoning still applies. <strong>The tool proposes; the evidence decides.</strong></p>
+    </div>
+  </div>
+  <!-- ===== GUIDED LAB ====================================================== -->
+  <h2>&#128736; Guided Lab: The Lunch Rush</h2>
+  <p>
+    The restaurant from Session 4 is open, and it is 12:30. Four waiters take orders at the same time, two cooks share the kitchen, and the pass between
+    them holds only two plates. Everything that used to be "just threads" is now a problem of <strong>shared data</strong> &mdash; and you will see it lose orders before you fix it.
+    Work in pairs; swap the typist after step 3.
+  </p>
+  <div class="steps">
+    <div class="steps__title">&#128221; Lab checklist (about 30 minutes)</div>
+    <div class="step"><div class="step__check"></div><span class="step__num">1</span>
+      <div class="step__text"><strong>The shared tally.</strong> Write a <code>static int ORDERS_TAKEN</code> and four waiter threads that each do <code>ORDERS_TAKEN++</code> 50,000 times. Print the total. It should be 200,000. <strong>Run it two or three times and watch it come out short</strong> &mdash; that is Part 2 happening in your own code.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">2</span>
+      <div class="step__text"><strong>Fix it with an atomic class.</strong> Change the field to <code>LongAdder</code>, call <code>increment()</code>, and print <code>sum()</code>. Run it several times: exactly 200,000, every time.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">3</span>
+      <div class="step__text"><strong>The kitchen joins in.</strong> Add the four <code>join()</code> calls so the manager's report is printed only after the last waiter has finished. Move the report into a method and confirm the number is stable.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">4</span>
+      <div class="step__text"><strong>The pass.</strong> Create <code>BlockingQueue&lt;String&gt; PASS = new ArrayBlockingQueue&lt;&gt;(2)</code>. Two cooks <code>put()</code> their three dishes; one kitchen thread loops on <code>take()</code> and counts what it serves. Notice you write <em>no</em> <code>wait()</code> and <em>no</em> <code>notifyAll()</code>.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">5</span>
+      <div class="step__text"><strong>Close the restaurant.</strong> Interrupting a thread parked in <code>take()</code> is messy, so use a sentinel instead: after the cooks and the waiters finish, <code>put("CLOSED")</code> and have the kitchen thread return when it sees it. Then <code>join()</code> the kitchen.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">6</span>
+      <div class="step__text"><strong>Experiment.</strong> (a) Replace <code>LongAdder</code> with a plain <code>int</code> again and run five times &mdash; how often is it wrong? (b) Delete the <code>put("CLOSED")</code> line. Does the program ever end? (c) Change the pass size to 1. What changes in the output?</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">7</span>
+      <div class="step__text"><strong>Stretch.</strong> Add a <em>second</em> kitchen thread that also takes from the pass. Does the plate count still add up? Why? (Hint: <code>take()</code> is atomic &mdash; two threads can never receive the same plate.)</div></div>
+  </div>
+  <details>
+    <summary>&#128064; Show the complete lab solution (try on your own first!)</summary>
+    <div>
+      <!--@code src="code/s05-multithreading/src/main/java/com/aptech/s05/lab/LunchRush.java" hl="43,53,69"-->
+<pre class="numbered" data-file="LunchRush.java" data-hl="43,53,69"><code class="lang-java">package com.aptech.s05.lab;
+
+import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
+
+/**
+ * GUIDED LAB — The Lunch Rush.
+ *
+ * The restaurant from Session 4 is open, and now it is 12:30. Four waiters take orders at
+ * the same time, two cooks share the grill and the fryer, and the pass holds only two plates.
+ * Everything that used to be "just threads" is now a problem of SHARED DATA.
+ *
+ * Build this program step by step (the step checklist is on the lesson page):
+ *   STEP 1  the shared order tally — watch it lose orders
+ *   STEP 2  fix the tally with an atomic class
+ *   STEP 3  hand the tally to the cooks and prove nothing is lost
+ *   STEP 4  the pass: a BlockingQueue does the waiting for you
+ *   STEP 5  close the restaurant cleanly
+ */
+public class LunchRush {
+
+    /** The tally every waiter adds to at the same time. */
+    static final LongAdder ORDERS_TAKEN = new LongAdder();
+
+    /** The pass between the kitchen and the floor: at most 2 plates waiting at once. */
+    static final BlockingQueue&lt;String&gt; PASS = new ArrayBlockingQueue&lt;&gt;(2);
+
+    static final AtomicInteger SERVED = new AtomicInteger();
+    static final int WAITERS = 4;
+    static final int ORDERS_PER_WAITER = 50_000;
+
+    public static void main(String[] args) throws InterruptedException {
+        long start = System.currentTimeMillis();
+
+        // STEP 1 &amp; 2 — four waiters, one shared tally. LongAdder is atomic, so nothing is lost.
+        Thread[] waiters = new Thread[WAITERS];
+        for (int i = 0; i &lt; WAITERS; i++) {
+            waiters[i] = new Thread(() -&gt; {
+                for (int order = 0; order &lt; ORDERS_PER_WAITER; order++) {
+                    ORDERS_TAKEN.increment();          // ONE indivisible step: no race condition
+                }
+            }, "Waiter " + (i + 1));
+            waiters[i].start();
+        }
+
+        // STEP 3 — the kitchen takes plates off the pass until we tell it to stop.
+        Thread kitchen = new Thread(() -&gt; {
+            try {
+                while (true) {
+                    String plate = PASS.take();     // sleeps here all by itself when the pass is empty
+                    if (plate.equals("CLOSED")) {
+                        return;
+                    }
+                    SERVED.incrementAndGet();
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, "Kitchen");
+
+        Thread[] cooks = new Thread[2];
+        for (int i = 0; i &lt; cooks.length; i++) {
+            cooks[i] = new Thread(() -&gt; {
+                try {
+                    for (String dish : List.of("Jollof rice", "Pepper soup", "Puff-puff")) {
+                        PASS.put(dish);             // waits by itself when the pass is full
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }, "Cook " + (i + 1));
+            cooks[i].start();
+        }
+        kitchen.start();
+
+        for (Thread waiter : waiters) {
+            waiter.join();                          // the manager waits for the last order
+        }
+        for (Thread cook : cooks) {
+            cook.join();
+        }
+
+        PASS.put("CLOSED");                         // STEP 5 — tell the kitchen to stop
+        kitchen.join();
+
+        int expected = WAITERS * ORDERS_PER_WAITER;
+        System.out.println("Orders taken:  " + ORDERS_TAKEN.sum() + "   (expected " + expected + ")");
+        System.out.println("Orders lost:   " + (expected - ORDERS_TAKEN.sum()));
+        System.out.println("Plates served: " + SERVED.get() + "   (6 dishes, 2 cooks, pass of 2)");
+        System.out.println("Lunch rush finished in " + (System.currentTimeMillis() - start) + " ms.");
+        System.out.println();
+        System.out.println("Every shared thing in this program has one owner:");
+        System.out.println("  the tally  -&gt; LongAdder        (atomic, no lock written by hand)");
+        System.out.println("  the pass   -&gt; ArrayBlockingQueue (put/take do all the waiting)");
+        System.out.println("  the count  -&gt; AtomicInteger      (safe for one variable)");
+    }
+}</code></pre>
+<!--@end-->
+      <p><strong>Real output of one run.</strong> The millisecond figure depends on your computer; the "Orders lost: 0" line must be exactly that, every time:</p>
+      <!--@output project="code/s05-multithreading" main="com.aptech.s05.lab.LunchRush"-->
+<div class="terminal-output">Orders taken:  200000   (expected 200000)
+Orders lost:   0
+Plates served: 6   (6 dishes, 2 cooks, pass of 2)
+Lunch rush finished in 81 ms.
+
+Every shared thing in this program has one owner:
+  the tally  -&gt; LongAdder        (atomic, no lock written by hand)
+  the pass   -&gt; ArrayBlockingQueue (put/take do all the waiting)
+  the count  -&gt; AtomicInteger      (safe for one variable)</div>
+<!--@end-->
+      <p class="text-sm"><strong>Experiment answers:</strong> (a) with a plain <code>int</code> it is short on essentially every run &mdash; and if you ever see it come out <em>right</em>, that is the JIT hiding the bug, not a fix. (b) Without the sentinel the kitchen thread is parked in <code>take()</code> forever, waiting for a plate that never comes, so the program never ends. (c) With a pass of 1 the cooks and the kitchen must take strict turns, so the output interleaves much more tightly.</p>
+    </div>
+  </details>
+
+  <!-- ===== COMMON MISTAKES ================================================= -->
+  <h2>&#9888;&#65039; Common Mistakes (and the Exact Error You'll See)</h2>
+  <p>Every message below was produced on JDK 25.</p>
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 1 &mdash; calling <code>wait()</code> / <code>notifyAll()</code> without holding the lock</b>
+      <pre><code class="lang-java">Object lock = new Object();
+lock.wait();                                // not inside a synchronized block</code></pre>
+      <div class="terminal-output is-error">Exception in thread "waiter" java.lang.IllegalMonitorStateException: current thread is not owner
+	at java.base/java.lang.Object.wait0(Native Method)
+	at java.base/java.lang.Object.wait(Object.java:389)</div>
+      <p><strong>Why:</strong> waiting and waking are only meaningful if you are the thread that holds the object's lock. <strong>Fix:</strong> put both calls inside <code>synchronized (lock) { &hellip; }</code>.</p>
+    </div>
+  </div>
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 2 &mdash; <code>synchronized</code> on a lock nobody else uses</b>
+      <pre><code class="lang-java">void addOne() {
+    synchronized (new Object()) {           // a brand-new lock on every call
+        count++;
+    }
+}</code></pre>
+      <div class="terminal-output">synchronized on a NEW object each call -&gt; 123851   (expected 400000)</div>
+      <p><strong>Why:</strong> there is no error at all, which is what makes it nasty. Each call locks a <em>different</em> object, so no two threads are ever excluded, and the race is completely unfixed &mdash; it just looks protected. <strong>Fix:</strong> one lock object, created once, shared by every method that touches the data (Part 3).</p>
+    </div>
+  </div>
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 3 &mdash; sharing a plain <code>HashMap</code> (or <code>ArrayList</code>) between threads</b>
+      <pre><code class="lang-java">Map&lt;String, Integer&gt; counts = new HashMap&lt;&gt;();   // NOT thread-safe
+// four threads do:  counts.put("orders", counts.get("orders") + 1);</code></pre>
+      <div class="terminal-output">plain HashMap -&gt; orders = 130685   (expected 400000)</div>
+      <p><strong>Why:</strong> a <code>get()</code> followed by a <code>put()</code> is exactly the READ&ndash;ADD&ndash;WRITE from Part 2, so updates are lost. It can also throw <code>ConcurrentModificationException</code>, or corrupt the map's internal structure. <strong>Fix:</strong> <code>ConcurrentHashMap</code> and use <code>merge(word, 1, Integer::sum)</code> (Part 7).</p>
+    </div>
+  </div>
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 4 &mdash; <code>join()</code> on a thread you forgot to start</b>
+      <pre><code class="lang-java">Thread t = new Thread(() -&gt; { result[0] = 42; });
+t.join();                                    // start() was never called
+System.out.println("result = " + result[0]);</code></pre>
+      <div class="terminal-output">result = 0</div>
+      <p><strong>Why:</strong> a thread in state <code>NEW</code> has not run, so <code>join()</code> returns immediately instead of waiting. No error, and the wrong answer looks like a logic bug. <strong>Fix:</strong> <code>t.start()</code> first.</p>
+    </div>
+  </div>
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 5 &mdash; forgetting to shut the executor down</b>
+      <pre><code class="lang-java">ExecutorService pool = Executors.newFixedThreadPool(2);
+pool.submit(() -&gt; System.out.println("job done"));
+// pool.shutdown() was never called</code></pre>
+      <div class="terminal-output">main has finished - the program should end here
+job done on pool-1-thread-1
+&quot;C:\Program Files\Java\bin\java.exe&quot; did not finish within 5 seconds</div>
+      <p><strong>Why:</strong> a pool's threads are <strong>non-daemon</strong>, so the JVM will not exit while they are alive. <strong>Fix:</strong> <code>pool.shutdown()</code> (with <code>awaitTermination</code>), or wrap the pool in try-with-resources so <code>close()</code> does it for you (Part 8).</p>
+    </div>
+  </div>
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 6 &mdash; sleeping (or doing slow work) while holding a lock</b>
+      <pre><code class="lang-java">synchronized void bake(String who) throws InterruptedException {
+    Thread.sleep(300);                      // still holding the lock while it sleeps
+}</code></pre>
+      <div class="terminal-output">4 cooks, 300 ms each, all in parallel would be about 300 ms
+actual: 1237 ms</div>
+      <p><strong>Why:</strong> the lock is held for the whole sleep, so the other three cooks queue behind it and the work is serialised. <code>synchronized</code> was doing its job &mdash; you asked it to protect something that did not need protecting. <strong>Fix:</strong> lock the smallest critical section, and keep slow I/O and <code>sleep()</code> outside it.</p>
+    </div>
+  </div>
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 7 &mdash; submitting work to an executor that is already shut down</b>
+      <pre><code class="lang-java">pool.shutdown();
+pool.submit(() -&gt; System.out.println("too late"));</code></pre>
+      <div class="terminal-output is-error">Exception in thread "main" java.util.concurrent.RejectedExecutionException: Task java.util.concurrent.FutureTask@33909752[Not completed, task = ...] rejected from java.util.concurrent.ThreadPoolExecutor@764c12b6[Terminated, pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0]</div>
+      <p><strong>Why:</strong> <code>shutdown()</code> means "accept no new jobs". <strong>Fix:</strong> submit everything first, then shut down &mdash; or check <code>pool.isShutdown()</code> before submitting.</p>
+    </div>
+  </div>
+
+  <!-- ===== KNOWLEDGE CHECK ================================================= -->
+  <h2>&#128221; Knowledge Check</h2>
+  <p>10 questions on the whole session. Aim for <strong>8/10</strong> before starting Assignment A3.</p>
+  <div class="quiz" id="s05-final">
+    <div class="quiz__title">&#128161; Session 5 Knowledge Check</div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">1. What causes a race condition?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Two threads trying to sleep at the same time.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> A thread crashing and throwing an exception.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Multiple threads reading and writing the same shared variable without synchronisation.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Using virtual threads instead of platform threads.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> Shared mutable state with no lock. Operations like <code>count++</code> are three steps (read, add, write), so two threads can interleave them and lose an update.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">2. What happens when a thread enters a <code>synchronized</code> method on an object?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> All other threads are paused immediately.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> It acquires that object's lock. Any other thread trying to enter a <code>synchronized</code> method on the <em>same</em> object must wait.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> It copies the object's memory so it can work privately.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> It automatically runs faster.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> <code>synchronized</code> uses the object's intrinsic lock (monitor), and only one thread can hold it at a time. Threads locking a <em>different</em> object are not excluded at all.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="true">
+      <div class="quiz__kind">True / False</div>
+      <div class="quiz__stem">3. <code>wait()</code> and <code>notify()</code> must be called from inside a <code>synchronized</code> block or method.</div>
+      <label class="quiz__opt"><input type="radio" value="true"> True</label>
+      <label class="quiz__opt"><input type="radio" value="false"> False</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>True.</strong> Otherwise Java throws <code>IllegalMonitorStateException: current thread is not owner</code> (Mistake 1).</div>
+    </div>
+
+    <div class="quiz__q" data-answer="d">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">4. How can you most reliably prevent a deadlock when several locks are needed?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Use <code>Thread.sleep()</code> between the locks.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Only use virtual threads.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Randomise the order in which the locks are taken.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Always acquire the locks in exactly the same order in every thread.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>D.</strong> A consistent lock order makes a circular wait impossible (Example 7 and Figure 4). Sleeping between locks changes the odds, never the outcome.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a|c|d">
+      <div class="quiz__kind">Select all that apply</div>
+      <div class="quiz__stem">5. Which of these classes are thread-safe?</div>
+      <label class="quiz__opt"><input type="checkbox" value="a"> <code>ConcurrentHashMap</code></label>
+      <label class="quiz__opt"><input type="checkbox" value="b"> <code>ArrayList</code></label>
+      <label class="quiz__opt"><input type="checkbox" value="c"> <code>BlockingQueue</code></label>
+      <label class="quiz__opt"><input type="checkbox" value="d"> <code>CopyOnWriteArrayList</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A, C and D.</strong> <code>ArrayList</code> is not thread-safe &mdash; sharing one between threads is Mistake 3 with lists.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">6. You are protecting a <em>single</em> counter that many threads increment. Which is the best tool?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>synchronized</code> on the whole method.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> An <code>AtomicInteger</code> (or <code>LongAdder</code>).</label>
+      <label class="quiz__opt"><input type="radio" value="c"> A plain <code>int</code> with a <code>Thread.yield()</code> after each change.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> A daemon thread.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> One variable &rarr; atomic class: no lock to write, nothing to get wrong, usually faster. Use <code>synchronized</code> when several variables must change together.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">7. Why must <code>wait()</code> always be called inside a <code>while</code> loop rather than an <code>if</code>?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Because <code>if</code> is slower.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Because the compiler requires it.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Because another thread may change the condition while this one sleeps, and <code>wait()</code> can also wake up spuriously.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Because <code>while</code> releases the lock automatically.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> When the thread wakes it must re-check the condition before proceeding. A loop does that; a single <code>if</code> does not.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="true">
+      <div class="quiz__kind">True / False</div>
+      <div class="quiz__stem">8. A <code>BlockingQueue</code> makes the hand-written <code>while</code> / <code>wait()</code> / <code>notifyAll()</code> producer&ndash;consumer pattern unnecessary.</div>
+      <label class="quiz__opt"><input type="radio" value="true"> True</label>
+      <label class="quiz__opt"><input type="radio" value="false"> False</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>True.</strong> <code>put()</code> blocks when full and <code>take()</code> blocks when empty, doing all the waiting and waking internally (Example 8).</div>
+    </div>
+
+    <div class="quiz__q" data-answer="d">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">9. Your program prints its last line and then never exits. The most likely cause is&hellip;</div>
+      <label class="quiz__opt"><input type="radio" value="a"> a <code>NullPointerException</code> in a daemon thread.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> a race condition in the tally.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> a deadlock between two <code>synchronized</code> blocks.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> an <code>ExecutorService</code> (or other non-daemon thread) that was never shut down.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>D.</strong> Pool threads are non-daemon, so the JVM stays alive while they do. Shut the pool down, or use try-with-resources (Mistake 5).</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">10. An AI assistant tells you a hung application is stuck because "the blocked threads are too slow". The thread dump shows one thread <code>RUNNABLE</code> holding a monitor and three others <code>BLOCKED</code> on that monitor. What should you do?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Accept it &mdash; the assistant has read the dump.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Reject the explanation: the evidence says three threads are <em>blocked on a lock</em>, so the cause is the thread holding it, and you should shorten that critical section.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Add <code>Thread.sleep()</code> calls to slow the other threads down too.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Delete the <code>synchronized</code> keyword and accept a race condition instead.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> Blocked threads are not slow &mdash; they are <em>waiting for the lock</em>. The evidence names the holder, so the fix is to shorten or remove that critical section (Part 9). An AI's diagnosis is a claim to check, not an answer to apply.</div>
+    </div>
+
+    <div class="quiz__score" style="display:none"></div>
+  </div>
+
+  <!-- ===== PRACTICE ======================================================== -->
+  <h2>&#128170; Practice Exercises</h2>
+  <p>Not graded. Do P1&ndash;P3 before Assignment A3. Solutions are tested programs in <code>code/s05-multithreading/&hellip;/practice/</code>.</p>
+
+  <details>
+    <summary><span class="badge badge--easy">Easy</span>&nbsp; P1 &mdash; Who is still cooking?</summary>
+    <div>
+      <p>Start three cooks, each finishing at a different time. Ask each one <code>isAlive()</code> straight away, then wait for all of them with <code>join()</code> before the waiter serves.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p>Ask <code>isAlive()</code> right after starting (all three are still running), then loop and <code>join()</code> each thread. The dishes print in the order the cooks finish, not the order you started them.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s05-multithreading/src/main/java/com/aptech/s05/practice/P1_JoinReport.java" hl="29,34"-->
+<pre class="numbered" data-file="P1_JoinReport.java" data-hl="29,34"><code class="lang-java">package com.aptech.s05.practice;
+
+/**
+ * PRACTICE 1 (Easy) — join() and isAlive().
+ *
+ * Start three cooks, ask whether each one is still working, then wait for all of them
+ * before the waiter serves. Expected: three "still cooking? true" lines, then the
+ * three dishes in the order the cooks finish, then the waiter's line last.
+ */
+public class P1_JoinReport {
+
+    public static void main(String[] args) throws InterruptedException {
+        String[] dishes = {"Jollof rice", "Pepper soup", "Puff-puff"};
+        Thread[] cooks = new Thread[dishes.length];
+
+        for (int i = 0; i &lt; dishes.length; i++) {
+            String dish = dishes[i];
+            int cookNumber = i + 1;
+            int cookMs = 150 * (dishes.length - i + 1); // Cook 1: 600 ms, Cook 2: 450 ms, Cook 3: 300 ms
+            cooks[i] = new Thread(() -&gt; {
+                sleep(cookMs);
+                System.out.println("  " + dish + " is ready (Cook " + cookNumber + ")");
+            }, "Cook " + cookNumber);
+            cooks[i].start();
+        }
+
+        // Ask each cook "are you still working?" — all three are, because none has slept long enough to finish.
+        for (Thread cook : cooks) {
+            System.out.println("  " + cook.getName() + " still cooking? " + cook.isAlive());
+        }
+
+        // The waiter cannot serve until EVERY dish is ready.
+        for (Thread cook : cooks) {
+            cook.join();
+        }
+        System.out.println("Waiter: all dishes ready - serving now.");
+    }
+
+    static void sleep(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s05-multithreading" main="com.aptech.s05.practice.P1_JoinReport"-->
+<div class="terminal-output">  Cook 1 still cooking? true
+  Cook 2 still cooking? true
+  Cook 3 still cooking? true
+  Puff-puff is ready (Cook 3)
+  Pepper soup is ready (Cook 2)
+  Jollof rice is ready (Cook 1)
+Waiter: all dishes ready - serving now.</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="badge badge--easy">Easy</span>&nbsp; P2 &mdash; Fix the tally three ways</summary>
+    <div>
+      <p>The same 400,000 increments are done three ways: with a broken <code>int</code>, with <code>synchronized</code>, and with <code>AtomicInteger</code>. Run it and explain why only the first is wrong.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p>All four threads start behind a <code>CountDownLatch</code> so they really do collide. The broken version writes the three steps out with a <code>Thread.yield()</code> in the middle &mdash; purely to hold the window open so the lost update shows up on <em>every</em> run.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s05-multithreading/src/main/java/com/aptech/s05/practice/P2_SafeTally.java" hl="36,38,40"-->
+<pre class="numbered" data-file="P2_SafeTally.java" data-hl="36,38,40"><code class="lang-java">package com.aptech.s05.practice;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ * PRACTICE 2 (Easy) — fix the race condition.
+ *
+ * The counter below is written three ways: broken on purpose, fixed with synchronized,
+ * and fixed with an atomic class. Print all three totals and explain (to yourself, out
+ * loud) why the first is wrong and the other two are right.
+ */
+public class P2_SafeTally {
+
+    static final int THREADS = 4;
+    static final int INCREMENTS = 100_000;
+    static final int EXPECTED = THREADS * INCREMENTS;
+
+    public static void main(String[] args) throws InterruptedException {
+        System.out.println("broken int (on purpose) -&gt; " + broken()
+                + "   (expected " + EXPECTED + " - watch it come out short)");
+        System.out.println("synchronized method     -&gt; " + safeSynchronized()
+                + "   (expected " + EXPECTED + ")");
+        System.out.println("AtomicInteger           -&gt; " + safeAtomic()
+                + "   (expected " + EXPECTED + ")");
+        System.out.println();
+        System.out.println("Rule of thumb: one variable -&gt; atomic class. Several that must change");
+        System.out.println("together -&gt; synchronized, so no other thread ever sees a half-finished change.");
+    }
+
+    // ---- 1. the broken version: nothing protects the field -------------------
+    static class Plain {
+        int count = 0;
+
+        void add() {
+            // The same three steps as count++, written out. The Thread.yield() is NOT a fix
+            // and NOT needed in real code: it only holds the window between READ and WRITE
+            // open so that the lost update shows up on every run instead of one run in ten.
+            int current = count;        // READ
+            Thread.yield();             // (demonstration aid)
+            count = current + 1;        // WRITE
+        }
+    }
+
+    static int broken() throws InterruptedException {
+        Plain tally = new Plain();
+        run(THREADS, () -&gt; tally.add());
+        return tally.count;
+    }
+
+    // ---- 2. the synchronized version -----------------------------------------
+    static class Guarded {
+        int count = 0;
+        synchronized void add() { count++; }
+    }
+
+    static int safeSynchronized() throws InterruptedException {
+        Guarded tally = new Guarded();
+        run(THREADS, () -&gt; tally.add());
+        return tally.count;
+    }
+
+    // ---- 3. the atomic version -----------------------------------------------
+    static int safeAtomic() throws InterruptedException {
+        AtomicInteger tally = new AtomicInteger();
+        run(THREADS, () -&gt; tally.incrementAndGet());
+        return tally.get();
+    }
+
+    /** Starts the given thread count at the same instant, each performing INCREMENTS additions. */
+    static void run(int threads, Runnable addOne) throws InterruptedException {
+        CountDownLatch startGate = new CountDownLatch(1);      // so they really do collide
+        Thread[] ts = new Thread[threads];
+        for (int i = 0; i &lt; threads; i++) {
+            ts[i] = new Thread(() -&gt; {
+                try {
+                    startGate.await();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+                for (int n = 0; n &lt; INCREMENTS; n++) {
+                    addOne.run();
+                }
+            });
+            ts[i].start();
+        }
+        startGate.countDown();
+        for (Thread t : ts) {
+            t.join();
+        }
+    }
+}</code></pre>
+<!--@end-->
+        <p><strong>Real output of one run.</strong> The broken total is different every time; the other two are always exactly 400000:</p>
+        <!--@output project="code/s05-multithreading" main="com.aptech.s05.practice.P2_SafeTally"-->
+<div class="terminal-output">broken int (on purpose) -&gt; 115158   (expected 400000 - watch it come out short)
+synchronized method     -&gt; 400000   (expected 400000)
+AtomicInteger           -&gt; 400000   (expected 400000)
+
+Rule of thumb: one variable -&gt; atomic class. Several that must change
+together -&gt; synchronized, so no other thread ever sees a half-finished change.</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="badge badge--medium">Medium</span>&nbsp; P3 &mdash; Producer and consumer with <code>wait()</code></summary>
+    <div>
+      <p>A shelf holds at most two boxes. A packer fills it, a courier empties it, and the two take turns &mdash; using <code>wait()</code> and <code>notifyAll()</code> by hand, so you feel exactly what <code>BlockingQueue</code> does for you.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p>Both methods are <code>synchronized</code>, and both loop on their condition (<code>while full</code> / <code>while empty</code>) before checking it again after <code>wait()</code>. Signal with <code>notifyAll()</code> at the <em>end</em> of each change.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s05-multithreading/src/main/java/com/aptech/s05/practice/P3_ProducerConsumer.java" hl="19,21,25"-->
+<pre class="numbered" data-file="P3_ProducerConsumer.java" data-hl="19,21,25"><code class="lang-java">package com.aptech.s05.practice;
+
+/**
+ * PRACTICE 3 (Medium) — producer and consumer with wait() and notifyAll().
+ *
+ * The shelf holds at most TWO boxes. The packer fills it, the courier empties it,
+ * and the two take turns. Notice that wait() is always inside a while loop: when a
+ * thread wakes up it must re-check the condition, because the world may have changed
+ * while it slept.
+ */
+public class P3_ProducerConsumer {
+
+    /** A shelf that holds at most 2 boxes. */
+    static class Shelf {
+        private final String[] boxes = new String[2];
+        private int count = 0;
+
+        synchronized void put(String box) throws InterruptedException {
+            while (count == boxes.length) {              // shelf full: wait for the courier
+                System.out.println("  Packer waits: the shelf is full.");
+                wait();
+            }
+            boxes[count++] = box;
+            System.out.println("  Packer put " + box + " on the shelf (now holding " + count + ")");
+            notifyAll();
+        }
+
+        synchronized String take() throws InterruptedException {
+            while (count == 0) {                          // shelf empty: wait for the packer
+                System.out.println("  Courier waits: the shelf is empty.");
+                wait();
+            }
+            String box = boxes[0];                        // first in, first out
+            System.arraycopy(boxes, 1, boxes, 0, --count);
+            System.out.println("  Courier took " + box + " (shelf now holding " + count + ")");
+            notifyAll();
+            return box;
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        Shelf shelf = new Shelf();
+
+        Thread packer = new Thread(() -&gt; {
+            try {
+                shelf.put("Box 1");
+                shelf.put("Box 2");
+                shelf.put("Box 3");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, "packer");
+
+        Thread courier = new Thread(() -&gt; {
+            try {
+                shelf.take();
+                shelf.take();
+                shelf.take();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, "courier");
+
+        packer.start();
+        courier.start();
+        packer.join();
+        courier.join();
+
+        System.out.println();
+        System.out.println("All three boxes moved. The shelf never held more than 2, and the");
+        System.out.println("courier never tried to take a box that was not there - because each");
+        System.out.println("one waited instead of guessing.");
+    }
+}</code></pre>
+<!--@end-->
+        <p><strong>Real output of one run.</strong> The exact interleaving can differ; what never changes is that the shelf is never overfilled and the courier never takes from an empty shelf:</p>
+        <!--@output project="code/s05-multithreading" main="com.aptech.s05.practice.P3_ProducerConsumer"-->
+<div class="terminal-output">  Courier waits: the shelf is empty.
+  Packer put Box 1 on the shelf (now holding 1)
+  Packer put Box 2 on the shelf (now holding 2)
+  Packer waits: the shelf is full.
+  Courier took Box 1 (shelf now holding 1)
+  Courier took Box 2 (shelf now holding 0)
+  Courier waits: the shelf is empty.
+  Packer put Box 3 on the shelf (now holding 1)
+  Courier took Box 3 (shelf now holding 0)
+
+All three boxes moved. The shelf never held more than 2, and the
+courier never tried to take a box that was not there - because each
+one waited instead of guessing.</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="badge badge--medium">Medium</span>&nbsp; P4 &mdash; Find and fix the deadlock</summary>
+    <div>
+      <p>A program has two cooks: one takes the GRILL then the FRYER, the other takes the FRYER then the GRILL. Fix it &mdash; and be ready to say why your fix works.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p>The broken version is kept as a comment in the solution: each cook takes the two utensils in the <em>opposite</em> order, so each can hold what the other needs. Make everybody reach for the GRILL first. No extra locks, no longer sleeps &mdash; just one agreed order.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s05-multithreading/src/main/java/com/aptech/s05/practice/P4_FixTheDeadlock.java" hl="39,42"-->
+<pre class="numbered" data-file="P4_FixTheDeadlock.java" data-hl="39,42"><code class="lang-java">package com.aptech.s05.practice;
+
+/**
+ * PRACTICE 4 (Medium) — find and fix a deadlock.
+ *
+ * The broken program had one cook take the GRILL then the FRYER, and the other take
+ * the FRYER then the GRILL. Both could freeze forever. The fix is not more locks and
+ * not a longer sleep: it is ONE agreed order that everybody follows.
+ *
+ * The broken version is kept as a comment so you can see exactly what changed.
+ */
+public class P4_FixTheDeadlock {
+
+    private static final Object GRILL = new Object();
+    private static final Object FRYER = new Object();
+
+    public static void main(String[] args) throws InterruptedException {
+        // BROKEN — opposite orders. Each thread holds what the other one needs.
+        //   Thread ada = new Thread(() -&gt; cookWrong("Ada", GRILL, FRYER));
+        //   Thread ben = new Thread(() -&gt; cookWrong("Ben", FRYER, GRILL));
+
+        // FIXED — both cooks reach for the GRILL first.
+        Thread ada = new Thread(() -&gt; cook("Ada"), "Ada");
+        Thread ben = new Thread(() -&gt; cook("Ben"), "Ben");
+
+        ada.start();
+        ben.start();
+
+        ada.join();
+        ben.join();
+
+        System.out.println();
+        System.out.println("Both cooks finished and the program exited by itself.");
+        System.out.println("One rule removed the deadlock: always take the GRILL before the FRYER.");
+    }
+
+    /** Everyone takes the GRILL first, then the FRYER. The same order, every time. */
+    static void cook(String name) {
+        synchronized (GRILL) {
+            System.out.println(name + " has the grill.");
+            sleep(200);
+            synchronized (FRYER) {
+                System.out.println(name + " has the fryer too - cooking.");
+            }
+            System.out.println(name + " put both utensils down.");
+        }
+    }
+
+    static void sleep(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s05-multithreading" main="com.aptech.s05.practice.P4_FixTheDeadlock"-->
+<div class="terminal-output">Ben has the grill.
+Ben has the fryer too - cooking.
+Ben put both utensils down.
+Ada has the grill.
+Ada has the fryer too - cooking.
+Ada put both utensils down.
+
+Both cooks finished and the program exited by itself.
+One rule removed the deadlock: always take the GRILL before the FRYER.</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="badge badge--medium">Medium</span>&nbsp; P5 &mdash; Count words with several threads</summary>
+    <div>
+      <p>Count the words on three pages, each page on its own thread, all writing into <em>one</em> shared map. Then explain what a plain <code>HashMap</code> would do instead.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p>Use a <code>ConcurrentHashMap</code> and <code>merge(word, 1, Integer::sum)</code> &mdash; that call is an atomic read&ndash;modify&ndash;write inside the map, so two threads counting the same word cannot lose one.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s05-multithreading/src/main/java/com/aptech/s05/practice/P5_ConcurrentWordCount.java" hl="29"-->
+<pre class="numbered" data-file="P5_ConcurrentWordCount.java" data-hl="29"><code class="lang-java">package com.aptech.s05.practice;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * PRACTICE 5 (Medium) — count words with several threads.
+ *
+ * Each page is counted on its own thread, and all of them write into ONE
+ * ConcurrentHashMap. merge() is atomic, so two threads updating the same word can
+ * never lose an update the way a plain HashMap would.
+ */
+public class P5_ConcurrentWordCount {
+
+    static final List&lt;String&gt; PAGES = List.of(
+            "the quick brown fox jumps over the lazy dog",
+            "the dog barks and the fox runs",
+            "the lazy dog sleeps");
+
+    public static void main(String[] args) throws InterruptedException {
+        Map&lt;String, Integer&gt; counts = new ConcurrentHashMap&lt;&gt;();
+
+        Thread[] threads = new Thread[PAGES.size()];
+        for (int i = 0; i &lt; PAGES.size(); i++) {
+            String page = PAGES.get(i);
+            threads[i] = new Thread(() -&gt; {
+                for (String word : page.split(" ")) {
+                    counts.merge(word, 1, Integer::sum);      // atomic read-modify-write
+                }
+            }, "page-" + (i + 1));
+            threads[i].start();
+        }
+        for (Thread thread : threads) {
+            thread.join();
+        }
+
+        System.out.println("Different words found: " + counts.size());
+        System.out.println("  \"the\" appears " + counts.get("the") + " times");
+        System.out.println("  \"dog\" appears " + counts.get("dog") + " times");
+        System.out.println("  \"fox\" appears " + counts.get("fox") + " times");
+        System.out.println("Total words counted: "
+                + counts.values().stream().mapToInt(Integer::intValue).sum());
+        System.out.println();
+        System.out.println("A plain HashMap here would lose counts, or corrupt itself and throw");
+        System.out.println("ConcurrentModificationException - the same bug as Part 1, hiding in a class.");
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s05-multithreading" main="com.aptech.s05.practice.P5_ConcurrentWordCount"-->
+<div class="terminal-output">Different words found: 12
+  "the" appears 5 times
+  "dog" appears 3 times
+  "fox" appears 2 times
+Total words counted: 20
+
+A plain HashMap here would lose counts, or corrupt itself and throw
+ConcurrentModificationException - the same bug as Part 1, hiding in a class.</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="badge badge--hard">Challenge</span>&nbsp; P6 &mdash; A pool and a promise</summary>
+    <div>
+      <p>Part A prepares five dishes on a pool of three cooks and collects the results. Part B does one order as a chain of <code>CompletableFuture</code> steps. Nothing creates a <code>Thread</code> by hand, and the pool is shut down when the work is done.</p>
+      <details class="hint"><summary>&#128161; Hint</summary><div><p><code>submit()</code> returns a <code>Future</code>; <code>get()</code> waits for that job's result, so the results come back in submission order even though the jobs ran in whatever order the pool chose. Finish with <code>shutdown()</code> + <code>awaitTermination()</code>, or try-with-resources.</p></div></details>
+      <details><summary>&#9989; Solution</summary><div>
+        <!--@code src="code/s05-multithreading/src/main/java/com/aptech/s05/practice/P6_OrderPipeline.java" hl="27,42"-->
+<pre class="numbered" data-file="P6_OrderPipeline.java" data-hl="27,42"><code class="lang-java">package com.aptech.s05.practice;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+/**
+ * PRACTICE 6 (Challenge) — a pool and a promise working together.
+ *
+ * Part A prepares five dishes on a pool of three cooks and collects the results.
+ * Part B does one order as a chain of CompletableFuture steps.
+ *
+ * Nothing creates a Thread by hand, and the pool is shut down when the work is done.
+ */
+public class P6_OrderPipeline {
+
+    public static void main(String[] args) throws Exception {
+        List&lt;String&gt; menu = List.of("Jollof rice", "Pepper soup", "Puff-puff", "Suya", "Moi moi");
+
+        System.out.println("A pool of 3 cooks prepares 5 dishes:");
+        ExecutorService kitchen = Executors.newFixedThreadPool(3);
+        List&lt;Future&lt;String&gt;&gt; preparing = new ArrayList&lt;&gt;();
+        for (String dish : menu) {
+            preparing.add(kitchen.submit(() -&gt; {
+                Thread.sleep(100);                       // pretend each dish takes a moment
+                return dish + " is ready";
+            }));
+        }
+        for (Future&lt;String&gt; f : preparing) {
+            System.out.println("  " + f.get());          // f.get() waits for that dish
+        }
+        kitchen.shutdown();                              // no new work; the running dishes finish
+        if (!kitchen.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS)) {
+            kitchen.shutdownNow();
+        }
+
+        System.out.println();
+        System.out.println("The same kitchen as one promise chain (CompletableFuture):");
+        CompletableFuture&lt;String&gt; order = CompletableFuture
+                .supplyAsync(() -&gt; "Jollof rice")        // a pool thread starts the dish
+                .thenApply(String::toLowerCase)          // the pass labels it
+                .thenApply(dish -&gt; dish + " -&gt; table 7"); // the waiter delivers it
+        System.out.println("  " + order.get());
+
+        System.out.println();
+        System.out.println("Pool shut down: " + kitchen.isShutdown()
+                + ". No thread was created by hand, and nothing was left running.");
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s05-multithreading" main="com.aptech.s05.practice.P6_OrderPipeline"-->
+<div class="terminal-output">A pool of 3 cooks prepares 5 dishes:
+  Jollof rice is ready
+  Pepper soup is ready
+  Puff-puff is ready
+  Suya is ready
+  Moi moi is ready
+
+The same kitchen as one promise chain (CompletableFuture):
+  jollof rice -&gt; table 7
+
+Pool shut down: true. No thread was created by hand, and nothing was left running.</div>
+<!--@end-->
+      </div></details>
+    </div>
+  </details>
+  <!-- ===== ASSIGNMENT A3 =================================================== -->
+  <h2 id="assignment-a3">&#128203; Assignment A3 &mdash; Concurrent File Processor <span class="badge badge--graded">Graded</span></h2>
+  <div class="assignment-card">
+    <div class="assignment-card__header">&#128203; A3 &middot; Concurrent File Processor &middot; worth 10% of your course grade</div>
+    <p><strong>Due:</strong> before the start of Session 6 (your teacher will confirm). &nbsp; <strong>Time:</strong> about 3&ndash;4 hours. &nbsp; <strong>Work:</strong> individual.</p>
+
+    <h4>&#127919; Objective</h4>
+    <p>
+      Every night the office receives a folder of large log files, and counting their lines one after another takes far too long.
+      Your job is to split that work across threads &mdash; and to get the total <strong>exactly right</strong> while several workers are writing to it at the same time.
+      You will use <code>join()</code>, a thread-safe tally, a <strong>thread pool</strong>, <strong>virtual threads</strong> and <strong><code>CompletableFuture</code></strong> &mdash; that is, every part of today's session except the hand-written locks, which the toolbox replaces.
+    </p>
+
+    <h4>&#128230; Getting started</h4>
+    <ol>
+      <li>Open <code>code/a3-concurrent-file-processor-starter</code> in IntelliJ.</li>
+      <li>Files given complete (don't change them): <code>Main.java</code> (the demo) and <code>SelfCheck.java</code> (the tester).</li>
+      <li>Run <code>SelfCheck</code>: <code>0 passed, 11 failed</code>. Complete the TODOs in <code>ConcurrentFileProcessor.java</code> one at a time, running <code>SelfCheck</code> after each requirement.</li>
+      <li>When all 11 pass, run <code>Main</code> and watch the files being processed at the same time.</li>
+    </ol>
+
+    <h4>&#128203; Requirements</h4>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Method</th><th>It must&hellip;</th><th>Session 5 skill</th></tr></thead>
+      <tbody>
+        <tr><td>R1</td><td><code>createWorker(file, lines, delayMs, tally)</code></td><td>return a <strong>NEW, unstarted</strong> thread named <code>proc-&lt;file&gt;</code> that sleeps <code>delayMs</code> per line, then adds 1 line to the tally with <code>merge</code>; if interrupted, stop <em>immediately</em> and add nothing more</td><td><code>Runnable</code>, naming, <code>sleep</code>, interrupt</td></tr>
+        <tr><td>R2</td><td><code>startAll(workers)</code></td><td>start every worker</td><td><code>start()</code>, never <code>run()</code></td></tr>
+        <tr><td>R3</td><td><code>waitForAll(workers)</code></td><td>wait until every worker has finished</td><td><code>join()</code></td></tr>
+        <tr><td>R4</td><td><code>countAlive(workers)</code></td><td>return how many workers are still running (<code>0</code> before <code>startAll</code>, all of them just after)</td><td><code>isAlive()</code></td></tr>
+        <tr><td>R5</td><td><code>totalLines(tally)</code></td><td>add up every entry in the tally; an empty tally is <code>0</code></td><td>streams over a map</td></tr>
+        <tr><td>R6</td><td><code>processAll(files, linesEach, delayMs, poolSize)</code></td><td>process every file on a <strong>pool</strong> of <code>poolSize</code> threads and return the finished tally; the pool must be <strong>shut down</strong> before returning, with no pool thread still alive</td><td><code>ExecutorService</code>, <code>Future</code>, <code>shutdown</code></td></tr>
+        <tr><td>R7</td><td><code>processWithVirtualThreads(files, linesEach, delayMs)</code></td><td>the same job, one <strong>virtual</strong> thread per file</td><td><code>newVirtualThreadPerTaskExecutor</code></td></tr>
+        <tr><td>R8</td><td><code>firstFinished(files, delayMs)</code></td><td>return the name of the file that finishes <strong>first</strong>, without waiting for the rest (file <em>i</em> takes <code>(i + 1) * delayMs</code>, so the first file is quickest)</td><td><code>CompletableFuture</code>, <code>anyOf</code></td></tr>
+        <tr><td>R9</td><td><em>(checked through R6)</em></td><td>the tally survives heavy contention: six files of 50,000 lines on four workers must total <strong>exactly 300,000</strong>, with nothing lost and nothing double-counted</td><td>thread-safe tally</td></tr>
+      </tbody>
+    </table></div>
+
+    <h4>&#9989; What SelfCheck shows when you're done</h4>
+    <!--@output project="solutions/a3-concurrent-file-processor" main="com.aptech.a3.SelfCheck"-->
+<div class="terminal-output">=== A3 Self-Check ===
+
+PASS  R1 createWorker() returns a NEW thread named proc-&lt;file&gt;
+PASS  R1 one worker counts every line of its file
+PASS  R2+R3 startAll() then waitForAll() processes three files
+PASS  R3 the work really overlapped
+PASS  R4 countAlive() follows the workers' life
+PASS  R5 totalLines() adds up the tally
+PASS  R6 processAll() on a pool of 3 gives an exact tally
+PASS  R6 processAll() finishes the work and shuts its pool down
+PASS  R7 processWithVirtualThreads() gives the same exact tally
+PASS  R8 firstFinished() returns the file that finished first
+PASS  R9 the tally survives heavy contention (no lost updates)
+
+11 passed, 0 failed.
+All requirements met - great work!</div>
+<!--@end-->
+
+    <h4>&#128161; Hints (open only when stuck)</h4>
+    <details class="hint"><summary>R1 &mdash; building the worker thread</summary><div><p>Build the job as a lambda, then hand it to a new thread: <code>Runnable job = () -&gt; { for (int i = 1; i &lt;= lines; i++) { try { Thread.sleep(delayMs); } catch (InterruptedException e) { return; } tally.merge(fileName, 1, Integer::sum); } }; return new Thread(job, "proc-" + fileName);</code>. Return it <strong>without</strong> starting it &mdash; the SelfCheck checks that its state is still <code>NEW</code>.</p></div></details>
+    <details class="hint"><summary>R6 &mdash; the pool</summary><div><p><code>ExecutorService pool = Executors.newFixedThreadPool(poolSize);</code>. Submit one task per file, keeping the <code>Future</code> each <code>submit</code> returns. Then <code>pool.shutdown();</code> and <code>if (!pool.awaitTermination(5, TimeUnit.SECONDS)) pool.shutdownNow();</code>. Call <code>f.get()</code> on every future <em>after</em> the shutdown so no work is skipped.</p></div></details>
+    <details class="hint"><summary>R7 &mdash; virtual threads</summary><div><p>Identical body, different executor: <code>try (ExecutorService v = Executors.newVirtualThreadPerTaskExecutor()) { &hellip; }</code>. The <code>close()</code> from try-with-resources waits for every task, so you do not need <code>shutdown()</code> here.</p></div></details>
+    <details class="hint"><summary>R8 &mdash; first past the post</summary><div><p>One future per file: <code>CompletableFuture.supplyAsync(() -&gt; { sleep((i + 1) * delayMs); return files.get(i); })</code>. Then <code>return (String) CompletableFuture.anyOf(all.toArray(new CompletableFuture[0])).get();</code>. <code>anyOf</code> completes as soon as <em>the first one</em> does &mdash; the others keep running and are simply not waited for.</p></div></details>
+
+    <h4>&#11088; Bonus (up to +10 points, max 100)</h4>
+    <ul>
+      <li><strong>+5</strong> A <strong>daemon</strong> progress reporter that prints every live worker and its state once a second while <code>processAll</code> runs, then stops when the work is done.</li>
+      <li><strong>+5</strong> A measured comparison: process <strong>1,000</strong> tiny files with a fixed pool of 8, then with virtual threads, and print both times with one sentence saying which you would choose and why.</li>
+    </ul>
+
+    <h4>&#128221; Before you submit: checklist</h4>
+    <ul>
+      <li>&#9744; <code>SelfCheck</code> shows <strong>11 passed, 0 failed</strong>.</li>
+      <li>&#9744; The tally is <strong>never</strong> a hand-written <code>int</code> or a plain <code>HashMap</code> &mdash; no <code>count++</code> on shared data anywhere.</li>
+      <li>&#9744; Every executor you create is shut down (or closed by try-with-resources).</li>
+      <li>&#9744; <code>Main</code> finishes and the program exits on its own, every time you run it.</li>
+      <li>&#9744; Your name and ID are in the header comment; the code is formatted (<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>L</kbd>); no leftover <code>return null;</code> placeholders.</li>
+      <li>&#9744; One comment per method says <em>why</em> you chose that concurrency tool, not what the line does.</li>
+      <li>&#9744; Submit the whole project folder as a ZIP on ProConnect, or push it to your GitHub repo.</li>
+    </ul>
+
+    <h4>&#128202; Rubric (100 points)</h4>
+    <div class="tablewrap"><table class="rubric-table">
+      <thead><tr><th>Criterion</th><th>Excellent</th><th>Good</th><th>Needs work</th><th>Missing</th></tr></thead>
+      <tbody>
+        <tr><td>Correctness (50)</td><td>50: all 11 self-checks pass; R9 totals exactly 300,000 on repeated runs</td><td>35: 8&ndash;10 pass</td><td>20: 4&ndash;7 pass</td><td>0&ndash;10: &lt; 4 pass or doesn't compile</td></tr>
+        <tr><td>Concurrency design (20)</td><td>20: the right tool in every place (atomic tally, pool size justified, executors always closed)</td><td>14: works, but one poor choice (e.g. a hand-written lock where an atomic class would do)</td><td>8: a shared plain collection, or a pool that is never shut down</td><td>0: unprotected shared state</td></tr>
+        <tr><td>Style (15)</td><td>15: clear names, consistent formatting, no dead code, no placeholders</td><td>10</td><td>5</td><td>0</td></tr>
+        <tr><td>Explanation (15)</td><td>15: every method commented with the <em>reason</em> for its concurrency choice; can explain any line in a viva</td><td>10</td><td>5</td><td>0</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout callout--warn"><span class="callout__i">&#9878;&#65039;</span>
+      <div class="callout__b"><b>Academic honesty &amp; AI tools</b>
+        Discuss ideas freely, but type and understand your own code. You may ask an AI to <em>explain</em> an exception message or suggest where a bug might be &mdash; not to write your methods.
+        If an AI explains a thread dump for you, check its claim against the dump (Part 9) before you act on it. Your teacher may ask you to explain any line (a short viva).
+      </div>
+    </div>
+    <button type="button" class="playground__btn print-btn" data-print>&#128424;&#65039; Print / save as PDF</button>
+  </div>
+
+  <!-- ===== FURTHER STUDY =================================================== -->
+  <h2>&#128250; Further Study</h2>
+  <p>Every video was checked to make sure it exists and matches the topic. Start with the first two.</p>
+  <div class="video-grid">
+    <div class="video-card" data-yt="xCmK4x1u8Ps" data-title="Java Multithreading: Tackling Race Conditions with Atomic and Synchronized">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java Multithreading: Tackling Race Conditions with Atomic and Synchronized</div><div class="video-card__channel">Coding with Aman</div><div class="video-card__why">Parts 2&ndash;4: the race, then the two fixes, side by side.</div></div>
+    </div>
+    <div class="video-card" data-yt="UOr9kMCCa5g" data-title="Java Concurrency Interview: Implement Producer Consumer pattern using wait-notify">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Producer&ndash;Consumer pattern using wait&ndash;notify</div><div class="video-card__channel">Defog Tech</div><div class="video-card__why">Part 5 in full detail, including why <code>while</code> and why <code>notifyAll</code>.</div></div>
+    </div>
+    <div class="video-card" data-yt="B4IVu-2hCos" data-title="How to detect and resolve Deadlocks in Java">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">How to detect and resolve deadlocks in Java</div><div class="video-card__channel">Defog Tech</div><div class="video-card__why">Part 6: reading a real deadlock and getting out of it.</div></div>
+    </div>
+    <div class="video-card" data-yt="Ur3hjgbpVXQ" data-title="Java Concurrent Collections: ConcurrentHashMap and BlockingQueues">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java Concurrent Collections: ConcurrentHashMap and BlockingQueues</div><div class="video-card__channel">Douglas Schmidt</div><div class="video-card__why">Part 7, from a university course &mdash; deeper than we go in class.</div></div>
+    </div>
+    <div class="video-card" data-yt="6Oo-9Can3H8" data-title="Java ExecutorService - Part 1 - Introduction">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java ExecutorService&nbsp;&mdash;&nbsp;Part 1: Introduction</div><div class="video-card__channel">Defog Tech</div><div class="video-card__why">Part 8: pools, <code>submit</code> and <code>Future</code>.</div></div>
+    </div>
+    <div class="video-card" data-yt="ImtZgX1nmr8" data-title="Introduction to CompletableFuture in Java 8">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Introduction to CompletableFuture in Java 8</div><div class="video-card__channel">Defog Tech</div><div class="video-card__why">Part 8: the promise chain, and <code>anyOf</code> from R8 in A3.</div></div>
+    </div>
+    <div class="video-card" data-yt="V4gsffMge7E" data-title="Virtual Threads in JDK-24: The Synchronized Block Breakthrough Explained">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Virtual Threads in JDK&nbsp;24: the <code>synchronized</code> block breakthrough</div><div class="video-card__channel">Dan Vega</div><div class="video-card__why">Part 9: pinning, and why JDK 24 changed the picture (JEP 491).</div></div>
+    </div>
+  </div>
+  <h3>Read (official &amp; trusted)</h3>
+  <ul>
+    <li><a href="https://docs.oracle.com/javase/tutorial/essential/concurrency/index.html" target="_blank" rel="noopener">Oracle Tutorials &mdash; Concurrency</a> (Synchronization, Liveness, Guarded Blocks, High Level Concurrency Objects)</li>
+    <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/concurrent/package-summary.html" target="_blank" rel="noopener">Java 25 API &mdash; <code>java.util.concurrent</code></a>, <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/concurrent/atomic/AtomicInteger.html" target="_blank" rel="noopener"><code>AtomicInteger</code></a> and <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/concurrent/atomic/LongAdder.html" target="_blank" rel="noopener"><code>LongAdder</code></a></li>
+    <li><a href="https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html" target="_blank" rel="noopener">Oracle &mdash; Virtual Threads guide</a> and <a href="https://openjdk.org/jeps/491" target="_blank" rel="noopener">JEP 491: Synchronize Virtual Threads without Pinning</a></li>
+    <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/ThreadMXBean.html" target="_blank" rel="noopener">Java 25 API &mdash; <code>ThreadMXBean</code></a> and <a href="https://docs.oracle.com/en/java/javase/25/docs/specs/man/jcmd.html" target="_blank" rel="noopener"><code>jcmd</code></a> (the real tools behind Part 9's watchdog)</li>
+    <li><a href="https://jenkov.com/tutorials/java-concurrency/index.html" target="_blank" rel="noopener">Jakob Jenkov &mdash; Java Concurrency tutorial</a></li>
+    <li>Book: Brian Goetz et al., <em>Java Concurrency in Practice</em>, chapters 2&ndash;4 (sharing objects, and the lost update in section 2.1) and chapter 5 (building blocks).</li>
+  </ul>
+
+  <!-- ===== CHEAT SHEET ===================================================== -->
+  <h2>&#128203; Cheat Sheet</h2>
+  <div class="cheatsheet">
+    <h4>Wait for a thread</h4>
+<pre><code class="lang-java">t.start();
+t.isAlive();          // still running?  (false before start, false after it ends)
+t.join();             // wait here until t finishes
+t.join(500);          // wait at most 500 ms</code></pre>
+    <h4>Protect a critical section</h4>
+<pre><code class="lang-java">private final Object lock = new Object();          // one lock, shared
+
+synchronized void add() { count++; }               // locks 'this'
+void add() { synchronized (lock) { count++; } }    // smaller: lock only these lines
+
+// NEVER: synchronized (new Object()) { ... }      // a different lock every call</code></pre>
+    <h4>One variable, no locks</h4>
+<pre><code class="lang-java">AtomicInteger n = new AtomicInteger();
+n.incrementAndGet();          n.get();
+LongAdder total = new LongAdder();                 // high contention
+total.increment();            total.sum();</code></pre>
+    <h4>Take turns</h4>
+<pre><code class="lang-java">synchronized void put(T item) throws InterruptedException {
+    while (full) { wait(); }                       // ALWAYS while, never if
+    add(item);
+    notifyAll();                                   // wake the other side
+}
+// wait() needs the lock; it releases it while asleep, and takes it back to return</code></pre>
+    <h4>Deadlock: one order, everywhere</h4>
+<pre><code class="lang-java">synchronized (POT)   {                             // everyone takes POT first,
+    synchronized (SPOON) { ... }                   // then SPOON. A cycle cannot form.
+}</code></pre>
+    <h4>Thread-safe collections</h4>
+<pre><code class="lang-java">ConcurrentHashMap&lt;String, Integer&gt; m = new ConcurrentHashMap&lt;&gt;();
+m.merge(word, 1, Integer::sum);                    // atomic read-modify-write
+
+BlockingQueue&lt;String&gt; q = new ArrayBlockingQueue&lt;&gt;(2);
+q.put(x);          // blocks when full
+q.take();          // blocks when empty
+new CopyOnWriteArrayList&lt;&gt;(list);                  // reads free, writes copy</code></pre>
+    <h4>Pools and virtual threads</h4>
+<pre><code class="lang-java">ExecutorService pool = Executors.newFixedThreadPool(4);
+Future&lt;Integer&gt; f = pool.submit(() -&gt; work());
+f.get();                                   // that task's result
+pool.shutdown();                           // or wrap in try-with-resources
+
+try (ExecutorService v = Executors.newVirtualThreadPerTaskExecutor()) {
+    v.submit(() -&gt; blockingCall());        // one virtual thread per task
+}                                          // close() waits for them all</code></pre>
+    <h4>Promises</h4>
+<pre><code class="lang-java">CompletableFuture.supplyAsync(() -&gt; fetch())   // runs on a pool thread
+        .thenApply(String::toUpperCase)        // transform when it arrives
+        .thenAccept(System.out::println);      // consume the result
+
+CompletableFuture.anyOf(a, b).get();           // whichever finishes first</code></pre>
+    <h4>Find out what is stuck</h4>
+<pre><code class="lang-java">ThreadMXBean bean = ManagementFactory.getThreadMXBean();
+long[] stuck = bean.findDeadlockedThreads();   // null when there is no deadlock
+info.getLockOwnerName();                       // who holds the lock I am waiting for</code></pre>
+  </div>
+
+  <!-- ===== SUMMARY ========================================================= -->
+  <h2>&#127891; Session Summary</h2>
+  <ol>
+    <li>A <strong>race condition</strong> happens when threads change shared data at the same time. <code>count++</code> is really READ, ADD, WRITE &mdash; and two threads can lose one of those updates.</li>
+    <li><strong>It does not fail every time.</strong> That is why it survives testing and hurts in production. Seeing the right answer once proves nothing.</li>
+    <li><strong><code>synchronized</code></strong> uses an object's intrinsic lock: one thread at a time, plus a visibility guarantee. One lock per piece of data &mdash; never a new object per call.</li>
+    <li><strong>Atomic classes</strong> (<code>AtomicInteger</code>, <code>LongAdder</code>) protect a single variable with no lock at all. One variable &rarr; atomic; several together &rarr; <code>synchronized</code>.</li>
+    <li><strong><code>wait()</code> / <code>notifyAll()</code></strong> let threads take turns. Always wait inside a <code>while</code> loop, and always while holding the lock.</li>
+    <li>A <strong>deadlock</strong> is a circular wait. Prevent it by agreeing on <strong>one lock order</strong> and following it everywhere; <code>ThreadMXBean</code> can show you the cycle when one happens anyway.</li>
+    <li><strong><code>java.util.concurrent</code></strong> does the hard work: <code>ConcurrentHashMap</code>, <code>BlockingQueue</code>, <code>CopyOnWriteArrayList</code>. Plain <code>ArrayList</code> and <code>HashMap</code> are not thread-safe.</li>
+    <li><strong>Pools</strong> reuse threads and <strong>virtual threads</strong> make waiting jobs cheap; <strong><code>CompletableFuture</code></strong> chains asynchronous steps. Always close an executor.</li>
+    <li><strong>Diagnose with evidence.</strong> Thread dumps, <code>jcmd</code> and JFR print the facts; an AI can explain them, but you check its claim against the dump before you change code.</li>
+  </ol>
+  <div class="newwords"><b>&#128218; All new words from this session</b>
+    <dl>
+      <dt>Multithreading</dt><dd>One program doing several jobs at the same time, each on its own thread.</dd>
+      <dt>Race condition</dt><dd>A bug where the timing of threads corrupts shared data.</dd>
+      <dt>Lost update</dt><dd>An increment that one thread overwrites before another has finished with it.</dd>
+      <dt>Critical section</dt><dd>The lines of code that touch shared data and must run for one thread at a time.</dd>
+      <dt>Atomic</dt><dd>An operation that happens completely or not at all, with no half-steps. <code>count++</code> is <em>not</em> atomic.</dd>
+      <dt>Intrinsic lock / monitor</dt><dd>The built-in lock every Java object carries; what <code>synchronized</code> uses.</dd>
+      <dt>Mutual exclusion / visibility</dt><dd>Only one thread inside at a time / a lock's guarantee that changes are seen by the next thread.</dd>
+      <dt><code>AtomicInteger</code>, <code>LongAdder</code></dt><dd>Classes that do an increment as one indivisible step, with no lock written by hand.</dd>
+      <dt>Guarded block, spurious wake-up</dt><dd>A <code>while</code>-loop around <code>wait()</code> / a wake-up that happens with no signal, which is why the loop is required.</dd>
+      <dt>Deadlock, lock ordering</dt><dd>Threads frozen in a circular wait / the one agreed sequence that makes it impossible.</dd>
+      <dt><code>ConcurrentHashMap</code>, <code>BlockingQueue</code>, <code>CopyOnWriteArrayList</code></dt><dd>Thread-safe collections that do the locking, waiting and waking for you.</dd>
+      <dt>Thread pool, <code>ExecutorService</code>, <code>Future</code></dt><dd>A managed set of reused threads / the manager you submit tasks to / the receipt you call <code>get()</code> on for a result.</dd>
+      <dt>Virtual thread, carrier thread, pinning</dt><dd>A cheap thread managed by Java / the platform thread it runs on / when a virtual thread cannot release its carrier while waiting.</dd>
+      <dt><code>CompletableFuture</code></dt><dd>A promise of a result that arrives later, with steps chained onto it.</dd>
+      <dt>Thread dump, <code>ThreadMXBean</code></dt><dd>A snapshot of every thread and what it is doing / the JVM API that can name the threads in a deadlock.</dd>
+    </dl>
+  </div>
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Next session: Review and Debugging</b>
+      Session 6 is a hands-on review. You will debug broken code from Sessions 1&ndash;5, answer the <em>Try It Yourself</em> questions, and finish with enough time for <strong>Assignment A3</strong>. Bring your A3 project &mdash; the clinic starts with whatever is failing on your machine.
+    </div>
+  </div>
+
+</main>
+
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/playgrounds.js"></script>
+
+</body>
+</html>

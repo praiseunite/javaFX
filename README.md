@@ -28,8 +28,8 @@ Videos in the *Further Study* sections need internet; everything else works offl
 
 | Status | Sessions |
 |---|---|
-| ✅ Ready | Java Foundations Bridge B1–B7 · Session 1 – Java Utility APIs · Session 2 – Generics · Session 3 – File Handling, Streams & Serialization · Session 4 – Threading |
-| 🛠 Coming | Sessions 5–18, capstone project |
+| ✅ Ready | Java Foundations Bridge B1–B7 · Session 1 – Java Utility APIs · Session 2 – Generics · Session 3 – File Handling, Streams & Serialization · Session 4 – Threading · Session 5 – Multithreading & Concurrency |
+| 🛠 Coming | Sessions 6–18, capstone project |
 
 ## Run the Java code
 

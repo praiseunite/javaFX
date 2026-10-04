@@ -252,6 +252,133 @@
     return R ? "ObjectInputStream" : "ObjectOutputStream";
   };
 
+  /* ---- Concurrency rules (Session 5), verified against a real JVM by tools/verify-playgrounds/verify-concurrency.js ---- */
+  /**
+   * A model of   count++   on ONE shared int, done by several threads.
+   * One increment is really three separate micro-steps: READ, ADD, WRITE.
+   * A thread can be interrupted between any two of them — that is the whole problem.
+   *
+   * mode "plain"  — the three steps are free to interleave (this is what count++ compiles to)
+   * mode "sync"   — the three steps form one critical section; a monitor lock lets one thread in
+   * mode "atomic" — the JDK performs the three steps as one indivisible operation
+   */
+  JavaSim.RACE_MODES = ["plain", "sync", "atomic"];
+
+  JavaSim.RaceModel = function (threads, calls, mode) {
+    this.mode = mode || "plain";
+    this.calls = calls;                       // increments each thread must perform
+    this.count = 0;                           // the shared variable
+    this.lockHolder = null;                   // who is inside the critical section (sync mode only)
+    this.blocked = null;                      // name of the thread turned away by the lock, if any
+    this.threads = [];
+    for (var i = 0; i < threads; i++) {
+      this.threads.push({ name: "T" + (i + 1), reg: null, phase: 0, completed: 0, finished: false });
+    }
+  };
+  /** How the counter SHOULD end up if nothing is lost. */
+  JavaSim.RaceModel.prototype.expected = function () { return this.threads.length * this.calls; };
+  JavaSim.RaceModel.prototype.lost = function () { return this.expected() - this.count; };
+  JavaSim.RaceModel.prototype.allFinished = function () {
+    for (var i = 0; i < this.threads.length; i++) { if (!this.threads[i].finished) return false; }
+    return true;
+  };
+  /** May thread i move right now? A step that would only be refused by the lock is not a legal move. */
+  JavaSim.RaceModel.prototype.canStep = function (i) {
+    var t = this.threads[i];
+    if (!t || t.finished) return false;
+    if (this.mode === "sync" && this.lockHolder !== null && this.lockHolder !== t.name) return false;
+    return true;
+  };
+  /** Advances one thread by one micro-step. Returns {thread, action, ...} so the UI can explain it. */
+  JavaSim.RaceModel.prototype.step = function (i) {
+    var t = this.threads[i], ev = { thread: t.name };
+    this.blocked = null;
+    if (!t || t.finished) { ev.action = "idle"; return ev; }
+
+    if (this.mode === "sync") {
+      if (this.lockHolder === null) { this.lockHolder = t.name; ev.acquired = true; }
+      else if (this.lockHolder !== t.name) {
+        this.blocked = t.name;
+        ev.action = "blocked"; ev.holder = this.lockHolder;
+        return ev;
+      }
+    }
+
+    if (this.mode === "atomic") {                       // read, add and write with no gap at all
+      var was = this.count;
+      this.count = this.count + 1;
+      ev.action = "atomic"; ev.from = was; ev.count = this.count;
+      this._advance(t);
+    } else if (t.phase === 0) {                         // READ the shared value into the register
+      t.reg = this.count; t.phase = 1;
+      ev.action = "read"; ev.reg = t.reg; ev.count = this.count;
+    } else if (t.phase === 1) {                         // ADD one, still only in the register
+      t.reg = t.reg + 1; t.phase = 2;
+      ev.action = "add"; ev.reg = t.reg; ev.count = this.count;
+    } else {                                            // WRITE the register back to the shared variable
+      var before = this.count;
+      this.count = t.reg; t.phase = 0;
+      ev.action = "write"; ev.reg = t.reg; ev.countBefore = before; ev.count = this.count;
+      this._advance(t);
+    }
+
+    if (this.mode === "sync" && ev.action === "write") { this.lockHolder = null; ev.released = true; }
+    ev.finished = t.finished;
+    return ev;
+  };
+  JavaSim.RaceModel.prototype._advance = function (t) {
+    t.completed++;
+    if (t.completed >= this.calls) t.finished = true;
+  };
+  JavaSim.RaceModel.prototype.clone = function () {
+    var c = Object.create(JavaSim.RaceModel.prototype);
+    c.mode = this.mode; c.calls = this.calls; c.count = this.count;
+    c.lockHolder = this.lockHolder; c.blocked = this.blocked;
+    c.threads = this.threads.map(function (t) {
+      return { name: t.name, reg: t.reg, phase: t.phase, completed: t.completed, finished: t.finished };
+    });
+    return c;
+  };
+
+  /** Runs one specific schedule (a list of thread indexes) and returns the finished model. */
+  JavaSim.raceRun = function (threads, calls, mode, schedule) {
+    var m = new JavaSim.RaceModel(threads, calls, mode);
+    for (var k = 0; k < schedule.length; k++) {
+      if (m.canStep(schedule[k])) m.step(schedule[k]);
+    }
+    return m;
+  };
+
+  /**
+   * Runs EVERY legal schedule and counts how the shared variable ends up.
+   * This is how we can be sure the two claims on the page are true and not just
+   * "usually true": in "plain" mode some schedules really do end up short, and in
+   * "sync"/"atomic" mode NO schedule ever does.
+   */
+  JavaSim.raceExhaustive = function (threads, calls, mode) {
+    var counts = {}, schedules = 0, exact = 0, lossy = 0, worst = null;
+    var start = new JavaSim.RaceModel(threads, calls, mode);
+    (function walk(m) {
+      if (m.allFinished()) {
+        schedules++;
+        counts[m.count] = (counts[m.count] || 0) + 1;
+        if (m.count === m.expected()) exact++;
+        else { lossy++; if (worst === null || m.count < worst) worst = m.count; }
+        return;
+      }
+      for (var i = 0; i < m.threads.length; i++) {
+        if (!m.canStep(i)) continue;
+        var next = m.clone();
+        next.step(i);
+        walk(next);
+      }
+    })(start);
+    return {
+      mode: mode, schedules: schedules, expected: start.expected(),
+      counts: counts, exact: exact, lossy: lossy, worst: worst
+    };
+  };
+
   if (typeof module !== "undefined" && module.exports) { module.exports = JavaSim; return; }
   global.JavaSim = JavaSim;
 
@@ -1254,7 +1381,152 @@
   }
 
   /* ======================================================================
-     19. Boot
+     19. Playground: race — be the scheduler and lose an update yourself
+     ====================================================================== */
+  function pgRace(root) {
+    var body = shell(root, "Lost Update Lab — you are the scheduler");
+    var CALLS = 3, THREADS = 2, STEP_MS = 260;
+    var NAMES = ["Ada", "Ben"];
+    var mode = "plain", model, busy = false, reported = false;
+
+    var MODE_TEXT = {
+      plain: { label: "plain int  count++", code: "count++;      // read, add, write - three separate steps", note: "no lock: the three steps are free to interleave" },
+      sync: { label: "synchronized", code: "synchronized void addOne() { count++; }", note: "" },
+      atomic: { label: "AtomicInteger", code: "AtomicInteger count = new AtomicInteger();\ncount.incrementAndGet();   // one indivisible step", note: "no lock needed: each increment() is one indivisible step" }
+    };
+
+    var modeRow = el("div", { class: "playground__controls" });
+    var modeBtns = {};
+    JavaSim.RACE_MODES.forEach(function (m) {
+      var b = btn(MODE_TEXT[m].label, function () { mode = m; reset(); }, true);
+      modeBtns[m] = b; modeRow.appendChild(b);
+    });
+    body.appendChild(modeRow);
+    body.appendChild(el("p", { class: "text-sm text-faint", html: "Two threads, ONE shared <code>count</code>, three increments each — so the answer must be <b>6</b>. " +
+      "Press the step buttons to decide who runs next, and try to lose an increment. " +
+      "Every schedule here is checked against the real JVM by <code>tools/verify-playgrounds/verify-concurrency.js</code>." }));
+
+    var panels = [0, 1].map(threadPanel);
+    var shared = el("div", { class: "viz-panel" });
+    var sharedTitle = el("div", { class: "viz-panel__title" });
+    var sharedCode = el("code", { class: "viz-panel__decl" });
+    var sharedRule = el("div", { class: "viz-panel__rule" });
+    var sharedPrint = el("div", { class: "viz-print" });
+    var lockLine = el("div", { class: "viz-note" });
+    [sharedTitle, sharedCode, sharedRule, sharedPrint, lockLine].forEach(function (n) { shared.appendChild(n); });
+    body.appendChild(el("div", { class: "viz-grid viz-grid--3" }, [panels[0].root, shared, panels[1].root]));
+
+    var out = el("div", { class: "viz-log", "aria-live": "polite" });
+    body.appendChild(el("div", { class: "viz-log__label", text: "What the scheduler sees" }));
+    body.appendChild(out);
+    body.appendChild(el("div", { class: "playground__controls" }, [
+      btn("Run the classic lost-update order", function () { playSchedule([0, 1, 0, 0, 1, 1]); }),
+      btn("Run a tidy order", function () { playSchedule([0, 0, 0, 1, 1, 1]); }, true),
+      btn("Reset", reset, true)
+    ]));
+
+    function threadPanel(i) {
+      var reg = el("div", { class: "viz-print" });
+      var next = el("div", { class: "viz-panel__rule" });
+      var done = el("div", { class: "viz-note" });
+      var step = btn("step " + NAMES[i] + " ▶", function () { if (!busy) doStep(i); });
+      var root = el("div", { class: "viz-panel" }, [
+        el("div", { class: "viz-panel__title", text: NAMES[i] + " — worker " + (i + 1) }),
+        el("code", { class: "viz-panel__decl", text: "new Thread(job, \"proc-" + NAMES[i].toLowerCase() + "\")" }),
+        next, reg, done, step
+      ]);
+      return { root: root, reg: reg, next: next, done: done, step: step };
+    }
+
+    /** The classic schedule: both threads read 0 before either writes, so one write is swallowed. */
+    function reset() {
+      model = new JavaSim.RaceModel(THREADS, CALLS, mode);
+      busy = false; reported = false;
+      Object.keys(modeBtns).forEach(function (m) { modeBtns[m].classList.toggle("playground__btn--secondary", m !== mode); });
+      sharedCode.textContent = MODE_TEXT[mode].code;
+      out.innerHTML = "";
+      logLine(out, "// " + THREADS + " threads, " + CALLS + " increments each — count must end at " + model.expected(), "is-muted");
+      render();
+    }
+
+    function render() {
+      model.threads.forEach(function (t, i) {
+        var p = panels[i];
+        p.reg.textContent = t.reg === null ? "its own copy: (nothing read yet)" : "its own copy: " + t.reg;
+        p.next.textContent = t.finished ? "finished — this thread is done"
+          : mode === "atomic" ? "next: incrementAndGet()"
+          : ["next: read count", "next: add 1 in the CPU", "next: write its copy back"][t.phase];
+        p.done.textContent = t.completed + " of " + CALLS + " increments done";
+        p.step.disabled = busy;
+      });
+      sharedTitle.textContent = "shared count = " + model.count + "   (must end at " + model.expected() + ")";
+      var lost = model.expected() - model.count;
+      sharedPrint.textContent = lost === 0 ? "nothing lost yet" : lost + " behind already";
+      sharedPrint.className = "viz-print" + (lost ? " is-bad" : "");
+      sharedRule.textContent = mode === "sync"
+        ? (model.lockHolder ? "the lock is HELD by " + model.lockHolder + " — nobody else may enter" : "the lock is free — either thread may enter")
+        : MODE_TEXT[mode].note;
+      lockLine.textContent = mode === "sync" && model.lockHolder ? "🔒 one thread inside the critical section" : "";
+      if (model.allFinished()) verdict();
+    }
+
+    function doStep(i) {
+      var ev = model.step(i), name = model.threads[i].name;
+      if (ev.action === "blocked") logLine(out, name + " tries to step in, but " + ev.holder + " holds the lock ✗ BLOCKED — it waits at the door", "is-warn");
+      else if (ev.action === "read") logLine(out, name + " reads count → its own copy is " + ev.reg + "   (count is still " + ev.count + ")", "");
+      else if (ev.action === "add") logLine(out, name + " adds 1 in the CPU → its own copy is " + ev.reg + "   (count is STILL " + ev.count + " — nothing shared has changed)", "");
+      else if (ev.action === "write") {
+        var swallowed = ev.countBefore === ev.count;
+        logLine(out, name + " writes " + ev.reg + " back → count = " + ev.count + (swallowed
+          ? "   ✗ count did NOT go up — that increment is LOST"
+          : "   (it was " + ev.countBefore + ")"), swallowed ? "is-bad" : "is-good");
+      }
+      else if (ev.action === "atomic") logLine(out, name + " incrementAndGet() → count = " + ev.count + "   (read + add + write with no gap)", "is-good");
+      else logLine(out, name + " has already finished", "is-muted");
+      render();
+    }
+
+    function verdict() {
+      if (reported) return;
+      reported = true;
+      var lost = model.expected() - model.count;
+      if (lost === 0) logLine(out, "✅ Finished: count = " + model.count + " — exactly right. " +
+        (mode === "plain" ? "You happened to run them one after another; most orders do NOT end this well." : "The lock made it impossible to lose one."), "is-good");
+      else logLine(out, "❌ Finished: count = " + model.count + " but it should be " + model.expected() + " — " + lost +
+        " update" + (lost === 1 ? "" : "s") + " LOST. This is exactly what Example 2 prints at full speed.", "is-bad");
+    }
+
+    /** A complete, legal schedule that starts with `first` and then finishes the threads in order. */
+    function fullSchedule(first) {
+      var s = first.slice(), guard = 0;
+      while (guard++ < 400) {
+        var m = JavaSim.raceRun(THREADS, CALLS, mode, s);
+        if (m.allFinished()) break;
+        var placed = false;
+        for (var i = 0; i < THREADS && !placed; i++) { if (m.canStep(i)) { s.push(i); placed = true; } }
+        if (!placed) break;
+      }
+      return s;
+    }
+    function playSchedule(first) {
+      if (busy) return;
+      reset();
+      busy = true;
+      var queue = fullSchedule(first);
+      (function tick() {
+        if (!queue.length) { busy = false; render(); return; }
+        doStep(queue.shift());
+        setTimeout(tick, STEP_MS);
+      })();
+      render();
+    }
+
+    reset();
+    logLine(out, "// Tip: step Ada once, then Ben once, then Ada twice — watch what Ada's write does to Ben's.", "is-muted");
+  }
+
+  /* ======================================================================
+     20. Boot
      ====================================================================== */
   var REGISTRY = {
     collections: pgCollections,
@@ -1272,7 +1544,8 @@
     threadstates: pgThreadStates,
     interleave: pgInterleave,
     daemon: pgDaemon,
-    virtual: pgVirtual
+    virtual: pgVirtual,
+    race: pgRace
   };
   function boot() {
     document.querySelectorAll("[data-playground]").forEach(function (node) {
