@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" width="100%" height="100%">
+  <defs>
+    <filter id="archShadow" x="-8%" y="-8%" width="116%" height="125%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.10"/>
+    </filter>
+    <marker id="archArrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#6366f1"/>
+    </marker>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .layer { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 700; fill: #0f172a; }
+    .code { font-family: ui-monospace, monospace; font-size: 10.5px; fill: #475569; }
+    .note { font-family: system-ui, -apple-system, sans-serif; font-size: 10.5px; fill: #475569; }
+    .tag { font-family: system-ui, -apple-system, sans-serif; font-size: 9.5px; font-weight: 700; }
+    .rule { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; fill: #0f172a; }
+  </style>
+
+  <rect width="900" height="400" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">The JDBC architecture: who owns each layer</text>
+  <text x="30" y="54" class="sub">Your code talks to an interface. Everything below that is somebody else's job.</text>
+
+  <!-- =============================== THE FIVE LAYERS =============================== -->
+  <g filter="url(#archShadow)">
+    <rect x="24" y="86" width="556" height="46" rx="8" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.5"/>
+    <rect x="24" y="146" width="556" height="46" rx="8" fill="#eef2ff" stroke="#a5b4fc" stroke-width="1.5"/>
+    <rect x="24" y="206" width="556" height="46" rx="8" fill="#eef2ff" stroke="#a5b4fc" stroke-width="1.5"/>
+    <rect x="24" y="266" width="556" height="46" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+    <rect x="24" y="326" width="556" height="46" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+  </g>
+
+  <!-- 1 - application -->
+  <text x="40" y="113" class="layer">Your application</text>
+  <text x="40" y="126" class="code">main(), your DAO, the Student objects you already have</text>
+
+  <!-- 2 - JDBC API -->
+  <text x="40" y="173" class="layer">The JDBC API &#8212; java.sql.*</text>
+  <text x="40" y="186" class="code">interfaces only: Connection, Statement, ResultSet</text>
+
+  <!-- 3 - DriverManager -->
+  <text x="40" y="233" class="layer">DriverManager</text>
+  <text x="40" y="246" class="code">reads the URL &#8220;jdbc:h2:...&#8221; and picks a driver</text>
+
+  <!-- 4 - the driver -->
+  <text x="40" y="293" class="layer">The JDBC driver &#8212; the vendor&#8217;s jar</text>
+  <text x="40" y="306" class="code">org.h2.Driver, com.mysql.cj.jdbc.Driver</text>
+
+  <!-- 5 - the database -->
+  <text x="40" y="353" class="layer">The database</text>
+  <text x="40" y="366" class="code">H2 in a file on disk &#8212; or MySQL on a server somewhere</text>
+
+  <!-- the arrows down -->
+  <path d="M 302 132 L 302 146" stroke="#6366f1" stroke-width="2" marker-end="url(#archArrow)"/>
+  <path d="M 302 192 L 302 206" stroke="#6366f1" stroke-width="2" marker-end="url(#archArrow)"/>
+  <path d="M 302 252 L 302 266" stroke="#6366f1" stroke-width="2" marker-end="url(#archArrow)"/>
+  <path d="M 302 312 L 302 326" stroke="#6366f1" stroke-width="2" marker-end="url(#archArrow)"/>
+
+  <!-- =============================== WHO OWNS IT =============================== -->
+  <text x="608" y="68" class="tag" fill="#64748b">WHO WRITES IT</text>
+
+  <rect x="600" y="86" width="276" height="46" rx="8" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="612" y="107" class="note" fill="#5b21b6" font-weight="bold">you</text>
+  <text x="612" y="122" class="note">this is the only layer you touch</text>
+
+  <rect x="600" y="146" width="276" height="46" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="612" y="167" class="note" fill="#1d4ed8" font-weight="bold">the JDK</text>
+  <text x="612" y="182" class="note">never changes, whatever database you use</text>
+
+  <rect x="600" y="206" width="276" height="46" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="612" y="227" class="note" fill="#1d4ed8" font-weight="bold">the JDK</text>
+  <text x="612" y="242" class="note">same interface, different driver chosen</text>
+
+  <rect x="600" y="266" width="276" height="46" rx="8" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="612" y="287" class="note" fill="#b45309" font-weight="bold">the database vendor</text>
+  <text x="612" y="302" class="note">swap the jar, keep your code</text>
+
+  <rect x="600" y="326" width="276" height="46" rx="8" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="612" y="347" class="note" fill="#b45309" font-weight="bold">whoever runs the database</text>
+  <text x="612" y="362" class="note">a file for you, a server for MySQL</text>
+
+  <!-- the boundary line -->
+  <path d="M 588 78 L 588 382" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4 4"/>
+  <text x="588" y="392" class="tag" fill="#94a3b8" text-anchor="middle">&#8212; the stable line &#8212;</text>
+</svg>

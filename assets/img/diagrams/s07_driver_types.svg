@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" width="100%" height="100%">
+  <defs>
+    <filter id="dtShadow" x="-8%" y="-8%" width="116%" height="125%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .tnum { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 800; }
+    .name { font-family: system-ui, -apple-system, sans-serif; font-size: 12.5px; font-weight: 800; fill: #0f172a; }
+    .mini { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; fill: #64748b; }
+    .tag { font-family: system-ui, -apple-system, sans-serif; font-size: 9px; font-weight: 700; fill: #94a3b8; }
+    .note { font-family: system-ui, -apple-system, sans-serif; font-size: 10.5px; fill: #334155; }
+    .rule { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; fill: #0f172a; }
+  </style>
+
+  <rect width="900" height="400" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">The four JDBC driver types</text>
+  <text x="30" y="54" class="sub">The number is not a ranking of quality. It counts how much extra software sits between your code and the database.</text>
+
+  <g filter="url(#dtShadow)">
+    <rect x="22" y="76" width="196" height="242" rx="10" fill="#fef2f2" stroke="#fecaca" stroke-width="1.5"/>
+    <rect x="242" y="76" width="196" height="242" rx="10" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+    <rect x="462" y="76" width="196" height="242" rx="10" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+    <rect x="682" y="76" width="196" height="242" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+  </g>
+
+  <!-- =============================== CARD 1 : TYPE 1 =============================== -->
+  <text x="38" y="100" class="tnum" fill="#b91c1c">TYPE 1</text>
+  <text x="38" y="120" class="name">JDBC&#8211;ODBC bridge</text>
+  <text x="38" y="135" class="mini">the oldest of the four</text>
+  <path d="M 38 146 L 202 146" stroke="#fecaca" stroke-width="1"/>
+
+  <text x="38" y="166" class="tag">NEEDS</text>
+  <text x="38" y="182" class="note">an ODBC driver, plus the</text>
+  <text x="38" y="196" class="note">native library it sits on</text>
+  <path d="M 38 210 L 202 210" stroke="#fecaca" stroke-width="1"/>
+
+  <text x="38" y="230" class="tag">VERDICT</text>
+  <text x="38" y="248" class="note" fill="#b91c1c">Removed from the JDK in</text>
+  <text x="38" y="262" class="note" fill="#b91c1c">Java 8. Found in old</text>
+  <text x="38" y="276" class="note" fill="#b91c1c">textbooks. Ignore it.</text>
+
+  <!-- =============================== CARD 2 : TYPE 2 =============================== -->
+  <text x="258" y="100" class="tnum" fill="#b45309">TYPE 2</text>
+  <text x="258" y="120" class="name">Native&#8211;API driver</text>
+  <text x="258" y="135" class="mini">part Java, part C</text>
+  <path d="M 258 146 L 422 146" stroke="#fcd34d" stroke-width="1"/>
+
+  <text x="258" y="166" class="tag">NEEDS</text>
+  <text x="258" y="182" class="note">the vendor&#8217;s native library</text>
+  <text x="258" y="196" class="note">on EVERY client machine</text>
+  <path d="M 258 210 L 422 210" stroke="#fcd34d" stroke-width="1"/>
+
+  <text x="258" y="230" class="tag">VERDICT</text>
+  <text x="258" y="248" class="note" fill="#b45309">Rare today. The per&#8211;</text>
+  <text x="258" y="262" class="note" fill="#b45309">machine install is the</text>
+  <text x="258" y="276" class="note" fill="#b45309">problem, not the speed.</text>
+
+  <!-- =============================== CARD 3 : TYPE 3 =============================== -->
+  <text x="478" y="100" class="tnum" fill="#1d4ed8">TYPE 3</text>
+  <text x="478" y="120" class="name">Network protocol</text>
+  <text x="478" y="135" class="mini">all&#8211;Java, via a middleman</text>
+  <path d="M 478 146 L 642 146" stroke="#bfdbfe" stroke-width="1"/>
+
+  <text x="478" y="166" class="tag">NEEDS</text>
+  <text x="478" y="182" class="note">a middleware server between</text>
+  <text x="478" y="196" class="note">your app and the database</text>
+  <path d="M 478 210 L 642 210" stroke="#bfdbfe" stroke-width="1"/>
+
+  <text x="478" y="230" class="tag">VERDICT</text>
+  <text x="478" y="248" class="note" fill="#1d4ed8">Used when one gateway must</text>
+  <text x="478" y="262" class="note" fill="#1d4ed8">serve many databases. One</text>
+  <text x="478" y="276" class="note" fill="#1d4ed8">more thing to run and fail.</text>
+
+  <!-- =============================== CARD 4 : TYPE 4 =============================== -->
+  <text x="698" y="100" class="tnum" fill="#047857">TYPE 4</text>
+  <text x="698" y="120" class="name">Thin driver (pure Java)</text>
+  <text x="698" y="135" class="mini">all&#8211;Java, straight to the DB</text>
+  <path d="M 698 146 L 862 146" stroke="#86efac" stroke-width="1"/>
+
+  <text x="698" y="166" class="tag">NEEDS</text>
+  <text x="698" y="182" class="note">nothing but the jar on the</text>
+  <text x="698" y="196" class="note">classpath</text>
+  <path d="M 698 210 L 862 210" stroke="#86efac" stroke-width="1"/>
+
+  <text x="698" y="230" class="tag">VERDICT</text>
+  <text x="698" y="248" class="note" fill="#047857">This is H2. This is MySQL</text>
+  <text x="698" y="262" class="note" fill="#047857">Connector/J. This is what</text>
+  <text x="698" y="276" class="note" fill="#047857">every modern driver is.</text>
+
+  <!-- =============================== THE RULE =============================== -->
+  <text x="30" y="348" class="rule"><tspan font-weight="bold">None of this changes your Java.</tspan> All four implement the same <tspan font-family="ui-monospace, monospace">java.sql.Driver</tspan> interface, so the code you write is identical.</text>
+  <text x="30" y="370" class="rule"><tspan font-weight="bold">What changes is the setup:</tspan> a URL, a jar on the classpath, and &#8212; for types 1 to 3 &#8212; something extra installed on the machine.</text>
+</svg>

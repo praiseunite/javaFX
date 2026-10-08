@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" width="100%" height="100%">
+  <defs>
+    <filter id="stepsShadow" x="-8%" y="-10%" width="116%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .step { font-family: system-ui, -apple-system, sans-serif; font-size: 12.5px; font-weight: 700; fill: #0f172a; }
+    .note { font-family: system-ui, -apple-system, sans-serif; font-size: 10.5px; fill: #475569; }
+    .num { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; font-weight: 800; fill: #ffffff; }
+    .rule { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; fill: #0f172a; }
+    .tag { font-family: system-ui, -apple-system, sans-serif; font-size: 9.5px; font-weight: 700; }
+  </style>
+
+  <rect width="900" height="400" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">The six steps of a JDBC application</text>
+  <text x="30" y="54" class="sub">Every JDBC program ever written is these six steps in this order. Nothing else is required.</text>
+
+  <!-- =============================== THE SIX BARS =============================== -->
+  <g filter="url(#stepsShadow)">
+    <rect x="24" y="78" width="596" height="40" rx="8" fill="#ffffff" stroke="#c7d2fe" stroke-width="1.5"/>
+    <rect x="24" y="128" width="596" height="40" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5"/>
+    <rect x="24" y="178" width="596" height="40" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5"/>
+    <rect x="24" y="228" width="596" height="40" rx="8" fill="#ffffff" stroke="#c7d2fe" stroke-width="1.5"/>
+    <rect x="24" y="278" width="596" height="40" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5"/>
+    <rect x="24" y="328" width="596" height="40" rx="8" fill="#f0fdf4" stroke="#10b981" stroke-width="1.5"/>
+  </g>
+
+  <!-- 1 -->
+  <circle cx="48" cy="98" r="11" fill="#6366f1"/>
+  <text x="48" y="102" class="num" text-anchor="middle">1</text>
+  <text x="70" y="102" class="step">Load or register the driver</text>
+
+  <!-- 2 -->
+  <circle cx="48" cy="148" r="11" fill="#6366f1"/>
+  <text x="48" y="152" class="num" text-anchor="middle">2</text>
+  <text x="70" y="152" class="step">Get a Connection</text>
+
+  <!-- 3 -->
+  <circle cx="48" cy="198" r="11" fill="#6366f1"/>
+  <text x="48" y="202" class="num" text-anchor="middle">3</text>
+  <text x="70" y="202" class="step">Create a Statement</text>
+
+  <!-- 4 -->
+  <circle cx="48" cy="248" r="11" fill="#6366f1"/>
+  <text x="48" y="252" class="num" text-anchor="middle">4</text>
+  <text x="70" y="252" class="step">Execute the SQL</text>
+
+  <!-- 5 -->
+  <circle cx="48" cy="298" r="11" fill="#6366f1"/>
+  <text x="48" y="302" class="num" text-anchor="middle">5</text>
+  <text x="70" y="302" class="step">Read the ResultSet</text>
+
+  <!-- 6 -->
+  <circle cx="48" cy="348" r="11" fill="#10b981"/>
+  <text x="48" y="352" class="num" text-anchor="middle">6</text>
+  <text x="70" y="352" class="step" fill="#047857">Close everything</text>
+
+  <!-- =============================== THE NOTES =============================== -->
+  <text x="636" y="68" class="tag" fill="#64748b">WHAT IT MEANS IN PRACTICE</text>
+
+  <text x="636" y="94" class="note">optional since JDBC 4 &#8212; the jar on the</text>
+  <text x="636" y="108" class="note">classpath registers itself</text>
+
+  <text x="636" y="144" class="note">the URL, the user and the password.</text>
+  <text x="636" y="158" class="note">jdbc:h2:./data/registry</text>
+
+  <text x="636" y="194" class="note">Statement for fixed SQL;</text>
+  <text x="636" y="208" class="note">PreparedStatement if it takes values</text>
+
+  <text x="636" y="244" class="note">executeQuery() for a SELECT,</text>
+  <text x="636" y="258" class="note">executeUpdate() for INSERT and the rest</text>
+
+  <text x="636" y="294" class="note">next() moves the cursor. Read by name</text>
+  <text x="636" y="308" class="note">or by number, then convert the type</text>
+
+  <text x="636" y="344" class="note">try-with-resources does this on every</text>
+  <text x="636" y="358" class="note">path out &#8212; including the one that throws</text>
+
+  <!-- the legend -->
+  <text x="636" y="384" class="tag" fill="#b45309">The amber bars hold a resource.</text>
+  <text x="636" y="396" class="tag" fill="#047857">Step 6 is try-with-resources.</text>
+</svg>

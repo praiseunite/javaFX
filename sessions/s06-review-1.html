@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Session 6 — Try It Yourself: Sessions 1–5</title>
-  <meta name="description" content="Session 6 of Building Rich Java Applications with JavaFX and AI Tools: A comprehensive review of Utility APIs, Generics, Files & Streams, Threading, and Concurrency.">
+  <meta name="description" content="Session 6 of Building Rich Java Applications with JavaFX and AI Tools: a hands-on review of Sessions 1–5. Debug seven real faults, answer the Try It Yourself questions on collections, generics, file I/O, threading and concurrency, repair a five-fault class until its self-check reports 5 passed, 0 failed, and finish Assignment A3.">
   <link rel="stylesheet" href="../assets/css/course.css">
   <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
   <script>window.PAGE = "s06";</script>
@@ -13,118 +13,929 @@
 
 <main class="page">
 
-  <!-- ===== HERO ============================================================ -->
+  <!-- ===== 1. HERO ========================================================= -->
   <section class="hero">
     <span class="tag">Week 2 &middot; Day 2 &middot; Session 6 &middot; 2 hours in class</span>
     <h1>Session 6 &mdash; Try It Yourself: Sessions 1&ndash;5</h1>
     <p class="lede">
-      You've covered the most important foundations of modern Java: how to store data (Collections), how to ensure type safety (Generics), how to save data to disk (I/O Streams), and how to do many things at once (Multithreading). Today is all about testing your knowledge, fixing broken code, and ensuring you are ready for the Capstone Project.
+      You now know how to store data (Collections), keep it type-safe (Generics), save it (I/O Streams),
+      run jobs at the same time (Threading) and share data safely (Concurrency). Today you find out
+      whether you can <strong>read</strong> all of that &mdash; because reading code you did not write is
+      most of the job. You will debug seven real faults, work the <em>Try It Yourself</em> questions
+      from Sessions 1&ndash;5, and repair a class that is broken in five different ways until its
+      self-check reports <code>5 passed, 0 failed</code>.
     </p>
     <div class="meta">
       <span>&#128218; Learner's Guide: SG &middot; XP &middot; TG &mdash; Session 6</span>
-      <span>&#9201; ~2 hours</span>
+      <span>&#9201; ~2 hours + practice at home</span>
       <span>&#9989; Before this: Sessions 1&ndash;5</span>
-      <span>&#128736; Assignment: Continue working on A3</span>
+      <span>&#128203; Assignment A3 &mdash; due today: bring your project</span>
     </div>
   </section>
 
+  <!-- ===== 2. OBJECTIVES =================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this session you can&hellip;</b>
+    <ol>
+      <li><strong>Choose</strong> between a <code>List</code>, a <code>Set</code>, a <code>Queue</code> and a <code>Map</code> by naming the job in English first.</li>
+      <li><strong>Apply</strong> PECS &mdash; and <strong>explain</strong> why <code>? extends</code> refuses an <code>add()</code> while <code>? super</code> allows it.</li>
+      <li><strong>Use</strong> try-with-resources so every reader and writer is closed on every path out of the method.</li>
+      <li><strong>Distinguish</strong> <code>start()</code> from <code>run()</code>, and <strong>use</strong> <code>isAlive()</code> and <code>join()</code> to follow a thread's life.</li>
+      <li><strong>Identify</strong> a race condition, and <strong>choose</strong> between an atomic class and <code>synchronized</code> for the fix.</li>
+      <li><strong>Debug</strong> broken code from a failure report, working the loop <em>spot &rarr; reproduce &rarr; isolate &rarr; fix &rarr; re-run</em>.</li>
+      <li><strong>Repair</strong> a class with five planted faults, and <strong>prove</strong> it with a self-check that moves from <code>0 passed, 5 failed</code> to <code>5 passed, 0 failed</code>.</li>
+      <li><strong>Explain</strong> why a deadlock needs a circular wait, and <strong>prevent</strong> one by agreeing on a single lock order.</li>
+      <li><strong>Check</strong> an AI's explanation of a bug against the evidence &mdash; the message, the output and the code &mdash; before you act on it.</li>
+    </ol>
+  </div>
 
-  <!-- ===== ROADMAP ========================================================= -->
+  <!-- ===== 3. TABLE OF CONTENTS ============================================ -->
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== 5. ROADMAP ====================================================== -->
   <h2>Your Roadmap for Today</h2>
   <div class="roadmap">
     <a href="#part-1-debugging">Part 1: Debugging Drills</a>
-    <a href="#part-2-mega-quiz">Part 2: The Mega-Quiz</a>
+    <a href="#part-2-try-it-yourself">Part 2: Try It Yourself (Sessions 1&ndash;5)</a>
+    <a href="#part-3-mega-quiz">Part 3: The Mega-Quiz</a>
+    <a href="#lab-repair-clinic">Guided Lab: The Repair Clinic</a>
   </div>
 
-  <!-- ===== PART 1: DEBUGGING DRILLS ======================================== -->
-  <h2 id="part-1-debugging">Part 1 &mdash; Debugging Drills</h2>
+  <!-- ===== 6. WHY THIS MATTERS ============================================= -->
+  <h2>Why This Matters</h2>
   <p>
-    A huge part of being a developer is reading code and figuring out why it doesn't work. The code snippets below have subtle bugs. Can you spot them?
+    Nobody is paid to write new code all day. Professional developers spend most of their time
+    <strong>reading code they did not write</strong> &mdash; and working out why it is doing the wrong thing.
+    The faults in this session are not exotic: every one of them is a Sessions 1&ndash;5 mistake wearing
+    ordinary clothes, and every one of them produces output that <em>looks</em> fine.
   </p>
-  
+  <p>
+    That last part is the reason this session exists. A crash is a gift: it tells you where to look.
+    A wrong answer with a clean exit tells you nothing, and it is what reaches the customer. Finding
+    those is a skill, and like every skill in this course it is built by doing it, not by reading about it.
+  </p>
+
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; the mechanic's road test</b>
+      A mechanic will not hand back a car they have only looked at. They start it, drive it, and listen.
+      A car that <em>looks</em> roadworthy and a car that <em>is</em> roadworthy are different things, and only
+      the road test tells them apart. Debugging is the road test. A failure report tells you there is a
+      noise; it does not tell you which part is making it, and it certainly does not tell you the car is safe
+      to hand over. You drive it again after every change &mdash; that is what <code>SelfCheck</code> is for.
+    </div>
+  </div>
+
+  <!-- ===== 7. PART 1 ======================================================= -->
+  <h2 id="part-1-debugging"><span class="eyebrow">Part 1 of 3</span> Debugging Drills</h2>
+  <p>
+    Seven faults, one from each corner of Sessions 1&ndash;5 and two extra from the concurrency material.
+    Name the fault <em>before</em> you run anything &mdash; that is the exercise. Then run it and check yourself:
+    every program below is real, and the output under each one is what it actually printed.
+  </p>
+
   <figure class="concept-visual">
     <img src="../assets/img/cartoons/s06_debugging_review.jpg" alt="A chef looking closely at a messy recipe blueprint through a giant magnifying glass." />
-    <figcaption><strong>Figure 1.</strong> Debugging is like finding a typo in a complex recipe before you bake the cake!</figcaption>
+    <figcaption><strong>Figure 1.</strong> Debugging is finding the typo in the recipe before you bake the cake.</figcaption>
   </figure>
 
-  <h3>Drill 1: The Forgetful Collection</h3>
-  <pre><code class="lang-java">Set&lt;String&gt; names = new HashSet&lt;&gt;();
-names.add("Alice");
-names.add("Bob");
-names.add("alice");
+  <div style="text-align:center;margin:1.5rem 0">
+    <img src="../assets/img/diagrams/s06_repair_loop.svg" alt="Five steps in a loop: spot the fault, reproduce it, isolate it to one line, fix the cause, re-run the checks — and go round again if it is still red." style="max-width:100%;height:auto">
+    <p class="text-sm text-faint" style="margin-top:.5rem">Figure 2 &mdash; the loop every fix in this session follows.</p>
+  </div>
 
-System.out.println("We have " + names.size() + " unique names.");
-// Output says: We have 3 unique names. 
-// Wait, isn't Alice a duplicate? Why did the Set keep it?</code></pre>
+  <h3>Drill 1 &mdash; The Forgotten Customer</h3>
+  <p>The office writes three names into a <code>HashSet</code> and gets three customers back. There are only two.</p>
+  <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D1_SetCase.java" from="33" to="43" hl="5" title="Drill 1 — the faulty method"-->
+<pre class="numbered" data-file="Drill 1 — the faulty method" data-hl="-27" style="counter-reset:line 32"><code class="lang-java">    private static void broken() {
+        Set&lt;String&gt; names = new HashSet&lt;&gt;();
+        names.add("Alice");
+        names.add("Bob");
+        names.add("alice");
+
+        System.out.println("BROKEN - added Alice, Bob, alice with no normalising");
+        System.out.println("  unique names = " + names.size());
+        System.out.println("  the set holds " + new TreeSet&lt;&gt;(names));
+        System.out.println("  ...but Alice and alice are the same customer.");
+    }</code></pre>
+<!--@end-->
+  <!--@output project="code/s06-review-1" main="com.aptech.s06.drills.D1_SetCase"-->
+<div class="terminal-output">Drill 1 - the forgetful collection
+
+BROKEN - added Alice, Bob, alice with no normalising
+  unique names = 3
+  the set holds [Alice, Bob, alice]
+  ...but Alice and alice are the same customer.
+
+FIXED - normalise every name on the way in
+  unique names = 2
+  the set holds [alice, bob]
+  worth knowing: the LOOKUP must be normalised too
+  names.contains("ALICE") -&gt; false
+  names.contains("ALICE".toLowerCase()) -&gt; true
+  (the first lies: the set stores 'alice'. Normalise the lookup the same way.)</div>
+<!--@end-->
   <details>
     <summary>&#128161; See the Bug &amp; Fix</summary>
     <div>
-      <p><strong>The Bug:</strong> Sets are case-sensitive. "Alice" and "alice" have different hash codes and are not <code>equals()</code> to each other in Java.</p>
-      <p><strong>The Fix:</strong> Convert everything to lowercase (or uppercase) before adding it to the Set.</p>
-<pre><code class="lang-java">names.add(name.toLowerCase());</code></pre>
+      <p><strong>The Bug:</strong> a <code>HashSet</code> decides "have I seen this already?" with <code>hashCode()</code> and <code>equals()</code>. For a <code>String</code> those compare the characters one by one, so <code>"Alice"</code> and <code>"alice"</code> are not equal and do not share a bucket. Case is part of the value, always &mdash; the set is not broken, it is answering the question it was asked.</p>
+      <p><strong>The Fix:</strong> agree a normal form and apply it on the way in. And notice the trap in the fix: a lookup has to be normalised the same way, or <code>contains()</code> starts lying to you.</p>
+      <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D1_SetCase.java" from="46" to="59" hl="3,5,11,12" title="Drill 1 — normalise on the way in"-->
+<pre class="numbered" data-file="Drill 1 — normalise on the way in" data-hl="-42,-40,-34,-33" style="counter-reset:line 45"><code class="lang-java">    private static void fixed() {
+        Set&lt;String&gt; names = new HashSet&lt;&gt;();
+        names.add("Alice".toLowerCase());
+        names.add("Bob".toLowerCase());
+        names.add("alice".toLowerCase());
+
+        System.out.println("FIXED - normalise every name on the way in");
+        System.out.println("  unique names = " + names.size());
+        System.out.println("  the set holds " + new TreeSet&lt;&gt;(names));
+        System.out.println("  worth knowing: the LOOKUP must be normalised too");
+        System.out.println("  names.contains(\"ALICE\") -&gt; " + names.contains("ALICE"));
+        System.out.println("  names.contains(\"ALICE\".toLowerCase()) -&gt; " + names.contains("ALICE".toLowerCase()));
+        System.out.println("  (the first lies: the set stores 'alice'. Normalise the lookup the same way.)");
+    }</code></pre>
+<!--@end-->
     </div>
   </details>
 
-  <h3>Drill 2: The Generics Crash</h3>
-  <pre><code class="lang-java">public static void addFruits(List&lt;? extends Fruit&gt; basket) {
-    basket.add(new Apple()); 
-    // ERROR: compiler refuses to compile this line!
-}</code></pre>
-  <details>
-    <summary>&#128161; See the Bug &amp; Fix</summary>
-    <div>
-      <p><strong>The Bug:</strong> You cannot <code>add()</code> to a list declared with <code>? extends</code>. PECS (Producer Extends, Consumer Super). <code>extends</code> is for reading (producing) data. The compiler doesn't know what specific type of Fruit list was passed in (it might be a <code>List&lt;Banana&gt;</code>!), so it prevents you from adding an Apple.</p>
-      <p><strong>The Fix:</strong> If you want to <em>consume</em> (add) items, use <code>super</code>.</p>
-<pre><code class="lang-java">public static void addFruits(List&lt;? super Apple&gt; basket) {
-    basket.add(new Apple()); 
-}</code></pre>
-    </div>
-  </details>
+  <h3>Drill 2 &mdash; The Basket That Refuses the Apple</h3>
+  <p>This one does not even start. It is a <strong>compile error</strong>, which is the best kind: the compiler found it before a customer did.</p>
+  <!--@code src="code/s06-review-1/snippets/Drill2_Broken.java.txt" from="15" to="25" hl="9" title="Drill 2 — the version that will not compile"-->
+<pre class="numbered" data-file="Drill 2 — the version that will not compile" data-hl="-5" style="counter-reset:line 14"><code class="lang-java">public class Drill2_Broken {
 
-  <h3>Drill 3: The Leaky File</h3>
-  <pre><code class="lang-java">public void writeLog(String msg) throws IOException {
-    FileWriter writer = new FileWriter("app.log");
-    writer.write(msg);
-    // the end of the method
-}</code></pre>
-  <details>
-    <summary>&#128161; See the Bug &amp; Fix</summary>
-    <div>
-      <p><strong>The Bug:</strong> The <code>FileWriter</code> is never closed! This causes a resource leak. Worse, the data might be stuck in a buffer and never actually written to the disk.</p>
-      <p><strong>The Fix:</strong> Use a try-with-resources block so Java closes it automatically.</p>
-<pre><code class="lang-java">public void writeLog(String msg) throws IOException {
-    try (FileWriter writer = new FileWriter("app.log")) {
-        writer.write(msg);
+    static class Fruit { }
+
+    static class Apple extends Fruit { }
+
+    /** "Give me a basket of fruit" - and then tries to put an apple in it. */
+    static void addApple(List&lt;? extends Fruit&gt; basket) {
+        basket.add(new Apple());        // &lt;-- javac refuses this line
     }
 }</code></pre>
-    </div>
-  </details>
+<!--@end-->
+  <p>Compiling it produces exactly this:</p>
+  <div class="terminal-output is-error">Drill2_Broken.java:23: error: incompatible types: Apple cannot be converted to CAP#1
+        basket.add(new Apple());        // &lt;-- javac refuses this line
+                  ^
+  where CAP#1 is a fresh type-variable:
+    CAP#1 extends Fruit from capture of ? extends Fruit</div>
+  <!--@output project="code/s06-review-1" main="com.aptech.s06.drills.D2_Pecs"-->
+<div class="terminal-output">Drill 2 - why ? extends may not add and ? super may
 
-  <h3>Drill 4: The Frozen App</h3>
-  <pre><code class="lang-java">Object key = new Object();
+A method that only READS:  readBasket(List&lt;? extends Fruit&gt;)
+  given a List&lt;Apple&gt;  -&gt; Apple
+  given a List&lt;Fruit&gt;  -&gt; Banana
 
-public void doWork() {
-    synchronized(key) {
-        System.out.println("Doing work...");
-        try {
-            Thread.sleep(5000); // 5 second pause
-        } catch (InterruptedException e) {}
-    }
-}</code></pre>
+A method that WRITES:      addApple(List&lt;? super Apple&gt;)
+  appleBasket  is now [Apple, Apple]
+  fruitBasket  is now [Banana, Apple]
+  objectBasket is now [Apple]
+
+All three baskets accepted the apple, and none of them is a List&lt;Apple&gt;
+in particular - that is exactly what '? super Apple' promises.</div>
+<!--@end-->
   <details>
     <summary>&#128161; See the Bug &amp; Fix</summary>
     <div>
-      <p><strong>The Bug:</strong> <code>Thread.sleep()</code> <em>does not release the lock</em>! While this thread sleeps for 5 seconds, every other thread that needs the <code>key</code> lock is completely blocked. This kills performance.</p>
-      <p><strong>The Fix:</strong> Never sleep while holding a lock. If you need a thread to wait and give up the lock, use <code>key.wait()</code> instead of <code>Thread.sleep()</code>.</p>
+      <p><strong>The Bug:</strong> <code>? extends Fruit</code> promises only that everything in the basket <em>is</em> a <code>Fruit</code>. It does not promise what the basket can <em>hold</em>: the caller may have passed a <code>List&lt;Banana&gt;</code>. Adding an apple to a banana basket is a category error, so the compiler refuses rather than discovering it at runtime.</p>
+      <p><strong>The Fix:</strong> match the wildcard to the direction you need. Producer Extends, Consumer Super &mdash; reads take <code>extends</code>, writes take <code>super</code>.</p>
+      <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D2_Pecs.java" from="36" to="54" hl="5,17" title="Drill 2 — both directions, correctly written"-->
+<pre class="numbered" data-file="Drill 2 — both directions, correctly written" data-hl="-30,-18" style="counter-reset:line 35"><code class="lang-java">    /**
+     * PRODUCER — reads every fruit out of the basket and hands them to the caller.
+     * Accepts List&amp;lt;Fruit&amp;gt;, List&amp;lt;Apple&amp;gt;, List&amp;lt;Banana&amp;gt; ... any subtype.
+     */
+    static String readBasket(List&lt;? extends Fruit&gt; basket) {
+        StringBuilder sb = new StringBuilder();
+        for (Fruit fruit : basket) {
+            sb.append(fruit).append(' ');
+        }
+        return sb.toString().trim();
+    }
+
+    /**
+     * CONSUMER — puts an apple into the basket.
+     * Accepts List&amp;lt;Apple&amp;gt;, List&amp;lt;Fruit&amp;gt;, List&amp;lt;Object&amp;gt; ... any supertype.
+     */
+    static void addApple(List&lt;? super Apple&gt; basket) {
+        basket.add(new Apple());
+    }</code></pre>
+<!--@end-->
     </div>
   </details>
 
+  <h3>Drill 3 &mdash; The Report Nobody Received</h3>
+  <p>The method writes a line and returns. No exception. The file is empty. This one runs, so you can watch it happen.</p>
+  <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D3_LeakyWriter.java" from="40" to="48" hl="4,7" title="Drill 3 — written, but never closed"-->
+<pre class="numbered" data-file="Drill 3 — written, but never closed" data-hl="-35,-32" style="counter-reset:line 39"><code class="lang-java">    private static void broken() throws Exception {
+        Path file = SANDBOX.resolve("drill3_leaky.log");
 
-  <!-- ===== PART 2: THE MEGA-QUIZ =========================================== -->
-  <h2 id="part-2-mega-quiz">Part 2 &mdash; The Mega-Quiz (Sessions 1&ndash;5)</h2>
-  <p>Test your knowledge. Take your time. Discuss with your partner if you disagree on an answer!</p>
-  
-  <div class="quiz">
+        FileWriter writer = new FileWriter(file.toFile());
+        writer.write("first line of the log");
+        writer.write(System.lineSeparator());
+        // ...and the method ends here. No close(). No flush(). No try-with-resources.
+
+        String readBack = Files.readString(file);</code></pre>
+<!--@end-->
+  <!--@output project="code/s06-review-1" main="com.aptech.s06.drills.D3_LeakyWriter"-->
+<div class="terminal-output">Drill 3 - the leaky file
+
+BROKEN - FileWriter written to, never closed
+  the file was created: true
+  size on disk now:     0 bytes
+  reading it back gives ""
+  characters we thought we had written: 21
+  -&gt; the text is in the writer's buffer, not on the disk.
+  -&gt; and the handle is still open: that is the resource leak.
+
+FIXED - try-with-resources closes it for you
+  size on disk now:     23 bytes
+  reading it back gives "first line of the log"
+  -&gt; close() flushed the buffer and released the handle.</div>
+<!--@end-->
+  <details>
+    <summary>&#128161; See the Bug &amp; Fix</summary>
+    <div>
+      <p><strong>The Bug:</strong> <code>FileWriter</code> is buffered. <code>write()</code> means "I have taken your text", not "your text is on disk". Only <code>close()</code> &mdash; which flushes first &mdash; gets it there. And the file handle stays open the whole time, which is the leak.</p>
+      <p><strong>The Fix:</strong> try-with-resources. It calls <code>close()</code> on the way out of the block, including when an exception is thrown, which is the path a hand-written <code>close()</code> in the happy case always gets wrong.</p>
+      <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D3_LeakyWriter.java" from="60" to="74" hl="3" title="Drill 3 — try-with-resources"-->
+<pre class="numbered" data-file="Drill 3 — try-with-resources" data-hl="-56" style="counter-reset:line 59"><code class="lang-java">    private static void fixed() throws Exception {
+        Path file = SANDBOX.resolve("drill3_fixed.log");
+
+        try (FileWriter writer = new FileWriter(file.toFile())) {
+            writer.write("first line of the log");
+            writer.write(System.lineSeparator());
+        }   // close() runs here - automatically, even if the block throws
+
+        String readBack = Files.readString(file);
+
+        System.out.println("FIXED - try-with-resources closes it for you");
+        System.out.println("  size on disk now:     " + Files.size(file) + " bytes");
+        System.out.println("  reading it back gives \"" + readBack.replace("\n", "").replace("\r", "") + "\"");
+        System.out.println("  -&gt; close() flushed the buffer and released the handle.");
+    }</code></pre>
+<!--@end-->
+    </div>
+  </details>
+
+  <h3>Drill 4 &mdash; The Frozen Kitchen</h3>
+  <p>Four cooks, four ovens' worth of work, and one lock. Nothing crashes. It is just slow &mdash; four times too slow.</p>
+  <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D4_SleepUnderLock.java" from="78" to="92" hl="4" title="Drill 4 — the sleep sits inside the lock"-->
+<pre class="numbered" data-file="Drill 4 — the sleep sits inside the lock" data-hl="-73" style="counter-reset:line 77"><code class="lang-java">        /** BROKEN: takes the lock, then sleeps while still holding it. */
+        static void slow() throws InterruptedException {
+            synchronized (OVEN) {
+                Thread.sleep(BAKE_MS);      // the lock is held for the whole 300 ms
+                finished++;
+            }
+        }
+
+        /** FIXED: does the slow work first, then locks only to update the shared count. */
+        static void fast() throws InterruptedException {
+            Thread.sleep(BAKE_MS);          // out here nobody is blocked by it
+            synchronized (OVEN) {
+                finished++;                 // locked for microseconds, which is all it needs
+            }
+        }</code></pre>
+<!--@end-->
+  <!--@output project="code/s06-review-1" main="com.aptech.s06.drills.D4_SleepUnderLock"-->
+<div class="terminal-output">Drill 4 - the frozen app
+4 cooks, each needing 300 ms of work.
+Doing it at the same time should cost about 300 ms, not 1200 ms.
+
+BROKEN - the sleep is INSIDE the lock
+  four cooks finished in 1225 ms
+  nobody crashed and the answer is correct - it is just serialised
+
+FIXED - the sleep is OUTSIDE the lock
+  four cooks finished in 301 ms
+
+Same work, same four cooks. A lock protects data, not time:
+do the slow work first, then lock only the few lines that touch
+the shared value.</div>
+<!--@end-->
+  <p class="text-sm text-faint">The two numbers above are measured on the machine that built this page, so yours will differ &mdash; the <em>gap</em> between them will not.</p>
+  <details>
+    <summary>&#128161; See the Bug &amp; Fix</summary>
+    <div>
+      <p><strong>The Bug:</strong> <code>Thread.sleep()</code> does not release the lock it is called under. The lock was doing its job perfectly &mdash; it was simply asked to protect 300&nbsp;ms of doing nothing, so every other cook queued behind the sleeper and four independent jobs ran one after another.</p>
+      <p><strong>The Fix:</strong> do the slow work first, then lock only the few lines that touch the shared value. A lock protects data, not time.</p>
+      <p class="text-sm text-faint">Note which fix this is <em>not</em>: <code>wait()</code> is not a substitute for <code>sleep()</code>. <code>wait()</code> releases the lock, but it also requires the lock, demands a <code>while</code> loop against spurious wake-ups, and needs somebody to call <code>notifyAll()</code>. If you only needed to pass time, none of that is what you wanted.</p>
+    </div>
+  </details>
+
+  <h3>Drill 5 &mdash; The Standoff</h3>
+  <p>Two chefs, two utensils, two different orders of picking them up. This fault is different from the others: it does not end. The program below would hang forever, so it carries its own watchdog &mdash; the JVM can <em>see</em> a deadlock even though it cannot break one.</p>
+  <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D5_LockOrderDeadlock.java" from="66" to="77" hl="7" title="Drill 5a — Ada takes pot then spoon; Ben takes spoon then pot"-->
+<pre class="numbered" data-file="Drill 5a — Ada takes pot then spoon; Ben takes spoon then pot" data-hl="-58" style="counter-reset:line 65"><code class="lang-java">    private static void cook(String chef, String first, Object firstLock,
+                             String second, Object secondLock) {
+        System.out.println(chef + " picks up the " + first + ".");
+        synchronized (firstLock) {
+            sleep(300);             // gives the other chef time to pick up the other utensil
+            System.out.println(chef + " now needs the " + second + " ...");
+            synchronized (secondLock) {
+                System.out.println(chef + " is cooking.");
+            }
+        }
+        System.out.println(chef + " puts everything down.");
+    }</code></pre>
+<!--@end-->
+  <!--@output project="code/s06-review-1" main="com.aptech.s06.drills.D5_LockOrderDeadlock"-->
+<div class="terminal-output">Drill 5a - the standoff (this one really does deadlock)
+
+Chef Ben picks up the spoon.
+Chef Ada picks up the pot.
+Chef Ben now needs the pot ...
+Chef Ada now needs the spoon ...
+
+Watchdog: DEADLOCK - 2 threads will never move again:
+  Chef Ada is BLOCKED, waiting for the lock held by Chef Ben
+  Chef Ben is BLOCKED, waiting for the lock held by Chef Ada
+
+Ada waits for the spoon, Ben waits for the pot. Neither will let go.
+The JVM can see it, but it cannot break the cycle - so we stop here.</div>
+<!--@end-->
+  <details>
+    <summary>&#128161; See the Bug &amp; Fix</summary>
+    <div>
+      <p><strong>The Bug:</strong> a deadlock needs a <strong>circular wait</strong>. Ada holds the pot and wants the spoon; Ben holds the spoon and wants the pot. Neither will ever let go, so neither will ever move &mdash; and nothing is thrown, because from the JVM's point of view both threads are doing exactly what they were told.</p>
+      <p><strong>The Fix:</strong> one agreed order, followed everywhere. Both chefs name the pot first, so whoever gets it simply finishes and the other waits at the <em>first</em> lock instead of being stuck at the second. One rule, and a cycle becomes impossible.</p>
+      <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D5_FixedLockOrder.java" from="23" to="38" hl="6,7" title="Drill 5b — the same two chefs, one order"-->
+<pre class="numbered" data-file="Drill 5b — the same two chefs, one order" data-hl="-16,-15" style="counter-reset:line 22"><code class="lang-java">    public static void main(String[] args) throws InterruptedException {
+        System.out.println("Drill 5b - one agreed lock order (pot first, always)");
+        System.out.println();
+
+        // Both chefs name the pot first, even though Ben wants the spoon.
+        Thread ada = new Thread(() -&gt; cook("Chef Ada", "pot", POT, "spoon", SPOON), "Chef Ada");
+        Thread ben = new Thread(() -&gt; cook("Chef Ben", "pot", POT, "spoon", SPOON), "Chef Ben");
+
+        ada.start();
+        ben.start();
+        ada.join();
+        ben.join();
+
+        System.out.println();
+        System.out.println("Both chefs finished and the program ended on its own.");
+        System.out.println("One order, followed everywhere, and a circular wait cannot form.");</code></pre>
+<!--@end-->
+      <!--@output project="code/s06-review-1" main="com.aptech.s06.drills.D5_FixedLockOrder"-->
+<div class="terminal-output">Drill 5b - one agreed lock order (pot first, always)
+
+Chef Ben wants the pot.
+Chef Ada wants the pot.
+Chef Ben holds the pot, now needs the spoon ...
+Chef Ben is cooking.
+Chef Ben puts everything down.
+Chef Ada holds the pot, now needs the spoon ...
+Chef Ada is cooking.
+Chef Ada puts everything down.
+
+Both chefs finished and the program ended on its own.
+One order, followed everywhere, and a circular wait cannot form.</div>
+<!--@end-->
+      <p class="text-sm text-faint">The rule only works if <em>every</em> method obeys it. One method that grabs the spoon first reintroduces the cycle for the whole program.</p>
+    </div>
+  </details>
+
+  <h3>Drill 6 &mdash; The Duplicate That Will Not Go Away</h3>
+  <p>Two copies of the same student go into a <code>Set</code> and stay there. The set is behaving correctly; the student class is not.</p>
+  <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D6_EqualsHashCode.java" from="68" to="81" title="Drill 6 — a value class with no equals() and no hashCode()"-->
+<pre class="numbered" data-file="Drill 6 — a value class with no equals() and no hashCode()" style="counter-reset:line 67"><code class="lang-java">    /** A student with NO equals()/hashCode(): two objects, two identities. */
+    static final class BadStudent {
+        final String id;
+        final String name;
+
+        BadStudent(String id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        @Override public String toString() {
+            return id + " " + name;
+        }
+    }</code></pre>
+<!--@end-->
+  <!--@output project="code/s06-review-1" main="com.aptech.s06.drills.D6_EqualsHashCode"-->
+<div class="terminal-output">Drill 6 - the duplicate that will not go away
+
+BROKEN - Student with no equals() and no hashCode()
+  two copies of the same student were added
+  set size = 2
+  contains(a fresh copy of the same student) -&gt; false
+  -&gt; identity was compared, not student id.
+
+FIXED - equals() and hashCode() follow the contract
+  two copies of the same student were added
+  set size = 1
+  contains(a fresh copy of the same student) -&gt; true
+  -&gt; the duplicate was rejected, which is what a Set promises.
+
+The same fault as a HashMap key - looks it up with an equal key:
+  get() -&gt; null   (null: the map cannot find what it stored)</div>
+<!--@end-->
+  <details>
+    <summary>&#128161; See the Bug &amp; Fix</summary>
+    <div>
+      <p><strong>The Bug:</strong> with no <code>equals()</code>, a class inherits <em>identity</em> comparison from <code>Object</code> &mdash; "is this the same object in memory?", not "is this the same student?". With no <code>hashCode()</code> the two objects usually land in different buckets, so <code>equals()</code> is not even consulted. The <code>HashMap</code> line shows the same fault wearing a different hat: it cannot find the value it just stored.</p>
+      <p><strong>The Fix:</strong> honour the contract. <code>equals()</code> decides what "the same" means, <code>hashCode()</code> must agree with it. Note <em>which</em> field this course treats as identity &mdash; the id, not the name &mdash; because that is a business decision, not a Java one.</p>
+      <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D6_EqualsHashCode.java" from="93" to="106" hl="8,13" title="Drill 6 — the contract, honoured"-->
+<pre class="numbered" data-file="Drill 6 — the contract, honoured" data-hl="-84,-79" style="counter-reset:line 92"><code class="lang-java">        @Override public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof GoodStudent that)) {
+                return false;
+            }
+            return id.equals(that.id);
+        }
+
+        /** Must agree with equals(): the same field, in the same way. */
+        @Override public int hashCode() {
+            return Objects.hash(id);
+        }</code></pre>
+<!--@end-->
+    </div>
+  </details>
+
+  <h3>Drill 7 &mdash; The Interrupt Nobody Heard</h3>
+  <p>A worker is asked to stop. It carries on to the end of its list and reports success. This is how Cancel buttons quietly stop working.</p>
+  <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D7_SwallowedInterrupt.java" from="44" to="67" hl="8,9,10,11" title="Drill 7 — the two ways to catch an InterruptedException"-->
+<pre class="numbered" data-file="Drill 7 — the two ways to catch an InterruptedException" data-hl="-35,-34,-33,-32" style="counter-reset:line 43"><code class="lang-java">    private static int run(boolean swallow) throws InterruptedException {
+        final int[] completed = {0};
+
+        Thread worker = new Thread(() -&gt; {
+            for (int step = 1; step &lt;= STEPS; step++) {
+                try {
+                    Thread.sleep(STEP_MS);
+                } catch (InterruptedException e) {
+                    if (!swallow) {
+                        Thread.currentThread().interrupt();   // FIXED: keep the flag, then leave
+                        return;
+                    }
+                    // BROKEN: swallow it and carry on as though nothing happened
+                }
+                completed[0] = step;
+            }
+        }, "worker");
+
+        worker.start();
+        Thread.sleep(STOP_AFTER_MS);   // let it get going
+        worker.interrupt();            // "please stop"
+        worker.join(5000);             // join() gives us a happens-before edge, so the read below is safe
+        return completed[0];
+    }</code></pre>
+<!--@end-->
+  <!--@output project="code/s06-review-1" main="com.aptech.s06.drills.D7_SwallowedInterrupt"-->
+<div class="terminal-output">Drill 7 - the interrupt nobody heard
+The worker has 10 steps of 100 ms each.
+After 200 ms we ask it to stop. A worker that listens
+should give up almost immediately.
+
+BROKEN - the catch block swallows the InterruptedException
+  steps completed in total: 10 of 10
+  -&gt; it ignored the stop request and ran the job to the very end.
+
+FIXED - the catch block restores the flag and returns
+  steps completed in total: 2 of 10
+  -&gt; it stopped early, where it was asked to. The exact number of
+     steps depends on timing; that it stopped early does not.</div>
+<!--@end-->
+  <details>
+    <summary>&#128161; See the Bug &amp; Fix</summary>
+    <div>
+      <p><strong>The Bug:</strong> catching <code>InterruptedException</code> <em>clears</em> the interrupt flag. If you catch it and do nothing, you have thrown away the only signal the thread had, and <code>interrupt()</code> becomes a no-op &mdash; the worker runs to the end of its list as though nobody had spoken.</p>
+      <p><strong>The Fix:</strong> do not swallow it. Either give up what you were doing and return, or restore the flag with <code>Thread.currentThread().interrupt()</code> and let your caller decide. The fixed half above stops at the next step boundary; a stop request is a request, not a command, which is why the exact step count varies but the early exit does not.</p>
+      <p class="text-sm text-faint">This is also the honest answer to "how do I stop a thread?" in a viva: you <em>ask</em>, with <code>interrupt()</code>, and the thread cooperates. <code>Thread.stop()</code> is deprecated precisely because it does not.</p>
+    </div>
+  </details>
+
+  <!-- ===== 8. PART 2 ======================================================= -->
+  <h2 id="part-2-try-it-yourself"><span class="eyebrow">Part 2 of 3</span> Try It Yourself (Sessions 1&ndash;5)</h2>
+  <p>
+    One practical task per book session. Each one is small deliberately &mdash; the point is the <em>choice</em>
+    you make before you type, not the number of lines. Try it first; the hint is there if you need it, and
+    the solution is hidden below the hint. Every solution on this page is the real, compiled, run program.
+  </p>
+
+  <h3>1. Utility APIs &mdash; name the job, then pick the shape</h3>
+  <p>
+    Three jobs: a sign-in register where each student counts once, a photocopier queue where whoever
+    arrived first goes first, and a gradebook you look up by student id. Write the three of them and
+    print the results.
+  </p>
+  <details>
+    <summary>&#128161; Hint</summary>
+    <div>
+      <p>Say the job out loud before you choose. "Counts once" is a <code>Set</code>. "First come, first served" is a <code>Queue</code>. "Find a value by its key" is a <code>Map</code>. Everything else is a <code>List</code>.</p>
+      <p>Two follow-ups worth knowing: a <code>LinkedHashSet</code> refuses duplicates <em>and</em> keeps arrival order, and <code>getOrDefault()</code> lets you say what happens when a key is missing instead of getting <code>null</code> back.</p>
+    </div>
+  </details>
+  <details>
+    <summary>&#9989; Solution</summary>
+    <div>
+      <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/tyi/T1_Collections.java" title="T1_Collections.java"-->
+<pre class="numbered" data-file="T1_Collections.java"><code class="lang-java">package com.aptech.s06.tyi;
+
+import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
+
+/**
+ * TRY IT YOURSELF 1 — Sessions 1: Utility APIs and the Collection framework.
+ *
+ * Three everyday jobs, and the one collection shape that actually fits each of them.
+ * The skill being tested is not "can you call add()" — it is choosing the right shape
+ * before you write a line of it.
+ *
+ *   1. a sign-in register   -&gt; each student counts once        -&gt; Set
+ *   2. a photocopier queue  -&gt; first come, first served        -&gt; Queue
+ *   3. grades by student id -&gt; find a value by its key         -&gt; Map
+ */
+public class T1_Collections {
+
+    public static void main(String[] args) {
+        System.out.println("Try It Yourself 1 - choosing the collection");
+
+        // 1. Every student who signed in today. A second sign-in is not a second student.
+        //    LinkedHashSet: no duplicates, and it keeps the order they arrived in.
+        Set&lt;String&gt; signedIn = new LinkedHashSet&lt;&gt;();
+        signedIn.add("S-1001");
+        signedIn.add("S-1002");
+        signedIn.add("S-1001");                 // signed in again after lunch
+        System.out.println("1. sign-in register  : " + signedIn
+                + "   (" + signedIn.size() + " distinct students)");
+
+        // 2. The photocopier. Whoever put their work down first goes first.
+        Queue&lt;String&gt; copier = new ArrayDeque&lt;&gt;();
+        copier.add("Ada");
+        copier.add("Ben");
+        copier.add("Chioma");
+
+        StringBuilder order = new StringBuilder();
+        while (!copier.isEmpty()) {
+            order.append(copier.poll());
+            if (!copier.isEmpty()) {
+                order.append(" -&gt; ");
+            }
+        }
+        System.out.println("2. photocopier order : " + order);
+
+        // 3. Grades, looked up by student id. A HashMap is a lookup table, not a list.
+        Map&lt;String, String&gt; grades = new HashMap&lt;&gt;();
+        grades.put("S-1001", "A");
+        grades.put("S-1002", "B+");
+
+        System.out.println("3. grade for S-1002  : " + grades.get("S-1002"));
+        System.out.println("   grade for S-9999  : " + grades.getOrDefault("S-9999", "not on the register")
+                + "   (get() would hand you null - say what you want instead)");
+
+        System.out.println();
+        System.out.println("The rule: name the job in English first. Unique -&gt; Set. Waiting -&gt; Queue.");
+        System.out.println("Look up by something -&gt; Map. Everything else -&gt; List.");
+    }
+}</code></pre>
+<!--@end-->
+      <!--@output project="code/s06-review-1" main="com.aptech.s06.tyi.T1_Collections"-->
+<div class="terminal-output">Try It Yourself 1 - choosing the collection
+1. sign-in register  : [S-1001, S-1002]   (2 distinct students)
+2. photocopier order : Ada -&gt; Ben -&gt; Chioma
+3. grade for S-1002  : B+
+   grade for S-9999  : not on the register   (get() would hand you null - say what you want instead)
+
+The rule: name the job in English first. Unique -&gt; Set. Waiting -&gt; Queue.
+Look up by something -&gt; Map. Everything else -&gt; List.</div>
+<!--@end-->
+    </div>
+  </details>
+
+  <h3>2. Generics &mdash; one method that reads, one that writes</h3>
+  <p>
+    Write a method that totals a list of numbers <em>whatever kind of number they are</em>, and a second
+    method that adds integers into a list. Both signatures have to accept more than one concrete type.
+  </p>
+  <details>
+    <summary>&#128161; Hint</summary>
+    <div>
+      <p>Reading is the producer: <code>List&lt;? extends Number&gt;</code>. Writing is the consumer: <code>List&lt;? super Integer&gt;</code>.</p>
+      <p>The trap is writing <code>List&lt;Number&gt;</code> for the first one. It looks more natural and it rejects a <code>List&lt;Integer&gt;</code> &mdash; which is the entire reason wildcards exist. Inside the reader, use <code>n.doubleValue()</code> rather than casting, and you will accept every subtype without a single cast.</p>
+    </div>
+  </details>
+  <details>
+    <summary>&#9989; Solution</summary>
+    <div>
+      <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/tyi/T2_Generics.java" title="T2_Generics.java"-->
+<pre class="numbered" data-file="T2_Generics.java"><code class="lang-java">package com.aptech.s06.tyi;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * TRY IT YOURSELF 2 — Session 2: Generics and wildcards.
+ *
+ * Write one method that only READS from a list of numbers (so it must accept any subtype of
+ * Number) and one that only WRITES integers into a list (so it must accept any supertype).
+ *
+ *   List&amp;lt;? extends Number&amp;gt;  -&gt;  PRODUCER. You may read. Total them, print them, copy them out.
+ *   List&amp;lt;? super Integer&amp;gt;   -&gt;  CONSUMER. You may add. The compiler can prove the add is safe.
+ *
+ * The trap to avoid: writing `List&amp;lt;Number&amp;gt;` for the first one. That rejects a
+ * List&amp;lt;Integer&amp;gt;, which is the whole reason wildcards exist.
+ */
+public class T2_Generics {
+
+    /** PRODUCER: accepts List&lt;Integer&gt;, List&lt;Double&gt;, List&lt;Long&gt;, List&lt;Number&gt; ... */
+    static double total(List&lt;? extends Number&gt; numbers) {
+        double sum = 0;
+        for (Number n : numbers) {
+            sum += n.doubleValue();     // reading is always safe: every element IS a Number
+        }
+        return sum;
+    }
+
+    /** CONSUMER: accepts List&lt;Integer&gt;, List&lt;Number&gt;, List&lt;Object&gt; ... */
+    static void addAll(List&lt;? super Integer&gt; target, int... values) {
+        for (int value : values) {
+            target.add(value);          // writing is always safe: everything here IS an Integer
+        }
+    }
+
+    public static void main(String[] args) {
+        List&lt;Integer&gt; marks = List.of(70, 85, 62);
+        List&lt;Double&gt; prices = List.of(19.99, 4.50);
+        List&lt;Long&gt; views = List.of(1_200L, 340L);
+
+        System.out.println("Try It Yourself 2 - PECS in two method signatures");
+        System.out.println();
+        System.out.println("Reading - one method, three different list types:");
+        System.out.printf("  List&lt;Integer&gt; marks  total = %.2f%n", total(marks));
+        System.out.printf("  List&lt;Double&gt;  prices total = %.2f%n", total(prices));
+        System.out.printf("  List&lt;Long&gt;    views  total = %.2f%n", total(views));
+        System.out.println("  a List&lt;Number&gt; parameter would have refused all three.");
+        System.out.println();
+
+        List&lt;Number&gt; sink = new ArrayList&lt;&gt;();
+        addAll(sink, 10, 20, 30);
+        System.out.println("Writing - one method, fills a List&lt;Number&gt;:");
+        System.out.println("  sink is now " + sink);
+
+        List&lt;Object&gt; objects = new ArrayList&lt;&gt;();
+        addAll(objects, 7);
+        System.out.println("  the same method also fills a List&lt;Object&gt;: " + objects);
+        System.out.println();
+        System.out.println("PECS: Producer Extends, Consumer Super. If your method reads, use extends.");
+        System.out.println("If it writes, use super. If it does both, do not use a wildcard at all.");
+    }
+}</code></pre>
+<!--@end-->
+      <!--@output project="code/s06-review-1" main="com.aptech.s06.tyi.T2_Generics"-->
+<div class="terminal-output">Try It Yourself 2 - PECS in two method signatures
+
+Reading - one method, three different list types:
+  List&lt;Integer&gt; marks  total = 217.00
+  List&lt;Double&gt;  prices total = 24.49
+  List&lt;Long&gt;    views  total = 1540.00
+  a List&lt;Number&gt; parameter would have refused all three.
+
+Writing - one method, fills a List&lt;Number&gt;:
+  sink is now [10, 20, 30]
+  the same method also fills a List&lt;Object&gt;: [7]
+
+PECS: Producer Extends, Consumer Super. If your method reads, use extends.
+If it writes, use super. If it does both, do not use a wildcard at all.</div>
+<!--@end-->
+    </div>
+  </details>
+
+  <h3>3. Files &amp; Streams &mdash; copy a text file, line by line</h3>
+  <p>
+    Write a small CSV file, then copy it line by line into a second file. Two skills are being tested:
+    text needs <strong>Readers and Writers</strong>, not streams; and both resources must be closed on
+    every path out of the method.
+  </p>
+  <details>
+    <summary>&#128161; Hint</summary>
+    <div>
+      <p><code>BufferedReader</code> gives you <code>readLine()</code>; <code>BufferedWriter</code> gives you <code>newLine()</code>, which writes the correct separator for the operating system you happen to be on.</p>
+      <p>Open both in <em>one</em> try-with-resources with a semicolon between them. If you open them in two separate blocks, the reader is closed a moment too late when the writer throws, and you have a leak again.</p>
+    </div>
+  </details>
+  <details>
+    <summary>&#9989; Solution</summary>
+    <div>
+      <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/tyi/T3_FileCopy.java" title="T3_FileCopy.java"-->
+<pre class="numbered" data-file="T3_FileCopy.java"><code class="lang-java">package com.aptech.s06.tyi;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+
+/**
+ * TRY IT YOURSELF 3 — Session 3: File handling, streams and serialization.
+ *
+ * Copy a small CSV file line by line. The skills being tested are the two that break most
+ * often in student code:
+ *
+ *   1. Reader/Writer for TEXT (characters). InputStream/OutputStream are for raw bytes.
+ *      Use the wrong family on a text file and you get mojibake, not an error.
+ *   2. Both resources opened inside ONE try-with-resources, so both are closed on every
+ *      path out of the method — including the exception path.
+ *
+ * The files are written into sandbox/, which is never published to GitHub.
+ */
+public class T3_FileCopy {
+
+    private static final Path SANDBOX = Path.of("sandbox");
+
+    public static void main(String[] args) throws IOException {
+        Files.createDirectories(SANDBOX);
+
+        Path source = SANDBOX.resolve("t3-attendance.csv");
+        Path copy = SANDBOX.resolve("t3-attendance-copy.csv");
+
+        Files.write(source, List.of(
+                "S-1001,Ada,90",
+                "S-1002,Ben,75",
+                "S-1003,Chioma,88"));
+
+        copyText(source, copy);
+
+        List&lt;String&gt; lines = Files.readAllLines(copy);
+
+        System.out.println("Try It Yourself 3 - copy a text file, line by line");
+        System.out.println("  source : " + source + "  (" + Files.size(source) + " bytes)");
+        System.out.println("  copy   : " + copy + "  (" + Files.size(copy) + " bytes)");
+        System.out.println("  lines copied: " + lines.size());
+        for (String line : lines) {
+            System.out.println("    " + line);
+        }
+        System.out.println();
+        System.out.println("Copy closed both resources itself - there is no finally block anywhere,");
+        System.out.println("and the file handles are released even if readLine() throws.");
+    }
+
+    /** Copies text with BufferedReader -&gt; BufferedWriter, both closed automatically. */
+    static void copyText(Path from, Path to) throws IOException {
+        try (BufferedReader reader = Files.newBufferedReader(from);
+             BufferedWriter writer = Files.newBufferedWriter(to)) {
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                writer.write(line);
+                writer.newLine();       // newLine() writes the correct separator for this OS
+            }
+        }
+    }
+}</code></pre>
+<!--@end-->
+      <!--@output project="code/s06-review-1" main="com.aptech.s06.tyi.T3_FileCopy"-->
+<div class="terminal-output">Try It Yourself 3 - copy a text file, line by line
+  source : sandbox\t3-attendance.csv  (48 bytes)
+  copy   : sandbox\t3-attendance-copy.csv  (48 bytes)
+  lines copied: 3
+    S-1001,Ada,90
+    S-1002,Ben,75
+    S-1003,Chioma,88
+
+Copy closed both resources itself - there is no finally block anywhere,
+and the file handles are released even if readLine() throws.</div>
+<!--@end-->
+    </div>
+  </details>
+
+  <h3>4. Threading &mdash; three named workers, followed from birth to death</h3>
+  <p>
+    Start three named workers that each take a different amount of time. Report how many are running
+    <em>before</em> they start, immediately after, and after <code>join()</code>. The report must not
+    print before the workers have finished.
+  </p>
+  <details>
+    <summary>&#128161; Hint</summary>
+    <div>
+      <p>A thread that has not been started is not alive, and neither is one that has finished. <code>isAlive()</code> answers exactly one question: "running right now?"</p>
+      <p><code>start()</code> branches into a new thread; <code>run()</code> is an ordinary method call that does the work on the calling thread &mdash; same output, no concurrency, and the classic mistake. <code>join()</code> is what stops <code>main</code> printing its report early.</p>
+      <p>The punchline to look for: three jobs of 200, 400 and 600&nbsp;ms finish in about 600&nbsp;ms, not 1200 &mdash; the total is the slowest job, not the sum.</p>
+    </div>
+  </details>
+  <details>
+    <summary>&#9989; Solution</summary>
+    <div>
+      <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/tyi/T4_Workers.java" from="19" to="55" title="T4_Workers.java  (main)"-->
+<pre class="numbered" data-file="T4_Workers.java  (main)" style="counter-reset:line 18"><code class="lang-java">    public static void main(String[] args) throws InterruptedException {
+        String[] jobs = {"roster", "timetable", "fees"};
+        Thread[] workers = new Thread[jobs.length];
+
+        for (int i = 0; i &lt; jobs.length; i++) {
+            String job = jobs[i];
+            int workMs = 200 * (i + 1);      // roster 200 ms, timetable 400 ms, fees 600 ms
+
+            workers[i] = new Thread(() -&gt; {
+                sleep(workMs);
+                System.out.println("   finished: " + job
+                        + "   (on thread " + Thread.currentThread().getName() + ")");
+            }, "worker-" + job);
+        }
+
+        System.out.println("Try It Yourself 4 - three named workers");
+        System.out.println("before start(), alive = " + countAlive(workers) + " of " + workers.length
+                + "   (a thread that has not started is not alive)");
+
+        for (Thread worker : workers) {
+            worker.start();
+        }
+        System.out.println("straight after start(), alive = " + countAlive(workers)
+                + " of " + workers.length);
+
+        long start = System.currentTimeMillis();
+        for (Thread worker : workers) {
+            worker.join();                  // wait here until this one has finished
+        }
+        long took = System.currentTimeMillis() - start;
+
+        System.out.println("after join(), alive = " + countAlive(workers) + " of " + workers.length);
+        System.out.println();
+        System.out.println("All three ran at the same time: the whole batch took about " + took
+                + " ms,");
+        System.out.println("which is the time of the SLOWEST job (600 ms), not the sum of all three.");
+    }</code></pre>
+<!--@end-->
+      <!--@output project="code/s06-review-1" main="com.aptech.s06.tyi.T4_Workers"-->
+<div class="terminal-output">Try It Yourself 4 - three named workers
+before start(), alive = 0 of 3   (a thread that has not started is not alive)
+straight after start(), alive = 3 of 3
+   finished: roster   (on thread worker-roster)
+   finished: timetable   (on thread worker-timetable)
+   finished: fees   (on thread worker-fees)
+after join(), alive = 0 of 3
+
+All three ran at the same time: the whole batch took about 602 ms,
+which is the time of the SLOWEST job (600 ms), not the sum of all three.</div>
+<!--@end-->
+    </div>
+  </details>
+
+  <h3>5. Concurrency &mdash; take a racy tally and prove you fixed it</h3>
+  <p>
+    Four chefs each add one to a shared tally a hundred thousand times. The tally is wrong, and it is a
+    different wrong number every run. Fix it with the <em>right</em> tool for one hot counter, and prove
+    it by running it again.
+  </p>
+  <details>
+    <summary>&#128161; Hint</summary>
+    <div>
+      <p>Write <code>count++</code> out as its three real steps &mdash; READ, ADD, WRITE &mdash; and you can see the window. Two chefs can read the same value, and the second WRITE erases the first.</p>
+      <p>The right fix for a single hot counter is <code>LongAdder</code> (or <code>AtomicLong</code>): no lock written by hand, and an increment that happens completely or not at all. The wrong fix &mdash; the one that still works, but only by accident &mdash; is leaving the plain <code>int</code> in place and hoping.</p>
+      <p>Note the <code>CountDownLatch</code>. It is a starting gate so all four chefs really do collide, rather than drifting apart and politely taking turns.</p>
+    </div>
+  </details>
+  <details>
+    <summary>&#9989; Solution</summary>
+    <div>
+      <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/tyi/T5_Tally.java" from="29" to="38" title="T5_Tally.java  (the broken tally, with its three steps exposed)"-->
+<pre class="numbered" data-file="T5_Tally.java  (the broken tally, with its three steps exposed)" style="counter-reset:line 28"><code class="lang-java">    /** The broken tally: a plain int, with the three steps exposed. */
+    static class PlainTally {
+        int count = 0;
+
+        void addOne() {
+            int current = count;        // READ  - every chef may read the same value
+            Thread.yield();             // (demonstration aid: hold the window open)
+            count = current + 1;        // WRITE - and now they overwrite each other
+        }
+    }</code></pre>
+<!--@end-->
+      <!--@output project="code/s06-review-1" main="com.aptech.s06.tyi.T5_Tally"-->
+<div class="terminal-output">Try It Yourself 5 - a racy tally, then the right fix
+4 chefs x 100,000 orders = 400,000 expected
+
+BEFORE - a plain int with count++ spelled out:
+  actual       : 113,056
+  lost updates : 286,944
+  -&gt; wrong, and it will be a different wrong number next run.
+
+AFTER - LongAdder, one indivisible increment:
+  actual       : 400,000
+  lost updates : 0
+  -&gt; exactly right, and it stays exactly right however often you run it.
+
+Both real fixes work: LongAdder when one hot counter is all there is,
+synchronized when several fields must change together. What never works
+is a bare count++ on data that more than one thread can touch.</div>
+<!--@end-->
+      <p class="text-sm text-faint">The yield in the broken tally is a demonstration aid: it holds the window between READ and WRITE open long enough to watch a second chef walk in. It is <em>not</em> a fix, and real code does not need it. Without it a hot loop can hide this bug completely, which is exactly why the defect reaches production.</p>
+    </div>
+  </details>
+
+  <!-- ===== 9. PART 3 ======================================================= -->
+  <h2 id="part-3-mega-quiz"><span class="eyebrow">Part 3 of 3</span> The Mega-Quiz</h2>
+
+  <h3>&#129504; Knowledge Check</h3>
+  <p>Twenty-one questions on Sessions 1&ndash;5. Take your time &mdash; and if you disagree with a question, argue the case, because that is what a code review is.</p>
+
+  <div class="quiz" id="s06-final">
     <!-- Session 1: Collections -->
     <div class="quiz__q" data-answer="b">
       <div class="quiz__kind">Multiple choice</div>
@@ -145,7 +956,7 @@ public void doWork() {
       <label class="quiz__opt"><input type="radio" value="c"> They must be unique, and their class should correctly implement <code>hashCode()</code> and <code>equals()</code>.</label>
       <label class="quiz__opt"><input type="radio" value="d"> They must implement the <code>Comparable</code> interface.</label>
       <button class="quiz__check">Check Answer</button>
-      <div class="quiz__explain"><strong>C.</strong> Keys must be unique, and HashMap relies on hashCode() and equals() to find the right "bucket".</div>
+      <div class="quiz__explain"><strong>C.</strong> Keys must be unique, and HashMap relies on hashCode() and equals() to find the right "bucket". Drill 6 on this page is this question with a broken class attached.</div>
     </div>
 
     <div class="quiz__q" data-answer="c">
@@ -188,13 +999,24 @@ public void doWork() {
       <label class="quiz__opt"><input type="radio" value="c"> <code>List&lt;? super Number&gt;</code></label>
       <label class="quiz__opt"><input type="radio" value="d"> <code>List&lt;Object&gt;</code></label>
       <button class="quiz__check">Check Answer</button>
-      <div class="quiz__explain"><strong>B.</strong> <code>? extends Number</code> is an Upper Bounded Wildcard. It accepts Number and anything below it.</div>
+      <div class="quiz__explain"><strong>B.</strong> <code>? extends Number</code> is an Upper Bounded Wildcard. It accepts Number and anything below it. Note the word ACCEPT &mdash; it is a reader, which is why Drill 2 refuses to add to it.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">7. You need a method that <em>writes</em> integers into a caller-supplied list. Which parameter type is correct?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>List&lt;? extends Integer&gt;</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>List&lt;? super Integer&gt;</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>List&lt;?&gt;</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>List</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> Consumer Super. <code>? super Integer</code> accepts <code>List&lt;Integer&gt;</code>, <code>List&lt;Number&gt;</code> and <code>List&lt;Object&gt;</code>, so the add is provably safe whatever the caller passed.</div>
     </div>
 
     <!-- Session 3: Files & Streams -->
     <div class="quiz__q" data-answer="a">
       <div class="quiz__kind">Multiple choice</div>
-      <div class="quiz__stem">7. Which class is best for reading a text file (.txt) line-by-line?</div>
+      <div class="quiz__stem">8. Which class is best for reading a text file (.txt) line-by-line?</div>
       <label class="quiz__opt"><input type="radio" value="a"> <code>BufferedReader</code></label>
       <label class="quiz__opt"><input type="radio" value="b"> <code>FileInputStream</code></label>
       <label class="quiz__opt"><input type="radio" value="c"> <code>BufferedInputStream</code></label>
@@ -205,7 +1027,7 @@ public void doWork() {
 
     <div class="quiz__q" data-answer="d">
       <div class="quiz__kind">Multiple choice</div>
-      <div class="quiz__stem">8. What is the primary purpose of the <code>Serializable</code> interface?</div>
+      <div class="quiz__stem">9. What is the primary purpose of the <code>Serializable</code> interface?</div>
       <label class="quiz__opt"><input type="radio" value="a"> To compress a file.</label>
       <label class="quiz__opt"><input type="radio" value="b"> To encrypt a file password.</label>
       <label class="quiz__opt"><input type="radio" value="c"> To write data to a database.</label>
@@ -216,7 +1038,7 @@ public void doWork() {
 
     <div class="quiz__q" data-answer="b">
       <div class="quiz__kind">Multiple choice</div>
-      <div class="quiz__stem">9. If you want to prevent a specific field (like a password) from being saved during Serialization, what keyword do you use?</div>
+      <div class="quiz__stem">10. If you want to prevent a specific field (like a password) from being saved during Serialization, what keyword do you use?</div>
       <label class="quiz__opt"><input type="radio" value="a"> <code>volatile</code></label>
       <label class="quiz__opt"><input type="radio" value="b"> <code>transient</code></label>
       <label class="quiz__opt"><input type="radio" value="c"> <code>private</code></label>
@@ -227,17 +1049,17 @@ public void doWork() {
 
     <div class="quiz__q" data-answer="false">
       <div class="quiz__kind">True / False</div>
-      <div class="quiz__stem">10. With "try-with-resources", you MUST explicitly write a <code>finally</code> block to call <code>.close()</code> on your file streams.</div>
+      <div class="quiz__stem">11. With "try-with-resources", you MUST explicitly write a <code>finally</code> block to call <code>.close()</code> on your file streams.</div>
       <label class="quiz__opt"><input type="radio" value="true"> True</label>
       <label class="quiz__opt"><input type="radio" value="false"> False</label>
       <button class="quiz__check">Check Answer</button>
-      <div class="quiz__explain"><strong>False.</strong> That's the whole point of try-with-resources! It automatically closes <code>AutoCloseable</code> resources for you.</div>
+      <div class="quiz__explain"><strong>False.</strong> That's the whole point of try-with-resources! It automatically closes <code>AutoCloseable</code> resources for you &mdash; which is exactly the fault planted in Drill 3.</div>
     </div>
 
     <!-- Session 4: Threading -->
     <div class="quiz__q" data-answer="c">
       <div class="quiz__kind">Multiple choice</div>
-      <div class="quiz__stem">11. What is the preferred way to create a Thread in Java?</div>
+      <div class="quiz__stem">12. What is the preferred way to create a Thread in Java?</div>
       <label class="quiz__opt"><input type="radio" value="a"> Create a class that extends <code>Thread</code>.</label>
       <label class="quiz__opt"><input type="radio" value="b"> Write a new <code>main()</code> method.</label>
       <label class="quiz__opt"><input type="radio" value="c"> Implement the <code>Runnable</code> interface (or pass a lambda) to a new <code>Thread</code>.</label>
@@ -248,7 +1070,7 @@ public void doWork() {
 
     <div class="quiz__q" data-answer="b">
       <div class="quiz__kind">Multiple choice</div>
-      <div class="quiz__stem">12. What happens if you call <code>myThread.run()</code> instead of <code>myThread.start()</code>?</div>
+      <div class="quiz__stem">13. What happens if you call <code>myThread.run()</code> instead of <code>myThread.start()</code>?</div>
       <label class="quiz__opt"><input type="radio" value="a"> The code runs in a new thread.</label>
       <label class="quiz__opt"><input type="radio" value="b"> No new thread is created; the code just runs normally in the current thread.</label>
       <label class="quiz__opt"><input type="radio" value="c"> Java throws an exception.</label>
@@ -259,7 +1081,7 @@ public void doWork() {
 
     <div class="quiz__q" data-answer="a">
       <div class="quiz__kind">Multiple choice</div>
-      <div class="quiz__stem">13. Which method do you call if you want the Main Thread to pause and wait for Thread A to finish completely?</div>
+      <div class="quiz__stem">14. Which method do you call if you want the Main Thread to pause and wait for Thread A to finish completely?</div>
       <label class="quiz__opt"><input type="radio" value="a"> <code>threadA.join()</code></label>
       <label class="quiz__opt"><input type="radio" value="b"> <code>threadA.sleep()</code></label>
       <label class="quiz__opt"><input type="radio" value="c"> <code>threadA.wait()</code></label>
@@ -270,19 +1092,28 @@ public void doWork() {
 
     <div class="quiz__q" data-answer="c">
       <div class="quiz__kind">Multiple choice</div>
-      <div class="quiz__stem">14. What defines a <strong>Daemon Thread</strong>?</div>
+      <div class="quiz__stem">15. What defines a <strong>Daemon Thread</strong>?</div>
       <label class="quiz__opt"><input type="radio" value="a"> It is an evil thread that corrupts data.</label>
       <label class="quiz__opt"><input type="radio" value="b"> It has the highest priority.</label>
       <label class="quiz__opt"><input type="radio" value="c"> It runs in the background and does NOT stop the JVM from shutting down if all normal user threads finish.</label>
       <label class="quiz__opt"><input type="radio" value="d"> It is a virtual thread.</label>
       <button class="quiz__check">Check Answer</button>
-      <div class="quiz__explain"><strong>C.</strong> Daemon threads (like the garbage collector) automatically die when the main program finishes.</div>
+      <div class="quiz__explain"><strong>C.</strong> Daemon threads (like the garbage collector) automatically die when the main program finishes. Drill 5a uses one as a watchdog: it must not keep the deadlocked program alive.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="false">
+      <div class="quiz__kind">True / False</div>
+      <div class="quiz__stem">16. Calling <code>interrupt()</code> on a thread stops it immediately, wherever it is.</div>
+      <label class="quiz__opt"><input type="radio" value="true"> True</label>
+      <label class="quiz__opt"><input type="radio" value="false"> False</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>False.</strong> <code>interrupt()</code> sets a flag. A thread blocked in <code>sleep()</code> or <code>wait()</code> throws <code>InterruptedException</code>, but a thread in a plain loop sees nothing until it checks. Drill 7 shows both halves.</div>
     </div>
 
     <!-- Session 5: Multithreading & Concurrency -->
     <div class="quiz__q" data-answer="c">
       <div class="quiz__kind">Multiple choice</div>
-      <div class="quiz__stem">15. What is a "Race Condition"?</div>
+      <div class="quiz__stem">17. What is a "Race Condition"?</div>
       <label class="quiz__opt"><input type="radio" value="a"> When threads try to run as fast as possible.</label>
       <label class="quiz__opt"><input type="radio" value="b"> When a thread gets permanently stuck waiting for a lock.</label>
       <label class="quiz__opt"><input type="radio" value="c"> When multiple threads modify shared data concurrently, and the result depends on exact timing.</label>
@@ -293,40 +1124,29 @@ public void doWork() {
 
     <div class="quiz__q" data-answer="d">
       <div class="quiz__kind">Multiple choice</div>
-      <div class="quiz__stem">16. How do you prevent a Race Condition in Java?</div>
+      <div class="quiz__stem">18. How do you prevent a Race Condition in Java?</div>
       <label class="quiz__opt"><input type="radio" value="a"> Use <code>Thread.sleep()</code>.</label>
       <label class="quiz__opt"><input type="radio" value="b"> Set the thread's priority to MAX_PRIORITY.</label>
       <label class="quiz__opt"><input type="radio" value="c"> Use the <code>transient</code> keyword.</label>
       <label class="quiz__opt"><input type="radio" value="d"> Use the <code>synchronized</code> keyword to create a lock around the critical section.</label>
       <button class="quiz__check">Check Answer</button>
-      <div class="quiz__explain"><strong>D.</strong> <code>synchronized</code> ensures only one thread can access the code block at a time.</div>
+      <div class="quiz__explain"><strong>D.</strong> <code>synchronized</code> ensures only one thread can access the code block at a time. For a single variable, an atomic class such as <code>LongAdder</code> does the same job with no lock written by hand.</div>
     </div>
 
     <div class="quiz__q" data-answer="a">
       <div class="quiz__kind">Multiple choice</div>
-      <div class="quiz__stem">17. A Deadlock occurs when...</div>
+      <div class="quiz__stem">19. A Deadlock occurs when...</div>
       <label class="quiz__opt"><input type="radio" value="a"> Two threads are waiting for locks held by each other, causing both to freeze permanently.</label>
       <label class="quiz__opt"><input type="radio" value="b"> A thread takes too long to run.</label>
       <label class="quiz__opt"><input type="radio" value="c"> The JVM runs out of memory.</label>
       <label class="quiz__opt"><input type="radio" value="d"> A thread tries to unlock an object it doesn't own.</label>
       <button class="quiz__check">Check Answer</button>
-      <div class="quiz__explain"><strong>A.</strong> It's a standoff where neither thread will yield.</div>
-    </div>
-
-    <div class="quiz__q" data-answer="c">
-      <div class="quiz__kind">Multiple choice</div>
-      <div class="quiz__stem">18. Why is an <code>ExecutorService</code> (Thread Pool) better than making a new <code>Thread</code> every time?</div>
-      <label class="quiz__opt"><input type="radio" value="a"> Because it makes the code longer.</label>
-      <label class="quiz__opt"><input type="radio" value="b"> Because ExecutorService doesn't use locks.</label>
-      <label class="quiz__opt"><input type="radio" value="c"> Creating/destroying threads is expensive. A Thread Pool reuses a small number of threads for many tasks.</label>
-      <label class="quiz__opt"><input type="radio" value="d"> Because it prevents all Deadlocks automatically.</label>
-      <button class="quiz__check">Check Answer</button>
-      <div class="quiz__explain"><strong>C.</strong> Thread Pools are much more efficient for system resources.</div>
+      <div class="quiz__explain"><strong>A.</strong> It's a standoff where neither thread will yield &mdash; a circular wait. Prevent it by agreeing one lock order, as Drill 5b does.</div>
     </div>
 
     <div class="quiz__q" data-answer="b">
       <div class="quiz__kind">Multiple choice</div>
-      <div class="quiz__stem">19. If you need a thread-safe List, which class should you use?</div>
+      <div class="quiz__stem">20. If you need a thread-safe List, which class should you use?</div>
       <label class="quiz__opt"><input type="radio" value="a"> <code>ArrayList</code></label>
       <label class="quiz__opt"><input type="radio" value="b"> <code>CopyOnWriteArrayList</code></label>
       <label class="quiz__opt"><input type="radio" value="c"> <code>LinkedList</code></label>
@@ -337,16 +1157,759 @@ public void doWork() {
 
     <div class="quiz__q" data-answer="b">
       <div class="quiz__kind">Multiple choice</div>
-      <div class="quiz__stem">20. What is the correct way to make a thread stop waiting and resume work?</div>
-      <label class="quiz__opt"><input type="radio" value="a"> <code>thread.resume()</code></label>
-      <label class="quiz__opt"><input type="radio" value="b"> Another thread calls <code>notify()</code> or <code>notifyAll()</code> on the same object the first thread is waiting on.</label>
-      <label class="quiz__opt"><input type="radio" value="c"> You can't, it must timeout.</label>
-      <label class="quiz__opt"><input type="radio" value="d"> Call <code>thread.start()</code> again.</label>
+      <div class="quiz__stem">21. Why is an <code>ExecutorService</code> (Thread Pool) better than making a new <code>Thread</code> every time?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Because it makes the code longer.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Creating/destroying threads is expensive. A Thread Pool reuses a small number of threads for many tasks.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Because ExecutorService doesn't use locks.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Because it prevents all Deadlocks automatically.</label>
       <button class="quiz__check">Check Answer</button>
-      <div class="quiz__explain"><strong>B.</strong> <code>notify()</code> and <code>notifyAll()</code> are the standard ways to wake up threads from <code>wait()</code>.</div>
+      <div class="quiz__explain"><strong>B.</strong> Thread Pools are much more efficient for system resources &mdash; and the pool must still be shut down when you are done with it.</div>
     </div>
 
     <div class="quiz__score" style="display:none"></div>
+  </div>
+
+  <!-- ===== 10. GUIDED LAB ================================================== -->
+  <h2 id="lab-repair-clinic">&#128736; Guided Lab &mdash; The Repair Clinic</h2>
+  <p>
+    The starter project below <strong>compiles, runs and produces output that looks almost right</strong>.
+    It has five faults &mdash; one from each session you have done &mdash; and it also carries a
+    <code>SelfCheck</code> that measures all five at once. Right now it reports
+    <code>0 passed, 5 failed</code>.
+  </p>
+  <p>Your job is to make it report <code>5 passed, 0 failed</code>.</p>
+
+  <h3>The five faults</h3>
+  <div class="walkthrough">
+    <table>
+      <thead><tr><th>Fault</th><th>Session</th><th>Symptom the self-check prints</th></tr></thead>
+      <tbody>
+        <tr><td>F1</td><td>1 &mdash; Collections</td><td>The register double-counts students who signed in twice</td></tr>
+        <tr><td>F2</td><td>2 &mdash; Generics</td><td><code>ClassCastException</code> the moment a caller sends a decimal mark</td></tr>
+        <tr><td>F3</td><td>3 &mdash; File I/O</td><td>The report file is created, and is empty</td></tr>
+        <tr><td>F4</td><td>4 &mdash; Threading</td><td>Two workers that have not started are reported as running</td></tr>
+        <tr><td>F5</td><td>5 &mdash; Concurrency</td><td>Three files that should overlap take three times as long as they should</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="text-sm text-faint">F5 is deliberately <em>not</em> a race condition. A racy starter could pass by luck, and a fault that sometimes disappears is a terrible thing to teach. This one is measurable every single time.</p>
+
+  <h3>What the starter looks like</h3>
+  <!--@code src="code/s06-repair-clinic-starter/src/main/java/com/aptech/s06lab/RepairClinic.java" from="39" to="105" title="RepairClinic.java  —  the file you repair (faults F1–F5)"-->
+<pre class="numbered" data-file="RepairClinic.java  —  the file you repair (faults F1–F5)" style="counter-reset:line 38"><code class="lang-java">    public static List&lt;String&gt; distinctStudents(List&lt;String&gt; ids) {
+        // FAULT: an ArrayList keeps every duplicate, so the register double-counts the
+        // students who signed in more than once.
+        List&lt;String&gt; result = new ArrayList&lt;&gt;();
+        for (String id : ids) {
+            result.add(id);
+        }
+        return result;
+    }
+
+    /**
+     * F2 — Session 2. Adds up the marks, whatever kind of number they are.
+     * SelfCheck passes in a List of Integer AND a List of Double.
+     */
+    public static long sumMarks(List&lt;? extends Number&gt; marks) {
+        // FAULT: the signature is right and the body throws it away - this cast only
+        // works while every caller happens to send integers.
+        long total = 0;
+        for (Number mark : marks) {
+            total += (Integer) mark;
+        }
+        return total;
+    }
+
+    /**
+     * F3 — Session 3. Writes the report lines to a file.
+     * SelfCheck reads the file straight back and counts the lines.
+     */
+    public static void saveReport(Path file, List&lt;String&gt; lines) throws IOException {
+        // FAULT: the writer is never closed, so the text is still in its buffer when the
+        // method returns and the file on disk is empty.
+        FileWriter writer = new FileWriter(file.toFile());
+        for (String line : lines) {
+            writer.write(line);
+            writer.write(System.lineSeparator());
+        }
+    }
+
+    /**
+     * F4 — Session 4. Returns how many workers are running RIGHT NOW.
+     * SelfCheck asks before they start, just after they start, and after they finish.
+     */
+    public static int countAlive(List&lt;Thread&gt; workers) {
+        // FAULT: "is in the list" is not the same as "is running right now".
+        return workers.size();
+    }
+
+    /**
+     * F5 — Session 5. Processes every file and returns a tally of file name to line count.
+     * The SelfCheck gives 3 files, 20 lines each and 20 ms per line: done one after another
+     * that is 1200 ms, and done at the same time about 400 ms.
+     */
+    public static Map&lt;String, Integer&gt; processAll(List&lt;String&gt; files, int linesEach, long lineMs)
+            throws Exception {
+        // FAULT: everything happens on the calling thread, one file after another.
+        // There is no pool, no workers and no overlap - so nothing is concurrent at all.
+        Map&lt;String, Integer&gt; tally = new HashMap&lt;&gt;();
+        for (String file : files) {
+            int lines = 0;
+            for (int i = 0; i &lt; linesEach; i++) {
+                Thread.sleep(lineMs);
+                lines++;
+            }
+            tally.put(file, lines);
+        }
+        return tally;
+    }</code></pre>
+<!--@end-->
+
+  <h3>Where it stands now</h3>
+  <!--@output project="code/s06-repair-clinic-starter" main="com.aptech.s06lab.SelfCheck"-->
+<div class="terminal-output">=== Repair Clinic Self-Check ===
+
+FAIL  F1  Session 1 - each student listed once, in first-seen order
+      -&gt; expected 3 students, got 5 -&gt; [S-1003, S-1001, S-1003, S-1002, S-1001]
+FAIL  F2  Session 2 - adds up integer marks and decimal marks alike
+      -&gt; crashed with java.lang.ClassCastException: class java.lang.Double cannot be cast to class java.lang.Integer (java.lang.Double and java.lang.Integer are in module java.base of loader 'bootstrap')
+FAIL  F3  Session 3 - the report really reaches the disk
+      -&gt; expected 3 lines on disk, found 0 - is the writer being closed?
+FAIL  F4  Session 4 - countAlive follows the workers' life
+      -&gt; threads that have never been started are not alive
+FAIL  F5  Session 5 - the files are processed at the same time
+      -&gt; 3 files of 20 lines x 20 ms took 1235 ms - one after another is about 1200 ms. Are they overlapping?
+
+0 passed, 5 failed.
+Repair the FAILs above one at a time, then run SelfCheck again.</div>
+<!--@end-->
+
+  <h3>Where you are going</h3>
+  <p>This is the reference solution's self-check. It is what your run should look like when you are finished:</p>
+  <!--@output project="solutions/s06-repair-clinic" main="com.aptech.s06lab.SelfCheck"-->
+<div class="terminal-output">=== Repair Clinic Self-Check ===
+
+PASS  F1  Session 1 - each student listed once, in first-seen order
+PASS  F2  Session 2 - adds up integer marks and decimal marks alike
+PASS  F3  Session 3 - the report really reaches the disk
+PASS  F4  Session 4 - countAlive follows the workers' life
+PASS  F5  Session 5 - the files are processed at the same time
+
+5 passed, 0 failed.
+Every fault repaired - the clinic is closed.</div>
+<!--@end-->
+
+  <h3>How to work the loop</h3>
+  <div class="steps">
+    <div class="steps__title">&#128221; Step Checklist (your progress is saved automatically)</div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">1</span>
+      <span class="step__text">Copy the folder <code>code/s06-repair-clinic-starter</code> out of the course and open it in IntelliJ (<strong>File &rarr; Open</strong>, then select the folder).</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">2</span>
+      <span class="step__text"><strong>Reproduce first.</strong> Run <code>SelfCheck</code> before you change a single character, and read all five FAIL lines. Expect <code>0 passed, 5 failed</code>.</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">3</span>
+      <span class="step__text"><strong>Isolate.</strong> Take the FAIL you understand best. The line names the method, and the comment above that method names the session. Open that method and read it out loud.</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">4</span>
+      <span class="step__text"><strong>Fix one fault only.</strong> Do not tidy anything else. Run <code>SelfCheck</code> again &mdash; the count should now be <code>1 passed, 4 failed</code>.</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">5</span>
+      <span class="step__text">Keep going: one fault, one run. Watch the count climb. If a fix makes something <em>else</em> fail, you have found a real dependency &mdash; that is information, not a setback.</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">6</span>
+      <span class="step__text">At <code>5 passed, 0 failed</code>, run <code>SelfCheck</code> <strong>three more times</strong>. A concurrency fix that passes once and fails twice is not a fix.</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">7</span>
+      <span class="step__text">Now write, beneath each repaired method, one comment line saying which session the fault came from and <em>why</em> your version is right. That comment is worth marks in the viva.</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">8</span>
+      <span class="step__text">Finally, run <code>Main</code> and read the demo. It exercises four of the five methods &mdash; everything except <code>countAlive</code>, which only the self-check can measure by timing the workers &mdash; so a clean run there is a second, independent confirmation.</span>
+    </div>
+  </div>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      Change one thing, then measure. A student who rewrites all five methods and <em>then</em> runs the check
+      has learned nothing about which change fixed what &mdash; and when a sixth problem appears, they have five
+      suspects instead of one.
+    </div>
+  </div>
+
+
+  <!-- ===== 11. COMMON MISTAKES ============================================= -->
+  <h2>&#9888;&#65039; Common Mistakes</h2>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake: adding to a <code>? extends</code> list</b>
+      <pre><code class="lang-java">void addApple(List&lt;? extends Fruit&gt; basket) {
+    basket.add(new Apple());        // will not compile
+}</code></pre>
+      <p><strong>Error message:</strong> <code>incompatible types: Apple cannot be converted to CAP#1</code>, followed by <code>where CAP#1 is a fresh type-variable: CAP#1 extends Fruit from capture of ? extends Fruit</code></p>
+      <p><strong>Fix:</strong> the wildcard describes what you may <em>read</em>, not what you may write. If you are writing, the parameter is a consumer: <code>List&lt;? super Apple&gt;</code>. PECS &mdash; Producer Extends, Consumer Super.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake: casting inside a wildcard method</b>
+      <p>Fault F2 of the Repair Clinic in one line. The signature promises "any kind of number"; the body then assumes they are all integers.</p>
+      <pre><code class="lang-java">long total = 0;
+for (Number mark : marks) {
+    total += (Integer) mark;    // works until somebody sends 70.5
+}</code></pre>
+      <p><strong>Error message:</strong> <code>java.lang.ClassCastException: class java.lang.Double cannot be cast to class java.lang.Integer</code> (the JDK adds a note saying which module each class lives in) &mdash; and this one is <em>not</em> a compile error. It waits for a caller who sends a decimal, which is the worst possible time to find out.</p>
+      <p><strong>Fix:</strong> use the method the signature actually promised. <code>mark.doubleValue()</code> accepts every subtype with no cast at all; sum as <code>double</code> and round once at the end so the decimals are not truncated.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake: trusting <code>write()</code> to have written</b>
+      <pre><code class="lang-java">FileWriter writer = new FileWriter("report.txt");
+writer.write(line);
+// method returns here</code></pre>
+      <p><strong>Error message:</strong> none. That is the problem. The file exists, is empty, and nothing throws &mdash; and the operating-system handle stays open until the JVM exits.</p>
+      <p><strong>Fix:</strong> <code>try (FileWriter writer = new FileWriter("report.txt")) { ... }</code>. Closing flushes the buffer; try-with-resources closes it even when the block throws.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake: calling <code>run()</code> when you meant <code>start()</code></b>
+      <pre><code class="lang-java">Thread worker = new Thread(job);
+worker.run();          // no new thread. It is just a method call.
+worker.join();         // does not block - the work already finished</code></pre>
+      <p><strong>Error message:</strong> none. The output looks right; it is simply not concurrent, and <code>join()</code> returns instantly because by then there is nothing to wait for.</p>
+      <p><strong>Fix:</strong> <code>worker.start()</code>. If you are ever unsure which one you called, print <code>Thread.currentThread().getName()</code> inside the job &mdash; <code>start()</code> gives you <code>Thread-0</code>, <code>run()</code> gives you <code>main</code>.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake: swallowing the interrupt</b>
+      <pre><code class="lang-java">try {
+    Thread.sleep(100);
+} catch (InterruptedException e) {
+    // ignore and carry on
+}</code></pre>
+      <p><strong>Error message:</strong> none &mdash; and the <code>interrupt()</code> that was meant to stop this thread has now been thrown away permanently, because catching the exception clears the flag.</p>
+      <p><strong>Fix:</strong> return, or restore the flag with <code>Thread.currentThread().interrupt()</code> so your caller can decide. This is also why <code>wait()</code> must sit inside a <code>while</code> loop &mdash; the loop re-checks the condition instead of trusting that one wake-up was the right one.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake: sleeping while holding a lock</b>
+      <pre><code class="lang-java">synchronized (OVEN) {
+    Thread.sleep(300);      // every other cook waits, for nothing
+    finished++;
+}</code></pre>
+      <p><strong>Error message:</strong> none. Everything is correct &mdash; just serialised, and four times slower than it should be. The measured gap is in Drill 4.</p>
+      <p><strong>Fix:</strong> do the slow work before you take the lock, then lock only the lines that touch the shared value. And note which fix this is not: <code>wait()</code> is not a drop-in replacement for <code>sleep()</code>.</p>
+    </div>
+  </div>
+
+  <!-- ===== 12. PRACTICE ==================================================== -->
+  <h2>&#128170; Practice</h2>
+
+  <details>
+    <summary><strong>&#127793; Easy: fix the leaky reader</strong></summary>
+    <div>
+      <p>
+        A method counts the lines in a file and returns the right answer every time. It is also leaking
+        one operating-system file handle on every call. Find the leak and close it.
+      </p>
+      <details>
+        <summary>&#128161; Hint</summary>
+        <p>It is not an I/O bug, it is a lifetime bug. The reader is opened and never closed. One handle per call is harmless; a few thousand calls is "Too many open files" &mdash; and the stack trace will point at the line that <em>failed</em>, nowhere near the line that leaked.</p>
+      </details>
+      <details>
+        <summary>&#9989; Solution</summary>
+        <div>
+          <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/practice/P1_FixTheLeak.java" title="P1_FixTheLeak.java"-->
+<pre class="numbered" data-file="P1_FixTheLeak.java"><code class="lang-java">package com.aptech.s06.practice;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+
+/**
+ * PRACTICE 1 (Easy) — fix the leaky reader.
+ *
+ * The bug below is the one that survives every review, because it produces the RIGHT answer.
+ * An unclosed BufferedReader still reads the file correctly; it just never releases the
+ * operating-system file handle. One handle per call, and after a few thousand calls the
+ * program dies with "Too many open files" — at which point the cause is nowhere near the line
+ * that failed.
+ *
+ * Look closely at the difference between the two methods: the fix is the same number of
+ * lines, and it is the one that is still correct when readLine() throws halfway through.
+ */
+public class P1_FixTheLeak {
+
+    private static final Path SANDBOX = Path.of("sandbox");
+
+    public static void main(String[] args) throws IOException {
+        Files.createDirectories(SANDBOX);
+        Path orders = SANDBOX.resolve("p1-orders.log");
+        Files.write(orders, List.of("order-1", "order-2", "order-3", "order-4"));
+
+        System.out.println("Practice 1 (Easy) - the leaky reader");
+        System.out.println();
+        System.out.println("BROKEN - the reader is opened and never closed:");
+        System.out.println("  lines read = " + countLinesBroken(orders));
+        System.out.println("  -&gt; correct, and leaking one file handle every time it is called.");
+        System.out.println();
+        System.out.println("FIXED - try-with-resources:");
+        System.out.println("  lines read = " + countLines(orders));
+        System.out.println("  -&gt; same answer, and the handle is released on every path out.");
+        System.out.println();
+        System.out.println("The leak never changes the answer, which is why a code review misses it.");
+        System.out.println("It changes whether the program still runs tomorrow morning.");
+    }
+
+    /** BROKEN: no close(). Works perfectly, until the handles run out. */
+    static int countLinesBroken(Path file) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(file.toFile()));
+        int lines = 0;
+        while (reader.readLine() != null) {
+            lines++;
+        }
+        return lines;
+    }
+
+    /** FIXED: the reader is closed on the way out, even if readLine() throws. */
+    static int countLines(Path file) throws IOException {
+        try (BufferedReader reader = Files.newBufferedReader(file)) {
+            int lines = 0;
+            while (reader.readLine() != null) {
+                lines++;
+            }
+            return lines;
+        }
+    }
+}</code></pre>
+<!--@end-->
+          <!--@output project="code/s06-review-1" main="com.aptech.s06.practice.P1_FixTheLeak"-->
+<div class="terminal-output">Practice 1 (Easy) - the leaky reader
+
+BROKEN - the reader is opened and never closed:
+  lines read = 4
+  -&gt; correct, and leaking one file handle every time it is called.
+
+FIXED - try-with-resources:
+  lines read = 4
+  -&gt; same answer, and the handle is released on every path out.
+
+The leak never changes the answer, which is why a code review misses it.
+It changes whether the program still runs tomorrow morning.</div>
+<!--@end-->
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details>
+    <summary><strong>&#127774; Medium: one counter, two correct fixes</strong></summary>
+    <div>
+      <p>
+        Four threads each increment a shared counter a hundred thousand times. Write the counter twice:
+        once with <code>synchronized</code>, once with an atomic class. Both must print exactly 400,000.
+      </p>
+      <details>
+        <summary>&#128161; Hint</summary>
+        <p>Both are correct, and the choice is about what you are protecting. One variable, updated on its own, is an <code>AtomicLong</code> or <code>LongAdder</code> &mdash; lock-free and faster. Several fields that must change together, or an update that depends on the current value, need <code>synchronized</code>, because the lock covers all of them at once.</p>
+        <p>Use a <code>CountDownLatch</code> as a starting gate, or the four threads will drift apart and politely avoid each other.</p>
+      </details>
+      <details>
+        <summary>&#9989; Solution</summary>
+        <div>
+          <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/practice/P2_SafeCounter.java" from="25" to="49" title="P2_SafeCounter.java  (the two counters)"-->
+<pre class="numbered" data-file="P2_SafeCounter.java  (the two counters)" style="counter-reset:line 24"><code class="lang-java">    /** Fix 1: one lock around every access to the int. */
+    static class SynchronizedCounter {
+        private int value = 0;
+
+        synchronized void increment() {
+            value++;
+        }
+
+        synchronized int value() {
+            return value;
+        }
+    }
+
+    /** Fix 2: a single variable, updated indivisibly with no lock written by hand. */
+    static class AtomicCounter {
+        private final AtomicLong value = new AtomicLong();
+
+        void increment() {
+            value.incrementAndGet();
+        }
+
+        long value() {
+            return value.get();
+        }
+    }</code></pre>
+<!--@end-->
+          <!--@output project="code/s06-review-1" main="com.aptech.s06.practice.P2_SafeCounter"-->
+<div class="terminal-output">Practice 2 (Medium) - two correct fixes, same exact answer
+4 threads x 100,000 increments = 400,000 expected
+
+  synchronized int : 400,000   PASS - nothing lost
+  AtomicLong       : 400,000   PASS - nothing lost
+
+Both are correct. Choose by what you are protecting:
+  one variable           -&gt; AtomicLong / LongAdder (no lock, fastest)
+  several, must agree    -&gt; synchronized on one shared lock object
+  never, in any case     -&gt; a bare int with count++</div>
+<!--@end-->
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details>
+    <summary><strong>&#128293; Challenge: three faults, one class, nothing thrown</strong></summary>
+    <div>
+      <p>
+        This is what a real review feels like. The program below has three faults, produces plausible
+        output, and exits cleanly. <strong>Name all three before you run it</strong> &mdash; that is the whole
+        exercise. The answers are hidden below.
+      </p>
+      <p class="text-sm text-faint">One is about identity, one about a buffer, and one about threads. None of them throws.</p>
+      <details>
+        <summary>&#128161; Hint</summary>
+        <p>Fault 1 is a Sessions 1&ndash;2 fault wearing a <code>Set</code>: a value class with no <code>equals()</code> or <code>hashCode()</code>. Fault 2 is Drill 3 again, in a smaller costume. Fault 3 is the lost update from TY5 &mdash; and note that it is a plain <code>int</code> being shared, so no amount of <code>synchronized</code> on some <em>other</em> object will help.</p>
+      </details>
+      <details>
+        <summary>&#9989; Solution</summary>
+        <div>
+          <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/practice/P3_SpotTheBugs.java" from="45" to="131" title="P3_SpotTheBugs.java  (all three faults, with the fixed version of each)"-->
+<pre class="numbered" data-file="P3_SpotTheBugs.java  (all three faults, with the fixed version of each)" style="counter-reset:line 44"><code class="lang-java">    /** Fault 1 — identity. */
+    private static void fault1() {
+        Set&lt;Object&gt; broken = new HashSet&lt;&gt;();
+        broken.add(new BrokenStudent("S-1001", "Ada"));
+        broken.add(new BrokenStudent("S-1001", "Ada"));
+
+        Set&lt;FaultlessStudent&gt; fixed = new HashSet&lt;&gt;();
+        fixed.add(new FaultlessStudent("S-1001", "Ada"));
+        fixed.add(new FaultlessStudent("S-1001", "Ada"));
+
+        System.out.println("FAULT 1 - a Set that keeps a duplicate");
+        System.out.println("  broken: two copies of S-1001 added, set size = " + broken.size()
+                + "   &lt;- identity was compared, not the student id");
+        System.out.println("  fixed : two copies of S-1001 added, set size = " + fixed.size()
+                + "   PASS - equals() and hashCode() agree on the id");
+    }
+
+    /** Fault 2 — a buffer that never reaches the disk. */
+    private static void fault2() throws IOException {
+        Path leaky = SANDBOX.resolve("p3-leaky.log");
+        FileWriter writer = new FileWriter(leaky.toFile());
+        writer.write("Ada,S-1001");
+        byte[] brokenSize = Files.readAllBytes(leaky);
+
+        Path sound = SANDBOX.resolve("p3-sound.log");
+        try (FileWriter ok = new FileWriter(sound.toFile())) {
+            ok.write("Ada,S-1001");
+        }
+        byte[] fixedSize = Files.readAllBytes(sound);
+
+        System.out.println("FAULT 2 - a writer that is never closed");
+        System.out.println("  broken: " + brokenSize.length + " bytes on disk after write()"
+                + "   &lt;- the text is still in the buffer");
+        System.out.println("  fixed : " + fixedSize.length + " bytes on disk after close()"
+                + "   PASS - try-with-resources flushed it");
+    }
+
+    /** Fault 3 — a lost update. */
+    private static void fault3() throws InterruptedException {
+        final int threads = 4;
+        final int each = 100_000;
+
+        int[] broken = {0};
+        CountDownLatch gate = new CountDownLatch(1);
+        Thread[] workers = new Thread[threads];
+        for (int i = 0; i &lt; threads; i++) {
+            workers[i] = new Thread(() -&gt; {
+                await(gate);
+                for (int n = 0; n &lt; each; n++) {
+                    int current = broken[0];     // READ
+                    Thread.yield();              // (demonstration aid: hold the window open)
+                    broken[0] = current + 1;     // WRITE - the other workers overwrite it
+                }
+            });
+            workers[i].start();
+        }
+        gate.countDown();
+        for (Thread worker : workers) {
+            worker.join();
+        }
+
+        LongAdder sound = new LongAdder();
+        CountDownLatch gate2 = new CountDownLatch(1);
+        Thread[] workers2 = new Thread[threads];
+        for (int i = 0; i &lt; threads; i++) {
+            workers2[i] = new Thread(() -&gt; {
+                await(gate2);
+                for (int n = 0; n &lt; each; n++) {
+                    sound.increment();
+                }
+            });
+            workers2[i].start();
+        }
+        gate2.countDown();
+        for (Thread worker : workers2) {
+            worker.join();
+        }
+
+        long expected = (long) threads * each;
+
+        System.out.println("FAULT 3 - a shared int with count++ spelled out");
+        System.out.println("  broken: " + String.format("%,d", broken[0]) + " of "
+                + String.format("%,d", expected) + "   &lt;- lost "
+                + String.format("%,d", expected - broken[0]) + " updates");
+        System.out.println("  fixed : " + String.format("%,d", sound.sum()) + " of "
+                + String.format("%,d", expected) + "   PASS - LongAdder lost nothing");
+    }</code></pre>
+<!--@end-->
+          <!--@output project="code/s06-review-1" main="com.aptech.s06.practice.P3_SpotTheBugs"-->
+<div class="terminal-output">Practice 3 (Challenge) - three faults, one class, nothing thrown
+
+FAULT 1 - a Set that keeps a duplicate
+  broken: two copies of S-1001 added, set size = 2   &lt;- identity was compared, not the student id
+  fixed : two copies of S-1001 added, set size = 1   PASS - equals() and hashCode() agree on the id
+
+FAULT 2 - a writer that is never closed
+  broken: 0 bytes on disk after write()   &lt;- the text is still in the buffer
+  fixed : 10 bytes on disk after close()   PASS - try-with-resources flushed it
+
+FAULT 3 - a shared int with count++ spelled out
+  broken: 135,826 of 400,000   &lt;- lost 264,174 updates
+  fixed : 400,000 of 400,000   PASS - LongAdder lost nothing</div>
+<!--@end-->
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <!-- ===== 13. ASSIGNMENT A3 =============================================== -->
+  <h2>&#128203; Assignment A3 &mdash; Submitting the Concurrent File Processor</h2>
+  <div class="assignment-card">
+    <div class="assignment-card__header">&#128203; Assignment A3 &mdash; Concurrent File Processor (hand in today)</div>
+    <p>
+      A3 was issued in Session 5 and is due today. This section is the hand-in checklist, not a new
+      brief &mdash; if you have not started, talk to your teacher before the end of the session.
+    </p>
+
+    <h4>&#9989; Before you submit</h4>
+    <ol>
+      <li>Your project compiles from a clean checkout &mdash; <code>mvn compile</code> in the project folder, with no errors.</li>
+      <li>Your <code>SelfCheck</code> reports <strong>all checks passing</strong>, not "most of them".</li>
+      <li>You have run it <strong>three times in a row</strong> and it passed all three. A concurrency result that passes once proves nothing (Session 5, Part 2).</li>
+      <li>Every executor you create is shut down on every path out of the method.</li>
+      <li>No <code>System.out.println</code> has been left in as a substitute for a return value.</li>
+      <li>Your name and student number are in the file header comment.</li>
+    </ol>
+
+    <h4>&#128736; When <code>SelfCheck</code> fails</h4>
+    <p>Do not guess. Work the loop from Figure 2 at the top of this page:</p>
+    <ol>
+      <li><strong>Read the failure.</strong> It names the check and prints what it expected against what it got. That is usually the whole diagnosis.</li>
+      <li><strong>Reproduce it alone.</strong> Copy the failing check into a small <code>main</code> method and run just that. A fault you can trigger on demand is a fault you can fix on purpose.</li>
+      <li><strong>Isolate.</strong> Is the check failing because the <em>value</em> is wrong, or because the value is right but arrived too late? Those are different bugs.</li>
+      <li><strong>Fix one thing</strong>, run <code>SelfCheck</code> again, and watch the count move.</li>
+    </ol>
+
+    <h4>&#128228; Submitting</h4>
+    <p>Hand in the project folder as instructed by your teacher, with the assignment cover sheet. Late work follows the course policy &mdash; ask before the deadline, not after.</p>
+
+    <h4>&#128640; And next: Assignment A4</h4>
+    <p>
+      <strong>A4 opens in Session 7.</strong> You will take the Student Registry you have been keeping in
+      memory since Session 1 and give it a real database of its own, using JDBC. Everything you have
+      written about collections, types and resources this session applies directly.
+    </p>
+
+    <div class="assignment-card__rubric">
+      <div class="assignment-card__rubric-item"><strong>Correctness</strong> Every self-check passes, repeatedly, from a clean build.</div>
+      <div class="assignment-card__rubric-item"><strong>Design</strong> The right concurrency tool for each job; every executor closed.</div>
+      <div class="assignment-card__rubric-item"><strong>Style</strong> Clear names, consistent formatting, no dead code, no placeholders.</div>
+      <div class="assignment-card__rubric-item"><strong>Explanation</strong> Each method carries the <em>reason</em> for its concurrency choice &mdash; and you can defend any line in a viva.</div>
+    </div>
+  </div>
+  <div class="callout callout--warn"><span class="callout__i">&#9878;&#65039;</span>
+    <div class="callout__b"><b>Academic honesty &amp; AI tools</b>
+      Discuss ideas freely, but type and understand your own code. You may ask an AI to <em>explain</em> an exception message or suggest where a bug might be &mdash; not to write your methods. If an AI explains a fault to you, check its claim against the evidence: the message, the output, and the code. Two of the five faults in the Repair Clinic are exactly the kind an AI will confidently describe slightly wrongly.
+    </div>
+  </div>
+
+  <!-- ===== 14. FURTHER STUDY =============================================== -->
+  <h2>&#128250; Further Study</h2>
+  <p>Each video was checked to make sure it exists and matches the topic. The first column tells you which drill or task on this page it supports.</p>
+  <div class="video-grid">
+    <div class="video-card" data-yt="rH0winlka8A" data-title="Java Collections Tutorial">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java Collections Tutorial</div><div class="video-card__channel">Programming with Mosh</div><div class="video-card__why">Part 2, task 1: the whole collection family, and how to choose between them.</div></div>
+    </div>
+    <div class="video-card" data-yt="VBD0lJ0gPVI" data-title="HashSet vs LinkedHashSet vs TreeSet in Java">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">HashSet vs LinkedHashSet vs TreeSet</div><div class="video-card__channel">Amigoscode</div><div class="video-card__why">Drill 1: which set keeps which promise about order.</div></div>
+    </div>
+    <div class="video-card" data-yt="NAZkukK5zX0" data-title="Java Generics Finally Explained (Wildcards, PECS &amp; More)">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java Generics Finally Explained &mdash; wildcards, PECS &amp; more</div><div class="video-card__channel">Coding with John</div><div class="video-card__why">Drill 2 and Part 2 task 2: why <code>? extends</code> refuses the add.</div></div>
+    </div>
+    <div class="video-card" data-yt="e_S2yJKpTaw" data-title="Java File Handling Explained | Streams, Buffers, Readers &amp; Writers">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java File Handling Explained &mdash; streams, buffers, readers &amp; writers</div><div class="video-card__channel">Coding with John</div><div class="video-card__why">Drill 3 and Practice 1: the buffer that has not reached the disk yet.</div></div>
+    </div>
+    <div class="video-card" data-yt="DmMnfP2hYEo" data-title="BufferedReader and BufferedWriter in Java">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">BufferedReader and BufferedWriter in Java</div><div class="video-card__channel">Alex Lee</div><div class="video-card__why">Part 2 task 3: the line-by-line copy, in full.</div></div>
+    </div>
+    <div class="video-card" data-yt="SztE5W41on4" data-title="Learn Java threading in 10 minutes!">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Learn Java threading in 10 minutes</div><div class="video-card__channel">Bro Code</div><div class="video-card__why">Part 2 task 4: <code>start()</code> vs <code>run()</code>, <code>join()</code> and <code>isAlive()</code> from scratch.</div></div>
+    </div>
+    <div class="video-card" data-yt="xCmK4x1u8Ps" data-title="Tackling Race Conditions with Atomic and Synchronized">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Tackling race conditions with atomic and synchronized</div><div class="video-card__channel">Coding with Aman</div><div class="video-card__why">Drill 4 and Practice 2: the lost update, then both fixes side by side.</div></div>
+    </div>
+    <div class="video-card" data-yt="B4IVu-2hCos" data-title="How to detect and resolve Deadlocks in Java">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">How to detect and resolve deadlocks in Java</div><div class="video-card__channel">Defog Tech</div><div class="video-card__why">Drill 5: reading a real deadlock, and getting out of it with one lock order.</div></div>
+    </div>
+  </div>
+  <h3>Read (official &amp; trusted)</h3>
+  <ul>
+    <li><a href="https://dev.java/learn/" target="_blank" rel="noopener">dev.java &mdash; the official Java tutorials</a>, especially the Collections and Generics trails.</li>
+    <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Collection.html" target="_blank" rel="noopener">Java 25 API &mdash; the <code>Collection</code> interface</a> and the <a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Map.html" target="_blank" rel="noopener"><code>Map</code> interface</a>.</li>
+    <li><a href="https://docs.oracle.com/javase/tutorial/java/generics/index.html" target="_blank" rel="noopener">Oracle &mdash; Generics</a>, and the <a href="https://docs.oracle.com/javase/tutorial/java/generics/wildcardGuidelines.html" target="_blank" rel="noopener">wildcard guidelines</a> that state PECS in Oracle's own words.</li>
+    <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)" target="_blank" rel="noopener">Java 25 API &mdash; <code>Object.equals()</code></a> and its contract with <code>hashCode()</code>. Read the javadoc, not a blog post.</li>
+    <li><a href="https://docs.oracle.com/javase/tutorial/essential/concurrency/index.html" target="_blank" rel="noopener">Oracle &mdash; Concurrency</a>: synchronization, liveness and guarded blocks.</li>
+    <li>Book: Joshua Bloch, <em>Effective Java</em> (3rd ed.), Item 10 ("Obey the general contract when overriding equals") and Item 31 ("Use bounded wildcards to increase API flexibility").</li>
+  </ul>
+
+  <!-- ===== 15. CHEAT SHEET ================================================= -->
+  <h2>&#128203; Cheat Sheet &mdash; Sessions 1&ndash;5 in one screen</h2>
+  <div class="cheatsheet">
+    <h4>Which collection?</h4>
+<pre><code class="lang-java">// name the job in English first
+List  -> ordered, indexed, may repeat     new ArrayList&lt;&gt;()
+Set   -> no duplicates, no order          new HashSet&lt;&gt;()
+          keeps arrival order             new LinkedHashSet&lt;&gt;()
+          keeps sorted order              new TreeSet&lt;&gt;()
+Queue -> first in, first out              new ArrayDeque&lt;&gt;()
+Map   -> look a value up by its key       new HashMap&lt;&gt;()
+
+map.getOrDefault(key, "not found");       // instead of a null you forgot about</code></pre>
+
+    <h4>Wildcards (PECS)</h4>
+<pre><code class="lang-java">List&lt;? extends Number&gt;  // PRODUCER - you may read. You may NOT add.
+List&lt;? super Integer&gt;    // CONSUMER - you may add. A read comes back as Object.
+List&lt;Number&gt;             // neither - rejects List&lt;Integer&gt;. Rarely what you want.
+
+for (Number n : numbers) { sum += n.doubleValue(); }   // never cast in a wildcard method</code></pre>
+
+    <h4>Files: close them, always</h4>
+<pre><code class="lang-java">try (BufferedReader r = Files.newBufferedReader(from);
+     BufferedWriter w = Files.newBufferedWriter(to)) {   // both in ONE try
+    String line;
+    while ((line = r.readLine()) != null) { w.write(line); w.newLine(); }
+}   // closed here, even if it throws. write() only means "I have your text".</code></pre>
+
+    <h4>Threads: start, check, wait</h4>
+<pre><code class="lang-java">Thread t = new Thread(job, "worker-name");
+t.start();          // run() would do the work on THIS thread - the classic bug
+t.isAlive();        // running right now? false before start, false after it ends
+t.join();           // wait here until t finishes
+t.interrupt();      // ASK it to stop - never swallow the InterruptedException</code></pre>
+
+    <h4>The lost update, and the two real fixes</h4>
+<pre><code class="lang-java">count++;                        // really three steps: READ, ADD, WRITE. Two threads lose one.
+
+AtomicLong n = new AtomicLong(); n.incrementAndGet();     // one variable -> no lock
+LongAdder total = new LongAdder(); total.increment();     // one hot counter -> fastest
+
+synchronized (LOCK) { a++; b++; }                         // several fields -> one lock</code></pre>
+
+    <h4>Locks and deadlock</h4>
+<pre><code class="lang-java">// the lock protects DATA, not TIME - never sleep while holding it
+Thread.sleep(300);  synchronized (OVEN) { finished++; }     // right
+synchronized (OVEN) { Thread.sleep(300); finished++; }      // four times too slow
+
+// deadlock = a circular wait. Agree ONE order and follow it everywhere:
+synchronized (POT) { synchronized (SPOON) { ... } }         // everyone takes POT first</code></pre>
+
+    <h4>equals() and hashCode()</h4>
+<pre><code class="lang-java">@Override public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof Student that)) return false;   // pattern matching, Java 16+
+    return id.equals(that.id);                        // identity = the id, a business decision
+}
+@Override public int hashCode() { return Objects.hash(id); }   // must agree with equals()
+
+// break the contract and a HashSet keeps a "duplicate" and a HashMap cannot find its own key</code></pre>
+
+    <h4>The debugging loop</h4>
+<pre><code class="lang-shell">spot -> reproduce -> isolate -> fix ONE thing -> re-run every check
+# a fault you cannot reproduce on demand is a fault you cannot prove you fixed
+# the message usually names the type, the method and the line. read it before you guess.</code></pre>
+  </div>
+
+  <!-- ===== 16. SUMMARY ===================================================== -->
+  <h2>&#127891; Session Summary</h2>
+  <ol>
+    <li><strong>Choose the shape before you write the code.</strong> Unique &rarr; <code>Set</code>; waiting &rarr; <code>Queue</code>; look up by key &rarr; <code>Map</code>; everything else &rarr; <code>List</code>.</li>
+    <li><strong>A collection is not broken when it gives a surprising answer</strong> &mdash; it is usually answering the question you actually asked. A <code>HashSet</code> is case-sensitive because <code>"Alice"</code> and <code>"alice"</code> really are different strings.</li>
+    <li><strong>PECS: Producer Extends, Consumer Super.</strong> The wildcard decides which direction the data may flow, and the compiler refuses the other direction rather than finding out at runtime.</li>
+    <li><strong>The best bug is a compile error.</strong> Drill 2 never ran, and that is a gift: it cost nothing, reached nobody, and told you exactly which line was wrong.</li>
+    <li><strong><code>write()</code> does not mean "written".</strong> A buffered writer only reaches the disk on <code>close()</code>, and try-with-resources closes it on every path out &mdash; including the one where something throws.</li>
+    <li><strong>A lock protects data, not time.</strong> Sleeping inside a <code>synchronized</code> block makes four independent jobs run one after another, with nothing crashing to warn you.</li>
+    <li><strong>A deadlock is a circular wait.</strong> It never ends by itself; the JVM can see it with <code>ThreadMXBean</code> but cannot break it. Agree one lock order and a cycle becomes impossible.</li>
+    <li><strong><code>equals()</code> and <code>hashCode()</code> are a contract, not a formality.</strong> Break it and a <code>Set</code> keeps a duplicate while a <code>Map</code> loses the value it just stored &mdash; quietly, in both cases.</li>
+    <li><strong>An interrupt is a request, not a command.</strong> Catching <code>InterruptedException</code> clears the flag, so swallowing it is how Cancel buttons stop working. Return, or restore the flag.</li>
+    <li><strong>Fix one thing and re-run everything.</strong> Most bad fixes pass their own test and break a neighbour. The self-check is what turns "I think it works" into "I know it does", and it is the only evidence worth handing in.</li>
+  </ol>
+  <div class="newwords"><b>&#128218; All new words from this session</b>
+    <dl>
+      <dt>Regression</dt><dd>Something that used to work and no longer does, because of a change made somewhere else.</dd>
+      <dt>Reproduce</dt><dd>To make a fault happen on demand. Without this you cannot tell a fix from a coincidence.</dd>
+      <dt>Isolate</dt><dd>To narrow a fault down to one method, then one line, so that the fix is obvious.</dd>
+      <dt>Symptom vs cause</dt><dd>What you can see (the wrong total) versus why it happens (a lost update). Fixing the symptom is the most common beginner mistake.</dd>
+      <dt>Failure report</dt><dd>The message a check or a compiler prints: the type, the method, the line, and what it expected.</dd>
+      <dt>Self-check</dt><dd>A program that measures your own work and prints a pass/fail count, so correctness is a number rather than an opinion.</dd>
+      <dt>Compile-time vs run-time failure</dt><dd>A refusal from <code>javac</code> before anything runs, versus a fault that waits for the right input at 3&nbsp;a.m.</dd>
+      <dt>Silent failure</dt><dd>A fault that throws nothing and exits cleanly &mdash; an empty file, a duplicated student, a serialised job. The hardest kind to find.</dd>
+      <dt>Resource leak</dt><dd>A file handle, connection or thread that is never released. Harmless once, fatal after a few thousand times.</dd>
+      <dt>Circular wait</dt><dd>The condition a deadlock needs: each thread holds what the next one is waiting for.</dd>
+      <dt>Lock ordering</dt><dd>Agreeing a single sequence for taking several locks, and following it in every thread.</dd>
+      <dt>Type erasure</dt><dd>Generics exist at compile time only; at runtime the JVM sees a plain <code>List</code> of <code>Object</code>s.</dd>
+    </dl>
+  </div>
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Next session: the JDBC API</b>
+      You have been keeping the Student Registry in memory since Session 1, which means it vanishes every
+      time you close the program. Session 7 gives it a <strong>database of its own</strong> &mdash; a real SQL
+      database that lives on disk, reached through JDBC. Bring the Assignment A4 starter, and bring the
+      registry you have been building.
+    </div>
   </div>
 
 </main>

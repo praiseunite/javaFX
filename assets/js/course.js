@@ -55,7 +55,8 @@
     { slug: "assignments", file: "assignments.html",   unit: "Ref", title: "Assignments (A1–A6)" },
     { slug: "project",     file: "project.html",       unit: "Ref", title: "Capstone Project" },
     { slug: "resources",   file: "resources.html",     unit: "Ref", title: "Further Study & Videos" },
-    { slug: "glossary",    file: "glossary.html",      unit: "Ref", title: "Glossary" }
+    { slug: "glossary",    file: "glossary.html",      unit: "Ref", title: "Glossary" },
+    { slug: "databases",   file: "guides/databases.html", unit: "Ref", title: "Databases: H2 & MySQL" }
   ];
 
   var PAGES = MANIFEST.filter(function (m) { return m.slug; });

@@ -1,0 +1,25 @@
+// Drill 2 - THE BROKEN VERSION. This file does not compile, and that is the point.
+//
+// It is stored as .java.txt on purpose: a file that cannot compile must never sit inside
+// src/main/java, or the whole project would stop building for everybody.
+//
+// Compile it and read the message (the exact text is on the lesson page):
+//     javac -d out snippets/Drill2_Broken.java.txt   <-- rename to .java first
+//
+// The error is:  incompatible types: Apple cannot be converted to CAP#1
+
+package com.aptech.s06.drills;
+
+import java.util.List;
+
+public class Drill2_Broken {
+
+    static class Fruit { }
+
+    static class Apple extends Fruit { }
+
+    /** "Give me a basket of fruit" - and then tries to put an apple in it. */
+    static void addApple(List<? extends Fruit> basket) {
+        basket.add(new Apple());        // <-- javac refuses this line
+    }
+}

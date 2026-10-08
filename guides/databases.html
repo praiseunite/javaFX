@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guide — H2 &amp; MySQL: the two databases</title>
+  <meta name="description" content="Reference guide for Building Rich Java Applications with JavaFX and AI Tools: how to install, connect to and use the two databases this course runs on — embedded H2 and a MySQL server — through the same JDBC code.">
+  <link rel="stylesheet" href="../assets/css/course.css">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "databases";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== HERO ============================================================ -->
+  <section class="hero">
+    <span class="tag">Reference Guide &middot; Databases &middot; Read alongside Session 7</span>
+    <h1>Guide &mdash; H2 &amp; MySQL: the two databases</h1>
+    <p class="lede">
+      The course uses <strong>two</strong> databases, on purpose. <strong>H2</strong> is embedded: one jar,
+      one file, no server, no network &mdash; which is why every program in Session 7 runs on your machine with
+      nothing installed. <strong>MySQL</strong> is the real thing: a server that many people connect to over a
+      network. This guide shows you how to set up, connect to and use <em>both</em> &mdash; and, more
+      importantly, shows you that the Java you write for them is
+      <strong>the same Java</strong>.
+    </p>
+    <div class="meta">
+      <span>&#128218; Reference &mdash; keep this open while you code</span>
+      <span>&#9201; ~30 minutes to read &middot; ~20 minutes to set up MySQL</span>
+      <span>&#9989; Before this: Session 7 &mdash; the JDBC API</span>
+      <span>&#128203; Goal: connect to H2 today, and to MySQL if you want to</span>
+    </div>
+  </section>
+
+  <!-- ===== OBJECTIVES ====================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this guide you can&hellip;</b>
+    <ol>
+      <li><strong>Explain</strong> why a course that works offline uses an embedded database &mdash; and when you would reach for a server instead.</li>
+      <li><strong>Add</strong> a JDBC driver jar to a project, by hand on the classpath and as a Maven dependency.</li>
+      <li><strong>Write</strong> an H2 URL for a file database, an in-memory database, and a server, and say what each one keeps and when it disappears.</li>
+      <li><strong>Open</strong> the H2 Console and browse a database you created from Java.</li>
+      <li><strong>Create</strong> a MySQL database and a MySQL user, and grant that user only what it needs.</li>
+      <li><strong>Connect</strong> to MySQL from Java, including the three URL parameters that local development almost always needs.</li>
+      <li><strong>Move</strong> a program from one database to the other by changing exactly three things &mdash; the jar, the driver class and the URL.</li>
+      <li><strong>Translate</strong> the handful of SQL statements that differ between the two dialects.</li>
+      <li><strong>Diagnose</strong> the six connection errors you are most likely to meet, from the message alone.</li>
+    </ol>
+  </div>
+
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== ROADMAP ========================================================= -->
+  <h2>Your Roadmap for Today</h2>
+  <div class="roadmap">
+    <a href="#part-a-h2">Part A: H2 &mdash; the embedded database</a>
+    <a href="#part-b-mysql">Part B: MySQL &mdash; the server database</a>
+    <a href="#part-c-same-code">Part C: One program, two databases</a>
+    <a href="#part-d-dialects">Part D: The SQL that differs</a>
+    <a href="#part-e-migration">Part E: Moving to MySQL</a>
+    <a href="#troubleshooting">When it will not connect</a>
+  </div>
+
+  <!-- ===== WHY TWO DATABASES =============================================== -->
+  <h2>Why two databases?</h2>
+  <p>
+    A database is just a program that stores rows and answers questions about them. There are two ways to
+    get one. You can <strong>run a server</strong>, and have every application on the network talk to it over
+    TCP &mdash; that is MySQL. Or you can <strong>build the database into your own program</strong>, so it is
+    a library you link against and a file on your own disk &mdash; that is H2.
+  </p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>&nbsp;</th><th>H2 &mdash; embedded</th><th>MySQL &mdash; server</th></tr></thead>
+    <tbody>
+      <tr><td><strong>How it runs</strong></td><td>A jar inside your program</td><td>A separate program, listening on a port</td></tr>
+      <tr><td><strong>Where the data lives</strong></td><td>A file you can copy, like any file</td><td>Inside the server's own storage, on another machine or in a volume</td></tr>
+      <tr><td><strong>Who connects</strong></td><td>Your program, and nobody else</td><td>Many programs, many users, many machines</td></tr>
+      <tr><td><strong>Setting it up</strong></td><td>Drop a jar on the classpath &mdash; nothing else</td><td>Install a server, create a database, create a user, grant rights</td></tr>
+      <tr><td><strong>Works offline</strong></td><td>Yes &mdash; this is why the course uses it</td><td>No &mdash; it needs the server to be up and reachable</td></tr>
+      <tr><td><strong>Two programs at once</strong></td><td>Awkward &mdash; the file is locked (see Part A&#8239;8)</td><td>Normal &mdash; that is what a server is for</td></tr>
+      <tr><td><strong>Realistic for</strong></td><td>Tests, demos, desktop tools, learning, prototypes</td><td>Anything with users: the capstone, a real deployment</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      Neither one is the "toy" and neither is the "proper" one. Embedded databases run the test suites of
+      billion-dollar systems, and servers are overkill for a demo. The skill is knowing which you have, not
+      which is better &mdash; and the reason this guide exists is that <strong>your Java does not care</strong>.
+    </div>
+  </div>
+
+  <!-- ===== THE JDBC CONTRACT ============================================== -->
+  <h2>The JDBC contract: only three things change</h2>
+  <p>
+    In Session 7 you met the architecture: your code talks to <code>java.sql.*</code>, and a driver does the
+    talking to the database. The driver is the only vendor-specific part, and it is chosen at runtime by the
+    <strong>URL</strong> you hand to <code>DriverManager</code>. That gives you a hard promise:
+  </p>
+  <p>
+    <strong>A program written against JDBC runs against <em>any</em> database, and switching databases
+    touches three things and nothing else:</strong> the jar on the classpath, the driver class, and the URL.
+  </p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>&nbsp;</th><th>H2</th><th>MySQL</th></tr></thead>
+    <tbody>
+      <tr><td><strong>1. The jar</strong></td><td><code>h2-2.3.232.jar</code></td><td><code>mysql-connector-j-*.jar</code></td></tr>
+      <tr><td><strong>2. The driver class</strong></td><td><code>org.h2.Driver</code></td><td><code>com.mysql.cj.jdbc.Driver</code></td></tr>
+      <tr><td><strong>3. The URL</strong></td><td><code>jdbc:h2:./data/registry</code></td><td><code>jdbc:mysql://localhost:3306/registry</code></td></tr>
+      <tr><td><strong>User / password</strong></td><td><code>sa</code> / empty</td><td>the user you create in Part B</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout callout--note"><span class="callout__i">&#128221;</span>
+    <div class="callout__b"><b>Note &mdash; you rarely write the driver class at all</b>
+      Every JDBC program has a "step 1: load the driver". Since <strong>JDBC 4</strong> (Java 6, and that is a
+      long time ago) a jar on the classpath registers itself, so <code>Class.forName("org.h2.Driver")</code>
+      is no longer needed &mdash; and it compiles just fine without it. You will still see it in older books and
+      in the odd application server with a strange class loader. Write it if you like; it is not doing any
+      harm. Just do not believe the book that says it is required.
+    </div>
+  </div>
+
+  <!-- ===== PART A ========================================================== -->
+  <h2 id="part-a-h2"><span class="eyebrow">Part A of 5</span> H2 &mdash; the embedded database</h2>
+  <p>
+    H2 is a database engine written entirely in Java, about 2.6&nbsp;MB, that you carry inside your own
+    program. There is no daemon to start, no port to open, and no administrator to ask. You connect to it the
+    same way you connect to anything else &mdash; with a URL &mdash; and the URL simply happens to be a file
+    path.
+  </p>
+
+  <figure class="concept-visual">
+    <img src="../assets/img/diagrams/s07_jdbc_architecture.svg" alt="Five stacked layers: your application, the JDBC API java.sql.*, DriverManager, the JDBC driver, and the database — with a column on the right naming who writes each layer." />
+    <figcaption><strong>Figure 1.</strong> Your code touches the top layer only. Swap the driver, and the two layers above it never notice.</figcaption>
+  </figure>
+
+  <h3>A&#8239;1 &mdash; Getting the jar</h3>
+  <p>Three ways, in order of preference for this course:</p>
+
+  <p><strong>Maven (IntelliJ users &mdash; the easy one).</strong> Add this to your <code>pom.xml</code> and let the IDE fetch it:</p>
+<pre><code class="lang-xml">&lt;dependency&gt;
+  &lt;groupId&gt;com.h2database&lt;/groupId&gt;
+  &lt;artifactId&gt;h2&lt;/artifactId&gt;
+  &lt;version&gt;2.3.232&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+
+  <p><strong>A plain download (no Maven).</strong> One file from Maven Central &mdash; save it into a
+  <code>lib/</code> folder in your project:</p>
+<pre><code class="lang-shell">https://repo1.maven.org/maven2/com/h2database/h2/2.3.232/h2-2.3.232.jar</code></pre>
+
+  <p><strong>Already in the course.</strong> The Session 7 project ships it:</p>
+<pre><code class="lang-shell">code/s07-jdbc-api/lib/h2-2.3.232.jar</code></pre>
+
+  <h3>A&#8239;2 &mdash; Putting it on the classpath</h3>
+  <p>The jar has to be visible to <em>both</em> <code>javac</code> (to compile your imports) and
+  <code>java</code> (to run them). The separator <strong>differs by operating system</strong> &mdash; this is
+  the mistake that eats an hour.</p>
+
+<pre><code class="lang-shell"># Windows - the separator is a semicolon ;
+javac -cp "lib/h2-2.3.232.jar" -d out src/App.java
+java  -cp "lib/h2-2.3.232.jar;out" App
+
+# macOS / Linux - the separator is a colon :
+javac -cp "lib/h2-2.3.232.jar" -d out src/App.java
+java  -cp "lib/h2-2.3.232.jar:out" App</code></pre>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Tip &mdash; in IntelliJ, do it once</b>
+      <strong>File &rarr; Project Structure &rarr; Libraries &rarr; + &rarr; Java</strong>, then pick the jar.
+      Or use the Maven dependency above, which does it for you and for every teammate. You should not be
+      typing <code>-cp</code> by hand inside an IDE.
+    </div>
+  </div>
+
+  <h3>A&#8239;3 &mdash; The H2 URL, in all its forms</h3>
+  <p>The URL is the whole configuration. These are the forms you will actually use:</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>URL</th><th>What it gives you</th></tr></thead>
+    <tbody>
+      <tr><td><code>jdbc:h2:./data/registry</code></td><td><strong>A file database.</strong> Keeps everything, in <code>data/registry.mv.db</code>, relative to where you run the program. This is what the course uses.</td></tr>
+      <tr><td><code>jdbc:h2:~/registry</code></td><td>The same, in your home folder. Handy when you do not want to think about the working directory.</td></tr>
+      <tr><td><code>jdbc:h2:mem:test</code></td><td><strong>In memory.</strong> Nothing on disk, created empty every run &mdash; perfect for tests. <em>Dropped the moment the last connection closes</em> (see the gotcha below).</td></tr>
+      <tr><td><code>jdbc:h2:mem:test;DB_CLOSE_DELAY=-1</code></td><td>In memory, but it survives until the JVM exits. Add this whenever a test connects twice.</td></tr>
+      <tr><td><code>jdbc:h2:./data/registry;AUTO_SERVER=TRUE</code></td><td>A file database that a <em>second</em> program may also open. The usual fix for the file-lock error.</td></tr>
+      <tr><td><code>jdbc:h2:tcp://localhost:9092/./data/registry</code></td><td>Reach a database that another process is serving over the network &mdash; H2 behaving like MySQL.</td></tr>
+      <tr><td><code>jdbc:h2:./data/registry;MODE=MySQL</code></td><td>A file database that accepts MySQL's dialect. Useful for Part E, but do not rely on it forever.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>A&#8239;4 &mdash; Where the files go, and what they are</h3>
+  <p>The database is not one file, and it is not a folder. It is:</p>
+  <ul>
+    <li><code>registry.mv.db</code> &mdash; the database. Back it up by copying it. That is the whole backup strategy.</li>
+    <li><code>registry.trace.db</code> &mdash; a log H2 writes <em>only when something went wrong</em>. If you see one, your last run logged an error; read it.</li>
+    <li><code>registry.lock.db</code> &mdash; appears while the database is open by a running program. Its presence when nothing is running is the cause of the "may be already in use" error in the troubleshooting table.</li>
+  </ul>
+  <p>
+    <strong>Create the folder before you connect.</strong> H2 writes the file, but do not rely on it
+    creating a missing <code>data/</code> directory for you &mdash; one <code>mkdir</code> saves a confusing
+    error.
+  </p>
+
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>The in-memory gotcha that bites everyone</b>
+      <code>jdbc:h2:mem:test</code> is dropped when the <strong>last</strong> connection to it closes. Write
+      your table and close the connection &mdash; then open a second connection to check it &mdash; and the
+      table is gone. It is not a bug and it is not flaky; it is the definition of "in memory". Either hold one
+      connection open for the life of the test, or append <code>;DB_CLOSE_DELAY=-1</code>.
+    </div>
+  </div>
+
+  <h3>A&#8239;5 &mdash; The user</h3>
+  <p>
+    A brand-new H2 database has one user, <code>sa</code> (system administrator), with an
+    <strong>empty</strong> password. That is not a security hole you have to fix &mdash; there is no network
+    and no other user; the file's own permissions are the real security. But pass the user explicitly rather
+    than relying on the default, so the same program works when you switch to a database that has a real
+    user:
+  </p>
+<pre><code class="lang-java">// H2
+Connection c = DriverManager.getConnection("jdbc:h2:./data/registry", "sa", "");</code></pre>
+
+  <h3>A&#8239;6 &mdash; The H2 Console: look at your database without writing code</h3>
+  <p>
+    H2 ships a small web browser for your data. Run this from the folder holding the jar, and open
+    <code>http://localhost:8082</code>:
+  </p>
+<pre><code class="lang-shell">java -cp lib/h2-2.3.232.jar org.h2.tools.Server -web</code></pre>
+  <p>
+    In the Connect screen, the fields are the same three things your Java code uses: <strong>Driver
+    Class</strong> <code>org.h2.Driver</code>, <strong>JDBC URL</strong>
+    <code>jdbc:h2:./data/registry</code>, <strong>User</strong> <code>sa</code>, password blank. You can then
+    run <code>SELECT * FROM students;</code> and see the rows your program inserted, in a table, with a
+    mouse.
+  </p>
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>The console locks the file</b>
+      While the console has the database open, your Java program cannot open it &mdash; you get the
+      "may be already in use" error. Close the console's connection button when you are done looking, or use
+      <code>;AUTO_SERVER=TRUE</code> and let both share it.
+    </div>
+  </div>
+
+  <h3>A&#8239;7 &mdash; A first table, and the SQL H2 accepts</h3>
+<pre><code class="lang-sql">CREATE TABLE IF NOT EXISTS students (
+    id     INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    name   VARCHAR(100) NOT NULL,
+    email  VARCHAR(150) UNIQUE,
+    mark   DECIMAL(5,2),
+    active BOOLEAN DEFAULT TRUE,
+    joined TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO students (name, email, mark) VALUES ('Ada Lovelace', 'ada@example.com', 88.50);
+
+SELECT id, name, mark FROM students WHERE mark &gt;= 70 ORDER BY mark DESC;</code></pre>
+  <p>
+    <code>GENERATED BY DEFAULT AS IDENTITY</code> is the standard spelling and H2 also accepts the friendlier
+    <code>AUTO_INCREMENT</code>. Remember that one &mdash; it is the first row of the dialect table in Part D.
+  </p>
+
+  <h3>A&#8239;8 &mdash; The H2 gotchas, collected</h3>
+  <ul>
+    <li><strong>The file is locked to one process.</strong> Two programs, or a program and the console, cannot both open a file database. Fix: <code>AUTO_SERVER=TRUE</code>, or open one at a time.</li>
+    <li><strong>Relative paths depend on the working directory.</strong> <code>./data/registry</code> means "next to wherever the JVM was started", which is <em>not</em> always your project folder in an IDE. When a database seems to have vanished, look for a stray <code>data/</code> folder.</li>
+    <li><strong>In-memory databases die with the last connection.</strong> See the warning in A&#8239;4.</li>
+    <li><strong>H2 2.x is strict.</strong> Older H2 ignored some bad SQL that the current version rejects. If a two-year-old tutorial's <code>CREATE TABLE</code> fails, it is usually the older dialect, not you.</li>
+    <li><strong>Delete the <code>.mv.db</code> file to start clean.</strong> There is no <code>DROP DATABASE</code> you need; deleting the file <em>is</em> deleting the database.</li>
+  </ul>
+
+  <!-- ===== PART B ========================================================== -->
+  <h2 id="part-b-mysql"><span class="eyebrow">Part B of 5</span> MySQL &mdash; the server database</h2>
+  <p>
+    MySQL is what most of the working Java world means by "the database". It is a program in its own right,
+    usually on its own machine, listening on a network port. It speaks the same JDBC as H2 &mdash; but
+    <em>you</em> are no longer the only thing talking to it, and that changes the setup.
+  </p>
+
+  <h3>B&#8239;1 &mdash; Installing MySQL</h3>
+  <p>Pick whichever of these you have; the Java code afterwards is identical.</p>
+  <ul>
+    <li><strong>Docker (fastest to try, easiest to throw away).</strong> One command, and MySQL is running:</li>
+  </ul>
+<pre><code class="lang-shell">docker run --name registry-mysql \
+  -e MYSQL_ROOT_PASSWORD=rootpw \
+  -e MYSQL_DATABASE=registry \
+  -e MYSQL_USER=registry \
+  -e MYSQL_PASSWORD=ChangeMe_2026 \
+  -p 3306:3306 -d mysql:8.4</code></pre>
+  <ul>
+    <li><strong>MySQL Community Edition (the normal install).</strong> Download the installer from <code>dev.mysql.com/downloads/</code>, choose the <strong>Developer Default</strong> setup, and set a root password you will remember. On Windows it can register itself as a service that starts with the machine.</li>
+    <li><strong>Already have MariaDB?</strong> It is protocol-compatible with MySQL; Connector/J talks to it. Use it &mdash; the dialect notes in Part D apply almost unchanged.</li>
+  </ul>
+
+  <h3>B&#8239;2 &mdash; The port</h3>
+  <p>
+    MySQL listens on <strong>3306</strong> by default. You will see that number in every URL. If the server
+    and your program are on the same machine, the host is <code>localhost</code>.
+  </p>
+
+  <h3>B&#8239;3 &mdash; Prove the server is up, and know your version</h3>
+  <p>
+    Before you write one line of Java, connect as <code>root</code> and ask the server what it is. This one
+    command tells you three things at once: the server is running, you can reach it, and which version is
+    answering &mdash; which is the number every later question depends on.
+  </p>
+<pre><code class="lang-shell"># Command line (the password prompt appears after you press Enter)
+mysql -u root -p -e "SELECT VERSION();"
+
+# If your MySQL runs in Docker, the client lives inside the container
+docker exec registry-mysql mysql -uroot -prootpw -e "SELECT VERSION();"
+
+# Expected: 8.4.11   (any 8.x, or 8.4+, is what this guide describes)</code></pre>
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>If that command fails, stop here</b>
+      <code>command not found</code> means the MySQL <em>client</em> is not on your PATH &mdash; not that the
+      server is down. <code>Can't connect to MySQL server</code> means the server itself is not running.
+      <code>Access denied</code> means you typed the wrong root password. Do not skip to Part&#8239;C until one
+      of those three is resolved; every later error will be a symptom of this one.
+    </div>
+  </div>
+
+  <h3>B&#8239;4 &mdash; Create the database, and a user for it</h3>
+  <p>
+    Open the MySQL command line (or Workbench) <em>as root</em> and run this. Note the shape of it: one
+    command creates the database, one creates an ordinary user, one hands that user rights over that
+    database only.
+  </p>
+<pre><code class="lang-sql">CREATE DATABASE IF NOT EXISTS registry
+  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE USER IF NOT EXISTS 'registry'@'localhost' IDENTIFIED BY 'ChangeMe_2026';
+CREATE USER IF NOT EXISTS 'registry'@'%'         IDENTIFIED BY 'ChangeMe_2026';
+
+GRANT ALL PRIVILEGES ON registry.* TO 'registry'@'localhost';
+GRANT ALL PRIVILEGES ON registry.* TO 'registry'@'%';
+
+FLUSH PRIVILEGES;</code></pre>
+  <p>
+    <strong>Why two users with one name?</strong> MySQL identifies an account by name <em>and</em> host.
+    <code>'registry'@'localhost'</code> and <code>'registry'@'%'</code> are two different accounts, and the
+    one your program gets depends on where it connects <em>from</em>. From a plain terminal on the same
+    machine that is <code>localhost</code>; from inside a Docker container, or over the network, it is your
+    machine's IP and only <code>@'%'</code> matches. Create both and you will not spend an afternoon on it.
+    (This is the live version of the "name <em>and</em> host" gotcha in B&#8239;9.)
+  </p>
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point &mdash; never ship an application that connects as root</b>
+      Notice what we did <em>not</em> do: we did not use <code>root</code> in the application. We made a
+      user called <code>registry</code> and granted it rights over the <code>registry</code> database and
+      nothing else. If that password leaks, exactly one database is at risk. This one habit separates a
+      student project from a deployment. <code>utf8mb4</code> is the other one &mdash; it is what makes
+      names with accents, emoji and any non-English text survive the round trip.
+    </div>
+  </div>
+
+  <h3>B&#8239;5 &mdash; The jar: Connector/J</h3>
+  <p>MySQL's JDBC driver is called <strong>Connector/J</strong>. Maven coordinates:</p>
+<pre><code class="lang-xml">&lt;dependency&gt;
+  &lt;groupId&gt;com.mysql&lt;/groupId&gt;
+  &lt;artifactId&gt;mysql-connector-j&lt;/artifactId&gt;
+  &lt;version&gt;9.1.0&lt;/version&gt;   &lt;!-- or any current 8.1+ / 9.x release --&gt;
+&lt;/dependency&gt;</code></pre>
+  <p>
+    Or download the <code>mysql-connector-j-*.jar</code> from <code>dev.mysql.com/downloads/connector/j/</code>
+    and put it in <code>lib/</code> exactly as you did with H2. The classpath rules, the separators and the
+    IntelliJ steps are unchanged.
+  </p>
+
+  <h3>B&#8239;6 &mdash; The MySQL URL, and the three parameters you will want</h3>
+<pre><code class="lang-java">jdbc:mysql://localhost:3306/registry?sslMode=DISABLED&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC</code></pre>
+  <p>In a Java string the <code>&amp;</code> is written literally (no escaping needed &mdash; the escaping above is for HTML). Read the URL as three parts:</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Part</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>jdbc:mysql://localhost:3306/registry</code></td><td>The protocol, the host, the port, and <strong>the database name</strong>. Unlike H2, MySQL has databases <em>inside</em> a server, so the name is part of the URL.</td></tr>
+      <tr><td><code>sslMode=DISABLED</code></td><td>Do not require TLS. Reasonable for <code>localhost</code>; the old spelling was <code>useSSL=false</code>. Never disable TLS for a database you reach over a network you do not control.</td></tr>
+      <tr><td><code>allowPublicKeyRetrieval=true</code></td><td>Permit the client to fetch the server's public key to encrypt the password. Without it, a modern MySQL over a plaintext connection refuses the <em>first</em> (cold) login &mdash; see B&#8239;7.</td></tr>
+      <tr><td><code>serverTimezone=UTC</code></td><td>Tell the driver what time zone the timestamps are in. The alternative is a <code>The server time zone value ... is unrecognized</code> error on some installs.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>B&#8239;7 &mdash; Why the password needs a public key at all</h3>
+  <p>
+    MySQL 8 replaced the old <code>mysql_native_password</code> plugin with
+    <strong><code>caching_sha2_password</code></strong> as the default. It is stronger &mdash; passwords are
+    salted and hashed properly &mdash; but it has a consequence that surprises people: over a connection with
+    no TLS, the client cannot safely send the password, so it asks the server for its RSA public key and
+    encrypts the password with it. A client that has not been told the key is trustworthy will refuse.
+  </p>
+  <p>
+    <strong>The error is not <em>permanent</em>, and that is the part that confuses people.</strong> The server
+    remembers a correctly-authenticated session in its cache. So the message below appears on the
+    <em>first</em> connection to an account since the server started &mdash; a "cold" connection &mdash; and
+    after that the same account on the same URL connects fine without the parameter. Run it on a fresh server,
+    or after an account's password is changed, and it comes back. The fix is not "try again"; it is to set the
+    URL correctly once:
+  </p>
+<pre><code class="lang-shell">java.sql.SQLException: Public Key Retrieval is not allowed</code></pre>
+  <p>Two sane answers, in order of preference:</p>
+  <ol>
+    <li><strong>Add <code>allowPublicKeyRetrieval=true</code></strong> (local development &mdash; what you will do today). It accepts the key the server offers. Fine when "the server" is your own laptop.</li>
+    <li><strong>Use TLS</strong>, i.e. remove <code>sslMode=DISABLED</code>, and the key is verified through the certificate instead. This is what production does.</li>
+  </ol>
+  <p>
+    You will also meet the older fix, <code>ALTER USER ... IDENTIFIED WITH mysql_native_password BY ...</code>,
+    which downgrades the account back to the old plugin. It works, and it is exactly the thing you should not
+    teach yourself as the normal answer.
+  </p>
+
+  <h3>B&#8239;8 &mdash; The same table, the MySQL way</h3>
+<pre><code class="lang-sql">CREATE TABLE IF NOT EXISTS students (
+    id     INT AUTO_INCREMENT PRIMARY KEY,
+    name   VARCHAR(100) NOT NULL,
+    email  VARCHAR(150) UNIQUE,
+    mark   DECIMAL(5,2),
+    active TINYINT(1) DEFAULT 1,
+    joined DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;</code></pre>
+  <p>Compare it with the H2 version in A&#8239;7 and you have already read most of Part D. Two lines changed:</p>
+  <ul>
+    <li><code>GENERATED BY DEFAULT AS IDENTITY</code> became <code>AUTO_INCREMENT</code>.</li>
+    <li><code>BOOLEAN</code> became <code>TINYINT(1)</code> &mdash; MySQL has no real boolean (see Part D).</li>
+    <li>And a line was <em>added</em>: <code>ENGINE=InnoDB DEFAULT CHARSET=utf8mb4</code>.</li>
+  </ul>
+
+  <h3>B&#8239;9 &mdash; The MySQL gotchas, collected</h3>
+  <ul>
+    <li><strong>The server has to be running.</strong> A stopped MySQL is a <code>Communications link failure</code>, not a "database not found".</li>
+    <li><strong>Users are identified by name <em>and</em> host.</strong> <code>'registry'@'localhost'</code> and <code>'registry'@'%'</code> are two different users. If a login works from one machine and not another, this is why.</li>
+    <li><strong>Rights are per-database, and are cached.</strong> A <code>GRANT</code> is not always visible to an existing connection; <code>FLUSH PRIVILEGES;</code> (or a fresh connection) settles it.</li>
+    <li><strong>Identifier quoting is backticks.</strong> Double quotes mean "string literal" in MySQL by default. If you move H2 SQL that quotes a column with <code>"</code>, MySQL will not understand it.</li>
+    <li><strong><code>||</code> is OR, not concatenation.</strong> The single most common silent wrong answer when SQL moves from a standard database to MySQL.</li>
+    <li><strong>Transactions are real, and InnoDB is why.</strong> <code>COMMIT</code> and <code>ROLLBACK</code> behave the way Session 8 describes. On H2 they do too, but the stakes are lower.</li>
+  </ul>
+
+  <!-- ===== PART C ========================================================== -->
+  <h2 id="part-c-same-code"><span class="eyebrow">Part C of 5</span> One program, two databases</h2>
+  <p>
+    Here is the whole argument of this guide in one class. It knows nothing about H2 or MySQL. It is handed
+    a URL, a user and a password, and it works.
+  </p>
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>Before you run this: the table has to exist</b>
+      <code>Db</code> inserts into <code>students</code>, so the table must already be there. Run the
+      <code>CREATE TABLE</code> from A&#8239;7 against H2 <em>and</em> the one from B&#8239;8 against MySQL
+      first. This is the classic first error from someone who jumped straight to Part&#8239;C:
+      <code>Table "STUDENTS" not found (this database is empty)</code> on H2, or
+      <code>Table 'registry.students' doesn't exist</code> on MySQL. Neither means your code is wrong &mdash;
+      it means the database is empty.
+    </div>
+  </div>
+<pre><code class="lang-java">import java.sql.*;
+
+public class Db {
+
+    // The ONLY things that differ between the two databases.
+    // H2:    jdbc:h2:./data/registry                     , "sa"       , ""
+    // MySQL: jdbc:mysql://localhost:3306/registry?sslMode=DISABLED&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC , "registry" , "ChangeMe_2026"
+    private final String url, user, password;
+
+    public Db(String url, String user, String password) {
+        this.url = url; this.user = user; this.password = password;
+    }
+
+    /** Hand back one row for a name, or null. Note the ? - never string-concatenate input. */
+    public String findEmail(String name) throws SQLException {
+        String sql = "SELECT email FROM students WHERE name = ?";
+        try (Connection c = DriverManager.getConnection(url, user, password);
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, name);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getString("email") : null;
+            }
+        }
+    }
+
+    public int addStudent(String name, String email, double mark) throws SQLException {
+        String sql = "INSERT INTO students (name, email, mark) VALUES (?, ?, ?)";
+        try (Connection c = DriverManager.getConnection(url, user, password);
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, name);
+            ps.setString(2, email);
+            ps.setDouble(3, mark);
+            return ps.executeUpdate();     // 1 if a row went in
+        }
+    }
+}</code></pre>
+  <p>Now the two <code>main</code> methods. Look how little is in them:</p>
+<pre><code class="lang-java">// Run against the embedded database - nothing installed, works offline
+new Db("jdbc:h2:./data/registry", "sa", "").addStudent("Ada Lovelace", "ada@example.com", 88.5);
+
+// Run against the server - same class, same methods, different URL
+new Db("jdbc:mysql://localhost:3306/registry?sslMode=DISABLED&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC",
+       "registry", "ChangeMe_2026").addStudent("Ada Lovelace", "ada@example.com", 88.5);</code></pre>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point &mdash; this is the whole reason JDBC exists</b>
+      <code>Db.java</code> did not change by one character. That is not a coincidence or a nice property
+      &mdash; it is the design goal of the entire API, and it is why the course does not have a chapter on
+      "H2 programming" and another on "MySQL programming". Learn JDBC once; point it wherever you like.
+    </div>
+  </div>
+
+  <!-- ===== PART D ========================================================== -->
+  <h2 id="part-d-dialects"><span class="eyebrow">Part D of 5</span> The SQL that differs</h2>
+  <p>
+    JDBC hides <em>how you talk</em>. It cannot hide <em>what you say</em>: every database has its own
+    dialect, and a few statements are not portable. Here is the whole list you are likely to meet. If you
+    stick to the left-hand column you will write SQL that runs on both.
+  </p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>You want</th><th>Portable / H2</th><th>MySQL</th></tr></thead>
+    <tbody>
+      <tr><td>Auto-numbering key</td><td><code>INT GENERATED BY DEFAULT AS IDENTITY</code><br>(H2 also accepts <code>AUTO_INCREMENT</code>)</td><td><code>INT AUTO_INCREMENT</code></td></tr>
+      <tr><td>True / false</td><td><code>BOOLEAN</code> &mdash; a real type</td><td><code>TINYINT(1)</code> &mdash; no real boolean; <code>TRUE</code>/<code>FALSE</code> are just 1 and 0</td></tr>
+      <tr><td>Short text</td><td><code>VARCHAR(100)</code></td><td><code>VARCHAR(100)</code> &mdash; <strong>always give the length</strong></td></tr>
+      <tr><td>Long text</td><td><code>CLOB</code></td><td><code>TEXT</code> / <code>LONGTEXT</code></td></tr>
+      <tr><td>Money, exact decimals</td><td><code>DECIMAL(9,2)</code></td><td><code>DECIMAL(9,2)</code> &mdash; identical. Never use <code>DOUBLE</code> for money.</td></tr>
+      <tr><td>Date and time</td><td><code>TIMESTAMP</code></td><td><code>DATETIME</code> (or <code>TIMESTAMP</code>, which has quirks)</td></tr>
+      <tr><td>First <em>n</em> rows</td><td><code>LIMIT 10</code></td><td><code>LIMIT 10</code> &mdash; same</td></tr>
+      <tr><td>Join two strings</td><td><code>first || ' ' || last</code></td><td><code>CONCAT(first, ' ', last)</code><br>&#9888;&#65039; <code>||</code> means <strong>OR</strong> in MySQL &mdash; it will not throw, it will quietly mislead</td></tr>
+      <tr><td>Quote a name with a space</td><td><code>"full name"</code></td><td><code>`full name`</code> &mdash; backticks</td></tr>
+      <tr><td>Upsert</td><td><code>MERGE INTO t KEY(id) VALUES (&hellip;)</code></td><td><code>INSERT &hellip; ON DUPLICATE KEY UPDATE &hellip;</code></td></tr>
+      <tr><td>Drop everything you made</td><td><code>DROP ALL OBJECTS</code></td><td><code>DROP DATABASE registry;</code> then recreate it</td></tr>
+      <tr><td>&#8220;If the table exists&#8221;</td><td><code>CREATE TABLE IF NOT EXISTS &hellip;</code></td><td><code>CREATE TABLE IF NOT EXISTS &hellip;</code> &mdash; same</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>Two rows of that table are worth memorising</b>
+      <p><strong><code>||</code>.</strong> On H2 and PostgreSQL it joins strings. On MySQL, unless the server's <code>sql_mode</code> includes <code>PIPES_AS_CONCAT</code>, it is the OR operator &mdash; so <code>'a' || 'b'</code> evaluates to <code>1</code> and is <em>accepted without complaint</em>. Use <code>CONCAT()</code> and it works everywhere.</p>
+      <p><strong><code>TINYINT(1)</code>.</strong> MySQL has no boolean type. <code>active = TRUE</code> works because <code>TRUE</code> is an alias for <code>1</code>, and it round-trips as a Java <code>boolean</code> through JDBC &mdash; but reading it as an <code>int</code> in a query somewhere else is where the confusion starts.</p>
+    </div>
+  </div>
+
+  <p>
+    And when you genuinely cannot avoid the difference, there is an escape hatch: H2 will run in MySQL's
+    dialect if you ask it to.
+  </p>
+<pre><code class="lang-sql">-- H2, accepting MySQL syntax such as ON DUPLICATE KEY UPDATE
+jdbc:h2:./data/registry;MODE=MySQL</code></pre>
+  <p>
+    Use it to make a lesson run, not to pretend the dialects are the same. The moment you rely on it, the
+    migration in Part E gets harder, not easier.
+  </p>
+
+  <!-- ===== PART E ========================================================== -->
+  <h2 id="part-e-migration"><span class="eyebrow">Part E of 5</span> Moving a program from H2 to MySQL</h2>
+  <p>Work top to bottom. Each step is small, and each one tells you immediately whether it worked.</p>
+
+  <div class="steps">
+    <div class="steps__title">&#128221; Migration Checklist (your progress is saved automatically)</div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">1</span>
+      <span class="step__text"><strong>Get MySQL running and prove it.</strong> Connect as root and run <code>SELECT VERSION();</code>. If that fails, nothing later can work &mdash; fix it here.</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">2</span>
+      <span class="step__text"><strong>Create the database and the least-privileged user</strong> (B&#8239;4). Do not plan to use <code>root</code>.</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">3</span>
+      <span class="step__text"><strong>Add Connector/J</strong> to the classpath or the <code>pom.xml</code>. Leave the H2 jar there too &mdash; you are not deleting anything yet.</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">4</span>
+      <span class="step__text"><strong>Change the URL and nothing else.</strong> Run your program. If it fails now, the fault is a connection setting, and you have not polluted it with SQL edits.</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">5</span>
+      <span class="step__text"><strong>Recreate the schema</strong> from your <code>schema.sql</code>, applying the Part&nbsp;D translations (<code>AUTO_INCREMENT</code>, <code>TINYINT(1)</code>, <code>DATETIME</code>).</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">6</span>
+      <span class="step__text"><strong>Hunt for <code>||</code>, double-quoted identifiers and upserts</strong> in your SQL. These are the three that fail late or lie quietly. Search your source for <code>||</code> right now.</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">7</span>
+      <span class="step__text"><strong>Run your SelfCheck against MySQL.</strong> Every check should pass with zero Java changes. If a check fails, compare the SQL it ran, not the Java.</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">8</span>
+      <span class="step__text"><strong>Stop connecting as <code>sa</code>.</strong> Put the URL, user and password in one config object or a properties file rather than in three places, so the next switch is one edit.</span>
+    </div>
+  </div>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Tip &mdash; keep both paths alive</b>
+      Do not delete the H2 configuration when MySQL starts working. Being able to run the same test suite
+      against a throwaway in-memory database, on a train, with no network, is worth keeping. That is the
+      arrangement the professionals use too.
+    </div>
+  </div>
+
+  <!-- ===== TROUBLESHOOTING ================================================ -->
+  <h2 id="troubleshooting">&#128295; When it will not connect</h2>
+  <p>
+    Almost every JDBC failure is one of these six. Find your message in the first column and the fix is in
+    the second. Read the message before you change anything &mdash; it names the problem far more often than
+    people expect.
+  </p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>The message</th><th>What it really means, and the fix</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>No suitable driver found for jdbc:h2:&hellip;</code></td>
+        <td>The jar is not on the classpath of the JVM that is <em>running</em>. It compiled, so <code>javac</code> had it &mdash; check the <code>java</code> command too. Watch the separator: <code>;</code> on Windows, <code>:</code> elsewhere.</td>
+      </tr>
+      <tr>
+        <td><code>Database may be already in use</code></td>
+        <td>An H2 file database is open somewhere else &mdash; another run of your program, or the H2 Console. Close the other one, or connect with <code>;AUTO_SERVER=TRUE</code>.</td>
+      </tr>
+      <tr>
+        <td><code>Access denied for user 'registry'@'localhost'</code></td>
+        <td>Either the password is wrong, or the user does not exist <em>for that host</em>, or it has no rights on that database. Re-run the <code>GRANT</code> in B&#8239;4 and check the host part of the name.</td>
+      </tr>
+      <tr>
+        <td><code>Communications link failure</code></td>
+        <td>The server is not running, or nothing is listening on 3306, or a firewall is in the way. It is a network error, not a credentials error &mdash; start the server and try again.</td>
+      </tr>
+      <tr>
+        <td><code>Public Key Retrieval is not allowed</code></td>
+        <td>MySQL 8's <code>caching_sha2_password</code> over a plaintext connection &mdash; <strong>on the first (cold) login only</strong>, so it can also appear on a fresh server and then vanish on a retry. Add <code>allowPublicKeyRetrieval=true</code>, or turn TLS back on. See B&#8239;7.</td>
+      </tr>
+      <tr>
+        <td><code>The server time zone value &hellip; is unrecognized</code></td>
+        <td>The driver cannot work out the server's zone. Add <code>serverTimezone=UTC</code> to the URL. See B&#8239;6.</td>
+      </tr>
+      <tr>
+        <td><code>Unknown database 'registry'</code></td>
+        <td>The server is fine and the login worked &mdash; the database name in the URL does not exist. Run the <code>CREATE DATABASE</code> in B&#8239;4. (On H2 this cannot happen: the URL creates it.)</td>
+      </tr>
+      <tr>
+        <td><code>Access denied for user 'registry'@'%' to database 'nosuchdb'</code></td>
+        <td><strong>The same mistake as the row above, but seen by a least-privileged user.</strong> A user with rights on <em>one</em> database gets "Access denied &hellip; to database" instead of "Unknown database", because MySQL checks privileges before it confirms the database exists. Do not go hunting for a broken password &mdash; check the database name in the URL first.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>The one you must not "fix" by guessing</b>
+      Never cure a connection problem by concatenating user input into SQL, and never cure an access problem
+      by granting <code>ALL PRIVILEGES ON *.*</code>. Both work, both are what a rushed developer does at
+      11&nbsp;p.m., and both are the start of the next incident. Fix the cause: the right jar, the right URL,
+      the narrowest grant that does the job.
+    </div>
+  </div>
+
+  <!-- ===== CHEAT SHEET ===================================================== -->
+  <h2>&#128203; Cheat Sheet &mdash; H2 and MySQL in one screen</h2>
+  <div class="cheatsheet">
+    <h4>The three things that change</h4>
+<pre><code class="lang-shell">              H2                                  MySQL
+jar           h2-2.3.232.jar                      mysql-connector-j-*.jar
+driver class  org.h2.Driver                       com.mysql.cj.jdbc.Driver
+URL           jdbc:h2:./data/registry             jdbc:mysql://localhost:3306/registry</code></pre>
+
+    <h4>The URLs worth knowing</h4>
+<pre><code class="lang-shell"># H2 - a file, offline, survives restarts
+jdbc:h2:./data/registry
+
+# H2 - in memory, wiped when the last connection closes
+jdbc:h2:mem:test
+jdbc:h2:mem:test;DB_CLOSE_DELAY=-1      # ...keep it until the JVM exits
+
+# H2 - let a second program open it too (fixes "already in use")
+jdbc:h2:./data/registry;AUTO_SERVER=TRUE
+
+# MySQL - the three parameters local development needs
+jdbc:mysql://localhost:3306/registry?sslMode=DISABLED&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC</code></pre>
+
+    <h4>Classpath, and the separator that trips you</h4>
+<pre><code class="lang-shell">javac -cp "lib/h2-2.3.232.jar" -d out src/App.java
+
+java -cp "lib/h2-2.3.232.jar;out" App          # Windows  : semicolon
+java -cp "lib/h2-2.3.232.jar:out" App          # mac/Linux: colon</code></pre>
+
+    <h4>The two tools</h4>
+<pre><code class="lang-shell"># H2 Console - browse your file database in a browser, port 8082
+java -cp lib/h2-2.3.232.jar org.h2.tools.Server -web
+
+# MySQL - prove the server is up and learn its version, BEFORE writing Java
+mysql -u root -p -e "SELECT VERSION();"
+docker exec registry-mysql mysql -uroot -prootpw -e "SELECT VERSION();"   # if in Docker
+
+# MySQL - the client as root, then as your own user
+mysql -u root -p
+mysql -u registry -p registry</code></pre>
+
+    <h4>The jars, by exact filename</h4>
+<pre><code class="lang-shell"># H2 - 2.6 MB, download from Maven Central
+lib/h2-2.3.232.jar
+
+# MySQL Connector/J - 2.5 MB, download from dev.mysql.com/downloads/connector/j/
+lib/mysql-connector-j-9.1.0.jar
+
+# put BOTH on the classpath (Windows separator ';')
+java -cp "lib/h2-2.3.232.jar;lib/mysql-connector-j-9.1.0.jar;out" App</code></pre>
+
+    <h4>The SQL differences that bite</h4>
+<pre><code class="lang-sql">-- auto key
+id INT GENERATED BY DEFAULT AS IDENTITY     -- H2 / standard
+id INT AUTO_INCREMENT                       -- MySQL
+
+-- boolean
+active BOOLEAN                              -- H2, a real type
+active TINYINT(1)                           -- MySQL, 1 or 0
+
+-- join strings: this is the dangerous one
+first || ' ' || last                        -- H2 joins them
+CONCAT(first, ' ', last)                    -- MySQL way (|| means OR!)</code></pre>
+
+    <h4>The mental model to keep</h4>
+<pre><code class="lang-java">// your code talks to java.sql.* and never to a vendor.
+// DriverManager reads the URL and picks the driver.
+// change the jar, the driver and the URL -> everything above is untouched.
+
+Connection c = DriverManager.getConnection(url, user, password);   // the one call that differs</code></pre>
+  </div>
+
+  <!-- ===== SUMMARY ======================================================== -->
+  <h2>&#127891; Summary</h2>
+  <ol>
+    <li><strong>Embedded or server is a choice about <em>who else connects</em>,</strong> not about quality. H2 is one jar and one file; MySQL is a process on a port.</li>
+    <li><strong>The course runs on H2 so that it runs anywhere.</strong> No install, no network, no administrator &mdash; every Session 7 program works on the first day, offline.</li>
+    <li><strong>Only three things change between databases:</strong> the jar, the driver class, and the URL. Your Java stays put.</li>
+    <li><strong>The driver registers itself.</strong> Since JDBC 4 you do not need <code>Class.forName</code>; a jar on the classpath is enough &mdash; but both <code>javac</code> and <code>java</code> need that classpath.</li>
+    <li><strong>An H2 URL is a file path.</strong> <code>jdbc:h2:mem:</code> is memory that dies with the last connection; <code>jdbc:h2:./data/registry</code> is a file that lives on.</li>
+    <li><strong>A file database is locked to one process at a time.</strong> That is why the H2 Console and your program cannot both hold it &mdash; unless you set <code>AUTO_SERVER=TRUE</code>.</li>
+    <li><strong>Never connect an application as root, and never grant more than one database.</strong> The narrowest grant that does the job is the right one.</li>
+    <li><strong>MySQL 8 changed the password rules.</strong> <code>caching_sha2_password</code> is why you need <code>allowPublicKeyRetrieval=true</code> (locally) or TLS (properly).</li>
+    <li><strong>JDBC hides how you talk; it cannot hide what you say.</strong> <code>||</code>, <code>AUTO_INCREMENT</code> and <code>TINYINT(1)</code> are dialect, and one of them fails silently.</li>
+    <li><strong>Keep both connections alive.</strong> The embedded one is your fast, offline test loop; the server is what you deploy. Being able to run the same code against either is the point of the whole API.</li>
+  </ol>
+  <div class="newwords"><b>&#128218; All new words from this guide</b>
+    <dl>
+      <dt>Embedded database</dt><dd>A database engine that runs inside your program, as a library, with no separate server process. H2 is one.</dd>
+      <dt>JDBC URL</dt><dd>The string that names a database and tells <code>DriverManager</code> which driver to use. The <code>jdbc:</code> prefix, then a vendor protocol.</dd>
+      <dt>Driver (JDBC driver)</dt><dd>The vendor's jar that translates <code>java.sql.*</code> calls into a specific database's language.</dd>
+      <dt>Classpath</dt><dd>The list of places the JVM looks for classes and jars. Your driver must be on it to run, and on it again to compile.</dd>
+      <dt>Connector/J</dt><dd>MySQL's official JDBC driver. Driver class <code>com.mysql.cj.jdbc.Driver</code>.</dd>
+      <dt>Port</dt><dd>The number a network service listens on. MySQL's default is 3306; H2's server and console use 9092 and 8082.</dd>
+      <dt>In-memory database</dt><dd>A database that exists only in RAM and vanishes when the last connection closes. Fast, and deliberately temporary.</dd>
+      <dt>File lock</dt><dd>A marker H2 places while a file database is open, preventing a second process from writing it. The cause of "may be already in use".</dd>
+      <dt>GRANT</dt><dd>MySQL's way of giving a user rights, always scoped to particular objects. <code>GRANT ALL ON registry.*</code> is scoped to one database.</dd>
+      <dt>caching_sha2_password</dt><dd>MySQL 8's default authentication plugin. Stronger than the old one, and the reason for the public-key message.</dd>
+      <dt>SQL dialect</dt><dd>The specific spelling of SQL that a database accepts. Standard SQL is the common core; the edges differ.</dd>
+      <dt>utf8mb4</dt><dd>The MySQL character set that stores the full range of Unicode, including emoji. The right default for text.</dd>
+    </dl>
+  </div>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Where this fits</b>
+      Read this alongside <strong>Session 7 &mdash; the JDBC API</strong>, where every idea here is used in a
+      running program, and <strong>Session 8 &mdash; Advanced JDBC</strong>, which adds transactions and
+      connection pooling &mdash; the two things a server database makes urgent and a file database lets you
+      ignore for a while.
+    </div>
+  </div>
+
+  <h3>Read (official &amp; trusted)</h3>
+  <ul>
+    <li><a href="https://h2database.com/html/cheatSheet.html" target="_blank" rel="noopener">H2 &mdash; the official cheat sheet</a>, and the <a href="https://h2database.com/html/features.html" target="_blank" rel="noopener">feature list</a> that documents every URL setting on this page.</li>
+    <li><a href="https://h2database.com/html/tutorial.html" target="_blank" rel="noopener">H2 &mdash; the tutorial</a>, including the Console, from the people who wrote it.</li>
+    <li><a href="https://dev.mysql.com/doc/connector-j/en/" target="_blank" rel="noopener">MySQL Connector/J &mdash; the official documentation</a>, whose configuration section is the authority on every URL parameter.</li>
+    <li><a href="https://dev.mysql.com/doc/refman/8.4/en/" target="_blank" rel="noopener">MySQL 8.4 Reference Manual</a>: <code>CREATE USER</code>, <code>GRANT</code>, and the language differences in Part&nbsp;D.</li>
+    <li><a href="https://docs.oracle.com/javase/tutorial/jdbc/" target="_blank" rel="noopener">Oracle &mdash; the JDBC tutorial</a>, especially "Establishing a Connection" and the <code>DataSource</code> material Session 8 builds on.</li>
+    <li>Book: <em>Java: The Complete Reference</em>, the JDBC chapter &mdash; and read its SQL dialect notes with Part&nbsp;D open beside you.</li>
+  </ul>
+
+
+</main>
+
+<script src="../assets/js/course.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" width="100%" height="100%">
+  <defs>
+    <filter id="pecsShadow" x="-8%" y="-8%" width="116%" height="120%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.10"/>
+    </filter>
+    <marker id="pecsGreen" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981"/>
+    </marker>
+    <marker id="pecsRed" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#ef4444"/>
+    </marker>
+    <marker id="pecsAmber" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#f59e0b"/>
+    </marker>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .card-title { font-family: system-ui, -apple-system, sans-serif; font-size: 13.5px; font-weight: 800; }
+    .box { font-family: ui-monospace, monospace; font-size: 11.5px; font-weight: 700; }
+    .tag { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 700; }
+    .mini { font-family: system-ui, -apple-system, sans-serif; font-size: 10.5px; fill: #475569; }
+    .note { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; fill: #475569; }
+  </style>
+
+  <rect width="900" height="400" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">Wildcards: what you may read from, and what you may write to</text>
+  <text x="30" y="54" class="sub">The spelling of the wildcard decides which direction the basket is allowed to flow.</text>
+
+  <!-- ============================ LEFT: A PRODUCER ============================ -->
+  <g transform="translate(24, 74)">
+    <rect width="412" height="306" rx="10" fill="#f0fdf4" stroke="#a7f3d0" stroke-width="1.5"/>
+    <text x="16" y="28" class="card-title" fill="#047857">? extends Fruit &#8212; a PRODUCER</text>
+    <text x="16" y="48" class="note">You were handed a basket to take fruit OUT of.</text>
+
+    <g filter="url(#pecsShadow)">
+      <rect x="16" y="62" width="380" height="32" rx="6" fill="#ffffff" stroke="#86efac" stroke-width="1.5"/>
+    </g>
+    <text x="206" y="83" class="box" fill="#166534" text-anchor="middle">void read(List&lt;? extends Fruit&gt; basket)</text>
+
+    <text x="16" y="117" class="tag" fill="#64748b">ACCEPTS</text>
+    <rect x="92" y="102" width="96" height="22" rx="5" fill="#ffffff" stroke="#bbf7d0"/>
+    <text x="140" y="117" class="tag" fill="#166534" text-anchor="middle">List&lt;Fruit&gt;</text>
+    <rect x="196" y="102" width="96" height="22" rx="5" fill="#ffffff" stroke="#bbf7d0"/>
+    <text x="244" y="117" class="tag" fill="#166534" text-anchor="middle">List&lt;Apple&gt;</text>
+    <rect x="300" y="102" width="96" height="22" rx="5" fill="#ffffff" stroke="#bbf7d0"/>
+    <text x="348" y="117" class="tag" fill="#166534" text-anchor="middle">List&lt;Banana&gt;</text>
+
+    <!-- read: allowed -->
+    <path d="M 34 157 L 74 157" stroke="#10b981" stroke-width="2.2" marker-start="url(#pecsGreen)"/>
+    <text x="30" y="146" class="tag" fill="#047857">READ</text>
+    <text x="88" y="153" class="box" fill="#166534">Fruit f = basket.get(0);</text>
+    <text x="88" y="169" class="mini">Allowed. Every element here really is a Fruit.</text>
+
+    <!-- add: refused -->
+    <path d="M 74 199 L 34 199" stroke="#ef4444" stroke-width="2.2" stroke-dasharray="5 3"/>
+    <text x="30" y="188" class="tag" fill="#b91c1c">ADD</text>
+    <text x="88" y="195" class="box" fill="#b91c1c">basket.add(new Apple());</text>
+    <text x="88" y="211" class="mini">Refused. Is this an Apple basket, a Banana basket, or neither?</text>
+
+    <text x="16" y="248" class="note" fill="#047857" font-weight="bold">A producer only gives.</text>
+    <text x="16" y="268" class="note">If you had been handed a List&lt;Banana&gt;, that apple would put</text>
+    <text x="16" y="284" class="note">an apple in a banana basket. Java refuses instead of finding out</text>
+    <text x="16" y="300" class="note">later, in front of the customer.</text>
+  </g>
+
+  <!-- ============================ RIGHT: A CONSUMER ============================ -->
+  <g transform="translate(464, 74)">
+    <rect width="412" height="306" rx="10" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+    <text x="16" y="28" class="card-title" fill="#1d4ed8">? super Apple &#8212; a CONSUMER</text>
+    <text x="16" y="48" class="note">You were handed a basket to put apples INTO.</text>
+
+    <g filter="url(#pecsShadow)">
+      <rect x="16" y="62" width="380" height="32" rx="6" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5"/>
+    </g>
+    <text x="206" y="83" class="box" fill="#1e40af" text-anchor="middle">void write(List&lt;? super Apple&gt; basket)</text>
+
+    <text x="16" y="117" class="tag" fill="#64748b">ACCEPTS</text>
+    <rect x="92" y="102" width="96" height="22" rx="5" fill="#ffffff" stroke="#bfdbfe"/>
+    <text x="140" y="117" class="tag" fill="#1e40af" text-anchor="middle">List&lt;Apple&gt;</text>
+    <rect x="196" y="102" width="96" height="22" rx="5" fill="#ffffff" stroke="#bfdbfe"/>
+    <text x="244" y="117" class="tag" fill="#1e40af" text-anchor="middle">List&lt;Fruit&gt;</text>
+    <rect x="300" y="102" width="96" height="22" rx="5" fill="#ffffff" stroke="#bfdbfe"/>
+    <text x="348" y="117" class="tag" fill="#1e40af" text-anchor="middle">List&lt;Object&gt;</text>
+
+    <!-- add: allowed -->
+    <path d="M 74 157 L 34 157" stroke="#10b981" stroke-width="2.2" marker-start="url(#pecsGreen)"/>
+    <text x="30" y="146" class="tag" fill="#047857">ADD</text>
+    <text x="88" y="153" class="box" fill="#1e40af">basket.add(new Apple());</text>
+    <text x="88" y="169" class="mini">Allowed. Everything in there is at least an Apple.</text>
+
+    <!-- read: allowed but blind -->
+    <path d="M 34 199 L 74 199" stroke="#f59e0b" stroke-width="2.2" stroke-dasharray="5 3" marker-start="url(#pecsAmber)"/>
+    <text x="30" y="188" class="tag" fill="#b45309">READ</text>
+    <text x="88" y="195" class="box" fill="#b45309">Object o = basket.get(0);</text>
+    <text x="88" y="211" class="mini">Legal, but only as Object &#8212; you must cast it back yourself.</text>
+
+    <text x="16" y="248" class="note" fill="#1d4ed8" font-weight="bold">A consumer only takes.</text>
+    <text x="16" y="268" class="note">Reading is still legal, but the compiler no longer knows what</text>
+    <text x="16" y="284" class="note">kind of fruit is in the basket. Writing is what the signature was</text>
+    <text x="16" y="300" class="note">written for, and that is the direction it guarantees.</text>
+  </g>
+
+  <text x="450" y="393" class="note" fill="#0f172a" text-anchor="middle"><tspan font-weight="bold">PECS</tspan> &#8212; Producer Extends, Consumer Super. Reads &#8594; &lt;? extends&gt;.  Writes &#8594; &lt;? super&gt;.  Both &#8594; no wildcard at all.</text>
+</svg>
