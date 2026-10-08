@@ -106,8 +106,8 @@
 
   <h3>Drill 1 &mdash; The Forgotten Customer</h3>
   <p>The office writes three names into a <code>HashSet</code> and gets three customers back. There are only two.</p>
-  <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D1_SetCase.java" from="33" to="43" hl="5" title="Drill 1 — the faulty method"-->
-<pre class="numbered" data-file="Drill 1 — the faulty method" data-hl="-27" style="counter-reset:line 32"><code class="lang-java">    private static void broken() {
+  <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D1_SetCase.java" from="33" to="43" hl="3,5" title="Drill 1 — the faulty method"-->
+<pre class="numbered" data-file="Drill 1 — the faulty method" data-hl="3,5" style="counter-reset:line 32"><code class="lang-java">    private static void broken() {
         Set&lt;String&gt; names = new HashSet&lt;&gt;();
         names.add("Alice");
         names.add("Bob");
@@ -141,7 +141,7 @@ FIXED - normalise every name on the way in
       <p><strong>The Bug:</strong> a <code>HashSet</code> decides "have I seen this already?" with <code>hashCode()</code> and <code>equals()</code>. For a <code>String</code> those compare the characters one by one, so <code>"Alice"</code> and <code>"alice"</code> are not equal and do not share a bucket. Case is part of the value, always &mdash; the set is not broken, it is answering the question it was asked.</p>
       <p><strong>The Fix:</strong> agree a normal form and apply it on the way in. And notice the trap in the fix: a lookup has to be normalised the same way, or <code>contains()</code> starts lying to you.</p>
       <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D1_SetCase.java" from="46" to="59" hl="3,5,11,12" title="Drill 1 — normalise on the way in"-->
-<pre class="numbered" data-file="Drill 1 — normalise on the way in" data-hl="-42,-40,-34,-33" style="counter-reset:line 45"><code class="lang-java">    private static void fixed() {
+<pre class="numbered" data-file="Drill 1 — normalise on the way in" data-hl="3,5,11,12" style="counter-reset:line 45"><code class="lang-java">    private static void fixed() {
         Set&lt;String&gt; names = new HashSet&lt;&gt;();
         names.add("Alice".toLowerCase());
         names.add("Bob".toLowerCase());
@@ -162,7 +162,7 @@ FIXED - normalise every name on the way in
   <h3>Drill 2 &mdash; The Basket That Refuses the Apple</h3>
   <p>This one does not even start. It is a <strong>compile error</strong>, which is the best kind: the compiler found it before a customer did.</p>
   <!--@code src="code/s06-review-1/snippets/Drill2_Broken.java.txt" from="15" to="25" hl="9" title="Drill 2 — the version that will not compile"-->
-<pre class="numbered" data-file="Drill 2 — the version that will not compile" data-hl="-5" style="counter-reset:line 14"><code class="lang-java">public class Drill2_Broken {
+<pre class="numbered" data-file="Drill 2 — the version that will not compile" data-hl="9" style="counter-reset:line 14"><code class="lang-java">public class Drill2_Broken {
 
     static class Fruit { }
 
@@ -201,7 +201,7 @@ in particular - that is exactly what '? super Apple' promises.</div>
       <p><strong>The Bug:</strong> <code>? extends Fruit</code> promises only that everything in the basket <em>is</em> a <code>Fruit</code>. It does not promise what the basket can <em>hold</em>: the caller may have passed a <code>List&lt;Banana&gt;</code>. Adding an apple to a banana basket is a category error, so the compiler refuses rather than discovering it at runtime.</p>
       <p><strong>The Fix:</strong> match the wildcard to the direction you need. Producer Extends, Consumer Super &mdash; reads take <code>extends</code>, writes take <code>super</code>.</p>
       <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D2_Pecs.java" from="36" to="54" hl="5,17" title="Drill 2 — both directions, correctly written"-->
-<pre class="numbered" data-file="Drill 2 — both directions, correctly written" data-hl="-30,-18" style="counter-reset:line 35"><code class="lang-java">    /**
+<pre class="numbered" data-file="Drill 2 — both directions, correctly written" data-hl="5,17" style="counter-reset:line 35"><code class="lang-java">    /**
      * PRODUCER — reads every fruit out of the basket and hands them to the caller.
      * Accepts List&amp;lt;Fruit&amp;gt;, List&amp;lt;Apple&amp;gt;, List&amp;lt;Banana&amp;gt; ... any subtype.
      */
@@ -227,7 +227,7 @@ in particular - that is exactly what '? super Apple' promises.</div>
   <h3>Drill 3 &mdash; The Report Nobody Received</h3>
   <p>The method writes a line and returns. No exception. The file is empty. This one runs, so you can watch it happen.</p>
   <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D3_LeakyWriter.java" from="40" to="48" hl="4,7" title="Drill 3 — written, but never closed"-->
-<pre class="numbered" data-file="Drill 3 — written, but never closed" data-hl="-35,-32" style="counter-reset:line 39"><code class="lang-java">    private static void broken() throws Exception {
+<pre class="numbered" data-file="Drill 3 — written, but never closed" data-hl="4,7" style="counter-reset:line 39"><code class="lang-java">    private static void broken() throws Exception {
         Path file = SANDBOX.resolve("drill3_leaky.log");
 
         FileWriter writer = new FileWriter(file.toFile());
@@ -258,8 +258,8 @@ FIXED - try-with-resources closes it for you
     <div>
       <p><strong>The Bug:</strong> <code>FileWriter</code> is buffered. <code>write()</code> means "I have taken your text", not "your text is on disk". Only <code>close()</code> &mdash; which flushes first &mdash; gets it there. And the file handle stays open the whole time, which is the leak.</p>
       <p><strong>The Fix:</strong> try-with-resources. It calls <code>close()</code> on the way out of the block, including when an exception is thrown, which is the path a hand-written <code>close()</code> in the happy case always gets wrong.</p>
-      <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D3_LeakyWriter.java" from="60" to="74" hl="3" title="Drill 3 — try-with-resources"-->
-<pre class="numbered" data-file="Drill 3 — try-with-resources" data-hl="-56" style="counter-reset:line 59"><code class="lang-java">    private static void fixed() throws Exception {
+      <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D3_LeakyWriter.java" from="60" to="74" hl="4,7" title="Drill 3 — try-with-resources"-->
+<pre class="numbered" data-file="Drill 3 — try-with-resources" data-hl="4,7" style="counter-reset:line 59"><code class="lang-java">    private static void fixed() throws Exception {
         Path file = SANDBOX.resolve("drill3_fixed.log");
 
         try (FileWriter writer = new FileWriter(file.toFile())) {
@@ -281,7 +281,7 @@ FIXED - try-with-resources closes it for you
   <h3>Drill 4 &mdash; The Frozen Kitchen</h3>
   <p>Four cooks, four ovens' worth of work, and one lock. Nothing crashes. It is just slow &mdash; four times too slow.</p>
   <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D4_SleepUnderLock.java" from="78" to="92" hl="4" title="Drill 4 — the sleep sits inside the lock"-->
-<pre class="numbered" data-file="Drill 4 — the sleep sits inside the lock" data-hl="-73" style="counter-reset:line 77"><code class="lang-java">        /** BROKEN: takes the lock, then sleeps while still holding it. */
+<pre class="numbered" data-file="Drill 4 — the sleep sits inside the lock" data-hl="4" style="counter-reset:line 77"><code class="lang-java">        /** BROKEN: takes the lock, then sleeps while still holding it. */
         static void slow() throws InterruptedException {
             synchronized (OVEN) {
                 Thread.sleep(BAKE_MS);      // the lock is held for the whole 300 ms
@@ -303,11 +303,11 @@ FIXED - try-with-resources closes it for you
 Doing it at the same time should cost about 300 ms, not 1200 ms.
 
 BROKEN - the sleep is INSIDE the lock
-  four cooks finished in 1225 ms
+  four cooks finished in 1217 ms
   nobody crashed and the answer is correct - it is just serialised
 
 FIXED - the sleep is OUTSIDE the lock
-  four cooks finished in 301 ms
+  four cooks finished in 302 ms
 
 Same work, same four cooks. A lock protects data, not time:
 do the slow work first, then lock only the few lines that touch
@@ -326,7 +326,7 @@ the shared value.</div>
   <h3>Drill 5 &mdash; The Standoff</h3>
   <p>Two chefs, two utensils, two different orders of picking them up. This fault is different from the others: it does not end. The program below would hang forever, so it carries its own watchdog &mdash; the JVM can <em>see</em> a deadlock even though it cannot break one.</p>
   <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D5_LockOrderDeadlock.java" from="66" to="77" hl="7" title="Drill 5a — Ada takes pot then spoon; Ben takes spoon then pot"-->
-<pre class="numbered" data-file="Drill 5a — Ada takes pot then spoon; Ben takes spoon then pot" data-hl="-58" style="counter-reset:line 65"><code class="lang-java">    private static void cook(String chef, String first, Object firstLock,
+<pre class="numbered" data-file="Drill 5a — Ada takes pot then spoon; Ben takes spoon then pot" data-hl="7" style="counter-reset:line 65"><code class="lang-java">    private static void cook(String chef, String first, Object firstLock,
                              String second, Object secondLock) {
         System.out.println(chef + " picks up the " + first + ".");
         synchronized (firstLock) {
@@ -344,8 +344,8 @@ the shared value.</div>
 
 Chef Ben picks up the spoon.
 Chef Ada picks up the pot.
-Chef Ben now needs the pot ...
 Chef Ada now needs the spoon ...
+Chef Ben now needs the pot ...
 
 Watchdog: DEADLOCK - 2 threads will never move again:
   Chef Ada is BLOCKED, waiting for the lock held by Chef Ben
@@ -360,7 +360,7 @@ The JVM can see it, but it cannot break the cycle - so we stop here.</div>
       <p><strong>The Bug:</strong> a deadlock needs a <strong>circular wait</strong>. Ada holds the pot and wants the spoon; Ben holds the spoon and wants the pot. Neither will ever let go, so neither will ever move &mdash; and nothing is thrown, because from the JVM's point of view both threads are doing exactly what they were told.</p>
       <p><strong>The Fix:</strong> one agreed order, followed everywhere. Both chefs name the pot first, so whoever gets it simply finishes and the other waits at the <em>first</em> lock instead of being stuck at the second. One rule, and a cycle becomes impossible.</p>
       <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D5_FixedLockOrder.java" from="23" to="38" hl="6,7" title="Drill 5b — the same two chefs, one order"-->
-<pre class="numbered" data-file="Drill 5b — the same two chefs, one order" data-hl="-16,-15" style="counter-reset:line 22"><code class="lang-java">    public static void main(String[] args) throws InterruptedException {
+<pre class="numbered" data-file="Drill 5b — the same two chefs, one order" data-hl="6,7" style="counter-reset:line 22"><code class="lang-java">    public static void main(String[] args) throws InterruptedException {
         System.out.println("Drill 5b - one agreed lock order (pot first, always)");
         System.out.println();
 
@@ -380,14 +380,14 @@ The JVM can see it, but it cannot break the cycle - so we stop here.</div>
       <!--@output project="code/s06-review-1" main="com.aptech.s06.drills.D5_FixedLockOrder"-->
 <div class="terminal-output">Drill 5b - one agreed lock order (pot first, always)
 
-Chef Ben wants the pot.
 Chef Ada wants the pot.
-Chef Ben holds the pot, now needs the spoon ...
-Chef Ben is cooking.
-Chef Ben puts everything down.
+Chef Ben wants the pot.
 Chef Ada holds the pot, now needs the spoon ...
 Chef Ada is cooking.
 Chef Ada puts everything down.
+Chef Ben holds the pot, now needs the spoon ...
+Chef Ben is cooking.
+Chef Ben puts everything down.
 
 Both chefs finished and the program ended on its own.
 One order, followed everywhere, and a circular wait cannot form.</div>
@@ -438,7 +438,7 @@ The same fault as a HashMap key - looks it up with an equal key:
       <p><strong>The Bug:</strong> with no <code>equals()</code>, a class inherits <em>identity</em> comparison from <code>Object</code> &mdash; "is this the same object in memory?", not "is this the same student?". With no <code>hashCode()</code> the two objects usually land in different buckets, so <code>equals()</code> is not even consulted. The <code>HashMap</code> line shows the same fault wearing a different hat: it cannot find the value it just stored.</p>
       <p><strong>The Fix:</strong> honour the contract. <code>equals()</code> decides what "the same" means, <code>hashCode()</code> must agree with it. Note <em>which</em> field this course treats as identity &mdash; the id, not the name &mdash; because that is a business decision, not a Java one.</p>
       <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D6_EqualsHashCode.java" from="93" to="106" hl="8,13" title="Drill 6 — the contract, honoured"-->
-<pre class="numbered" data-file="Drill 6 — the contract, honoured" data-hl="-84,-79" style="counter-reset:line 92"><code class="lang-java">        @Override public boolean equals(Object other) {
+<pre class="numbered" data-file="Drill 6 — the contract, honoured" data-hl="8,13" style="counter-reset:line 92"><code class="lang-java">        @Override public boolean equals(Object other) {
             if (this == other) {
                 return true;
             }
@@ -459,7 +459,7 @@ The same fault as a HashMap key - looks it up with an equal key:
   <h3>Drill 7 &mdash; The Interrupt Nobody Heard</h3>
   <p>A worker is asked to stop. It carries on to the end of its list and reports success. This is how Cancel buttons quietly stop working.</p>
   <!--@code src="code/s06-review-1/src/main/java/com/aptech/s06/drills/D7_SwallowedInterrupt.java" from="44" to="67" hl="8,9,10,11" title="Drill 7 — the two ways to catch an InterruptedException"-->
-<pre class="numbered" data-file="Drill 7 — the two ways to catch an InterruptedException" data-hl="-35,-34,-33,-32" style="counter-reset:line 43"><code class="lang-java">    private static int run(boolean swallow) throws InterruptedException {
+<pre class="numbered" data-file="Drill 7 — the two ways to catch an InterruptedException" data-hl="8,9,10,11" style="counter-reset:line 43"><code class="lang-java">    private static int run(boolean swallow) throws InterruptedException {
         final int[] completed = {0};
 
         Thread worker = new Thread(() -&gt; {
@@ -495,7 +495,7 @@ BROKEN - the catch block swallows the InterruptedException
   -&gt; it ignored the stop request and ran the job to the very end.
 
 FIXED - the catch block restores the flag and returns
-  steps completed in total: 2 of 10
+  steps completed in total: 1 of 10
   -&gt; it stopped early, where it was asked to. The exact number of
      steps depends on timing; that it stopped early does not.</div>
 <!--@end-->
@@ -872,7 +872,7 @@ straight after start(), alive = 3 of 3
    finished: fees   (on thread worker-fees)
 after join(), alive = 0 of 3
 
-All three ran at the same time: the whole batch took about 602 ms,
+All three ran at the same time: the whole batch took about 601 ms,
 which is the time of the SLOWEST job (600 ms), not the sum of all three.</div>
 <!--@end-->
     </div>
@@ -912,8 +912,8 @@ which is the time of the SLOWEST job (600 ms), not the sum of all three.</div>
 4 chefs x 100,000 orders = 400,000 expected
 
 BEFORE - a plain int with count++ spelled out:
-  actual       : 113,056
-  lost updates : 286,944
+  actual       : 117,404
+  lost updates : 282,596
   -&gt; wrong, and it will be a different wrong number next run.
 
 AFTER - LongAdder, one indivisible increment:
@@ -1278,7 +1278,7 @@ FAIL  F3  Session 3 - the report really reaches the disk
 FAIL  F4  Session 4 - countAlive follows the workers' life
       -&gt; threads that have never been started are not alive
 FAIL  F5  Session 5 - the files are processed at the same time
-      -&gt; 3 files of 20 lines x 20 ms took 1235 ms - one after another is about 1200 ms. Are they overlapping?
+      -&gt; 3 files of 20 lines x 20 ms took 1232 ms - one after another is about 1200 ms. Are they overlapping?
 
 0 passed, 5 failed.
 Repair the FAILs above one at a time, then run SelfCheck again.</div>
@@ -1700,7 +1700,7 @@ FAULT 2 - a writer that is never closed
   fixed : 10 bytes on disk after close()   PASS - try-with-resources flushed it
 
 FAULT 3 - a shared int with count++ spelled out
-  broken: 135,826 of 400,000   &lt;- lost 264,174 updates
+  broken: 116,289 of 400,000   &lt;- lost 283,711 updates
   fixed : 400,000 of 400,000   PASS - LongAdder lost nothing</div>
 <!--@end-->
         </div>

@@ -1,0 +1,112 @@
+package com.aptech.s07;
+
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+/**
+ * E07 — the MySQL / PostgreSQL comparison, and what actually changes when the database is on a server.
+ *
+ * <p><strong>This program does not connect to MySQL.</strong> The course runs on an embedded
+ * H2 database precisely so that it needs no server and no network — see the H2 &amp; MySQL guide.
+ * What this program does is show, honestly, the exact three things that would change, and then
+ * demonstrate the point both databases agree on: your Java does not.
+ *
+ * <p>To make that concrete rather than asserted, it pulls the same table description out of
+ * {@code DatabaseMetaData} twice: once as H2 reports it, and once translated the way MySQL would
+ * report the same logical table. The lines that differ are the whole of Part D of the guide.
+ */
+public class E07_MySqlComparison {
+
+    public static void main(String[] args) throws SQLException {
+
+        System.out.println("E07 - the same job against H2 and against MySQL");
+
+        System.out.println(Db.rule("the only three things that change"));
+        System.out.printf("  %-20s %-32s %s%n", "", "H2 (embedded)", "MySQL (server)");
+        System.out.printf("  %-20s %-32s %s%n", "1. the jar",
+                "h2-2.3.232.jar", "mysql-connector-j-9.1.0.jar");
+        System.out.printf("  %-20s %-32s %s%n", "2. the driver class",
+                "org.h2.Driver", "com.mysql.cj.jdbc.Driver");
+        System.out.printf("  %-20s %-32s %s%n", "3. the URL",
+                "jdbc:h2:./data/registry", "jdbc:mysql://localhost:3306/registry");
+        System.out.println();
+        System.out.println("  ...and the credentials: 'sa' with no password, versus a real user.");
+        System.out.println("  Everything else — Connection, Statement, ResultSet, PreparedStatement,");
+        System.out.println("  DatabaseMetaData — is byte-for-byte the same code.");
+
+        System.out.println(Db.rule("the MySQL URL, and the three parameters it wants"));
+        System.out.println("  " + Db.MYSQL_URL);
+        System.out.println();
+        System.out.println("    sslMode=DISABLED          do not require TLS (fine for localhost)");
+        System.out.println("    allowPublicKeyRetrieval   needed for the FIRST login to a MySQL 8 user,");
+        System.out.println("                              whose caching_sha2_password asks for a key");
+        System.out.println("    serverTimezone=UTC        tells the driver what zone the timestamps are in");
+        System.out.println();
+        System.out.println("  NOTE: printing this URL connects to nothing. It is shown so you can see");
+        System.out.println("  the shape — the guide walks through actually running it.");
+
+        System.out.println(Db.rule("what changes because the database is now on a SERVER"));
+        System.out.println("  Embedded (H2)                          Server (MySQL)");
+        System.out.println("  -----------------------------          -----------------------------");
+        System.out.println("  runs inside your program               runs as its own process");
+        System.out.println("  one file you can copy                  data lives on the server's disk");
+        System.out.println("  one process may open it                many clients connect at once");
+        System.out.println("  you are the administrator              someone grants you a user");
+        System.out.println("  no credentials worth having            a password, and only the rights you need");
+        System.out.println("  'the server is down' cannot happen     it is now a failure mode you must handle");
+
+        // ---------------------------------------------------------------------
+        //  The part that does NOT change: reading the schema through JDBC
+        // ---------------------------------------------------------------------
+        try (Connection c = Db.open()) {
+            DatabaseMetaData md = c.getMetaData();
+
+            System.out.println(Db.rule("the SAME DatabaseMetaData call, whatever the database"));
+            System.out.println("  c.getMetaData().getColumns(null, null, \"STUDENTS\", null)");
+            System.out.println();
+            System.out.println("  H2 reports the students table like this:");
+            System.out.printf("    %-12s %-14s%n", "COLUMN", "TYPE_NAME");
+
+            try (ResultSet rs = md.getColumns(null, null, "STUDENTS", null)) {
+                while (rs.next()) {
+                    String col  = rs.getString("COLUMN_NAME");
+                    String type = rs.getString("TYPE_NAME");
+                    System.out.printf("    %-12s %-14s%s%n", col, type, mysqlEquivalent(col, type));
+                }
+            }
+        }
+
+        System.out.println(Db.rule("the lines that would differ on a real MySQL server"));
+        System.out.println("  identity column   GENERATED BY DEFAULT AS IDENTITY  ->  AUTO_INCREMENT");
+        System.out.println("  boolean           BOOLEAN                           ->  TINYINT(1)");
+        System.out.println("  long text         CLOB                              ->  TEXT");
+        System.out.println("  date and time     TIMESTAMP                         ->  DATETIME");
+        System.out.println("  join strings      a || b                            ->  CONCAT(a, b)");
+        System.out.println("                     (on MySQL, || means OR — it fails quietly, not loudly)");
+        System.out.println("  quote a name      \"full name\"                       ->  `full name`");
+
+        System.out.println(Db.rule("the point"));
+        System.out.println("  The three things at the top of this program change.");
+        System.out.println("  The DatabaseMetaData call above does not — it is the same line of Java");
+        System.out.println("  against both databases, and it returns the same shape of answer.");
+        System.out.println("  That is what JDBC buys you, and it is why this course can teach the API");
+        System.out.println("  once with an embedded database and still prepare you for a server.");
+    }
+
+    /** Adds a MySQL-flavoured note beside an H2 type, or nothing when they already agree. */
+    private static String mysqlEquivalent(String column, String h2Type) {
+        return switch (h2Type.toUpperCase()) {
+            case "INTEGER"   -> column.equalsIgnoreCase("ID")
+                                    ? "   (MySQL: INT AUTO_INCREMENT)"
+                                    : "   (same)";
+            case "BOOLEAN"   -> "   (MySQL: TINYINT(1) — no real boolean)";
+            case "TIMESTAMP" -> "   (MySQL: DATETIME)";
+            case "VARCHAR"   -> "   (same)";
+            case "DECIMAL"   -> "   (same — never use DOUBLE for money)";
+            default          -> "";
+        };
+    }
+}

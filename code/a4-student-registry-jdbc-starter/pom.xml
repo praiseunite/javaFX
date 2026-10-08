@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Assignment A4 — Student Registry on H2.
+
+  Open this folder in IntelliJ (File → Open → select this folder), then run SelfCheck.java.
+  The H2 driver is already in lib/; on first open add it with:
+      File → Project Structure → Libraries → + → Java → select lib/h2-2.3.232.jar
+
+  Complete src/main/java/com/aptech/a4/StudentRegistry.java, then run SelfCheck.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.aptech</groupId>
+    <artifactId>a4-student-registry-jdbc</artifactId>
+    <version>1.0</version>
+    <name>Assignment A4 - Student Registry on H2</name>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.3.232</version>
+        </dependency>
+    </dependencies>
+</project>

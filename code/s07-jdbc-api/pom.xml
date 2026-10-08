@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Session 7 — The JDBC API: examples, guided lab and practice solutions.
+
+  Open this folder in IntelliJ (File → Open → select this folder), then run any class
+  with the green ▶. The H2 driver is already in lib/ — IntelliJ picks up jars placed there
+  only if you add them, so on first open do:
+      File → Project Structure → Libraries → + → Java → select lib/h2-2.3.232.jar
+  Maven users get it automatically from the <dependency> below.
+
+  Every program runs against an embedded H2 database in ./data/ — no server, no network.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.aptech</groupId>
+    <artifactId>s07-jdbc-api</artifactId>
+    <version>1.0</version>
+    <name>Session 7 - The JDBC API</name>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.3.232</version>
+        </dependency>
+        <!-- Shown for reference only: connecting needs a running server, which the
+             course does not require. See E07_MySqlComparison.java. -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <version>9.1.0</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+</project>

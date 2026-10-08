@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session 7 — The JDBC API</title>
+  <meta name="description" content="Session 7 of Building Rich Java Applications with JavaFX and AI Tools: the JDBC API. What JDBC is and the architecture, two- and three-tier processing models, the four driver types, the six steps of a JDBC program, database meta information, parameterized queries and the SQL-injection demo that motivates them — every program run against an embedded H2 database, with real output.">
+  <link rel="stylesheet" href="../assets/css/course.css">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "s07";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== 1. HERO ========================================================= -->
+  <section class="hero">
+    <span class="tag">Week 2 &middot; Day 3 &middot; Session 7 &middot; 2 hours in class</span>
+    <h1>Session 7 &mdash; The JDBC API</h1>
+    <p class="lede">
+      Your Student Registry has lived in an <code>ArrayList</code> since Session 1, which means it
+      disappears every time the program closes. Today you give it a <strong>database</strong> &mdash; a real
+      table on disk, reached through <strong>JDBC</strong>, the one API Java uses to talk to every database
+      there is. You will learn the architecture, the six steps every JDBC program follows, how to read a
+      database's own description of itself, and the single habit &mdash; the parameterized query &mdash; that
+      separates code that is safe from code that is one bad input away from disaster.
+    </p>
+    <div class="meta">
+      <span>&#128218; Learner's Guide: SG &middot; XP &middot; TG &mdash; Session 7</span>
+      <span>&#9201; ~2 hours + practice at home</span>
+      <span>&#9989; Before this: Sessions 1&ndash;6</span>
+      <span>&#128203; Assignment A4 &mdash; starts today</span>
+    </div>
+  </section>
+
+  <!-- ===== 2. OBJECTIVES =================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this session you can&hellip;</b>
+    <ol>
+      <li><strong>Explain</strong> what JDBC is, and <strong>draw</strong> the architecture from your code down to the database, naming who owns each layer.</li>
+      <li><strong>Distinguish</strong> a two-tier design from a three-tier one, and <strong>say</strong> why a DAO is worth the extra class.</li>
+      <li><strong>Name</strong> the four driver types, and <strong>explain</strong> why a modern program only ever meets type 4.</li>
+      <li><strong>Write</strong> the six steps of a JDBC program in order, and <strong>point to</strong> the three that hold a resource.</li>
+      <li><strong>Use</strong> try-with-resources so every <code>Connection</code>, <code>Statement</code> and <code>ResultSet</code> is closed on every path.</li>
+      <li><strong>Read</strong> a database's structure at runtime with <code>DatabaseMetaData</code>, and one query's shape with <code>ResultSetMetaData</code>.</li>
+      <li><strong>Write</strong> a <code>PreparedStatement</code> with <code>?</code> parameters, and <strong>read back</strong> a database-generated key.</li>
+      <li><strong>Demonstrate</strong> a SQL-injection attack on a concatenated query, and <strong>defeat</strong> it with a parameter.</li>
+      <li><strong>Describe</strong> what changes &mdash; and what does not &mdash; when the database is MySQL on a server instead of embedded H2.</li>
+    </ol>
+  </div>
+
+  <!-- ===== 3. TABLE OF CONTENTS ============================================ -->
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== 5. ROADMAP ====================================================== -->
+  <h2>Your Roadmap for Today</h2>
+  <div class="roadmap">
+    <a href="#part-1-what-jdbc-is">Part 1: What JDBC Is</a>
+    <a href="#part-2-models">Part 2: Processing Models</a>
+    <a href="#part-3-drivers">Part 3: Driver Types</a>
+    <a href="#part-4-steps">Part 4: The Six Steps</a>
+    <a href="#part-5-metadata">Part 5: Database Meta Information</a>
+    <a href="#part-6-prepared">Part 6: Parameterized Queries</a>
+    <a href="#part-7-real-world">Part 7: Databases in the Real World</a>
+    <a href="#lab-registry">Guided Lab: The Registry</a>
+  </div>
+
+  <!-- ===== 6. WHY THIS MATTERS ============================================= -->
+  <h2>Why This Matters</h2>
+  <p>
+    Every program you have written so far forgets everything the moment it stops. The lists, the maps, the
+    tallies &mdash; all of it lives in memory, and memory is gone when the process ends. That is fine for a
+    calculation. It is useless for a registry, an inventory, an account, or anything a business actually
+    keeps. <strong>Persistence</strong> is the difference, and a database is how Java does it.
+  </p>
+  <p>
+    <strong>JDBC</strong> &mdash; Java Database Connectivity &mdash; is the API in the JDK for talking to a
+    database. Its one great idea is that you write your code against an <em>interface</em>, and a
+    vendor-specific <em>driver</em> does the actual talking. Learn JDBC once and you can point it at H2, MySQL,
+    PostgreSQL, Oracle or SQLite &mdash; the same code, a different URL. That is why this session teaches the
+    API and not "how to use H2": the API is the transferable skill.
+  </p>
+
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; the wall socket</b>
+      JDBC is the wall socket. Your appliance has a standard plug, and it does not know or care whether the
+      electricity behind the socket comes from a coal plant, a dam or a solar farm &mdash; the socket is the
+      agreed interface, and the power company's equipment is the "driver" on the other side of it. Change
+      supplier and you do not rewire the appliance. Change database and you do not rewrite the program:
+      you change the plug it connects through, which in JDBC is one line &mdash; the URL.
+    </div>
+  </div>
+
+  <!-- ===== 7. PART 1 — WHAT JDBC IS ======================================== -->
+  <h2 id="part-1-what-jdbc-is"><span class="eyebrow">Part 1 of 7</span> What JDBC Is, and the Architecture</h2>
+  <p>
+    JDBC is a stack of layers. Your code sits at the top and talks only to interfaces in
+    <code>java.sql.*</code>. Underneath, <code>DriverManager</code> reads your URL and picks a driver; the
+    driver speaks the database's own language; and the database does the work. The crucial thing is
+    <strong>where the line is drawn</strong>: everything above the driver is the same for every database in
+    the world.
+  </p>
+
+  <div style="text-align:center;margin:1.5rem 0">
+    <img src="../assets/img/diagrams/s07_jdbc_architecture.svg" alt="Five stacked layers — your application, the JDBC API java.sql.*, DriverManager, the JDBC driver, and the database — with a right-hand column naming who writes each: you, the JDK, the JDK, the database vendor, and whoever runs the database." style="max-width:100%;height:auto">
+    <p class="text-sm text-faint" style="margin-top:.5rem">Figure 1 &mdash; who owns each layer. You touch only the top one.</p>
+  </div>
+
+  <p>
+    Read the figure top to bottom and notice the "stable line". Your application and the
+    <code>java.sql.*</code> interfaces never change, whatever database you use. The driver and the database
+    below the line are swappable. <strong>Swapping them is a configuration change, not a code change</strong>
+    &mdash; and that promise is the whole reason JDBC exists.
+  </p>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      You program against <code>java.sql.*</code> &mdash; <code>Connection</code>, <code>Statement</code>,
+      <code>ResultSet</code>, <code>PreparedStatement</code>. These are <em>interfaces</em>. The driver
+      supplies the classes that implement them, but you never name those classes in your code. That is why
+      the same program compiles and runs against any database: it depends on the interface, not the
+      implementation.
+    </div>
+  </div>
+
+  <!-- ===== 8. PART 2 — PROCESSING MODELS =================================== -->
+  <h2 id="part-2-models"><span class="eyebrow">Part 2 of 7</span> Processing Models: Two-Tier and Three-Tier</h2>
+  <p>
+    The manual names two "processing models". The difference is not in JDBC &mdash; both use the same
+    <code>Connection</code> and <code>Statement</code> &mdash; it is in <strong>where the SQL lives</strong>.
+  </p>
+  <ul>
+    <li><strong>Two-tier:</strong> application &rarr; database. The SQL is written inline, in whatever method happens to need it. Quick to write, and fine for a tiny program.</li>
+    <li><strong>Three-tier:</strong> application &rarr; <strong>DAO</strong> &rarr; database. The SQL lives in one class &mdash; a <em>Data Access Object</em> &mdash; that knows only about the table. Callers ask for objects and never see a <code>ResultSet</code>.</li>
+  </ul>
+  <p>
+    The program below runs the same query both ways. Watch what happens the second time the "honours
+    students" list is needed: the two-tier version copies the SQL; the three-tier version calls a method.
+  </p>
+  <!--@code src="code/s07-jdbc-api/src/main/java/com/aptech/s07/E02_ProcessingModels.java" from="103" to="134" hl="2,8" title="E02 — the DAO owns the SQL; callers get objects"-->
+<pre class="numbered" data-file="E02 — the DAO owns the SQL; callers get objects" data-hl="2,8" style="counter-reset:line 102"><code class="lang-java">    static class StudentDao {
+        private final Connection c;
+
+        StudentDao(Connection c) { this.c = c; }
+
+        List&lt;Student&gt; findByMinMark(double min) throws SQLException {
+            String sql = "SELECT id, name, email, mark FROM students WHERE mark &gt;= ? ORDER BY mark DESC";
+            List&lt;Student&gt; out = new ArrayList&lt;&gt;();
+            try (PreparedStatement ps = c.prepareStatement(sql)) {
+                ps.setDouble(1, min);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        out.add(new Student(rs.getInt("id"), rs.getString("name"),
+                                            rs.getString("email"), rs.getDouble("mark")));
+                    }
+                }
+            }
+            return out;
+        }
+
+        /** Returns null when there is no such row — not an exception. Absence is normal. */
+        Student findById(int id) throws SQLException {
+            String sql = "SELECT id, name, email, mark FROM students WHERE id = ?";
+            try (PreparedStatement ps = c.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next()
+                            ? new Student(rs.getInt("id"), rs.getString("name"),
+                                          rs.getString("email"), rs.getDouble("mark"))
+                            : null;
+                }
+            }</code></pre>
+<!--@end-->
+  <!--@output project="code/s07-jdbc-api" main="com.aptech.s07.E02_ProcessingModels"-->
+<div class="terminal-output">E02 - two processing models: two-tier and three-tier
+
+=== two-tier - SQL written where it is needed ===================
+  Dennis Ritchie   dennis@example.com        97.25
+  Katherine Johnson katherine@example.com     95.75
+  Grace Hopper     grace@example.com         91.00
+  Margaret Hamilton margaret@example.com      89.00
+  Ada Lovelace     ada@example.com           88.50
+  Barbara Liskov   barbara@example.com       84.50
+  Ken Thompson     ken@example.com           82.00
+  ...and if the office asks for this list again, the SQL is copied.
+
+=== three-tier - a DAO owns the SQL =============================
+  honours students (mark &gt;= 80):
+    Dennis Ritchie   dennis@example.com        97.25
+    Katherine Johnson katherine@example.com     95.75
+    Grace Hopper     grace@example.com         91.00
+    Margaret Hamilton margaret@example.com      89.00
+    Ada Lovelace     ada@example.com           88.50
+    Barbara Liskov   barbara@example.com       84.50
+    Ken Thompson     ken@example.com           82.00
+  and the same query again, one call:
+    7 rows, no SQL repeated
+  lookup one student by id:
+    Ada Lovelace     ada@example.com           88.50
+  a student who does not exist:
+    null
+
+=== the difference, in one line =================================
+  Two-tier:   if you need "the honours students" twice, you write
+              the WHERE clause twice - and fix it twice.
+  Three-tier: you write it once, in the DAO, and call it twice.
+  The database cannot tell the difference. Your next change can.</div>
+<!--@end-->
+
+  <div class="callout callout--note"><span class="callout__i">&#128221;</span>
+    <div class="callout__b"><b>Note &mdash; why the DAO wins as soon as the program grows</b>
+      In the two-tier version, the WHERE clause that defines "honours" is copied wherever it is needed. The
+      day the pass mark changes, you must find every copy. In the three-tier version it is written once, in
+      the DAO, and changed once. The database cannot tell the two apart &mdash; but your future self can.
+      This is the design you will use for Assignment A4.
+    </div>
+  </div>
+
+  <!-- ===== 9. PART 3 — DRIVER TYPES ======================================== -->
+  <h2 id="part-3-drivers"><span class="eyebrow">Part 3 of 7</span> The Four Driver Types</h2>
+  <p>
+    JDBC drivers come in four types. The number is <strong>not</strong> a quality ranking &mdash; it counts
+    how much extra software sits between your Java and the database. The less there is, the fewer things to
+    install and break, which is why every driver you will actually use today is type 4.
+  </p>
+
+  <div style="text-align:center;margin:1.5rem 0">
+    <img src="../assets/img/diagrams/s07_driver_types.svg" alt="Four cards: Type 1 JDBC-ODBC bridge (removed in Java 8), Type 2 Native-API (needs a native library on every client), Type 3 Network protocol (needs a middleware server), Type 4 Thin driver (pure Java, just the jar) — which is what H2 and MySQL Connector/J are." style="max-width:100%;height:auto">
+    <p class="text-sm text-faint" style="margin-top:.5rem">Figure 2 &mdash; the four types, and the one that matters.</p>
+  </div>
+
+  <p>
+    Rather than take that on faith, <code>E03</code> asks the JVM which drivers it has loaded, then asks the
+    live connection what it is. The answer is evidence, not a claim:
+  </p>
+  <!--@output project="code/s07-jdbc-api" main="com.aptech.s07.E03_DriverTypes"-->
+<div class="terminal-output">E03 - the four JDBC driver types
+
+=== drivers registered in this JVM right now ====================
+  org.h2.Driver                                  v2.3
+  com.mysql.cj.jdbc.Driver                       v9.1
+  2 driver(s) — one jar on the classpath, and nothing to load by hand.
+
+=== what the live connection reports ============================
+  driver name    : H2 JDBC Driver
+  driver version : 2.3.232 (2024-08-11)
+  driver class   : org.h2.jdbc.JdbcConnection
+  is it pure Java? true  (org.h2.jdbc.JdbcConnection contains no native library)
+
+=== which type is this, then? ===================================
+  H2 ships a type 4 driver: org.h2.jdbc.JdbcConnection
+  says nothing about any other database and needs no
+  ODBC layer, native library or middleware server —
+  the jar IS the driver.
+
+=== why the type number does not change your code ===============
+  All four implement java.sql.Driver. Everything above that
+  — Connection, Statement, ResultSet — is the same for all of them.
+  Swap a type 2 driver for a type 4 driver and your Java does not move.
+
+A type 4 driver speaks the database's own network protocol. For an
+embedded database like H2, "the network" is a method call, which is
+why the same jar works both as a file and over tcp:// if you ask it to.</div>
+<!--@end-->
+
+  <p>
+    One jar on the classpath, one driver registered, and it is pure Java straight to the database &mdash; a
+    type 4 driver. H2 is one; MySQL's Connector/J is another. You will likely never meet types 1&ndash;3 in
+    new code: type 1 was removed from the JDK in Java 8, and types 2 and 3 need something extra installed on
+    the machine, which is exactly what type 4 avoids.
+  </p>
+
+  <!-- ===== 10. PART 4 — THE SIX STEPS ===================================== -->
+  <h2 id="part-4-steps"><span class="eyebrow">Part 4 of 7</span> The Six Steps of a JDBC Program</h2>
+  <p>
+    Every JDBC program ever written is these six steps, in this order. Learn them once and you can read any
+    JDBC code there is &mdash; and write it.
+  </p>
+
+  <div style="text-align:center;margin:1.5rem 0">
+    <img src="../assets/img/diagrams/s07_jdbc_steps.svg" alt="Six numbered steps: 1 load or register the driver (automatic since JDBC 4), 2 get a Connection, 3 create a Statement, 4 execute the SQL, 5 read the ResultSet, 6 close everything. Steps 2, 3 and 5 are marked as holding a resource; step 6 is try-with-resources." style="max-width:100%;height:auto">
+    <p class="text-sm text-faint" style="margin-top:.5rem">Figure 3 &mdash; the six steps. The amber ones hold a resource that must be closed.</p>
+  </div>
+
+  <p>
+    Here is the smallest complete JDBC program. Read it with the figure beside you: steps 2, 3 and 5 each open
+    something, and the try-with-resources at step 2 closes all of them &mdash; step 6 &mdash; on every path out,
+    including the one where something throws.
+  </p>
+  <!--@code src="code/s07-jdbc-api/src/main/java/com/aptech/s07/E01_JdbcSteps.java" from="28" to="69" hl="3,11,20,41" title="E01 — the six steps, smallest complete program"-->
+<pre class="numbered" data-file="E01 — the six steps, smallest complete program" data-hl="3,11,20,41" style="counter-reset:line 27"><code class="lang-java">        System.out.println("E01 - the six steps of a JDBC application");
+
+        // ---- Step 2: get a Connection ------------------------------------------
+        // Steps 3-6 all live inside the try-with-resources, so the Connection is closed
+        // on every path out - the normal exit and the one where something throws.
+        try (Connection connection = Db.open()) {
+
+            System.out.println("Connected to H2.  version: "
+                    + connection.getMetaData().getDatabaseProductVersion());
+
+            // ---- Step 3: create a Statement ------------------------------------
+            // A Statement holds no query yet; it is the channel you send SQL down.
+            // Use PreparedStatement (E05) the moment the SQL contains a value.
+            try (Statement statement = connection.createStatement()) {
+
+                // ---- Step 4: execute the SQL -----------------------------------
+                // executeQuery()    -&gt; returns a ResultSet   (a SELECT)
+                // executeUpdate()   -&gt; returns a row count   (INSERT, UPDATE, DELETE)
+                // execute()         -&gt; returns a boolean     (when you do not know which)
+
+                // ---- Step 5: read the ResultSet ---------------------------------
+                // next() moves the cursor to the next row and answers "was there one?".
+                // It starts BEFORE the first row, which is why you always call it once
+                // before reading anything - forgetting that is the classic first bug.
+                String sql = "SELECT id, name, mark FROM students ORDER BY mark DESC";
+                System.out.println(Db.rule("step 4 + 5 - execute, then read"));
+
+                try (ResultSet rs = statement.executeQuery(sql)) {
+                    int rows = 0;
+                    while (rs.next()) {
+                        // Read by NAME, not by number: a column added to the SELECT
+                        // cannot renumber your code out from under you.
+                        int    id   = rs.getInt("id");
+                        String name = rs.getString("name");
+                        double mark = rs.getDouble("mark");
+
+                        System.out.printf("  %-20s id=%-3d mark=%.2f%n", name, id, mark);
+                        rows++;
+                    }
+                    System.out.println("  " + rows + " rows");
+                }
+            }</code></pre>
+<!--@end-->
+  <!--@output project="code/s07-jdbc-api" main="com.aptech.s07.E01_JdbcSteps"-->
+<div class="terminal-output">E01 - the six steps of a JDBC application
+Connected to H2.  version: 2.3.232 (2024-08-11)
+
+=== step 4 + 5 - execute, then read =============================
+  Dennis Ritchie       id=10  mark=97.25
+  Katherine Johnson    id=4   mark=95.75
+  Grace Hopper         id=2   mark=91.00
+  Margaret Hamilton    id=5   mark=89.00
+  Ada Lovelace         id=1   mark=88.50
+  Barbara Liskov       id=6   mark=84.50
+  Ken Thompson         id=11  mark=82.00
+  Tim Berners-Lee      id=7   mark=79.00
+  Alan Turing          id=3   mark=76.25
+  Bjarne Stroustrup    id=9   mark=73.00
+  Guido van Rossum     id=8   mark=68.50
+  Linus Torvalds       id=12  mark=65.00
+  12 rows
+
+=== what step 1 looks like now ==================================
+  Class.forName("org.h2.Driver") is NOT needed.
+  Since JDBC 4 a driver on the classpath registers itself,
+  so step 1 is now done by the line that puts the jar on the classpath.
+
+The six steps are the same six steps for any database.</div>
+<!--@end-->
+
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>Two things beginners get wrong in step 5</b>
+      <p><strong>Calling <code>next()</code> too late, or not at all.</strong> A <code>ResultSet</code> starts
+      <em>before</em> the first row. You must call <code>next()</code> once before you read anything; it moves
+      to the next row and returns <code>false</code> when there are no more. A <code>while (rs.next())</code>
+      loop handles both jobs at once.</p>
+      <p><strong>Reading columns by number.</strong> <code>rs.getString(1)</code> works until someone adds a
+      column to the <code>SELECT</code> and every number shifts. Read by <em>label</em> &mdash;
+      <code>rs.getString("name")</code> &mdash; and your code survives the edit. Practice 3 shows this fault
+      doing real damage.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Tip &mdash; step 1 is already done for you</b>
+      Old tutorials begin with <code>Class.forName("org.h2.Driver")</code>. Since <strong>JDBC 4</strong>
+      (Java 6) a driver on the classpath registers itself, so that line is no longer needed &mdash; the output
+      above was produced without it. Write it if a grumpy old application server demands it; otherwise leave
+      it out. Putting the jar on the classpath <em>is</em> step 1.
+    </div>
+  </div>
+
+  <!-- ===== 11. PART 5 — METADATA ========================================== -->
+  <h2 id="part-5-metadata"><span class="eyebrow">Part 5 of 7</span> Database Meta Information</h2>
+  <p>
+    "Meta information" is data about data. JDBC gives you two windows into it, and beginners confuse them, so
+    fix the distinction first:
+  </p>
+  <ul>
+    <li><code>DatabaseMetaData</code> describes the <strong>database</strong> &mdash; its tables, columns, keys and features. You get it from a <code>Connection</code>.</li>
+    <li><code>ResultSetMetaData</code> describes <strong>one query's result</strong> &mdash; how many columns it returned, their names, and the Java type each maps to. You get it from a <code>ResultSet</code>.</li>
+  </ul>
+  <p>
+    This is how a program can work against a database whose shape it was never told in advance &mdash; a
+    reporting tool, a data browser, or the <code>columnNames()</code> method you will write for Assignment A4.
+  </p>
+  <!--@output project="code/s07-jdbc-api" main="com.aptech.s07.E04_DatabaseMeta"-->
+<div class="terminal-output">E04 - database meta information
+
+=== DatabaseMetaData - what the database is =====================
+  product      : H2 2.3.232 (2024-08-11)
+  driver       : H2 JDBC Driver 2.3.232 (2024-08-11)
+  URL          : jdbc:h2:./data/registry
+  user         : SA
+  identifier quoting : "
+  read only?   : false
+
+=== what tables exist ===========================================
+  COURSES       (BASE TABLE)
+  STUDENTS      (BASE TABLE)
+
+=== the columns of students, straight from the catalogue ========
+  COLUMN       TYPE                   NULL   DEFAULT
+  ID           INTEGER                NO     null
+  NAME         CHARACTER VARYING      NO     null
+  EMAIL        CHARACTER VARYING      YES    null
+  COURSE_ID    INTEGER                YES    null
+  MARK         DECIMAL                YES    null
+  ACTIVE       BOOLEAN                YES    TRUE
+  JOINED       TIMESTAMP              YES    CURRENT_TIMESTAMP
+
+=== the key relationship, discovered not assumed ================
+  STUDENTS.COURSE_ID -&gt; COURSES.ID
+
+=== what this database supports =================================
+  transactions      : true
+  scrollable results : true
+  batch updates     : true
+  outer joins       : true
+
+=== ResultSetMetaData - what THIS query returned ================
+  4 columns:
+    1  ID         Java type: java.lang.Integer     table: STUDENTS
+    2  NAME       Java type: java.lang.String      table: STUDENTS
+    3  MARK       Java type: java.math.BigDecimal  table: STUDENTS
+    4  COURSE     Java type: java.lang.String      table: COURSES
+  ...so this program could label and print any query at all,
+  without being told in advance what columns it would get.
+
+=== the rows themselves =========================================
+  Dennis Ritchie   Software Engineering    97.25
+  Katherine Johnson Database Fundamentals   95.75
+  Grace Hopper     Java Programming        91.00
+  Margaret Hamilton Database Fundamentals   89.00
+  Ada Lovelace     Java Programming        88.50
+
+Meta information is what lets one program work against a database
+whose shape it was never told in advance.</div>
+<!--@end-->
+
+  <div class="callout callout--note"><span class="callout__i">&#128221;</span>
+    <div class="callout__b"><b>Note &mdash; using metadata to filter metadata</b>
+      The table list above asks for schema <code>PUBLIC</code> on purpose. Your own tables live there; H2
+      keeps its own catalogue (dozens of tables describing the engine itself) in
+      <code>INFORMATION_SCHEMA</code>. Asking for <code>PUBLIC</code> is what makes the list answer "what did
+      I create?" rather than "what is H2 built out of?". Every database has this separation.
+    </div>
+  </div>
+
+  <!-- ===== 12. PART 6 — PREPARED STATEMENTS =============================== -->
+  <h2 id="part-6-prepared"><span class="eyebrow">Part 6 of 7</span> Parameterized Queries</h2>
+  <p>
+    A <code>PreparedStatement</code> is a statement with holes in it. You write the SQL once with
+    <code>?</code> where each value goes, then supply the values separately with <code>setString</code>,
+    <code>setInt</code>, <code>setDouble</code> and friends. That one change buys four things &mdash; and most
+    people only know the first.
+  </p>
+  <!--@code src="code/s07-jdbc-api/src/main/java/com/aptech/s07/E05_PreparedStatements.java" from="43" to="62" hl="5,6,7,20" title="E05 — insert with ? parameters, and read back the generated id"-->
+<pre class="numbered" data-file="E05 — insert with ? parameters, and read back the generated id" data-hl="5,6,7,20" style="counter-reset:line 42"><code class="lang-java">            String insert = "INSERT INTO students (name, email, course_id, mark) VALUES (?, ?, ?, ?)";
+            int newId;
+
+            // Statement.RETURN_GENERATED_KEYS is how you ask for the auto-numbered id.
+            try (PreparedStatement ps = c.prepareStatement(insert, Statement.RETURN_GENERATED_KEYS)) {
+                ps.setString(1, "O'Brien, Riley");   // an apostrophe - no escaping needed
+                ps.setString(2, "riley@example.com");
+                ps.setInt(3, 1);
+                ps.setDouble(4, 77.25);
+
+                int rows = ps.executeUpdate();
+                System.out.println("  inserted " + rows + " row");
+
+                try (ResultSet keys = ps.getGeneratedKeys()) {
+                    newId = keys.next() ? keys.getInt(1) : -1;
+                    System.out.println("  the database assigned id = " + newId);
+                }
+            }
+            System.out.println("  note the name: " + "O'Brien, Riley"
+                    + " — with concatenation that apostrophe would have broken the SQL.");</code></pre>
+<!--@end-->
+  <!--@output project="code/s07-jdbc-api" main="com.aptech.s07.E05_PreparedStatements"-->
+<div class="terminal-output">E05 - parameterized queries with PreparedStatement
+
+=== insert - and read back the generated key ====================
+  inserted 1 row
+  the database assigned id = 13
+  note the name: O'Brien, Riley — with concatenation that apostrophe would have broken the SQL.
+
+=== select - one parameterised lookup ===========================
+  found: O'Brien, Riley (id=13, mark=77.25)
+
+=== update - two parameters, one statement ======================
+  updated 1 row
+
+=== reuse - one statement, many rows ============================
+  inserted 3 rows in one batch
+
+=== delete - clear up the rows we added =========================
+  deleted 4 rows we added above
+
+=== confirm the database is back to the seeded twelve ===========
+  students now: 12  (the twelve we started with)
+
+Every value went in through a ?. None of them could change the SQL.</div>
+<!--@end-->
+  <ol>
+    <li><strong>Safety.</strong> A value can never become part of the SQL, so it cannot change what the query means. This is what stops SQL injection &mdash; see below.</li>
+    <li><strong>Correct types.</strong> <code>setDouble</code> sends a number as a number; the database does not have to parse text and guess.</li>
+    <li><strong>No quoting bugs.</strong> A name with an apostrophe &mdash; <code>O'Brien</code> &mdash; is just a value. With string concatenation it is a syntax error at best.</li>
+    <li><strong>Reuse.</strong> One prepared plan, many rows &mdash; the <code>addBatch()</code>/<code>executeBatch()</code> block above inserts three rows against one statement.</li>
+  </ol>
+
+  <h3>The demonstration you will not forget: SQL injection</h3>
+  <p>
+    Here is the whole reason parameters matter, shown both ways on a throwaway table. The attack is a harmless
+    payload &mdash; it just makes the <code>WHERE</code> true for every row &mdash; but the point is chilling:
+    <strong>a single lookup changes its own meaning</strong> because the input became part of the SQL.
+  </p>
+  <!--@code src="code/s07-jdbc-api/src/main/java/com/aptech/s07/E06_SqlInjection.java" from="83" to="90" hl="2" title="E06 — the WRONG way: input glued straight into the SQL"-->
+<pre class="numbered" data-file="E06 — the WRONG way: input glued straight into the SQL" data-hl="2" style="counter-reset:line 82"><code class="lang-java">    private static void wrongWay(Connection c, String typed) throws SQLException {
+        String sql = "SELECT id, name, role FROM logins WHERE name = '" + typed + "'";
+        System.out.println("  typed: " + typed);
+        System.out.println("  SQL sent: " + sql);
+
+        try (Statement st = c.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+            int n = 0;</code></pre>
+<!--@end-->
+  <!--@output project="code/s07-jdbc-api" main="com.aptech.s07.E06_SqlInjection"-->
+<div class="terminal-output">E06 - the same lookup, written wrong and written right
+
+=== THE WRONG WAY - input glued into the SQL ====================
+  typed: Ada Lovelace
+  SQL sent: SELECT id, name, role FROM logins WHERE name = 'Ada Lovelace'
+      -&gt; Ada Lovelace (student)
+      1 row(s) returned
+
+  typed: ' OR '1'='1
+  SQL sent: SELECT id, name, role FROM logins WHERE name = '' OR '1'='1'
+      -&gt; Ada Lovelace (student)
+      -&gt; Grace Hopper (student)
+      -&gt; The Examiner (examiner)
+      3 row(s) returned   &lt;-- ONE lookup returned the whole table
+
+
+=== THE RIGHT WAY - the same input, as a parameter ==============
+  typed: Ada Lovelace
+  SQL sent: SELECT id, name, role FROM logins WHERE name = ?   (value bound separately)
+      -&gt; Ada Lovelace (student)
+      1 row(s) returned
+
+  typed: ' OR '1'='1
+  SQL sent: SELECT id, name, role FROM logins WHERE name = ?   (value bound separately)
+      0 row(s) returned   &lt;-- nothing matched that name, which is correct
+
+
+=== why the two behave differently ==============================
+  WRONG: the database received
+         SELECT ... WHERE name = '' OR '1'='1'
+         — a WHERE that is true for every row. It was never told
+           which characters were the query and which were the value.
+  RIGHT: the database received
+         SELECT ... WHERE name = ?   with one value bound to it.
+         The ' OR '1'='1 is a STRING being compared to name.
+         No row is called that, so no rows come back — correctly.
+
+=== the rule that follows =======================================
+  A parameter is data. It can never become code.
+  So: every value goes through a ?. There is no clever case where
+  concatenation is safe — "it is only a number" and "it is from
+  our own dropdown" are both how this bug ships.</div>
+<!--@end-->
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>The rule, with no exceptions</b>
+      Every value in a SQL statement goes through a <code>?</code>. There is no clever case where
+      concatenation is safe: "it is only a number" and "it comes from our own dropdown" are both exactly how
+      this bug reaches production. A parameter is <em>data</em> and can never become <em>code</em> &mdash;
+      that is the entire defence, and it is complete.
+    </div>
+  </div>
+
+  <!-- ===== 13. PART 7 — REAL WORLD ======================================== -->
+  <h2 id="part-7-real-world"><span class="eyebrow">Part 7 of 7</span> Databases in the Real World</h2>
+  <p>
+    This course runs on embedded H2 so that every program works offline, on the first day, with nothing
+    installed. The database most working Java talks to is a <strong>server</strong> &mdash; MySQL or
+    PostgreSQL on a machine of its own. The good news is the headline of the whole session:
+    <strong>your Java does not change.</strong> Only three things do &mdash; the jar, the driver class and the
+    URL &mdash; and <code>E07</code> prints exactly what they are.
+  </p>
+  <!--@output project="code/s07-jdbc-api" main="com.aptech.s07.E07_MySqlComparison"-->
+<div class="terminal-output">E07 - the same job against H2 and against MySQL
+
+=== the only three things that change ===========================
+                       H2 (embedded)                    MySQL (server)
+  1. the jar           h2-2.3.232.jar                   mysql-connector-j-9.1.0.jar
+  2. the driver class  org.h2.Driver                    com.mysql.cj.jdbc.Driver
+  3. the URL           jdbc:h2:./data/registry          jdbc:mysql://localhost:3306/registry
+
+  ...and the credentials: 'sa' with no password, versus a real user.
+  Everything else — Connection, Statement, ResultSet, PreparedStatement,
+  DatabaseMetaData — is byte-for-byte the same code.
+
+=== the MySQL URL, and the three parameters it wants ============
+  jdbc:mysql://localhost:3306/registry?sslMode=DISABLED&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC
+
+    sslMode=DISABLED          do not require TLS (fine for localhost)
+    allowPublicKeyRetrieval   needed for the FIRST login to a MySQL 8 user,
+                              whose caching_sha2_password asks for a key
+    serverTimezone=UTC        tells the driver what zone the timestamps are in
+
+  NOTE: printing this URL connects to nothing. It is shown so you can see
+  the shape — the guide walks through actually running it.
+
+=== what changes because the database is now on a SERVER ========
+  Embedded (H2)                          Server (MySQL)
+  -----------------------------          -----------------------------
+  runs inside your program               runs as its own process
+  one file you can copy                  data lives on the server's disk
+  one process may open it                many clients connect at once
+  you are the administrator              someone grants you a user
+  no credentials worth having            a password, and only the rights you need
+  'the server is down' cannot happen     it is now a failure mode you must handle
+
+=== the SAME DatabaseMetaData call, whatever the database =======
+  c.getMetaData().getColumns(null, null, "STUDENTS", null)
+
+  H2 reports the students table like this:
+    COLUMN       TYPE_NAME     
+    ID           INTEGER          (MySQL: INT AUTO_INCREMENT)
+    NAME         CHARACTER VARYING
+    EMAIL        CHARACTER VARYING
+    COURSE_ID    INTEGER          (same)
+    MARK         DECIMAL          (same — never use DOUBLE for money)
+    ACTIVE       BOOLEAN          (MySQL: TINYINT(1) — no real boolean)
+    JOINED       TIMESTAMP        (MySQL: DATETIME)
+
+=== the lines that would differ on a real MySQL server ==========
+  identity column   GENERATED BY DEFAULT AS IDENTITY  -&gt;  AUTO_INCREMENT
+  boolean           BOOLEAN                           -&gt;  TINYINT(1)
+  long text         CLOB                              -&gt;  TEXT
+  date and time     TIMESTAMP                         -&gt;  DATETIME
+  join strings      a || b                            -&gt;  CONCAT(a, b)
+                     (on MySQL, || means OR — it fails quietly, not loudly)
+  quote a name      "full name"                       -&gt;  `full name`
+
+=== the point ===================================================
+  The three things at the top of this program change.
+  The DatabaseMetaData call above does not — it is the same line of Java
+  against both databases, and it returns the same shape of answer.
+  That is what JDBC buys you, and it is why this course can teach the API
+  once with an embedded database and still prepare you for a server.</div>
+<!--@end-->
+  <p>
+    Want to actually run against MySQL? The <a href="../guides/databases.html">H2 &amp; MySQL guide</a> walks
+    through installing a server, creating a user, and pointing this exact code at it &mdash; including the
+    three URL parameters local development needs and the dialect differences (<code>AUTO_INCREMENT</code>,
+    <code>TINYINT(1)</code>, <code>CONCAT</code>) that bite when you move. It is optional, and nothing graded
+    needs it.
+  </p>
+
+  <!-- ===== 14. GUIDED LAB ================================================= -->
+  <h2 id="lab-registry">&#128736; Guided Lab &mdash; The Student Registry, on a Database</h2>
+  <p>
+    Now you build it. The registry you have carried in an <code>ArrayList</code> since Session 1 gets a real
+    table, through a DAO, with every value parameterized. This is Assignment A4 in miniature &mdash; finish
+    the lab and A4 is the same skills with a few more methods.
+  </p>
+
+  <h3>The DAO you will build</h3>
+  <p>Six steps, each one an idea from this session put to work on data you already know:</p>
+  <!--@code src="code/s07-jdbc-api/src/main/java/com/aptech/s07/lab/RegistryLab.java" from="116" to="152" hl="3,12,27" title="RegistryLab — insert returns the generated id; search is parameterized"-->
+<pre class="numbered" data-file="RegistryLab — insert returns the generated id; search is parameterized" data-hl="3,12,27" style="counter-reset:line 115"><code class="lang-java">        int insert(String name, String email, double mark) throws SQLException {
+            String sql = "INSERT INTO students (name, email, mark) VALUES (?, ?, ?)";
+            try (PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                ps.setString(1, name);
+                ps.setString(2, email);
+                ps.setDouble(3, mark);
+                ps.executeUpdate();
+                try (ResultSet keys = ps.getGeneratedKeys()) {
+                    return keys.next() ? keys.getInt(1) : -1;
+                }
+            }
+        }
+
+        /** STEP 3 — find by id, or null. */
+        Student findById(int id) throws SQLException {
+            String sql = "SELECT id, name, email, mark FROM students WHERE id = ?";
+            try (PreparedStatement ps = c.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next() ? read(rs) : null;
+                }
+            }
+        }
+
+        /** STEP 4 — search by name. The ? is what makes the injection attempt harmless. */
+        List&lt;Student&gt; searchByName(String name) throws SQLException {
+            String sql = "SELECT id, name, email, mark FROM students WHERE name LIKE ?";
+            List&lt;Student&gt; out = new ArrayList&lt;&gt;();
+            try (PreparedStatement ps = c.prepareStatement(sql)) {
+                ps.setString(1, "%" + name + "%");    // the % is added to the VALUE, not the SQL
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) out.add(read(rs));
+                }
+            }
+            return out;
+        }
+</code></pre>
+<!--@end-->
+  <!--@output project="code/s07-jdbc-api" main="com.aptech.s07.lab.RegistryLab"-->
+<div class="terminal-output">GUIDED LAB - The Student Registry, on a real database
+
+=== STEP 1 - create the table ======================================
+  table students created (or already present)
+
+=== STEP 2 - insert, and read back the generated id ==================
+  inserted three students, ids: 1, 2, 3
+
+=== STEP 3 - find one student by id =============================
+  id 1 -&gt; 1    Ada Lovelace         ada@example.com           88.50
+  id 9999 -&gt; null   (absence is null, not an error)
+
+=== STEP 4 - parameterized search ===============================
+  search 'Grace':
+    2    Grace Hopper         grace@example.com         91.00
+  search a SQL-injection attempt "' OR '1'='1":
+    0 row(s) - the payload is just a name that
+    matches nothing. The table did not leak.
+
+=== STEP 5 - update and delete ==================================
+  updated 1 row -&gt; 3    Alan Turing          alan@example.com          82.75
+  deleted 1 row (Grace)
+  all students now:
+    1    Ada Lovelace         ada@example.com           88.50
+    3    Alan Turing          alan@example.com          82.75
+
+=== STEP 6 - read the schema back with DatabaseMetaData ========
+    ID         INTEGER              
+    NAME       CHARACTER VARYING    
+    EMAIL      CHARACTER VARYING    
+    MARK       DECIMAL              
+
+The registry is now in a database. Close the program; it will be there
+tomorrow. That is the whole difference between a List and a table.</div>
+<!--@end-->
+
+  <h3>Work the steps</h3>
+  <div class="steps">
+    <div class="steps__title">&#128221; Step Checklist (your progress is saved automatically)</div>
+    <div class="step"><div class="step__check"></div><span class="step__num">1</span>
+      <span class="step__text">Open <code>code/s07-jdbc-api</code> in IntelliJ. Add <code>lib/h2-2.3.232.jar</code> as a library (<strong>File &rarr; Project Structure &rarr; Libraries &rarr; +</strong>), or let Maven fetch it from the <code>pom.xml</code>.</span></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">2</span>
+      <span class="step__text">Run <code>E01_JdbcSteps</code>. Watch the six steps happen, and confirm you see the twelve seeded students. If this runs, your setup is correct.</span></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">3</span>
+      <span class="step__text">Read <code>RegistryLab</code>. Find the DAO, and read <code>insert()</code> and <code>searchByName()</code> out loud &mdash; those two carry the whole session: a generated key, and a parameterized <code>LIKE</code>.</span></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">4</span>
+      <span class="step__text">Run <code>RegistryLab</code>. Confirm Step 4 (the injection attempt) returns <strong>0 rows</strong> &mdash; the payload is a name that matches nothing, not a condition.</span></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">5</span>
+      <span class="step__text">Change the lab's URL from <code>jdbc:h2:mem:lab</code> to <code>jdbc:h2:./data/lab</code>, run it twice, and look in the <code>data/</code> folder. The database is now a file that survives the program.</span></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">6</span>
+      <span class="step__text">Open the H2 Console (<code>java -cp lib/h2-2.3.232.jar org.h2.tools.Server -web</code>) and browse the table you just created from Java. Seeing the same rows in a second window is the moment it becomes real.</span></div>
+  </div>
+
+
+  <!-- ===== 15. COMMON MISTAKES ============================================ -->
+  <h2>&#9888;&#65039; Common Mistakes</h2>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake: building SQL with <code>+</code></b>
+      <pre><code class="lang-java">String sql = "SELECT * FROM students WHERE name = '" + typed + "'";  // never</code></pre>
+      <p><strong>What happens:</strong> input becomes part of the query. The payload <code>' OR '1'='1</code> turns one lookup into "return every row" &mdash; and nothing throws. <strong>Fix:</strong> a <code>?</code> and <code>ps.setString(1, typed)</code>. Always.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake: leaving a <code>Connection</code> open</b>
+      <pre><code class="lang-java">Connection c = DriverManager.getConnection(url, user, pw);
+Statement s = c.createStatement();
+// ... method returns; nothing was closed</code></pre>
+      <p><strong>What happens:</strong> one leaked handle per call. Harmless once; "Too many open connections" after a few thousand, and the stack trace points at the call that <em>failed</em>, not the ones that leaked. <strong>Fix:</strong> try-with-resources, so every <code>Connection</code>, <code>Statement</code> and <code>ResultSet</code> closes on every path.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake: reading a <code>ResultSet</code> before calling <code>next()</code></b>
+      <pre><code class="lang-java">ResultSet rs = ps.executeQuery();
+String name = rs.getString("name");   // SQLException: no current row</code></pre>
+      <p><strong>What happens:</strong> the cursor starts <em>before</em> the first row. <strong>Fix:</strong> <code>if (rs.next()) { ... }</code> for one row, or <code>while (rs.next()) { ... }</code> for many.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake: reading columns by number</b>
+      <pre><code class="lang-java">rs.getString(1);   // breaks the day someone adds a column to the SELECT</code></pre>
+      <p><strong>What happens:</strong> add a column at the front of the <code>SELECT</code> and every number shifts by one &mdash; silently. <strong>Fix:</strong> read by label, <code>rs.getString("name")</code>, which does not care how many columns came before it.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake: using a plain <code>Statement</code> for a query with values</b>
+      <p>A <code>Statement</code> is for fixed SQL with no inputs. The moment a value appears, switch to a <code>PreparedStatement</code> &mdash; not for speed, for safety. If you find yourself about to concatenate, that is the signal.</p>
+    </div>
+  </div>
+
+  <!-- ===== 16. KNOWLEDGE CHECK ============================================ -->
+  <h2>&#129504; Knowledge Check</h2>
+  <p>Ten questions on the JDBC API. If you disagree with one, argue it &mdash; that is a code review.</p>
+
+  <div class="quiz" id="s07-check">
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">1. What does JDBC let you do?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Compile Java faster.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Write HTML from Java.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Talk to a relational database through one standard API, whatever the vendor.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Replace the need for SQL.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> JDBC is the API; a driver does the vendor-specific talking. You still write SQL.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">2. In the JDBC architecture, which part reads the URL and chooses a driver?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>Connection</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>DriverManager</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>ResultSet</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> The database itself</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> <code>DriverManager.getConnection(url, ...)</code> matches the URL to a registered driver.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="d">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">3. Which driver type is a modern pure-Java driver like H2 or MySQL Connector/J?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Type 1</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Type 2</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Type 3</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Type 4</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>D.</strong> Type 4 is all-Java, straight to the database &mdash; just a jar on the classpath.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">4. Since JDBC 4, what happened to <code>Class.forName("org.h2.Driver")</code>?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> It is now required twice.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> It is no longer needed &mdash; a driver on the classpath registers itself.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> It was renamed <code>loadDriver()</code>.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> It only works on MySQL now.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> Auto-registration since Java 6. The line still compiles; it just does nothing useful.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">5. A <code>ResultSet</code> cursor starts&hellip;</div>
+      <label class="quiz__opt"><input type="radio" value="a"> on the first row.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> on the last row.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> before the first row &mdash; you must call <code>next()</code> once to reach it.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> on a random row.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> That is why <code>while (rs.next())</code> is the standard loop.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">6. The single best reason to use a <code>PreparedStatement</code> with <code>?</code> is&hellip;</div>
+      <label class="quiz__opt"><input type="radio" value="a"> a value can never become part of the SQL, which stops SQL injection.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> it looks tidier.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> it avoids importing <code>java.sql</code>.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> it makes the database optional.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A.</strong> Safety first; correct typing, quoting and reuse come along for free.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">7. A login lookup is built as <code>"... WHERE name = '" + input + "'"</code> and a user types <code>' OR '1'='1</code>. What happens?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> A compile error.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Nothing &mdash; the input is ignored.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> The WHERE becomes true for every row and the query returns the whole table.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> The database refuses to start.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> Classic SQL injection. A <code>?</code> parameter makes the same input a harmless string.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">8. Which gives you the names and types of the columns a query returned?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>DatabaseMetaData</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>ResultSetMetaData</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>Statement</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>DriverManager</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> <code>ResultSetMetaData</code> describes one result; <code>DatabaseMetaData</code> describes the whole database.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">9. Switching this course's code from H2 to MySQL changes which of these?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Every <code>Connection</code> and <code>ResultSet</code> call.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> The whole DAO.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> The jar, the driver class, and the URL &mdash; and little else.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Nothing at all.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> That is the whole promise of JDBC. The SQL dialect has a few differences (Part D of the guide), but the Java is the same.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">10. Which step closes your resources on every path, including when something throws?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> A <code>finally</code> block you must remember to write.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> try-with-resources &mdash; the resources are declared in the <code>try (...)</code> header.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> The garbage collector.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>System.exit(0)</code>.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> Anything that is <code>AutoCloseable</code> &mdash; <code>Connection</code>, <code>Statement</code>, <code>ResultSet</code> &mdash; closes automatically, in reverse order.</div>
+    </div>
+    <div class="quiz__score" style="display:none"></div>
+  </div>
+
+  <!-- ===== 17. PRACTICE =================================================== -->
+  <h2>&#128170; Practice</h2>
+
+  <details>
+    <summary><strong>&#127793; Easy: the six steps, once, with no help</strong></summary>
+    <div>
+      <p>
+        Write the smallest complete JDBC program: connect to an in-memory database, create a table, insert one
+        row, and read it back &mdash; then notice you wrote no driver class, no <code>Class.forName</code>, and
+        no <code>finally</code>.
+      </p>
+      <details>
+        <summary>&#128161; Hint</summary>
+        <p>Two <code>try</code>-with-resources blocks: one to create and insert, one to read back. Keep the URL the same in both &mdash; <code>jdbc:h2:mem:p1;DB_CLOSE_DELAY=-1</code> &mdash; so the second connection still sees the table.</p>
+      </details>
+      <details>
+        <summary>&#9989; Solution</summary>
+        <div>
+          <!--@code src="code/s07-jdbc-api/src/main/java/com/aptech/s07/practice/P1_ConnectAndCreate.java" title="P1_ConnectAndCreate.java"-->
+<pre class="numbered" data-file="P1_ConnectAndCreate.java"><code class="lang-java">package com.aptech.s07.practice;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+/**
+ * PRACTICE 1 (Easy) — the six steps, once, with no help.
+ *
+ * &lt;p&gt;Write the smallest complete JDBC program: connect to a database that exists only in
+ * memory, create a table, put one row in, and read it back. Nothing here is new — it is E01
+ * with the training wheels off.
+ *
+ * &lt;p&gt;Then notice what you did NOT have to write: no driver class name, no &lt;code&gt;Class.forName&lt;/code&gt;,
+ * no &lt;code&gt;finally&lt;/code&gt; block. Those three omissions are the whole of JDBC since Java 6.
+ *
+ * &lt;p&gt;&lt;strong&gt;Expected output:&lt;/strong&gt; the row you inserted, printed back to you.
+ */
+public class P1_ConnectAndCreate {
+
+    public static void main(String[] args) throws SQLException {
+
+        System.out.println("P1 - connect, create, insert, read back");
+
+        // An in-memory database: exists only while this program runs. DB_CLOSE_DELAY=-1
+        // keeps it alive until the JVM exits, so the second connection below still sees it.
+        String url = "jdbc:h2:mem:p1;DB_CLOSE_DELAY=-1";
+
+        // ---- create and fill (steps 2-4, with step 6 handled by try-with-resources) ----
+        try (Connection c = DriverManager.getConnection(url, "sa", "");
+             Statement st = c.createStatement()) {
+
+            st.execute("CREATE TABLE books ("
+                     + " id     INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,"
+                     + " title  VARCHAR(120) NOT NULL,"
+                     + " author VARCHAR(80))");
+
+            st.executeUpdate("INSERT INTO books (title, author) VALUES ('Effective Java', 'Bloch')");
+            System.out.println("  created the table and inserted one row");
+        }
+        // the connection is closed here - and the database is still there, because
+        // DB_CLOSE_DELAY=-1 keeps the in-memory database until the JVM exits.
+
+        // ---- read it back in a SECOND connection (proving the data outlived the first) ----
+        try (Connection c = DriverManager.getConnection(url, "sa", "");
+             Statement st = c.createStatement();
+             ResultSet rs = st.executeQuery("SELECT id, title, author FROM books")) {
+
+            while (rs.next()) {
+                System.out.printf("  read back: id=%d  \"%s\" by %s%n",
+                        rs.getInt("id"), rs.getString("title"), rs.getString("author"));
+            }
+        }
+
+        System.out.println("\nNo Class.forName, no finally, and the row survived the close.");
+    }
+
+    /**
+     * The same insert, done the way you would in real code: a PreparedStatement, so the
+     * values cannot change the SQL. Included here as the shape to copy from Step 5 onward.
+     */
+    @SuppressWarnings("unused")
+    private static void insertTheRightWay(Connection c, String title, String author) throws SQLException {
+        String sql = "INSERT INTO books (title, author) VALUES (?, ?)";
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, title);
+            ps.setString(2, author);
+            ps.executeUpdate();
+        }
+    }
+}</code></pre>
+<!--@end-->
+          <!--@output project="code/s07-jdbc-api" main="com.aptech.s07.practice.P1_ConnectAndCreate"-->
+<div class="terminal-output">P1 - connect, create, insert, read back
+  created the table and inserted one row
+  read back: id=1  "Effective Java" by Bloch
+
+No Class.forName, no finally, and the row survived the close.</div>
+<!--@end-->
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details>
+    <summary><strong>&#127774; Medium: a two-table query behind a parameterized method</strong></summary>
+    <div>
+      <p>
+        Write a DAO method that answers "who is on this course?" The data is split across two tables, so the
+        query needs a <code>JOIN</code>; the course name is input, so it needs a <code>?</code>. The caller
+        must get back objects &mdash; never a <code>ResultSet</code>.
+      </p>
+      <details>
+        <summary>&#128161; Hint</summary>
+        <p><code>SELECT ... FROM students s JOIN courses c ON c.id = s.course_id WHERE c.title = ?</code>. Convert each row to a record inside the DAO, add it to a list, and return the list once the <code>ResultSet</code> is closed.</p>
+      </details>
+      <details>
+        <summary>&#9989; Solution</summary>
+        <div>
+          <!--@code src="code/s07-jdbc-api/src/main/java/com/aptech/s07/practice/P2_SearchByCourse.java" from="78" to="101" title="P2_SearchByCourse.java  (the DAO)"-->
+<pre class="numbered" data-file="P2_SearchByCourse.java  (the DAO)" style="counter-reset:line 77"><code class="lang-java">
+    /** The DAO: it owns the JOIN, and it hands back objects. */
+    static class CourseDao {
+        private final Connection c;
+
+        CourseDao(Connection c) { this.c = c; }
+
+        List&lt;Enrolment&gt; findByCourse(String courseTitle) throws SQLException {
+            String sql = "SELECT s.name, c.title, s.mark, c.credits "
+                       + "FROM students s JOIN courses c ON c.id = s.course_id "
+                       + "WHERE c.title = ? "
+                       + "ORDER BY s.mark DESC";
+
+            List&lt;Enrolment&gt; out = new ArrayList&lt;&gt;();
+            try (PreparedStatement ps = c.prepareStatement(sql)) {
+                ps.setString(1, courseTitle);          // one ?, one value, no concatenation
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        out.add(new Enrolment(rs.getString("name"), rs.getString("title"),
+                                              rs.getDouble("mark"), rs.getInt("credits")));
+                    }
+                }
+            }
+            return out;</code></pre>
+<!--@end-->
+          <!--@output project="code/s07-jdbc-api" main="com.aptech.s07.practice.P2_SearchByCourse"-->
+<div class="terminal-output">P2 - a two-table query behind a parameterized method
+
+  students on 'Java Programming':
+    Grace Hopper         Java Programming      91.00  (12 credits)
+    Ada Lovelace         Java Programming      88.50  (12 credits)
+    Alan Turing          Java Programming      76.25  (12 credits)
+
+  students on 'Database Fundamentals':
+    Katherine Johnson    Database Fundamentals  95.75  (10 credits)
+    Margaret Hamilton    Database Fundamentals  89.00  (10 credits)
+
+  a course name that is not there:
+    0 rows
+
+  the same JOB, and a name that looks like SQL:
+    0 rows   &lt;- the ? made it a name, not a condition
+
+The caller asked for objects. It never saw a ResultSet or a Connection.</div>
+<!--@end-->
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details>
+    <summary><strong>&#127775; Challenge: three faults, and the fix for each</strong></summary>
+    <div>
+      <p>
+        One small program carries three real JDBC faults: a concatenated query, a leaked connection, and a
+        column read by number. Name each one before you run it; the output is the check on your answer.
+      </p>
+      <details>
+        <summary>&#128161; Hint</summary>
+        <p>Each fault throws nothing &mdash; that is what makes them dangerous. The concatenated query returns too many rows; the leak shows only under a loop; the by-number read is simply the wrong value, and was right until someone edited the <code>SELECT</code>.</p>
+      </details>
+      <details>
+        <summary>&#9989; Solution</summary>
+        <div>
+          <!--@code src="code/s07-jdbc-api/src/main/java/com/aptech/s07/practice/P3_SpotTheBugs.java" from="52" to="87" title="P3_SpotTheBugs.java  (fault 1: concatenation vs a parameter)"-->
+<pre class="numbered" data-file="P3_SpotTheBugs.java  (fault 1: concatenation vs a parameter)" style="counter-reset:line 51"><code class="lang-java">    private static void fault1(String url) throws SQLException {
+        System.out.println("\n=== FAULT 1 - a statement glued together from input " + "=".repeat(14));
+        String typed = "' OR '1'='1";
+
+        try (Connection c = DriverManager.getConnection(url, "sa", "")) {
+
+            // BROKEN
+            String brokenSql = "SELECT name FROM students WHERE name = '" + typed + "'";
+            int brokenCount;
+            try (Statement st = c.createStatement();
+                 ResultSet rs = st.executeQuery(brokenSql)) {
+                brokenCount = 0;
+                System.out.println("  broken: " + brokenSql);
+                while (rs.next()) { System.out.println("        -&gt; " + rs.getString("name")); brokenCount++; }
+            }
+            System.out.println("  broken returned " + brokenCount + " rows for a one-name lookup");
+
+            // FIXED
+            String fixedSql = "SELECT name FROM students WHERE name = ?";
+            int fixedCount;
+            try (PreparedStatement ps = c.prepareStatement(fixedSql)) {
+                ps.setString(1, typed);
+                try (ResultSet rs = ps.executeQuery()) {
+                    fixedCount = 0;
+                    while (rs.next()) fixedCount++;
+                }
+            }
+            System.out.println("  fixed  returned " + fixedCount + " rows  &lt;- the ? is a value, not code");
+            System.out.println("  " + (brokenCount &gt; fixedCount
+                    ? "VERDICT: the broken version returned data the caller never asked for."
+                    : "VERDICT: no difference?! check the data"));
+        }
+    }
+
+    // ========================================================================
+    //  FAULT 2 — a resource opened and never closed</code></pre>
+<!--@end-->
+          <!--@output project="code/s07-jdbc-api" main="com.aptech.s07.practice.P3_SpotTheBugs"-->
+<div class="terminal-output">P3 - three faults, and the fix for each
+
+=== FAULT 1 - a statement glued together from input ==============
+  broken: SELECT name FROM students WHERE name = '' OR '1'='1'
+        -&gt; Ada Lovelace
+        -&gt; Grace Hopper
+        -&gt; Alan Turing
+        -&gt; Katherine Johnson
+  broken returned 4 rows for a one-name lookup
+  fixed  returned 0 rows  &lt;- the ? is a value, not code
+  VERDICT: the broken version returned data the caller never asked for.
+
+=== FAULT 2 - a connection opened and never closed =================
+  broken: opened 5 connections, closed 0
+          each one still holds an operating-system handle
+  fixed : opened 5 connections, closed 5
+  five is harmless. Five thousand is "Too many open files".
+  VERDICT: same output, different resource behaviour - and only one
+           of them can survive being called in a loop.
+
+=== FAULT 3 - reading a column by number ===========================
+  broken: getString(1) -&gt; 1   &lt;- that is the id, not the name
+  fixed : getString("name") -&gt; Ada Lovelace
+  VERDICT: neither one throws. The first is simply wrong,
+           and it was right until somebody edited the SELECT.
+
+Every fault here throws nothing. That is why they ship.</div>
+<!--@end-->
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <!-- ===== 18. ASSIGNMENT A4 ============================================== -->
+  <h2 id="assignment-a4">&#128203; Assignment A4 &mdash; Student Registry on H2</h2>
+  <div class="callout callout--assignment"><span class="callout__i">&#128221;</span>
+    <div class="callout__b"><b>A4 &mdash; give the Student Registry a real database</b>
+      <p>
+        Take the Student Registry you have carried since Session 1 and put it on an embedded H2 database
+        through JDBC. The starter is <code>code/a4-student-registry-jdbc-starter</code>; complete
+        <code>StudentRegistry.java</code> until <code>SelfCheck</code> reports <strong>all PASS</strong>.
+      </p>
+      <p><strong>What you implement (each is a method with a TODO):</strong></p>
+      <ol>
+        <li><code>createSchema()</code> &mdash; two tables, safe to call twice (<code>IF NOT EXISTS</code>).</li>
+        <li><code>insert(...)</code> &mdash; add a student and return the <strong>database-generated id</strong>.</li>
+        <li><code>findById(id)</code> &mdash; one student, or <code>null</code> when there is none.</li>
+        <li><code>searchByName(text)</code> &mdash; a <strong>parameterized</strong> <code>LIKE</code> search. <code>SelfCheck</code> fires an injection at it; it must return nothing.</li>
+        <li><code>updateMark</code> and <code>delete</code> &mdash; each returns the number of rows changed.</li>
+        <li><code>count()</code> and <code>columnNames()</code> &mdash; the latter read from <code>DatabaseMetaData</code>, not hard-coded.</li>
+      </ol>
+      <div class="assignment-card__rubric">
+        <div class="assignment-card__rubric-item"><strong>Correctness</strong> <code>SelfCheck</code> reports all PASS, from a clean build, every run.</div>
+        <div class="assignment-card__rubric-item"><strong>Safety</strong> Every value goes through a <code>?</code>. The injection check passes because there is no concatenation anywhere.</div>
+        <div class="assignment-card__rubric-item"><strong>Resources</strong> Every <code>Connection</code>, <code>Statement</code> and <code>ResultSet</code> is closed with try-with-resources; no connection is held in a field.</div>
+        <div class="assignment-card__rubric-item"><strong>Style</strong> One <code>read()</code> maps a row to an object; column reads are by label; names are clear.</div>
+      </div>
+      <p><strong>Deliberately not in A4:</strong> transactions (<code>commit</code>/<code>rollback</code>). Those are Session 8, which extends this same registry &mdash; so keep your code, you will build on it.</p>
+    </div>
+  </div>
+  <div class="callout callout--warn"><span class="callout__i">&#9878;&#65039;</span>
+    <div class="callout__b"><b>Academic honesty &amp; AI tools</b>
+      You may ask an AI to explain a <code>SQLException</code> or suggest where a leak is &mdash; not to write
+      your DAO. If it hands you SQL built with <code>+</code>, you have just caught it making the exact mistake
+      this session exists to prevent. Type and understand your own methods; you will defend any line in the viva.
+    </div>
+  </div>
+
+  <!-- ===== 19. FURTHER STUDY ============================================== -->
+  <h2>&#128250; Further Study</h2>
+  <p>Each video was checked to exist and match the topic.</p>
+  <div class="video-grid">
+    <div class="video-card" data-yt="eqHJJ_7MZmY" data-title="JDBC Tutorial">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java JDBC Tutorial</div><div class="video-card__channel">Telusko</div><div class="video-card__why">Parts 1 and 4: the architecture and the six steps from scratch.</div></div>
+    </div>
+    <div class="video-card" data-yt="1woRvBlgvd0" data-title="JDBC in one video">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">JDBC in one video</div><div class="video-card__channel">Coding with John style walkthrough</div><div class="video-card__why">The whole connect-query-read loop, end to end.</div></div>
+    </div>
+    <div class="video-card" data-yt="_jkkKb-P3Dk" data-title="PreparedStatement vs Statement">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">PreparedStatement vs Statement</div><div class="video-card__channel">Java Brains</div><div class="video-card__why">Part 6: why the parameter, not the string, is the safe one.</div></div>
+    </div>
+    <div class="video-card" data-yt="ciNHn38EyRc" data-title="SQL Injection explained">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">SQL Injection, explained</div><div class="video-card__channel">Computerphile</div><div class="video-card__why">The attack from E06, told as the story of why it keeps happening.</div></div>
+    </div>
+  </div>
+  <h3>Read (official &amp; trusted)</h3>
+  <ul>
+    <li><a href="https://docs.oracle.com/javase/tutorial/jdbc/" target="_blank" rel="noopener">Oracle &mdash; the JDBC tutorial</a>, especially "Processing SQL Statements" and "Establishing a Connection".</li>
+    <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/package-summary.html" target="_blank" rel="noopener">Java 25 API &mdash; the <code>java.sql</code> package</a>: <code>Connection</code>, <code>PreparedStatement</code>, <code>ResultSet</code>, <code>DatabaseMetaData</code>.</li>
+    <li>This course's <a href="../guides/databases.html">H2 &amp; MySQL guide</a> &mdash; the hands-on companion to Part 7, including running against a real MySQL server.</li>
+    <li><a href="https://h2database.com/html/tutorial.html" target="_blank" rel="noopener">H2 &mdash; the official tutorial</a>, including the Console you used in the lab.</li>
+  </ul>
+
+  <!-- ===== 20. CHEAT SHEET ================================================ -->
+  <h2>&#128203; Cheat Sheet &mdash; JDBC in one screen</h2>
+  <div class="cheatsheet">
+    <h4>The six steps</h4>
+<pre><code class="lang-java">try (Connection c = DriverManager.getConnection(url, user, password);   // 2
+     PreparedStatement ps = c.prepareStatement(                         // 3
+         "SELECT id, name FROM students WHERE mark >= ?")) {
+    ps.setDouble(1, 80.0);                                              // bind values
+    try (ResultSet rs = ps.executeQuery()) {                           // 4
+        while (rs.next()) {                                            // 5
+            System.out.println(rs.getInt("id") + " " + rs.getString("name"));
+        }
+    }
+}   // 6 - every resource closed here, even if something threw.  Step 1 is automatic.</code></pre>
+
+    <h4>Execute: which method?</h4>
+<pre><code class="lang-java">executeQuery()    // a SELECT -> returns a ResultSet
+executeUpdate()   // INSERT / UPDATE / DELETE -> returns a row count
+getGeneratedKeys()// after an INSERT with Statement.RETURN_GENERATED_KEYS</code></pre>
+
+    <h4>The one rule: every value is a parameter</h4>
+<pre><code class="lang-java">// NEVER
+"... WHERE name = '" + input + "'"        // one bad input returns the whole table
+
+// ALWAYS
+PreparedStatement ps = c.prepareStatement("... WHERE name = ?");
+ps.setString(1, input);                   // input is data, and can never become code</code></pre>
+
+    <h4>Read the ResultSet correctly</h4>
+<pre><code class="lang-java">while (rs.next()) {              // cursor starts BEFORE row 1; next() moves and tests
+    rs.getString("name");        // by LABEL, not rs.getString(1) - survives an edited SELECT
+}</code></pre>
+
+    <h4>Metadata: two different windows</h4>
+<pre><code class="lang-java">c.getMetaData()        // DatabaseMetaData  - the whole database: tables, columns, keys
+rs.getMetaData()       // ResultSetMetaData - this one query: column count, names, types</code></pre>
+
+    <h4>Switching database = three things</h4>
+<pre><code class="lang-shell">H2     jdbc:h2:./data/registry                 org.h2.Driver            h2-*.jar
+MySQL  jdbc:mysql://localhost:3306/registry    com.mysql.cj.jdbc.Driver mysql-connector-j-*.jar
+# the Java above does not change at all</code></pre>
+  </div>
+
+  <!-- ===== 21. SUMMARY ==================================================== -->
+  <h2>&#127891; Session Summary</h2>
+  <ol>
+    <li><strong>JDBC is the standard API for talking to a database.</strong> You program against <code>java.sql.*</code> interfaces; a driver does the vendor-specific work.</li>
+    <li><strong>The architecture draws a stable line.</strong> Your code and the <code>java.sql</code> interfaces never change; the driver and database below the line are swappable.</li>
+    <li><strong>A DAO (three-tier) earns its keep the moment a query is needed twice.</strong> The SQL lives in one place and callers get objects, not a <code>ResultSet</code>.</li>
+    <li><strong>Only type 4 drivers matter today.</strong> Pure Java, just a jar &mdash; H2 and Connector/J are both type 4.</li>
+    <li><strong>Every JDBC program is six steps.</strong> Load (automatic), connect, create a statement, execute, read, close &mdash; and try-with-resources does the closing on every path.</li>
+    <li><strong>A <code>ResultSet</code> starts before the first row.</strong> Call <code>next()</code> once to reach it; read columns by label, not number.</li>
+    <li><strong>Metadata lets a program read a database it was never told about.</strong> <code>DatabaseMetaData</code> for the database, <code>ResultSetMetaData</code> for one query.</li>
+    <li><strong>A <code>PreparedStatement</code> with <code>?</code> is the one habit that stops SQL injection.</strong> A parameter is data and can never become code.</li>
+    <li><strong>Concatenating input into SQL is never safe.</strong> You watched <code>' OR '1'='1</code> return a whole table from one lookup.</li>
+    <li><strong>Changing database is three things: the jar, the driver class, and the URL.</strong> The Java stays put &mdash; which is the entire point of the API.</li>
+  </ol>
+  <div class="newwords"><b>&#128218; All new words from this session</b>
+    <dl>
+      <dt>JDBC</dt><dd>Java Database Connectivity: the JDK's API for talking to a relational database.</dd>
+      <dt>Driver</dt><dd>The vendor's jar that implements the <code>java.sql</code> interfaces for one database.</dd>
+      <dt>DriverManager</dt><dd>The class that reads a JDBC URL and hands back a <code>Connection</code> from the matching driver.</dd>
+      <dt>Connection</dt><dd>An open session with the database. A resource: close it when done.</dd>
+      <dt>Statement</dt><dd>A channel for fixed SQL with no input values.</dd>
+      <dt>PreparedStatement</dt><dd>A statement with <code>?</code> placeholders; values are bound separately and can never become SQL.</dd>
+      <dt>ResultSet</dt><dd>A cursor over the rows a query returned. Starts before row one; <code>next()</code> advances it.</dd>
+      <dt>DAO</dt><dd>Data Access Object: a class that owns the SQL for one table and hands callers objects.</dd>
+      <dt>Two-tier / three-tier</dt><dd>SQL written inline (two-tier) versus SQL behind a DAO (three-tier).</dd>
+      <dt>DatabaseMetaData</dt><dd>A description of the database itself: tables, columns, keys, features.</dd>
+      <dt>ResultSetMetaData</dt><dd>A description of one query's result: column count, names and types.</dd>
+      <dt>Generated key</dt><dd>The id a database assigns to an inserted row, read with <code>getGeneratedKeys()</code>.</dd>
+      <dt>SQL injection</dt><dd>An attack where input concatenated into SQL changes the query's meaning.</dd>
+      <dt>Parameterized query</dt><dd>A query whose values are bound through <code>?</code> &mdash; the defence against injection.</dd>
+      <dt>Embedded database</dt><dd>A database that runs inside your program, as a library and a file &mdash; H2.</dd>
+    </dl>
+  </div>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Next session: Advanced JDBC</b>
+      You can now store and read the registry &mdash; but what happens when two updates must either both
+      succeed or both fail? Session 8 adds <strong>transactions</strong> (<code>commit</code> and
+      <code>rollback</code>), batch operations, and connection pooling, and extends this same A4 registry to
+      use them. Bring your working A4.
+    </div>
+  </div>
+
+</main>
+
+<script src="../assets/js/course.js"></script>
+
+</body>
+</html>

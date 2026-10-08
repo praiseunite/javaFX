@@ -28,8 +28,8 @@ Videos in the *Further Study* sections need internet; everything else works offl
 
 | Status | Sessions |
 |---|---|
-| ✅ Ready | Java Foundations Bridge B1–B7 · Session 1 – Java Utility APIs · Session 2 – Generics · Session 3 – File Handling, Streams & Serialization · Session 4 – Threading · Session 5 – Multithreading & Concurrency |
-| 🛠 Coming | Sessions 6–18, capstone project |
+| ✅ Ready | Java Foundations Bridge B1–B7 · Session 1 – Java Utility APIs · Session 2 – Generics · Session 3 – File Handling, Streams & Serialization · Session 4 – Threading · Session 5 – Multithreading & Concurrency · Session 6 – Try It Yourself: Sessions 1–5 · Session 7 – The JDBC API · Reference guide: H2 & MySQL |
+| 🛠 Coming | Sessions 8–18, capstone project |
 
 ## Run the Java code
 
@@ -42,8 +42,13 @@ You need **JDK 21 or newer** (the course is tested on JDK 25) and **IntelliJ IDE
 | Folder | Contents |
 |---|---|
 | `code/s0N-…` | All examples, the guided lab and practice solutions for session N |
-| `code/a1-…-starter`, `code/a2-…-starter` | Starter projects for the graded assignments |
+| `code/a1-…-starter`, `code/a2-…-starter`, `code/a3-…-starter`, `code/a4-…-starter` | Starter projects for the graded assignments |
 | `code/l2-…-starter`, `code/l4-…-starter` | Starter projects for lab tasks L2 and L4 |
+| `guides/databases.html` | Reference guide: using the two databases (embedded H2 and a MySQL server) |
+
+Projects that need a library vendored their jar in `lib/` (Session 7 and Assignment A4 use
+`h2-2.3.232.jar`), so they compile and run offline with no download. Maven users get the same
+dependency from each project's `pom.xml`.
 
 
 ## Folder structure
