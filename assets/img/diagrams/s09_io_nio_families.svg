@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 596" width="100%" height="100%">
+  <defs>
+    <filter id="famShadow" x="-8%" y="-8%" width="116%" height="125%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub   { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .step  { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 800; fill: #94a3b8; letter-spacing: .06em; }
+    .name  { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 800; fill: #0f172a; }
+    .code  { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10.5px; fill: #334155; }
+    .mini  { font-family: system-ui, -apple-system, sans-serif; font-size: 10.5px; fill: #475569; }
+    .lbl   { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 700; fill: #64748b; letter-spacing: .05em; }
+    .note  { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; fill: #334155; }
+  </style>
+
+  <rect width="900" height="596" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">Three file APIs, and what each one is for</text>
+  <text x="30" y="54" class="sub">They are not versions of each other. All three are current, all three are in the JDK today, and each one is the right answer to a different question.</text>
+
+  <g filter="url(#famShadow)">
+    <rect x="24"  y="90" width="276" height="410" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+    <rect x="312" y="90" width="276" height="410" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+    <rect x="600" y="90" width="276" height="410" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+  </g>
+
+  <path d="M24,100 A10,10 0 0 1 34,90 H290 A10,10 0 0 1 300,100 V146 H24 Z"   fill="#eff6ff"/>
+  <path d="M312,100 A10,10 0 0 1 322,90 H578 A10,10 0 0 1 588,100 V146 H312 Z" fill="#f5f3ff"/>
+  <path d="M600,100 A10,10 0 0 1 610,90 H866 A10,10 0 0 1 876,100 V146 H600 Z" fill="#f0fdf4"/>
+
+  <!-- ============ java.io ============ -->
+  <text x="40" y="116" class="name">java.io &#8212; Streams</text>
+  <text x="40" y="136" class="mini" fill="#1d4ed8">one-way, byte or character at a time &#183; since 1996</text>
+  <text x="40" y="176" class="lbl">THE TYPES</text>
+  <rect x="38" y="188" width="248" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="48" y="205" class="code">InputStream / Reader</text>
+  <rect x="38" y="220" width="248" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="48" y="237" class="code">BufferedReader / BufferedWriter</text>
+  <rect x="38" y="252" width="248" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="48" y="269" class="code">PrintWriter</text>
+  <rect x="38" y="284" width="248" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="48" y="301" class="code">ObjectOutputStream</text>
+
+  <text x="40" y="336" class="lbl">BEST AT</text>
+  <text x="40" y="356" class="mini">Reading and writing a stream of</text>
+  <text x="40" y="370" class="mini">characters or objects front to back.</text>
+  <text x="40" y="384" class="mini">Decorators are the whole design.</text>
+
+  <rect x="38" y="396" width="248" height="52" rx="6" fill="#0f172a"/>
+  <text x="48" y="417" class="code" fill="#e2e8f0">new BufferedReader(new</text>
+  <text x="48" y="433" class="code" fill="#e2e8f0">    FileReader(f, UTF_8))</text>
+
+  <text x="40" y="470" class="lbl">WATCH OUT</text>
+  <text x="40" y="488" class="mini" fill="#b45309">One direction only, and no</text>
+  <text x="40" y="502" class="mini" fill="#b45309">going back to byte 400.</text>
+
+  <!-- ============ java.nio ============ -->
+  <text x="328" y="116" class="name">java.nio &#8212; Buffers &amp; Channels</text>
+  <text x="328" y="136" class="mini" fill="#6d28d9">position, size, speed &#183; since 2002</text>
+  <text x="328" y="176" class="lbl">THE TYPES</text>
+  <rect x="326" y="188" width="248" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="336" y="205" class="code">ByteBuffer / CharBuffer</text>
+  <rect x="326" y="220" width="248" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="336" y="237" class="code">FileChannel</text>
+  <rect x="326" y="252" width="248" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="336" y="269" class="code">Charset / CharsetDecoder</text>
+  <rect x="326" y="284" width="248" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="336" y="301" class="code">MappedByteBuffer</text>
+
+  <text x="328" y="336" class="lbl">BEST AT</text>
+  <text x="328" y="356" class="mini">Movement you control: a position</text>
+  <text x="328" y="370" class="mini">you set, a size you ask for, one</text>
+  <text x="328" y="384" class="mini">thread while another works.</text>
+
+  <rect x="326" y="396" width="248" height="52" rx="6" fill="#0f172a"/>
+  <text x="336" y="417" class="code" fill="#e2e8f0">buf.clear(); ch.read(buf);</text>
+  <text x="336" y="433" class="code" fill="#e2e8f0">buf.flip();  // now readable</text>
+
+  <text x="328" y="470" class="lbl">WATCH OUT</text>
+  <text x="328" y="488" class="mini" fill="#b45309">Forget flip() and you read</text>
+  <text x="328" y="502" class="mini" fill="#b45309">nothing at all. Silently.</text>
+
+  <!-- ============ java.nio.file ============ -->
+  <text x="616" y="116" class="name">java.nio.file &#8212; Paths</text>
+  <text x="616" y="136" class="mini" fill="#15803d">everything except the bytes &#183; since 2011</text>
+  <text x="616" y="176" class="lbl">THE TYPES</text>
+  <rect x="614" y="188" width="248" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="624" y="205" class="code">Path (never File)</text>
+  <rect x="614" y="220" width="248" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="624" y="237" class="code">Files &#183; StandardCopyOption</text>
+  <rect x="614" y="252" width="248" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="624" y="269" class="code">DirectoryStream &#183; PathMatcher</text>
+  <rect x="614" y="284" width="248" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="624" y="301" class="code">FileSystem (zip included)</text>
+
+  <text x="616" y="336" class="lbl">BEST AT</text>
+  <text x="616" y="356" class="mini">Files as things: walk a tree, match</text>
+  <text x="616" y="370" class="mini">a glob, compare two files, copy,</text>
+  <text x="616" y="384" class="mini">move, delete, look inside a zip.</text>
+
+  <rect x="614" y="396" width="248" height="52" rx="6" fill="#0f172a"/>
+  <text x="624" y="417" class="code" fill="#e2e8f0">Files.walk(dir)</text>
+  <text x="624" y="433" class="code" fill="#e2e8f0">     .filter(Files::isRegularFile)</text>
+
+  <text x="616" y="470" class="lbl">WATCH OUT</text>
+  <text x="616" y="488" class="mini" fill="#b45309">Close a walk() or a Directory-</text>
+  <text x="616" y="502" class="mini" fill="#b45309">Stream, or the folder stays locked.</text>
+
+  <!-- decision bar -->
+  <rect x="24" y="520" width="852" height="56" rx="9" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+  <text x="44" y="543" class="note">Moving characters or whole objects, once, front to back? java.io. Bytes with a position you have to manage, or one thread reading while another writes? java.nio.</text>
+  <text x="44" y="564" class="note">Anything about files and folders themselves &#8212; and every example in this session &#8212; goes through java.nio.file, and almost always through Files.</text>
+</svg>

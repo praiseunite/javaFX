@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Session 9 — Design Patterns & Advanced Features: the Repository, Factory, Singleton,
+  Strategy and Observer patterns, MVC, internationalization, and java.io / java.nio /
+  java.nio.file. Continues the Student Registry from Sessions 7 and 8.
+
+  Open this folder in IntelliJ (File → Open → select this folder), then run any class with
+  the green ▶. The H2 driver is already in lib/; on first open add it with:
+      File → Project Structure → Libraries → + → Java → select lib/h2-2.3.232.jar
+  Maven users get it from the <dependency> below.
+
+  Every program runs against an embedded H2 database in ./data/ — no server, no network.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.aptech</groupId>
+    <artifactId>s09-design-patterns</artifactId>
+    <version>1.0</version>
+    <name>Session 9 - Design Patterns and Advanced Features</name>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.3.232</version>
+        </dependency>
+    </dependencies>
+</project>

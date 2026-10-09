@@ -181,14 +181,80 @@
     </ul>
   </div>
 
-  <!-- A5 / A6 -->
+  <!-- A5 -->
+  <div class="assignment-card">
+    <div class="assignment-card__header">&#128203; A5 &middot; A Patterned Registry &middot; worth 10% of your course grade</div>
+    <p><strong>Issued:</strong> <a href="sessions/s09-design-patterns.html">Session 9</a>.
+       <strong>Second half issued:</strong> <strong>Session 10</strong> &mdash; Unit Testing &amp; AI Tools <span class="text-faint text-sm">(coming soon)</span>.
+       <strong>Due:</strong> before the start of <strong>Session 11</strong> <span class="text-faint text-sm">(coming soon)</span> (your teacher will confirm).
+       &nbsp;<strong>Time needed:</strong> about 5&ndash;6 hours across the two weeks. &nbsp;<strong>Work:</strong> individual.</p>
+    <h4>&#127919; The brief &mdash; restructure the registry, then prove it</h4>
+    <p>
+      Take the transactional registry from A4 and <strong>change its shape without changing what it
+      does</strong>. Today it works; after A5 it is arranged so that the next person can change it.
+      The behaviour you built in A4 stays &mdash; same tables, same data, same answers &mdash; but the
+      database moves behind an interface, and nothing above that interface may know it is there.
+    </p>
+    <h4>Part 1 &mdash; the refactor (Session 9)</h4>
+    <p>
+      Eight requirements, <code>R1</code> to <code>R8</code>, each marked <code>TODO</code> in the
+      starter. <code>Db</code>, the records, <code>Money</code>, <code>EnrolmentRequest</code>,
+      <code>EnrolmentEvent</code>, <code>StudentRepository</code> and <code>Main</code> are given and
+      must not change.
+    </p>
+    <ol>
+      <li><strong>R1</strong> &mdash; <code>InMemoryStudentRepository</code>: a second implementation of the same interface, with no database behind it</li>
+      <li><strong>R2</strong> &mdash; <code>H2StudentRepository</code>: the same eight methods against H2. Watch the <code>wasNull()</code> trap on a nullable mark, and keep every value behind a <code>?</code></li>
+      <li><strong>R3</strong> &mdash; <code>RepositoryFactory.create(Store)</code> and <code>createDefault()</code>: a <strong>switch expression with no <code>default</code></strong>, so adding a store breaks the compile instead of returning the wrong one</li>
+      <li><strong>R4</strong> &mdash; <code>AppConfig</code>: one instance, three settings read once (store, locale, export directory)</li>
+      <li><strong>R5</strong> &mdash; <code>FlatFee</code> and <code>EarlyBird</code>: two answers from one call site and no <code>if</code>, with money as <code>BigDecimal</code></li>
+      <li><strong>R6</strong> &mdash; <code>AuditLog</code>: an observer the registry has never heard of, handing out a copy of its lines</li>
+      <li><strong>R7</strong> &mdash; <code>Messages</code> and the six French keys, with <strong>one key deliberately left in English</strong> to prove the fallback works</li>
+      <li><strong>R8</strong> &mdash; <code>RegistryExport</code>: write, read back, walk, glob and delete, through <code>Path</code> and <code>Files</code></li>
+    </ol>
+    <h4>Part 2 &mdash; the suite (Session 10)</h4>
+    <ol>
+      <li>A JUnit 5 suite that runs against <strong>both</strong> implementations, so one set of tests proves two stores</li>
+      <li>Test data built <em>in code</em>, not seeded in SQL &mdash; the tests must run with no database file at all</li>
+      <li>A test that fails on purpose: prove that a broken store makes the suite red, and say which test caught it</li>
+      <li>An AI-generated set of test cases, each one reviewed &mdash; you keep the ones you can justify and say why you rejected the rest</li>
+    </ol>
+    <div class="assignment-card__rubric">
+      <div class="assignment-card__rubric-item"><strong>The seam holds</strong> <code>grep -rn "new H2StudentRepository" src/main/java</code> returns hits in <code>RepositoryFactory</code> and nowhere else. This is the single most important line of the marking.</div>
+      <div class="assignment-card__rubric-item"><strong>The interface stayed clean</strong> No <code>import java.sql</code>, no <code>throws SQLException</code> and no <code>Connection</code> in <code>StudentRepository.java</code>.</div>
+      <div class="assignment-card__rubric-item"><strong>One behaviour, two stores</strong> Every test passes against both implementations. A method that works in memory and fails on H2 means the interface was written to fit one of them.</div>
+      <div class="assignment-card__rubric-item"><strong>The factory carries the message</strong> <code>create(Store)</code> has no <code>default</code>; adding a third constant stops the program compiling, and you can demonstrate it.</div>
+      <div class="assignment-card__rubric-item"><strong>Money is <code>BigDecimal</code></strong> No <code>double</code> anywhere in <code>policy/</code>, and the promo boundary on 2026-08-31 is handled exactly.</div>
+      <div class="assignment-card__rubric-item"><strong>Tests need no database</strong> The suite runs green on a machine with no <code>data/</code> folder and no H2 file. If it needs one, the seam has leaked.</div>
+      <div class="assignment-card__rubric-item"><strong>Tests you can trust</strong> Each test sets up its own data, asserts one thing, and fails for a reason you can name. A test that cannot fail is not a test.</div>
+      <div class="assignment-card__rubric-item"><strong>The fallback is real</strong> <code>Messages_fr.properties</code> leaves one key out on purpose, the self-check still passes, and you can name the key and say why it is missing.</div>
+      <div class="assignment-card__rubric-item"><strong>Resources are closed</strong> The <code>Files.walk</code> stream is in a try-with-resources and the export folder can be deleted afterwards &mdash; on Windows that is the test that catches it.</div>
+      <div class="assignment-card__rubric-item"><strong>Honest use of AI</strong> Every generated test case is either kept with a reason or rejected with one. Copying a green suite you cannot explain scores nothing.</div>
+    </div>
+    <h4>&#128230; What you get</h4>
+    <ul>
+      <li><code>code/a5-patterned-registry-starter</code> &mdash; eight requirements marked <code>TODO</code>, plus <code>Main</code> (given, do not change) and <code>SelfCheck</code>, which reports PASS or FAIL per requirement</li>
+      <li><code>lib/h2-2.3.232.jar</code> &mdash; the driver, vendored so the project compiles and runs offline with no download</li>
+      <li>Worked reference: <code>code/s09-design-patterns</code> &mdash; every technique in the session, fully commented</li>
+      <li>The <a href="guides/databases.html">H2 &amp; MySQL guide</a>, and <a href="sessions/s09-design-patterns.html">Session 9</a> itself as the reading</li>
+    </ul>
+    <div class="callout callout--warn"><span class="callout__i">&#9878;&#65039;</span>
+      <div class="callout__b"><b>Academic honesty &amp; AI tools</b>
+        An AI may explain, review and generate test <em>cases</em>. It may not write the eight
+        implementations. Two things to watch: it will happily hand you a design that is pattern-shaped
+        rather than a pattern &mdash; ask <em>"how many places have to change?"</em> before you accept
+        it &mdash; and it will get the French quietly wrong, including the one key that must stay
+        English. You will defend any line in the viva.
+      </div>
+    </div>
+  </div>
+
+  <!-- A6 -->
   <div class="callout callout--note"><span class="callout__i">&#128204;</span>
-    <div class="callout__b"><b>A5 and A6 &mdash; issued in the weeks ahead</b>
-      <p>Two assignments are still to be issued, and their briefs will appear here on the day:</p>
-      <ul>
-        <li><strong>A5 &middot; Design patterns + testing</strong> &mdash; refactor the registry behind a repository interface and prove it with a JUnit suite. Issued around <strong>Session 9</strong> <span class="text-faint text-sm">(coming soon)</span>.</li>
-        <li><strong>A6 &middot; JavaFX</strong> &mdash; the core UI of your capstone as a standalone application. Issued around <strong>Session 13</strong> <span class="text-faint text-sm">(coming soon)</span>.</li>
-      </ul>
+    <div class="callout__b"><b>A6 &mdash; issued in the weeks ahead</b>
+      <p><strong>A6 &middot; JavaFX</strong> &mdash; the core UI of your capstone as a standalone
+      application. Issued around <strong>Session 13</strong> <span class="text-faint text-sm">(coming soon)</span>,
+      and its brief will appear here on the day.</p>
       <p>Nothing about the rubric changes: same four dimensions, same starter-plus-SelfCheck pattern.</p>
     </div>
   </div>

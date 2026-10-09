@@ -379,6 +379,121 @@
     };
   };
 
+  /* ----------------------------------------------------------------------
+     ResourceBundle — Java's candidate-locale lookup.
+
+     ResourceBundle.getBundle("Messages", locale) does not go looking for ONE file.
+     It builds a list of candidate locales — fr_CA first, then fr, then the root —
+     takes the FIRST candidate that has a bundle, and reads the key from that
+     bundle, falling through to its parents (which are the less specific candidates
+     after it). A key a translator has not reached is therefore not an error: it is
+     an inherited string. That mechanism is what the demo below and
+     tools/verify-playgrounds/verify-i18n.js both run against the real JDK.
+
+     Only language, country and variant are modelled (fr, fr_CA, fr_CA_x). Scripts
+     (zh_Hans_CN) change nothing about the idea and would only lengthen this file.
+     ---------------------------------------------------------------------- */
+  JavaSim.I18n = {};
+
+  /** The candidate locales for a tag, MOST specific first, root last — Java's own order. */
+  JavaSim.I18n.candidates = function (tag) {
+    var t = String(tag == null ? "" : tag).trim().replace(/_/g, "-");
+    if (!t || t === "root") return [""];
+    var bits = t.split("-");
+    var acc = bits[0].toLowerCase();
+    var chain = [acc];
+    for (var i = 1; i < bits.length; i++) {
+      // Java's Locale.of() lower-cases the language and the variant, and upper-cases the
+      // country: fr-CA-x becomes fr_CA_x, not fr_CA_X. Getting this wrong would show the
+      // playground a candidate list the JDK never builds.
+      acc += "_" + (i === 1 ? bits[i].toUpperCase() : bits[i].toLowerCase());
+      chain.push(acc);
+    }
+    chain.reverse();     // fr_CA before fr
+    chain.push("");      // and the root bundle is always the last candidate
+    return chain;
+  };
+
+  /** The file a candidate tag lives in: "" is the base name, "fr" is Messages_fr.properties. */
+  JavaSim.I18n.fileName = function (tag) {
+    return tag ? "Messages_" + tag + ".properties" : "Messages.properties";
+  };
+
+  /** Index in the candidate list of the first bundle that exists — the file Java opens. */
+  JavaSim.I18n.answers = function (bundles, tag) {
+    var chain = JavaSim.I18n.candidates(tag);
+    for (var i = 0; i < chain.length; i++) {
+      if (Object.prototype.hasOwnProperty.call(bundles, chain[i])) return i;
+    }
+    return -1;      // no bundle at all: Java throws MissingResourceException here
+  };
+
+  /**
+   * getString(key), including the walk up through the parents.
+   *
+   * Returns { key, value, found, from, fromFile, answered, answeredFile, chain }.
+   * `from` names the bundle that really holds the key, which is the interesting one
+   * on the rows where it differs from `answered`.
+   */
+  JavaSim.I18n.get = function (bundles, tag, key) {
+    var chain = JavaSim.I18n.candidates(tag);
+    var at = JavaSim.I18n.answers(bundles, tag);
+    var out = {
+      key: key, value: "!" + key + "!", found: false, from: null, fromFile: null,
+      answered: at < 0 ? null : chain[at],
+      answeredFile: at < 0 ? null : JavaSim.I18n.fileName(chain[at]),
+      chain: chain
+    };
+    if (at < 0) return out;
+    for (var i = at; i < chain.length; i++) {     // the answering bundle, then its parents
+      var bundle = bundles[chain[i]];
+      if (bundle && Object.prototype.hasOwnProperty.call(bundle, key)) {
+        out.value = bundle[key];
+        out.found = true;
+        out.from = chain[i];
+        out.fromFile = JavaSim.I18n.fileName(chain[i]);
+        return out;
+      }
+    }
+    return out;                                   // -> the !key! marker the page shows
+  };
+
+  /**
+   * The two bundles the demo shows: a copy of code/s09-design-patterns/src/main/
+   * resources/Messages.properties and Messages_fr.properties, values included.
+   * tools/verify-playgrounds/verify-i18n.js re-reads those two files and fails if this
+   * copy has drifted, so the page can never show a string the program would not print.
+   */
+  JavaSim.I18n.DEMO_BUNDLES = {
+    "": {
+      "app.title": "Student Registry",
+      "app.subtitle": "Aptech - Building Rich Java Applications",
+      "students.count": "{0} students on file",
+      "students.none": "No students to show.",
+      "enrolment.done": "{0} enrolled on {1,date,long} - total fee {2,number,currency}",
+      "enrolment.instalments": "Payable in {0} instalments of {1,number,currency}",
+      "menu.help": "Type ''help'' for options",
+      "menu.quit": "Type ''quit'' to leave"
+    },
+    "fr": {
+      "app.title": "Registre des étudiants",
+      "app.subtitle": "Aptech - Construire des applications Java complètes",
+      "students.count": "{0} étudiants enregistrés",
+      "enrolment.done": "Inscription de {0} le {1,date,long} - frais totaux {2,number,currency}",
+      "enrolment.instalments": "Payable en {0} versements de {1,number,currency}",
+      "menu.help": "Tapez ''aide'' pour les options"
+    }
+  };
+
+  /** The keys the demo table lists, in the order they appear in the base file. */
+  JavaSim.I18n.DEMO_KEYS = [
+    "app.title", "app.subtitle", "students.count", "students.none",
+    "enrolment.done", "enrolment.instalments", "menu.help", "menu.quit"
+  ];
+
+  /** A key in neither bundle, for showing what a student sees when a string is missing. */
+  JavaSim.I18n.MISSING_KEY = "registry.nope";
+
   if (typeof module !== "undefined" && module.exports) { module.exports = JavaSim; return; }
   global.JavaSim = JavaSim;
 
@@ -1526,7 +1641,116 @@
   }
 
   /* ======================================================================
-     20. Boot
+     20. Playground: i18n — which bundle answers, and where the rest fall back
+     ====================================================================== */
+  function pgI18n(root) {
+    var body = shell(root, "ResourceBundle — pick a locale, see which file answers");
+
+    // The five locales the demo offers, each named by the Java constant a student
+    // would actually write in the argument list.
+    var LOCALES = [
+      { tag: "", java: "Locale.ROOT", label: "no locale at all" },
+      { tag: "en", java: "Locale.ENGLISH", label: "English" },
+      { tag: "fr", java: "Locale.FRENCH", label: "French" },
+      { tag: "fr-CA", java: "Locale.CANADA_FRENCH", label: "French (Canada)" },
+      { tag: "de", java: "Locale.GERMAN", label: "German" }
+    ];
+
+    var select = el("select", { class: "viz-input viz-input--sm", "aria-label": "Locale" });
+    LOCALES.forEach(function (l) {
+      select.appendChild(el("option", { value: l.tag, text: l.java + " — " + l.label }));
+    });
+    select.value = "fr";
+
+    var showMissing = false;
+    var missingBtn = btn("ask for a key in no file", function () {
+      showMissing = !showMissing;
+      missingBtn.textContent = showMissing ? "hide that key" : "ask for a key in no file";
+      paint();
+    }, true);
+
+    select.addEventListener("change", paint);
+    body.appendChild(el("div", { class: "playground__controls" }, [select, missingBtn]));
+
+    var chainPanel = el("div", { class: "viz-panel" });
+    var tablePanel = el("div", { class: "viz-panel" });
+    var note = el("p", { class: "viz-note" });
+    body.appendChild(chainPanel);
+    body.appendChild(tablePanel);
+    body.appendChild(note);
+
+    function paint() {
+      var tag = select.value;
+      var bundles = JavaSim.I18n.DEMO_BUNDLES;
+      var chain = JavaSim.I18n.candidates(tag);
+      var answerAt = JavaSim.I18n.answers(bundles, tag);
+      var constant = LOCALES.filter(function (l) { return l.tag === tag; })[0].java;
+
+      /* ---- candidates, and the one that wins ---- */
+      chainPanel.innerHTML = "";
+      chainPanel.appendChild(el("div", { class: "viz-panel__title", text: "Candidate locales, most specific first" }));
+      chainPanel.appendChild(el("p", { class: "viz-panel__rule", text:
+        "getBundle(\"Messages\", " + constant + ") tries these in order and stops at the first one that has a file." }));
+      var chips = el("div", { class: "viz-items" });
+      chain.forEach(function (c, i) {
+        var cls = i === answerAt ? "is-front" : (answerAt >= 0 && i > answerAt ? "is-out" : "");
+        chips.appendChild(el("span", { class: "viz-item " + cls }, [
+          el("b", { text: c || "(root)" }),
+          el("small", { text: JavaSim.I18n.fileName(c) })
+        ]));
+        if (i < chain.length - 1) chips.appendChild(el("span", { class: "viz-arrow", text: "→" }));
+      });
+      chainPanel.appendChild(chips);
+      chainPanel.appendChild(el("p", { class: "viz-note", text: answerAt < 0
+        ? "No candidate has a file — this is the MissingResourceException case, and it is what happens when the base file is missing."
+        : "Java opens " + JavaSim.I18n.fileName(chain[answerAt]) +
+          " and stops looking" + (answerAt < chain.length - 1
+            ? ". The faded candidate" + (chain.length - 1 - answerAt > 1 ? "s" : "") + " after it " +
+              (chain.length - 1 - answerAt > 1 ? "are" : "is") + " never even opened."
+            : ".") }));
+
+      /* ---- every key, and the file it really came from ---- */
+      var keys = JavaSim.I18n.DEMO_KEYS.slice();
+      if (showMissing) keys.push(JavaSim.I18n.MISSING_KEY);
+      tablePanel.innerHTML = "";
+      tablePanel.appendChild(el("div", { class: "viz-panel__title", text: "getString(key) — key by key" }));
+      var tbody = el("tbody");
+      keys.forEach(function (k) {
+        var r = JavaSim.I18n.get(bundles, tag, k);
+        var inherited = r.found && r.from !== r.answered;
+        tbody.appendChild(el("tr", null, [
+          el("td", null, [el("code", { text: k })]),
+          el("td", null, [r.found
+            ? el("code", { text: r.value })
+            : el("span", { class: "viz-print is-bad", text: "!" + k + "!" })]),
+          el("td", { class: inherited ? "text-faint" : "" }, [el("code", { text: r.found
+            ? JavaSim.I18n.fileName(r.from) + (inherited ? "  ↑ parent" : "")
+            : "— not in any file —" })])
+        ]));
+      });
+      tablePanel.appendChild(el("table", null, [
+        el("thead", null, [el("tr", null, [
+          el("th", { text: "key" }), el("th", { text: "value" }), el("th", { text: "came from" })
+        ])]),
+        tbody
+      ]));
+
+      var inheritedCount = JavaSim.I18n.DEMO_KEYS.filter(function (k) {
+        var r = JavaSim.I18n.get(bundles, tag, k);
+        return r.found && r.from !== r.answered;
+      }).length;
+      note.textContent = "Java opened " + (answerAt < 0 ? "nothing" : JavaSim.I18n.fileName(chain[answerAt])) +
+        ". " + inheritedCount + " of the " + JavaSim.I18n.DEMO_KEYS.length + " keys were not in it and were " +
+        "inherited from a parent — no exception, no blank, just the parent's string. That inheritance is why a " +
+        "language can ship half-translated and still be usable; the two missing keys in the French file are " +
+        "deliberate, and Example 8 asks for them on purpose.";
+    }
+
+    paint();
+  }
+
+  /* ======================================================================
+     21. Boot
      ====================================================================== */
   var REGISTRY = {
     collections: pgCollections,
@@ -1545,7 +1769,8 @@
     interleave: pgInterleave,
     daemon: pgDaemon,
     virtual: pgVirtual,
-    race: pgRace
+    race: pgRace,
+    i18n: pgI18n
   };
   function boot() {
     document.querySelectorAll("[data-playground]").forEach(function (node) {

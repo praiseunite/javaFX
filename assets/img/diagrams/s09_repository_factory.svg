@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 452" width="100%" height="100%">
+  <defs>
+    <filter id="rfShadow" x="-8%" y="-8%" width="116%" height="125%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.10"/>
+    </filter>
+    <marker id="rfArrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#94a3b8"/>
+    </marker>
+    <marker id="rfArrowUp" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub   { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .step  { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 800; fill: #94a3b8; letter-spacing: .06em; }
+    .name  { font-family: system-ui, -apple-system, sans-serif; font-size: 13.5px; font-weight: 800; fill: #0f172a; }
+    .code  { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; fill: #334155; }
+    .mini  { font-family: system-ui, -apple-system, sans-serif; font-size: 10.5px; fill: #475569; }
+    .lbl   { font-family: system-ui, -apple-system, sans-serif; font-size: 10.5px; font-weight: 700; fill: #64748b; }
+    .note  { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; fill: #334155; }
+  </style>
+
+  <rect width="900" height="452" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">One interface, three stores, one factory</text>
+  <text x="30" y="54" class="sub">Everything above the interface is written against the interface. That is the whole trick, and it is what makes the store swappable.</text>
+
+  <g filter="url(#rfShadow)">
+    <rect x="24"  y="86"  width="196" height="130" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+    <rect x="252" y="80"  width="298" height="142" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+    <rect x="600" y="84"  width="276" height="38"  rx="9" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+    <rect x="600" y="132" width="276" height="38"  rx="9" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+    <rect x="600" y="180" width="276" height="38"  rx="9" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+    <rect x="252" y="286" width="298" height="86"  rx="10" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+    <rect x="24"  y="296" width="196" height="66"  rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+  </g>
+
+  <!-- the caller -->
+  <text x="40" y="110" class="step">THE CALLER</text>
+  <text x="40" y="132" class="name">RegistryController</text>
+  <text x="40" y="150" class="name">EnrolmentService</text>
+  <text x="40" y="172" class="code">repository.findAll()</text>
+  <text x="40" y="192" class="mini">Names no class.</text>
+  <text x="40" y="205" class="mini">Cannot tell which store it got.</text>
+
+  <!-- the interface -->
+  <text x="270" y="104" class="step">THE SEAM &#183; &#171;interface&#187;</text>
+  <text x="270" y="126" class="name">StudentRepository</text>
+  <text x="270" y="148" class="code">Optional&lt;Student&gt; findById(int id)</text>
+  <text x="270" y="165" class="code">List&lt;Student&gt; findAll()</text>
+  <text x="270" y="182" class="code">Student save(Student s)</text>
+  <text x="270" y="199" class="code">boolean deleteById(int id) &#183; int count()</text>
+  <text x="270" y="216" class="mini">No java.sql import. No checked SQLException.</text>
+
+  <!-- the three implementations -->
+  <text x="618" y="106" class="name">InMemoryStudentRepository</text>
+  <text x="618" y="122" class="mini">an ArrayList &#8212; empty at start, instant, perfect for tests</text>
+  <text x="618" y="154" class="name">H2StudentRepository</text>
+  <text x="618" y="170" class="mini">the file database &#8212; the real registry, unchanged from A4</text>
+  <text x="618" y="202" class="name">CsvStudentRepository</text>
+  <text x="618" y="218" class="mini">Practice 1 &#8212; a whole new store in one class, nothing else edited</text>
+
+  <!-- caller -> interface -->
+  <line x1="220" y1="151" x2="248" y2="151" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#rfArrow)"/>
+  <text x="234" y="143" class="lbl" text-anchor="middle">uses</text>
+
+  <!-- implementations -> interface -->
+  <path d="M600,103 H576 V151 H554" fill="none" stroke="#86efac" stroke-width="2" marker-end="url(#rfArrow)"/>
+  <path d="M600,151 H562"           fill="none" stroke="#86efac" stroke-width="2"/>
+  <path d="M600,199 H576 V151"      fill="none" stroke="#86efac" stroke-width="2"/>
+  <text x="588" y="240" class="lbl" fill="#15803d" text-anchor="middle">implements</text>
+
+  <!-- the factory -->
+  <text x="270" y="310" class="step">WHO CHOOSES</text>
+  <text x="270" y="332" class="name">RepositoryFactory</text>
+  <text x="270" y="352" class="code">create(Store) &#8594; switch expression, no default</text>
+  <text x="270" y="366" class="mini">Adding a fourth store breaks the compile until you name it here.</text>
+
+  <!-- config -->
+  <text x="40" y="320" class="step">THE DECISION</text>
+  <text x="40" y="342" class="code">-Dregistry.store=memory</text>
+  <text x="40" y="356" class="mini">read once by AppConfig.get()</text>
+
+  <line x1="220" y1="330" x2="248" y2="330" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#rfArrow)"/>
+  <path d="M401,286 V226" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#rfArrowUp)"/>
+  <text x="411" y="272" class="lbl">returns exactly one of the three</text>
+
+  <!-- note -->
+  <rect x="24" y="392" width="852" height="44" rx="9" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="44" y="419" class="note">The caller is the same nine lines of code in every store. Swap the one property and the registry is kept in memory instead &#8212; which is how Session 10 will test it without a database.</text>
+</svg>

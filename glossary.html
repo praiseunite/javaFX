@@ -13,7 +13,7 @@
 
 <main class="page">
   <section class="hero">
-    <span class="tag">Reference &middot; 125 terms</span>
+    <span class="tag">Reference &middot; 158 terms</span>
     <h1>Glossary A&ndash;Z</h1>
     <p class="lede">
       Every word the course introduces in one place. Each entry is the definition as the session
@@ -21,7 +21,7 @@
       class, you can find it again here in seconds. Nothing on this page needs the internet.
     </p>
     <div class="meta">
-      <span>&#128218; 125 terms</span>
+      <span>&#128218; 158 terms</span>
       <span>&#128203; Bridge B1&ndash;B7 &middot; Sessions 1&ndash;8</span>
       <span>&#128269; Filter as you type</span>
     </div>
@@ -41,7 +41,7 @@
   <h2>Find a term</h2>
   <input class="glossary-filter" type="search" placeholder="Type to filter &mdash; e.g. transaction, thread, stream" aria-label="Filter glossary terms" autocomplete="off">
   <p class="text-sm text-faint" id="glossaryCount" role="status" aria-live="polite"></p>
-  <p class="text-sm"><a href="#letter-a">A</a> &middot; <a href="#letter-b">B</a> &middot; <a href="#letter-c">C</a> &middot; <a href="#letter-d">D</a> &middot; <a href="#letter-e">E</a> &middot; <a href="#letter-f">F</a> &middot; <a href="#letter-g">G</a> &middot; <a href="#letter-h">H</a> &middot; <a href="#letter-i">I</a> &middot; <a href="#letter-j">J</a> &middot; <a href="#letter-k">K</a> &middot; <a href="#letter-l">L</a> &middot; <a href="#letter-m">M</a> &middot; <a href="#letter-n">N</a> &middot; <a href="#letter-p">P</a> &middot; <a href="#letter-r">R</a> &middot; <a href="#letter-s">S</a> &middot; <a href="#letter-t">T</a> &middot; <a href="#letter-u">U</a> &middot; <a href="#letter-v">V</a> &middot; <a href="#letter-w">W</a></p>
+  <p class="text-sm"><a href="#letter-a">A</a> &middot; <a href="#letter-b">B</a> &middot; <a href="#letter-c">C</a> &middot; <a href="#letter-d">D</a> &middot; <a href="#letter-e">E</a> &middot; <a href="#letter-f">F</a> &middot; <a href="#letter-g">G</a> &middot; <a href="#letter-h">H</a> &middot; <a href="#letter-i">I</a> &middot; <a href="#letter-j">J</a> &middot; <a href="#letter-k">K</a> &middot; <a href="#letter-l">L</a> &middot; <a href="#letter-m">M</a> &middot; <a href="#letter-n">N</a> &middot; <a href="#letter-o">O</a> &middot; <a href="#letter-p">P</a> &middot; <a href="#letter-r">R</a> &middot; <a href="#letter-s">S</a> &middot; <a href="#letter-t">T</a> &middot; <a href="#letter-u">U</a> &middot; <a href="#letter-v">V</a> &middot; <a href="#letter-w">W</a></p>
 
   <h3 id="letter-a">A</h3>
   <div class="glossary-item">
@@ -84,6 +84,12 @@
   <h3 id="letter-b">B</h3>
   <div class="glossary-item">
     <dl>
+      <dt>Base bundle</dt>
+      <dd><code>Messages.properties</code>, with no locale in its name. The file of last resort, and the one that must hold every key. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Batch update</dt>
       <dd>Queuing many statements with <code>addBatch()</code> and sending them in one call with <code>executeBatch()</code>. <span class="text-faint">&mdash; Session 8</span></dd>
     </dl>
@@ -118,6 +124,12 @@
       <dd>A value 0&ndash;255 / a stream that moves raw bytes (<code>InputStream</code>/<code>OutputStream</code>). <span class="text-faint">&mdash; Session 3</span></dd>
     </dl>
   </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>ByteBuffer</dt>
+      <dd>A fixed-size block of bytes with a position, a limit and a capacity &mdash; and <code>flip()</code> to switch it from writing to reading. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
 
   <h3 id="letter-c">C</h3>
   <div class="glossary-item">
@@ -140,8 +152,20 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Channel</dt>
+      <dd>A <code>java.nio</code> connection that reads and writes bytes, usually into or out of a <code>ByteBuffer</code>. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Character stream, encoding, UTF-8</dt>
       <dd>A stream of text characters (<code>Reader</code>/<code>Writer</code>) / the rule that turns characters into bytes / the standard encoding (1&ndash;4 bytes per character). <span class="text-faint">&mdash; Session 3</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Charset</dt>
+      <dd>The mapping between characters and bytes. Name it explicitly; never rely on the machine's default. <span class="text-faint">&mdash; Session 9</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -257,7 +281,7 @@
   <div class="glossary-item">
     <dl>
       <dt>DAO</dt>
-      <dd>Data Access Object: a class that owns the SQL for one table and hands callers objects. <span class="text-faint">&mdash; Session 7</span></dd>
+      <dd>Data Access Object &mdash; the older, narrower idea: an object that owns the SQL for one table. A repository usually contains one. <span class="text-faint">&mdash; Session 7 · Session 9</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -270,6 +294,12 @@
     <dl>
       <dt>Deadlock, lock ordering</dt>
       <dd>Threads frozen in a circular wait / the one agreed sequence that makes it impossible. <span class="text-faint">&mdash; Session 5</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Design pattern</dt>
+      <dd>A named, reusable solution to a recurring design problem &mdash; and, more usefully, a name for a change that has already been paid for. <span class="text-faint">&mdash; Session 9</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -320,8 +350,26 @@
   <h3 id="letter-f">F</h3>
   <div class="glossary-item">
     <dl>
+      <dt>Facade</dt>
+      <dd>A single simple front over a complicated subsystem &mdash; which is what <code>Db</code> is for JDBC. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Factory</dt>
+      <dd>A class whose job is to decide which implementation you get, so that nothing else has to know. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Failure report</dt>
       <dd>The message a check or a compiler prints: the type, the method, the line, and what it expected. <span class="text-faint">&mdash; Session 6</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Fallback chain / candidate locales</dt>
+      <dd>The ordered list of bundles tried for a locale: <code>fr_CA</code> &rarr; <code>fr</code> &rarr; the root file. <span class="text-faint">&mdash; Session 9</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -336,8 +384,32 @@
       <dd>A marker H2 places while a file database is open, preventing a second process from writing it. The cause of "may be already in use". <span class="text-faint">&mdash; Guide</span></dd>
     </dl>
   </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Files</dt>
+      <dd>The class of static operations on <code>Path</code>s: read, write, copy, move, walk, delete. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>FileSystem</dt>
+      <dd>An abstraction over <em>a</em> file system &mdash; the disk, or the contents of a zip file, addressed the same way. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Functional interface</dt>
+      <dd>An interface with one abstract method, which is therefore what a lambda can implement. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
 
   <h3 id="letter-g">G</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Gang of Four (GoF)</dt>
+      <dd>The four authors of <em>Design Patterns</em> (1994), and by extension its twenty-two patterns, grouped as creational, structural and behavioural. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
   <div class="glossary-item">
     <dl>
       <dt>Generated key</dt>
@@ -360,6 +432,12 @@
     <dl>
       <dt>Generics <code>&lt;T&gt;</code>, diamond <code>&lt;&gt;</code></dt>
       <dd>The type of element a collection holds; Java fills in the right-hand side for you. <span class="text-faint">&mdash; Session 1</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Glob / PathMatcher</dt>
+      <dd>A shell-style pattern (<code>**/*.txt</code>) and the object that tests a <code>Path</code> against it. <span class="text-faint">&mdash; Session 9</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -416,6 +494,12 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Internationalization (i18n)</dt>
+      <dd>Writing the program so that no user-visible text or format is baked into the code. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Intrinsic lock / monitor</dt>
       <dd>The built-in lock every Java object carries; what <code>synchronized</code> uses. <span class="text-faint">&mdash; Session 5</span></dd>
     </dl>
@@ -440,6 +524,24 @@
   </div>
 
   <h3 id="letter-j">J</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>java.io</dt>
+      <dd>The original stream API: one-directional, positionless, universal. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>java.nio</dt>
+      <dd>The channel-and-buffer API: two-directional, keeps a position, and can move data without copying it through user code. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>java.nio.file / NIO.2</dt>
+      <dd>The modern file API: <code>Path</code>, <code>Files</code>, <code>FileSystem</code> and <code>PathMatcher</code>. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
   <div class="glossary-item">
     <dl>
       <dt>JDBC</dt>
@@ -476,6 +578,18 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Locale</dt>
+      <dd>A language, optionally with a region and a variant &mdash; <code>fr</code>, <code>fr_CA</code>. It is data your program carries, not a global setting. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Localization (l10n)</dt>
+      <dd>Supplying the text and formats for one particular language and region. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Lock ordering</dt>
       <dd>Agreeing a single sequence for taking several locks, and following it in every thread. <span class="text-faint">&mdash; Session 6</span></dd>
     </dl>
@@ -492,6 +606,18 @@
     <dl>
       <dt>Marker interface, <code>serialVersionUID</code>, <code>transient</code></dt>
       <dd>An interface with no methods (<code>Serializable</code>) / a class's version number / "don't save this field". <span class="text-faint">&mdash; Session 3</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>MessageFormat</dt>
+      <dd>The class that fills <code>{0}</code> holes in a pattern &mdash; and treats a single quote as an escape character. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Model&ndash;View&ndash;Controller (MVC)</dt>
+      <dd>A three-way split: the model decides the rules, the view decides the presentation, the controller decides the wiring. <span class="text-faint">&mdash; Session 9</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -515,6 +641,26 @@
     </dl>
   </div>
 
+  <h3 id="letter-o">O</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Observer</dt>
+      <dd>A subject that holds a list of listeners and tells them when something happens, without knowing what any of them do. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Open/Closed principle</dt>
+      <dd>Open to extension, closed to modification: add a class instead of editing the ones that work. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Optional</dt>
+      <dd>A container that either holds a value or explicitly holds nothing &mdash; a return type that admits "not found". <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+
   <h3 id="letter-p">P</h3>
   <div class="glossary-item">
     <dl>
@@ -526,6 +672,12 @@
     <dl>
       <dt>Parameterized query</dt>
       <dd>A query whose values are bound through <code>?</code> &mdash; the defence against injection. <span class="text-faint">&mdash; Session 7</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Path</dt>
+      <dd>A name for a file or directory, possibly not existing &mdash; deliberately not the same thing as an open file. <span class="text-faint">&mdash; Session 9</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -592,8 +744,20 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Record</dt>
+      <dd>A class whose entire content is its data: the constructor, accessors, <code>equals</code>, <code>hashCode</code> and <code>toString</code> are generated. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Regression</dt>
       <dd>Something that used to work and no longer does, because of a change made somewhere else. <span class="text-faint">&mdash; Session 6</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Repository</dt>
+      <dd>An object that presents your data as a domain collection and hides where it comes from. Here: <code>StudentRepository</code>. <span class="text-faint">&mdash; Session 9</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -606,6 +770,12 @@
     <dl>
       <dt>Resource leak</dt>
       <dd>A file handle, connection or thread that is never released. Harmless once, fatal after a few thousand times. <span class="text-faint">&mdash; Session 6</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>ResourceBundle</dt>
+      <dd>The Java object that looks up a key in the right <code>.properties</code> file for a locale, walking up the parent chain when a key is absent. <span class="text-faint">&mdash; Session 9</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -660,6 +830,12 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Seam</dt>
+      <dd>A place in the code where behaviour can be swapped without editing the code around it. An interface is the usual way to make one. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Self-check</dt>
       <dd>A program that measures your own work and prints a pass/fail count, so correctness is a number rather than an opinion. <span class="text-faint">&mdash; Session 6</span></dd>
     </dl>
@@ -680,6 +856,12 @@
     <dl>
       <dt>Silent failure</dt>
       <dd>A fault that throws nothing and exits cleanly &mdash; an empty file, a duplicated student, a serialised job. The hardest kind to find. <span class="text-faint">&mdash; Session 6</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Singleton</dt>
+      <dd>A class with exactly one instance, reachable from everywhere &mdash; useful for configuration, dangerous everywhere else. <span class="text-faint">&mdash; Session 9</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -720,8 +902,20 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Strategy</dt>
+      <dd>An interchangeable algorithm behind one interface, chosen at the call site. Here: <code>FeePolicy</code>. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Stream, input stream, output stream</dt>
       <dd>An ordered flow of data into / out of a program. <span class="text-faint">&mdash; Session 3</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Switch expression</dt>
+      <dd>A <code>switch</code> that produces a value, with arrow cases and no fall-through. <span class="text-faint">&mdash; Session 9</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -732,6 +926,12 @@
   </div>
 
   <h3 id="letter-t">T</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Text block</dt>
+      <dd>A multi-line string literal written with <code>"""</code>, so the text in the source is the text you get. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
   <div class="glossary-item">
     <dl>
       <dt>Thread dump, <code>ThreadMXBean</code></dt>

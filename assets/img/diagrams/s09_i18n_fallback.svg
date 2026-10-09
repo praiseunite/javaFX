@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 530" width="100%" height="100%">
+  <defs>
+    <filter id="i18nShadow" x="-8%" y="-8%" width="116%" height="125%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.10"/>
+    </filter>
+    <marker id="i18nArrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub   { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .step  { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 800; fill: #94a3b8; letter-spacing: .06em; }
+    .name  { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 800; fill: #0f172a; }
+    .code  { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; fill: #334155; }
+    .mini  { font-family: system-ui, -apple-system, sans-serif; font-size: 10.5px; fill: #475569; }
+    .lbl   { font-family: system-ui, -apple-system, sans-serif; font-size: 10.5px; font-weight: 700; fill: #64748b; }
+    .note  { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; fill: #334155; }
+  </style>
+
+  <rect width="900" height="530" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">Where a string comes from</text>
+  <text x="30" y="54" class="sub">Messages.forLocale(Locale.FRENCH).get("app.title") &#8212; the locale picks the file. No Java code chooses a language anywhere.</text>
+
+  <!-- candidate chain, most specific first -->
+  <text x="24" y="82" class="step">1 &#183; THE CANDIDATES, MOST SPECIFIC FIRST</text>
+
+  <g filter="url(#i18nShadow)">
+    <rect x="24"  y="96" width="268" height="126" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6 5"/>
+    <rect x="322" y="96" width="268" height="126" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+    <rect x="620" y="96" width="256" height="126" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  </g>
+
+  <text x="40" y="122" class="name" fill="#94a3b8">Messages_fr_CA.properties</text>
+  <text x="40" y="146" class="mini">Asked for first, because the</text>
+  <text x="40" y="160" class="mini">request was fr-CA.</text>
+  <text x="40" y="186" class="code" fill="#94a3b8">not on disk</text>
+  <text x="40" y="208" class="lbl">skipped, not an error</text>
+
+  <text x="338" y="122" class="name">Messages_fr.properties</text>
+  <text x="338" y="146" class="mini">French &#183; 6 of the 8 keys</text>
+  <text x="338" y="160" class="mini">translated.</text>
+  <text x="338" y="186" class="code">app.title = Registre des&#8230;</text>
+  <text x="338" y="208" class="lbl" fill="#15803d">THE FILE THAT ANSWERS</text>
+
+  <text x="636" y="122" class="name">Messages.properties</text>
+  <text x="636" y="146" class="mini">English &#183; the base file.</text>
+  <text x="636" y="160" class="mini">Required &#8212; it is everybody's parent.</text>
+  <text x="636" y="186" class="code">app.title = Student Registry</text>
+  <text x="636" y="208" class="lbl" fill="#1d4ed8">THE PARENT</text>
+
+  <line x1="292" y1="159" x2="318" y2="159" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#i18nArrow)"/>
+  <line x1="590" y1="159" x2="616" y2="159" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#i18nArrow)"/>
+  <text x="305" y="151" class="lbl" text-anchor="middle">no file</text>
+  <text x="603" y="151" class="lbl" text-anchor="middle">key missing</text>
+
+  <!-- key by key -->
+  <text x="24" y="254" class="step">2 &#183; getString(key), ONE KEY AT A TIME</text>
+  <g filter="url(#i18nShadow)">
+    <rect x="24" y="266" width="852" height="196" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+  </g>
+  <line x1="24" y1="314" x2="876" y2="314" stroke="#e2e8f0" stroke-width="1.2"/>
+  <line x1="24" y1="366" x2="876" y2="366" stroke="#e2e8f0" stroke-width="1.2"/>
+  <line x1="24" y1="418" x2="876" y2="418" stroke="#e2e8f0" stroke-width="1.2"/>
+
+  <text x="40"  y="292" class="lbl">KEY</text>
+  <text x="230" y="292" class="lbl">FOUND IN</text>
+  <text x="520" y="292" class="lbl">THE STUDENT SEES</text>
+
+  <text x="40"  y="345" class="code">app.title</text>
+  <text x="230" y="345" class="mini" fill="#15803d">Messages_fr.properties</text>
+  <text x="520" y="345" class="code">Registre des étudiants</text>
+
+  <text x="40"  y="392" class="code">students.none</text>
+  <text x="230" y="392" class="mini" fill="#b45309">Messages_fr.properties, then its parent</text>
+  <text x="520" y="392" class="code">No students to show.</text>
+  <text x="40"  y="407" class="mini" fill="#b45309">not translated yet</text>
+  <text x="520" y="407" class="mini" fill="#b45309">English, but no exception and no blank</text>
+
+  <text x="40"  y="445" class="code">registry.nope</text>
+  <text x="230" y="445" class="mini" fill="#b91c1c">nowhere &#8212; MissingResourceException</text>
+  <text x="520" y="445" class="code" fill="#b91c1c">!registry.nope!</text>
+
+  <!-- note -->
+  <rect x="24" y="474" width="852" height="44" rx="9" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+  <text x="44" y="501" class="note">A file with 6 of 8 keys is a shippable translation. That is the feature that makes localization possible at all &#8212; and Java 9+ reads these files as UTF-8, so é needs no escape.</text>
+</svg>

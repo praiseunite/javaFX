@@ -13,7 +13,7 @@
 
 <main class="page">
   <section class="hero">
-    <span class="tag">Reference &middot; 65 videos &middot; 43 readings</span>
+    <span class="tag">Reference &middot; 70 videos &middot; 53 readings</span>
     <h1>Further Study &amp; Videos</h1>
     <p class="lede">
       Every video and every documentation link the sessions recommend, gathered in one place and
@@ -21,8 +21,8 @@
       revision strategy. Each card says <em>which part of the session</em> it supports.
     </p>
     <div class="meta">
-      <span>&#128250; 65 videos</span>
-      <span>&#128214; 43 readings</span>
+      <span>&#128250; 70 videos</span>
+      <span>&#128214; 53 readings</span>
       <span>&#127760; Videos need internet &mdash; everything else is offline</span>
     </div>
   </section>
@@ -448,6 +448,45 @@
     <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql.rowset/javax/sql/rowset/package-summary.html" target="_blank" rel="noopener">Java 25 API &mdash; <code>javax.sql.rowset</code></a> the RowSet family from Part 9.</li>
     <li><a href="https://h2database.com/html/features.html" target="_blank" rel="noopener">H2 &mdash; features, including user-defined functions and <code>CREATE ALIAS</code></a> , the mechanism behind Part 7.</li>
     <li><a href="guides/databases.html">H2 &amp; MySQL guide</a> &mdash; what changes when the database is on another machine, and why that makes the batch counts matter more, not less.</li>
+  </ul>
+
+  <h2 id="s09-design-patterns">Session 9 &mdash; Design Patterns &amp; Advanced Features</h2>
+  <p class="text-sm"><a href="sessions/s09-design-patterns.html">Open Session 9 &rarr;</a></p>
+  <h3>Watch</h3>
+  <div class="video-grid">
+    <div class="video-card" data-yt="0jjNjXcYmAU" data-title="Design Patterns - An introduction">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Design Patterns - An introduction</div><div class="video-card__channel">in28minutes</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="NP7RmrHn1Q0" data-title="Design Patterns in Java Every Developer Should Know | Factory, Observer, Strategy">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Design Patterns in Java Every Developer Should Know: Factory, Observer, Strategy</div><div class="video-card__channel">ByteMonk</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="Kq1FEHI2gTA" data-title="Using Resource Bundles in Java for i18n">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Using Resource Bundles in Java for i18n</div><div class="video-card__channel">Ken Fogel</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="Tpwnvi-3pGw" data-title="Learn Java NIO in 20 minutes with examples">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Learn Java NIO in 20 minutes with examples</div><div class="video-card__channel">Code With Z</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="UOE4jxXija0" data-title="Read from file in Java with java.nio Files and Paths">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Read from file in Java with java.nio Files and Paths</div><div class="video-card__channel">Brandan Jones</div><div class="video-card__why"></div></div>
+    </div>
+  </div>
+  <h3>Read (official &amp; trusted)</h3>
+  <ul>
+    <li><a href="https://refactoring.guru/design-patterns/catalog" target="_blank" rel="noopener">Refactoring.Guru &mdash; the design patterns catalog</a> the twenty-two from Part 1's table, each with a diagram, a problem, and code in several languages. The best free companion to this session.</li>
+    <li><a href="https://martinfowler.com/eaaCatalog/repository.html" target="_blank" rel="noopener">Martin Fowler &mdash; the Repository pattern</a> where the pattern's name comes from, and the difference between a repository and a DAO in his vocabulary. Short, and worth reading twice.</li>
+    <li><a href="https://docs.oracle.com/javase/tutorial/i18n/" target="_blank" rel="noopener">Oracle &mdash; The Java Tutorials: Internationalization</a> the whole of Part 8, at length, including the parts we skipped &mdash; collation, time zones, and text boundaries.</li>
+    <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/ResourceBundle.Control.html" target="_blank" rel="noopener">Java 25 API &mdash; <code>ResourceBundle.Control</code></a> read <code>getCandidateLocales</code>, the method whose output Part 8 prints. It is the precise definition of the fallback chain.</li>
+    <li><a href="https://docs.oracle.com/javase/tutorial/i18n/format/messageFormat.html" target="_blank" rel="noopener">Oracle &mdash; <code>MessageFormat</code></a> the <code>{0}</code>, <code>{1,date}</code>, <code>{2,number,currency}</code> syntax, and the special characters &mdash; including <strong>the single quote</strong> from Mistake 2.</li>
+    <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/file/package-summary.html" target="_blank" rel="noopener">Java 25 API &mdash; <code>java.nio.file</code></a> <code>Path</code>, <code>Files</code>, <code>PathMatcher</code>, <code>FileSystem</code>. Read the <code>Files</code> class list once from top to bottom; most of Part 10 is one line of it.</li>
+    <li><a href="https://docs.oracle.com/javase/tutorial/essential/io/fileio.html" target="_blank" rel="noopener">Oracle &mdash; The Java Tutorials: File I/O (Featuring NIO.2)</a> the guided version of Parts 9&ndash;10, and the one to read if Part 9's buffer mechanics felt fast.</li>
+    <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/ByteBuffer.html" target="_blank" rel="noopener">Java 25 API &mdash; <code>ByteBuffer</code></a> read <code>flip</code>, <code>clear</code> and <code>compact</code> side by side, with their <em>invariants</em> &mdash; it is the fastest way to stop confusing the three.</li>
+    <li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-8.html#jls-8.10" target="_blank" rel="noopener">The Java Language Specification &mdash; records</a> the normative description of what a record gives you, including the compact constructor from Part 11.</li>
+    <li><a href="guides/databases.html">H2 &amp; MySQL guide</a> &mdash; what changes when the registry lives on another machine, which is where a repository interface starts paying for itself.</li>
   </ul>
 
   <h2 id="databases">Guide &mdash; H2 &amp; MySQL: the two databases</h2>
