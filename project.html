@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Capstone Project — Building Rich Java Applications with JavaFX and AI Tools</title>
+  <meta name="description" content="The capstone brief for Building Rich Java Applications with JavaFX and AI Tools: a full JavaFX desktop application built across four milestones, ending in a demo and a viva. Worth 40% of the course.">
+  <link rel="stylesheet" href="assets/css/course.css">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "project";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== HERO ============================================================ -->
+  <section class="hero">
+    <span class="tag">Capstone &middot; 40% of your grade &middot; 4 milestones</span>
+    <h1>Capstone Project</h1>
+    <p class="lede">
+      One application, built by you, from an empty project to a working desktop program with a real
+      database behind it. Everything the eighteen sessions teach &mdash; collections, generics,
+      files, threads, JDBC, transactions, design patterns, tests &mdash; arrives in one place. You
+      finish by <strong>demonstrating it and defending it</strong>, because software you cannot
+      explain is software you do not own.
+    </p>
+    <div class="meta">
+      <span>&#127942; 40% of your grade</span>
+      <span>&#128736; 4 milestones</span>
+      <span>&#128187; JavaFX desktop application</span>
+      <span>&#127908; Demo &amp; viva</span>
+    </div>
+  </section>
+
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+  <!-- ===== WHAT YOU BUILD ================================================== -->
+  <h2>What You Are Building</h2>
+  <p>
+    A <strong>JavaFX desktop application</strong> with a database behind it. The running example
+    through the whole course is the <strong>Student Registry</strong> &mdash; the same registry you
+    built as a class in Session 1, moved onto a file in Session 3, and put on an embedded H2
+    database in Session 7. The capstone is that program with a proper window in front of it.
+  </p>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>The one rule: it must be yours</b>
+      <p>
+        You may choose a different subject if your teacher approves it &mdash; a library system, an
+        inventory tracker, a booking tool. What you may <strong>not</strong> do is hand in a tutorial
+        you followed. Every milestone is reviewed against your own repository history, and the viva
+        asks you to change something live. Pick a subject you can talk about for ten minutes without
+        notes.
+      </p>
+    </div>
+  </div>
+
+  <h3>What "done" looks like</h3>
+  <ul>
+    <li><strong>A window that opens</strong> and does something useful, not a blank <code>Stage</code></li>
+    <li><strong>Data that survives being closed</strong> &mdash; an embedded H2 database, not a list that empties on exit</li>
+    <li><strong>Writes that cannot half-happen</strong> &mdash; transactions around anything that touches two tables</li>
+    <li><strong>A test suite</strong> that would catch a regression, and that you can run in front of someone</li>
+    <li><strong>Clean layering</strong> &mdash; the UI does not contain SQL, and the database code does not contain <code>Label</code></li>
+    <li><strong>You can defend every line</strong> in the viva</li>
+  </ul>
+
+  <!-- ===== MILESTONES ====================================================== -->
+  <h2>The Four Milestones</h2>
+  <p>
+    Each milestone is a checkpoint where you show working software, not a document. They are paced to
+    land just after the session that gives you the skill, so you are never asked to use something you
+    have not been taught.
+  </p>
+
+  <div class="assignment-card">
+    <div class="assignment-card__header">&#128313; Milestone 1 &middot; The Shell &mdash; a window that looks like the finished product</div>
+    <p><strong>After:</strong> <strong>Session 15</strong> <span class="text-faint text-sm">(coming soon)</span> (Layouts, CSS, Controls &amp; Charts) and <strong>Session 16</strong> <span class="text-faint text-sm">(coming soon)</span> (Event Handling).
+       &nbsp;<strong>Weight:</strong> 10% of the capstone.</p>
+    <h4>What you hand in</h4>
+    <ul>
+      <li>A JavaFX application that opens a window with your real layout &mdash; a <code>BorderPane</code> shell, a table or list of your records, and at least one <strong>chart</strong></li>
+      <li>Styling in a <strong>CSS file</strong>, not inline <code>setStyle()</code> calls scattered through the code</li>
+      <li>The buttons and menu present and wired to <em>something</em>, even if that something is a placeholder</li>
+    </ul>
+    <h4>Marked on</h4>
+    <p>Does it run? Does it look deliberate rather than default? Is the layout built with layout panes rather than absolute positioning? Is the CSS in one place you can point at?</p>
+    <p class="text-sm text-faint"><strong>Common way to lose marks:</strong> an application that only works at one window size, because everything was positioned with <code>setLayoutX()</code>.</p>
+  </div>
+
+  <div class="assignment-card">
+    <div class="assignment-card__header">&#128313; Milestone 2 &middot; The Data Layer &mdash; it remembers</div>
+    <p><strong>After:</strong> <a href="sessions/s08-advanced-jdbc.html">Session 8</a> (Advanced JDBC), which is also when <a href="assignments.html">A4</a> is under way.
+       &nbsp;<strong>Weight:</strong> 10% of the capstone.</p>
+    <h4>What you hand in</h4>
+    <ul>
+      <li>An embedded <strong>H2</strong> database &mdash; the schema created on first run with <code>IF NOT EXISTS</code>, so it is safe to start twice</li>
+      <li>A <strong>DAO</strong> (or repository) with every value passed through <code>?</code> &mdash; no string concatenation in SQL, anywhere</li>
+      <li><strong>Transactions</strong> around any operation that writes to more than one table, with <code>rollback</code> in the failure path</li>
+      <li>Seed data, so the app is not empty the first time it opens</li>
+    </ul>
+    <h4>Marked on</h4>
+    <p>Most of this is A4, reused. The question that separates the bands: <em>can you show me a test that breaks the second write and proves the first one never happened?</em></p>
+    <p class="text-sm text-faint"><strong>Common way to lose marks:</strong> a <code>catch</code> block that rolls back and then returns normally &mdash; so the caller is told the save worked when it did not.</p>
+  </div>
+
+  <div class="assignment-card">
+    <div class="assignment-card__header">&#128313; Milestone 3 &middot; Real Behaviour &mdash; it does the job</div>
+    <p><strong>After:</strong> <strong>Session 9</strong> <span class="text-faint text-sm">(coming soon)</span> (Design Patterns) and <strong>Session 10</strong> <span class="text-faint text-sm">(coming soon)</span> (Unit Testing &amp; AI Tools).
+       &nbsp;<strong>Weight:</strong> 10% of the capstone.</p>
+    <h4>What you hand in</h4>
+    <ul>
+      <li>Full <strong>create / read / update / delete</strong> through the UI &mdash; add a record, edit it, search for it, delete it</li>
+      <li><strong>Validation</strong> with feedback: a bad amount or a blank name produces a message, not a stack trace on the console</li>
+      <li>A <strong>JUnit test suite</strong> covering the logic that is not the UI &mdash; the DAO and the business rules</li>
+      <li>Long operations do not freeze the window &mdash; they run off the UI thread (the lesson from Sessions 4&ndash;5)</li>
+    </ul>
+    <h4>Marked on</h4>
+    <p>Do the tests actually assert behaviour, or do they just call the method and pass? Can you make a small change and watch a test go red?</p>
+    <p class="text-sm text-faint"><strong>Common way to lose marks:</strong> a test suite where every test would still pass if you deleted the method body.</p>
+  </div>
+
+  <div class="assignment-card">
+    <div class="assignment-card__header">&#128313; Milestone 4 &middot; Demo &amp; Viva &mdash; you own it</div>
+    <p><strong>In:</strong> <strong>Week 5</strong> <span class="text-faint text-sm">(coming soon)</span>. &nbsp;<strong>Weight:</strong> 70% of the capstone, and the only part you cannot do the night before.</p>
+    <h4>What happens</h4>
+    <ul>
+      <li>A short <strong>live demo</strong> &mdash; the application running, doing the thing it is for</li>
+      <li>A <strong>viva</strong>: your teacher opens your code and asks you to explain, and to <em>change</em>, a specific part</li>
+      <li>Submitted work: your repository, a README that says how to run it, and your test suite</li>
+    </ul>
+    <h4>Marked on</h4>
+    <p>
+      The four dimensions used all course &mdash; <strong>Correctness</strong>, <strong>Design</strong>,
+      <strong>Style</strong>, <strong>Documentation &amp; Tests</strong> &mdash; plus the viva, which
+      is where a project that was clearly written by somebody else falls apart. Expect questions like
+      <em>"what happens if I delete this line?"</em>, <em>"why a <code>PreparedStatement</code> here
+      and not there?"</em> and <em>"where is the transaction boundary, and why is it there?"</em>
+    </p>
+  </div>
+
+  <!-- ===== WHAT TO REUSE =================================================== -->
+  <h2>You Are Not Starting From Nothing</h2>
+  <p>
+    Almost half of the capstone already exists, in code you have written and had marked. The honest
+    advice is to <strong>reuse it deliberately</strong> rather than rebuild it &mdash; that is what
+    a real engineer does.
+  </p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Capstone part</th><th>Where you already built it</th></tr></thead>
+      <tbody>
+        <tr><td>The <code>Student</code> model and the registry logic</td><td>A1 &mdash; <a href="sessions/s01-java-utility-apis.html">Session 1</a></td></tr>
+        <tr><td>Reading and writing records safely</td><td>A2 &mdash; <a href="sessions/s03-file-handling.html">Session 3</a></td></tr>
+        <tr><td>Anything slow running off the UI thread</td><td>A3 &mdash; <a href="sessions/s05-multithreading.html">Session 5</a></td></tr>
+        <tr><td>The database, the DAO and the transactions</td><td><strong>A4 &mdash; <a href="sessions/s07-jdbc-api.html">Session 7</a> + <a href="sessions/s08-advanced-jdbc.html">Session 8</a></strong></td></tr>
+        <tr><td>The repository interface and the test suite</td><td>A5 &mdash; <strong>Session 9</strong> <span class="text-faint text-sm">(coming soon)</span></td></tr>
+        <tr><td>The window, the layout, the chart and the events</td><td>A6 &mdash; <strong>Sessions 13&ndash;17</strong> <span class="text-faint text-sm">(coming soon)</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== HOW YOU WILL BE MARKED ========================================= -->
+  <h2>How the 40% Is Split</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Part</th><th>Weight</th><th>When</th></tr></thead>
+      <tbody>
+        <tr><td>Milestone 1 &mdash; the shell</td><td>10%</td><td>After Session 16</td></tr>
+        <tr><td>Milestone 2 &mdash; the data layer</td><td>10%</td><td>Alongside A4</td></tr>
+        <tr><td>Milestone 3 &mdash; real behaviour + tests</td><td>10%</td><td>After Session 10</td></tr>
+        <tr><td>Milestone 4 &mdash; demo &amp; viva</td><td>70%</td><td>Week 5</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>The three ways capstones actually fail</b>
+      <ol>
+        <li><strong>Leaving the database until last.</strong> It is the deepest part and the one that
+            cannot be rushed. Milestone 2 exists so this cannot happen to you.</li>
+        <li><strong>No tests until the end.</strong> A test written after the code proves nothing.
+            Write the test at Milestone 3 and keep it green.</li>
+        <li><strong>Code you cannot explain.</strong> If an AI wrote it and you accepted it without
+            understanding, the viva will find it. That is the whole reason the viva exists.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Next steps</b>
+      <p>Check <a href="schedule.html">the schedule</a> for when each milestone lands, and
+      <a href="assignments.html">the assignments page</a> for the rubric &mdash; the capstone is marked
+      on the same four dimensions as everything else.</p>
+    </div>
+  </div>
+
+</main>
+
+<script src="assets/js/course.js"></script>
+</body>
+</html>

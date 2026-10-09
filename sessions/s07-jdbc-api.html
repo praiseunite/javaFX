@@ -288,8 +288,8 @@ why the same jar works both as a file and over tcp:// if you ask it to.</div>
     something, and the try-with-resources at step 2 closes all of them &mdash; step 6 &mdash; on every path out,
     including the one where something throws.
   </p>
-  <!--@code src="code/s07-jdbc-api/src/main/java/com/aptech/s07/E01_JdbcSteps.java" from="28" to="69" hl="3,11,20,41" title="E01 — the six steps, smallest complete program"-->
-<pre class="numbered" data-file="E01 — the six steps, smallest complete program" data-hl="3,11,20,41" style="counter-reset:line 27"><code class="lang-java">        System.out.println("E01 - the six steps of a JDBC application");
+  <!--@code src="code/s07-jdbc-api/src/main/java/com/aptech/s07/E01_JdbcSteps.java" from="28" to="69" hl="3,11,16,21" title="E01 — the six steps, smallest complete program"-->
+<pre class="numbered" data-file="E01 — the six steps, smallest complete program" data-hl="3,11,16,21" style="counter-reset:line 27"><code class="lang-java">        System.out.println("E01 - the six steps of a JDBC application");
 
         // ---- Step 2: get a Connection ------------------------------------------
         // Steps 3-6 all live inside the try-with-resources, so the Connection is closed
@@ -493,11 +493,11 @@ whose shape it was never told in advance.</div>
 
 === insert - and read back the generated key ====================
   inserted 1 row
-  the database assigned id = 13
+  the database assigned id = 21
   note the name: O'Brien, Riley — with concatenation that apostrophe would have broken the SQL.
 
 === select - one parameterised lookup ===========================
-  found: O'Brien, Riley (id=13, mark=77.25)
+  found: O'Brien, Riley (id=21, mark=77.25)
 
 === update - two parameters, one statement ======================
   updated 1 row
@@ -1228,17 +1228,17 @@ Every fault here throws nothing. That is why they ship.</div>
   <h2>&#128250; Further Study</h2>
   <p>Each video was checked to exist and match the topic.</p>
   <div class="video-grid">
-    <div class="video-card" data-yt="eqHJJ_7MZmY" data-title="JDBC Tutorial">
+    <div class="video-card" data-yt="7v2OnUti2eM" data-title="Java Database Connectivity | JDBC">
       <div class="video-card__embed"></div>
-      <div class="video-card__info"><div class="video-card__title">Java JDBC Tutorial</div><div class="video-card__channel">Telusko</div><div class="video-card__why">Parts 1 and 4: the architecture and the six steps from scratch.</div></div>
+      <div class="video-card__info"><div class="video-card__title">Java Database Connectivity (JDBC)</div><div class="video-card__channel">Telusko</div><div class="video-card__why">Parts 1 and 4: the architecture and the six steps from scratch.</div></div>
     </div>
-    <div class="video-card" data-yt="1woRvBlgvd0" data-title="JDBC in one video">
+    <div class="video-card" data-yt="03rDqI6lxdI" data-title="JDBC Tutorial for Beginners">
       <div class="video-card__embed"></div>
-      <div class="video-card__info"><div class="video-card__title">JDBC in one video</div><div class="video-card__channel">Coding with John style walkthrough</div><div class="video-card__why">The whole connect-query-read loop, end to end.</div></div>
+      <div class="video-card__info"><div class="video-card__title">JDBC Tutorial for Beginners (MySQL, PostgreSQL, SQL Server, H2)</div><div class="video-card__channel">Cameron McKenzie</div><div class="video-card__why">The whole connect-query-read loop, end to end &mdash; and it uses H2, the database this course uses.</div></div>
     </div>
-    <div class="video-card" data-yt="_jkkKb-P3Dk" data-title="PreparedStatement vs Statement">
+    <div class="video-card" data-yt="pMy5pf3EcyY" data-title="Statement vs Prepared Statement">
       <div class="video-card__embed"></div>
-      <div class="video-card__info"><div class="video-card__title">PreparedStatement vs Statement</div><div class="video-card__channel">Java Brains</div><div class="video-card__why">Part 6: why the parameter, not the string, is the safe one.</div></div>
+      <div class="video-card__info"><div class="video-card__title">Statement vs PreparedStatement</div><div class="video-card__channel">Code Crush</div><div class="video-card__why">Part 6: why the parameter, not the string, is the safe one.</div></div>
     </div>
     <div class="video-card" data-yt="ciNHn38EyRc" data-title="SQL Injection explained">
       <div class="video-card__embed"></div>

@@ -1,0 +1,2144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session 8 — Advanced JDBC</title>
+  <meta name="description" content="Session 8 of Building Rich Java Applications with JavaFX and AI Tools: Advanced JDBC. Transactions (commit and rollback), auto-commit and isolation levels, savepoints, batch updates, scrollable and updatable result sets, stored procedures, JDBC 4.3 enhancements and RowSets — every program run against an embedded H2 database, with real output.">
+  <link rel="stylesheet" href="../assets/css/course.css">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "s08";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== 1. HERO ========================================================= -->
+  <section class="hero">
+    <span class="tag">Week 2 &middot; Day 4 &middot; Session 8 &middot; 2 hours in class</span>
+    <h1>Session 8 &mdash; Advanced JDBC</h1>
+    <p class="lede">
+      Session 7 gave the registry a database. Today it gets something the registry needs the moment money
+      is involved: <strong>transactions</strong> &mdash; the ability to say "all of this, or none of it".
+      You will enrol students and take fees as single units of work, post payments that can be undone one
+      at a time with <strong>savepoints</strong>, send whole batches in one round trip, page through a
+      <strong>scrollable</strong> result, and meet <strong>stored procedures</strong> and
+      <strong>RowSets</strong>. The thread through all of it: a database that always adds up.
+    </p>
+    <div class="meta">
+      <span>&#128218; Learner's Guide: SG &middot; XP &middot; TG &mdash; Session 8</span>
+      <span>&#9201; ~2 hours + practice at home</span>
+      <span>&#9989; Before this: Sessions 1&ndash;7</span>
+      <span>&#128203; Assignment A4 &mdash; extends here</span>
+    </div>
+  </section>
+
+  <!-- ===== 2. OBJECTIVES =================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this session you can&hellip;</b>
+    <ol>
+      <li><strong>Explain</strong> what a transaction protects, using the transfer example, and <strong>name</strong> what each letter of ACID means.</li>
+      <li><strong>Distinguish</strong> auto-commit on from off, and <strong>predict</strong> what a <code>rollback()</code> will do in each case.</li>
+      <li><strong>Write</strong> a transactional method with <code>setAutoCommit(false)</code>, <code>commit()</code> and a <code>rollback()</code> in the catch &mdash; and <strong>re-throw</strong> so the caller learns it failed.</li>
+      <li><strong>Use</strong> a <code>Savepoint</code> to undo one item of a batch without losing the rest.</li>
+      <li><strong>Read</strong> and <strong>set</strong> isolation levels, and say which of the three read phenomena each one permits.</li>
+      <li><strong>Batch</strong> many statements with <code>addBatch()</code>/<code>executeBatch()</code>, and <strong>explain</strong> why a batch is not a transaction.</li>
+      <li><strong>Move</strong> a cursor with <code>absolute()</code>, <code>relative()</code> and <code>previous()</code>, and <strong>page</strong> through a result.</li>
+      <li><strong>Update</strong> a row through an updatable <code>ResultSet</code>, and <strong>recognise</strong> when the driver silently downgrades it.</li>
+      <li><strong>Call</strong> a stored routine with a <code>CallableStatement</code>, and <strong>say</strong> what differs between H2 and Oracle.</li>
+      <li><strong>Choose</strong> between a <code>JdbcRowSet</code> and a <code>CachedRowSet</code>, and explain what "disconnected" buys you.</li>
+    </ol>
+  </div>
+
+  <!-- ===== 3. TABLE OF CONTENTS ============================================ -->
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== 5. ROADMAP ====================================================== -->
+  <h2>Your Roadmap for Today</h2>
+  <div class="roadmap">
+    <a href="#part-1-why">Part 1: Why Transactions</a>
+    <a href="#part-2-jdbc-transactions">Part 2: Transactions in JDBC</a>
+    <a href="#part-3-savepoints">Part 3: Savepoints</a>
+    <a href="#part-4-isolation">Part 4: Isolation Levels</a>
+    <a href="#part-5-batch">Part 5: Batch Updates</a>
+    <a href="#part-6-resultsets">Part 6: Scrollable &amp; Updatable Result Sets</a>
+    <a href="#part-7-procedures">Part 7: Stored Procedures</a>
+    <a href="#part-8-jdbc43">Part 8: JDBC 4.3</a>
+    <a href="#part-9-rowsets">Part 9: RowSets</a>
+    <a href="#lab-fee-ledger">Guided Lab: The Fee Ledger</a>
+  </div>
+
+  <!-- ===== 6. WHY THIS MATTERS ============================================= -->
+  <h2>Why This Matters</h2>
+  <p>
+    Every program you have written so far has a hidden assumption: that <em>each statement is the whole
+    job</em>. Insert a row, that is a job. Update a row, that is a job. As long as every operation is one
+    statement, that assumption holds, and you never have to think about it.
+  </p>
+  <p>
+    It breaks the moment a job needs <strong>two</strong> statements. Transfer money, and the debit and the
+    credit are two writes. Enrol a student and take their fee, and that is two writes. If the process dies
+    between them &mdash; a crash, a timeout, a bug &mdash; the database is left in a state nobody chose:
+    money gone from one account and arrived nowhere, or a student enrolled who never paid. A transaction is
+    how you say <strong>"these writes are one thing"</strong>, so that the database can guarantee there is
+    no moment at which half of it happened.
+  </p>
+
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; the bank teller&rsquo;s drawer</b>
+      A teller who takes your deposit does two things: writes it in the ledger, and puts the cash in the
+      drawer. A well-run bank does not allow a state where the ledger says you deposited but the drawer is
+      empty, nor the reverse. Either both happened or neither did. A transaction is the minute the bank
+      &mdash; not the teller &mdash; insists on that, across every operation that touches money at once,
+      even if the power fails mid-sentence.
+    </div>
+  </div>
+
+  <!-- ===== 7. PART 1 — WHY TRANSACTIONS =================================== -->
+  <h2 id="part-1-why"><span class="eyebrow">Part 1 of 9</span> Why Transactions Exist</h2>
+  <p>
+    A <strong>transaction</strong> is a group of statements the database treats as one. It either happens
+    completely or not at all. Four properties are guaranteed, and the industry names them by their initials:
+  </p>
+  <ul>
+    <li><strong>A &mdash; Atomicity.</strong> All the statements, or none. The half-state cannot be observed.</li>
+    <li><strong>C &mdash; Consistency.</strong> The database moves from one valid state to another; constraints are never left violated.</li>
+    <li><strong>I &mdash; Isolation.</strong> Concurrent transactions do not see each other&rsquo;s unfinished work.</li>
+    <li><strong>D &mdash; Durability.</strong> Once committed, it survives a crash &mdash; that is what the log on disk is for.</li>
+  </ul>
+  <p>
+    In JDBC, a transaction is not something you create; it is something you <em>stop the database from
+    ending prematurely</em>. By default every statement is its own transaction. Turning auto-commit off is
+    what lets several statements be one.
+  </p>
+
+  <div style="text-align:center;margin:1.5rem 0">
+    <img src="../assets/img/diagrams/s08_transaction_states.svg" alt="A transaction's life in three steps: 1 begin by calling setAutoCommit(false); 2 do the work — several writes that no other connection can see yet; 3a if nothing threw, commit() makes it all permanent; 3b if anything threw, rollback() undoes all of it, as if the transaction had never run." style="max-width:100%;height:auto">
+    <p class="text-sm text-faint" style="margin-top:.5rem">Figure 1 &mdash; one unit of work, two possible endings. There is no third.</p>
+  </div>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      The default, <strong>auto-commit on</strong>, commits each statement the instant it finishes. That is
+      why Session 7&rsquo;s code never mentioned transactions: every write was already its own. The moment a
+      job needs a second write, that default becomes the bug &mdash; and you will not see it, because nothing
+      throws. That silence is the whole danger.
+    </div>
+  </div>
+
+  <!-- ===== 8. PART 2 — TRANSACTIONS IN JDBC =============================== -->
+  <h2 id="part-2-jdbc-transactions"><span class="eyebrow">Part 2 of 9</span> Transactions in JDBC</h2>
+  <p>
+    The scenario is enrolling a student and taking their fee. Two rows go in &mdash; an
+    <code>enrolments</code> row and a <code>fee_payments</code> row. The program below does it twice: once
+    with auto-commit left on, and once inside a transaction, and in both cases the second write is made to
+    fail on purpose. The difference in what is left in the table is the entire argument for the four-line
+    pattern.
+  </p>
+  <!--@output project="code/s08-advanced-jdbc" main="com.aptech.s08.E01_Transactions"-->
+<div class="terminal-output">E01 - transactions: enrol a student and take the fee, together or not at all
+
+=== WRONG - two separate writes, auto-commit on =================
+  write 1: enrolled student 1 on course 2 (enrolment 9) - saved
+  the second write failed: NULL not allowed for column "AMOUNT"
+  enrolments before: 8, after: 9   &lt;-- the enrolment SURVIVED an operation that failed
+  (cleared 1 orphaned row before the next part)
+
+=== RIGHT - one transaction, commit at the end ==================
+  write 1: enrolment 10 written (not yet saved)
+  write 2 failed -&gt; rollback()
+  the second write failed: NULL not allowed for column "AMOUNT"
+  enrolments  : 8 -&gt; 8   (unchanged)
+  fee_payments: 4 -&gt; 4   (unchanged)
+
+=== what the difference is ======================================
+  With auto-commit ON (the default), every statement is its own
+  transaction and is saved the moment it runs. The first write was
+  already permanent when the second one failed.
+
+  With auto-commit OFF, nothing is saved until commit(). The rollback
+  in the catch undoes the first write, so the pair stays atomic:
+  both rows or neither.
+
+=== the pattern, in four lines ==================================
+  c.setAutoCommit(false);       // stop saving statement by statement
+  ... do every write ...
+  c.commit();                   // all of it becomes permanent here
+  c.rollback();                 // in a catch - all of it is undone</div>
+<!--@end-->
+
+  <p>
+    Here is that pattern, which every transactional method in this session uses. Read the four steps and
+    notice the last one: <strong>the catch re-throws</strong>. A method that rolls back and then returns
+    normally has lied to its caller &mdash; it reported success for an operation that failed.
+  </p>
+  <!--@code src="code/s08-advanced-jdbc/src/main/java/com/aptech/s08/Db.java" from="109" to="124" hl="4,7,10,11" title="Db.inTransaction — auto-commit off, commit at the end, rollback and re-throw on the way out"-->
+<pre class="numbered" data-file="Db.inTransaction — auto-commit off, commit at the end, rollback and re-throw on the way out" data-hl="4,7,10,11" style="counter-reset:line 108"><code class="lang-java">    public static &lt;T&gt; T inTransaction(Work&lt;T&gt; work) throws SQLException {
+        try (Connection c = open()) {
+            boolean originalAutoCommit = c.getAutoCommit();
+            c.setAutoCommit(false);
+            try {
+                T result = work.run(c);
+                c.commit();
+                return result;
+            } catch (SQLException | RuntimeException e) {
+                c.rollback();
+                throw e;
+            } finally {
+                c.setAutoCommit(originalAutoCommit);
+            }
+        }
+    }</code></pre>
+<!--@end-->
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>The mistake that makes a transaction useless</b>
+      <p>Catching the exception, rolling back, and then <strong>returning as if nothing happened</strong>. The
+      database is correct &mdash; the work was undone &mdash; but the caller believes it succeeded and carries
+      on. Fault 2 in Practice 3 shows exactly this: the failure is caught, swallowed, and the program reports
+      success. Roll back <em>and</em> re-throw. Every time.</p>
+    </div>
+  </div>
+
+  <h3>Auto-commit, and what it actually controls</h3>
+  <p>
+    <code>getAutoCommit()</code> is the setting behind all of this. Turning it off does not merely "start a
+    transaction" &mdash; it changes what each statement means, from a complete job to a step in one.
+    <code>E02</code> proves it by inserting a row with auto-commit on, calling <code>rollback()</code>, and
+    finding the row still there.
+  </p>
+  <!--@output project="code/s08-advanced-jdbc" main="com.aptech.s08.E02_AutoCommit"-->
+<div class="terminal-output">E02 - auto-commit and isolation levels
+
+=== auto-commit: the default, and what it means =================
+  getAutoCommit() -&gt; true
+  ON  : every statement is its own transaction, saved immediately.
+  OFF : statements group up until commit() or rollback().
+
+  inserted course 900 with auto-commit ON, then tried to roll back...
+  rollback() returned without error (some drivers allow this)
+  row still there? true   &lt;- nothing was undone; there was no transaction to undo
+  inserted course 901 with auto-commit OFF, then rolled back...
+  row still there? false   &lt;- rollback undid it
+
+=== isolation levels ============================================
+  this database's DEFAULT is: READ_COMMITTED
+
+  READ_UNCOMMITTED       supported (set ok)
+  READ_COMMITTED         supported (set ok)
+  REPEATABLE_READ        supported (set ok)
+  SERIALIZABLE           supported (set ok)
+
+=== what each level permits =====================================
+  READ_UNCOMMITTED  sees other transactions' uncommitted rows
+                    (dirty reads allowed - fastest, least safe)
+  READ_COMMITTED    sees only committed rows  &lt;- most databases' default
+  REPEATABLE_READ   a row read twice gives the same answer both times
+  SERIALIZABLE      as if the transactions ran one after another
+                    (safest, and the least concurrent)
+
+=== the three phenomena the levels are named after ==============
+  dirty read      : reading a row another transaction has changed but not committed
+  non-repeatable  : reading the same row twice and getting two different answers
+  phantom read    : running the same query twice and getting different ROWS
+
+=== in practice =================================================
+  Do not change the isolation level unless you can name the problem you
+  are solving. The default is chosen by people who know the database,
+  and lowering it to fix a performance problem trades correctness for speed.
+
+Auto-commit decides WHEN work is saved. Isolation decides WHAT others see.</div>
+<!--@end-->
+
+  <!-- ===== 9. PART 3 — SAVEPOINTS ========================================= -->
+  <h2 id="part-3-savepoints"><span class="eyebrow">Part 3 of 9</span> Savepoints: Undoing Part of a Transaction</h2>
+  <p>
+    A transaction has two endings &mdash; all of it or none of it. But real work is often a
+    <em>batch of separate items</em>: a term&rsquo;s fee postings, a file of rows being imported, a run of
+    payments. If one item is bad, throwing away the whole transaction means redoing the good ones by hand.
+  </p>
+  <p>
+    A <strong>savepoint</strong> is a bookmark inside the transaction. <code>rollback(point)</code> rewinds to
+    that bookmark, not to the beginning, so everything before it survives and everything after it is undone.
+    The outer <code>commit()</code> still decides whether any of it is kept.
+  </p>
+  <p>
+    <code>E03</code> posts five payments against one enrolment. The third is negative, which the rule forbids.
+    Watch the four good ones survive it.
+  </p>
+  <!--@output project="code/s08-advanced-jdbc" main="com.aptech.s08.E03_Savepoints"-->
+<div class="terminal-output">E03 - savepoints: undo part of a transaction, keep the rest
+
+=== posting five payments, one of them invalid ==================
+  payment 1 (100.00) ... posted
+  payment 2 (100.00) ... posted
+  payment 3 (-50.00) ... REJECTED -&gt; rolling back to the savepoint
+        reason: a fee payment must be positive (was -50.0)
+  payment 4 (100.00) ... posted
+  payment 5 (180.00) ... posted
+
+  committed. 4 of 5 payments survived.
+
+=== what is actually in the table now ===========================
+  payment 5 :     100.00
+  payment 6 :     100.00
+  payment 7 :     100.00
+  payment 8 :     180.00
+  total     :     480.00
+
+=== why not just roll back the lot? =============================
+  Because the four good payments are real work. Undoing them too
+  would mean redoing the term's posting by hand. A savepoint lets the
+  transaction say: 'this one item did not happen, the rest did.'
+
+  Note the shape: setSavepoint() before the risky step, rollback(point)
+  in the catch, releaseSavepoint(point) in the finally. The outer
+  commit still happens only if the loop itself survives.
+
+A savepoint is a bookmark. rollback(point) rewinds to it, not to the start.</div>
+<!--@end-->
+
+  <p>
+    The shape to copy is small, and the <code>finally</code> is not optional: releasing the savepoint on
+    every path stops them piling up inside a long transaction.
+  </p>
+  <!--@code src="code/s08-advanced-jdbc/src/main/java/com/aptech/s08/E03_Savepoints.java" from="45" to="63" hl="5,10,14,17" title="E03 — set a savepoint, roll back to it on failure, release it either way"-->
+<pre class="numbered" data-file="E03 — set a savepoint, roll back to it on failure, release it either way" data-hl="5,10,14,17" style="counter-reset:line 44"><code class="lang-java">                for (int i = 0; i &lt; amounts.length; i++) {
+                    double amount = amounts[i];
+
+                    // The bookmark: everything before this stays if this item fails.
+                    Savepoint point = c.setSavepoint("payment-" + (i + 1));
+                    System.out.printf("  payment %d (%.2f) ... ", i + 1, amount);
+
+                    try {
+                        insertPayment(c, 3, amount);
+                        posted++;
+                        System.out.println("posted");
+                    } catch (SQLException e) {
+                        System.out.println("REJECTED -&gt; rolling back to the savepoint");
+                        c.rollback(point);
+                        System.out.println("        reason: " + firstLine(e.getMessage()));
+                    } finally {
+                        c.releaseSavepoint(point);
+                    }
+                }</code></pre>
+<!--@end-->
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      A savepoint is <strong>not</strong> a commit. Nothing before the savepoint is permanent yet &mdash; the
+      outer <code>commit()</code> still governs all of it. A savepoint only decides <em>how far back</em> a
+      <code>rollback</code> goes. The distinction matters: students who think a savepoint saves their work
+      write code that loses it.
+    </div>
+  </div>
+
+  <!-- ===== 10. PART 4 — ISOLATION LEVELS ================================== -->
+  <h2 id="part-4-isolation"><span class="eyebrow">Part 4 of 9</span> Isolation Levels</h2>
+  <p>
+    E01 and E03 each used one connection, so isolation never came up. It only matters when two transactions
+    run at the same time, and it answers a question you have to decide deliberately:
+    <strong>how much of each other&rsquo;s unfinished work may they see?</strong>
+  </p>
+  <p>
+    The industry names the levels after the three things that can go wrong when they see too much. Learn the
+    three phenomena first; the level names then read themselves.
+  </p>
+  <ul>
+    <li><strong>Dirty read.</strong> You read a row another transaction has changed but <em>not yet committed</em>. If that transaction rolls back, you acted on a value that never existed.</li>
+    <li><strong>Non-repeatable read.</strong> You read the same row twice inside one transaction and get two different answers, because someone else committed a change in between.</li>
+    <li><strong>Phantom read.</strong> You run the same query twice and get a different <em>set of rows</em> &mdash; someone inserted or deleted one that matches.</li>
+  </ul>
+
+  <div style="text-align:center;margin:1.5rem 0">
+    <img src="../assets/img/diagrams/s08_isolation_levels.svg" alt="A table of the four isolation levels against the three phenomena. READ_UNCOMMITTED permits all three. READ_COMMITTED prevents dirty reads only. REPEATABLE_READ prevents dirty and non-repeatable reads. SERIALIZABLE prevents all three. H2's default is READ_COMMITTED." style="max-width:100%;height:auto">
+    <p class="text-sm text-faint" style="margin-top:.5rem">Figure 2 &mdash; each level down the table stops one more surprise, and costs concurrency.</p>
+  </div>
+
+  <p>
+    Read the diagram as a trade, not a ranking. Every step down is safer and slower, because the database must
+    hold more locks or do more checking to keep its promise. <code>E02</code> reads this database&rsquo;s own
+    default and then tries each level in turn &mdash; the numbers below are what H2 reported, not what a
+    textbook says it should.
+  </p>
+  <!--@code src="code/s08-advanced-jdbc/src/main/java/com/aptech/s08/E02_AutoCommit.java" from="68" to="89" hl="5,14,17,22" title="E02 — read the default, then try each level and report what the driver accepts"-->
+<pre class="numbered" data-file="E02 — read the default, then try each level and report what the driver accepts" data-hl="5,14,17,22" style="counter-reset:line 67"><code class="lang-java">            // ---- isolation levels ----
+            System.out.println(Db.rule("isolation levels"));
+
+            DatabaseMetaData md = c.getMetaData();
+            System.out.println("  this database's DEFAULT is: " + nameOf(c.getTransactionIsolation()));
+            System.out.println();
+
+            int[] levels = {
+                    Connection.TRANSACTION_READ_UNCOMMITTED,
+                    Connection.TRANSACTION_READ_COMMITTED,
+                    Connection.TRANSACTION_REPEATABLE_READ,
+                    Connection.TRANSACTION_SERIALIZABLE,
+            };
+            for (int level : levels) {
+                int previous = c.getTransactionIsolation();
+                try {
+                    c.setTransactionIsolation(level);
+                    System.out.printf("  %-22s supported (set ok)%n", nameOf(level));
+                } catch (SQLException e) {
+                    System.out.printf("  %-22s NOT supported: %s%n", nameOf(level), firstLine(e.getMessage()));
+                } finally {
+                    c.setTransactionIsolation(previous);</code></pre>
+<!--@end-->
+
+  <div class="callout callout--warn"><span class="callout__i">&#9878;&#65039;</span>
+    <div class="callout__b"><b>Do not change the isolation level to fix a symptom you cannot name</b>
+      <p>
+        The default was chosen by people who know the database. Lowering the level to make a slow query fast
+        trades correctness for speed, and the bug it introduces &mdash; a stale read, a duplicated row &mdash;
+        will surface months later in a report nobody can reproduce. Raise or lower it only when you can say
+        <em>which of the three phenomena</em> you are trying to prevent and why the default is not enough.
+      </p>
+      <p>
+        One thing worth knowing: on most databases <code>READ_COMMITTED</code> is the default, and
+        <strong>H2 reports exactly that</strong> &mdash; E02 prints it. Print the value; never assume it.
+      </p>
+    </div>
+  </div>
+
+  <!-- ===== 11. PART 5 — BATCH UPDATES ===================================== -->
+  <h2 id="part-5-batch"><span class="eyebrow">Part 5 of 9</span> Batch Updates</h2>
+  <p>
+    Loading a file of two thousand rows one <code>executeUpdate()</code> at a time means two thousand
+    separate calls to the database. <code>addBatch()</code> queues a statement instead of running it;
+    <code>executeBatch()</code> sends the whole queue in one call and returns a count for each statement.
+  </p>
+  <p>
+    <code>E04</code> inserts the same two thousand rows three ways and times each. Read the numbers, then read
+    the part underneath them &mdash; because the interesting result is not the one people expect.
+  </p>
+  <!--@output project="code/s08-advanced-jdbc" main="com.aptech.s08.E04_BatchUpdates"-->
+<div class="terminal-output">E04 - batch updates: many statements, one round trip
+
+=== 1. one statement at a time, auto-commit on ==================
+  2000 INSERTs, each sent separately and each its own commit
+  took 65 ms
+
+=== 2. batched, auto-commit still on ============================
+  one executeBatch() carrying 2000 statements - but still 2000 commits
+  took 24 ms
+
+=== 3. batched, inside ONE transaction ==========================
+  one executeBatch() carrying 2000 statements - and ONE commit
+  took 24 ms
+
+=== what actually changed - these numbers do not move ===========
+  mode                            calls to the database   commits
+  1. one at a time                         2000            2000
+  2. batched, auto-commit on                  1            2000
+  3. batched, one transaction                 1               1
+
+  The milliseconds above wobble between runs. This is an EMBEDDED
+  database in the same process: there is no network to cross, so the
+  saving is only parse-and-commit work, and it competes with whatever
+  else the machine is doing. Do not read a precise ratio out of it.
+
+  The counts never wobble, and they are why bulk loading exists. Put
+  the database on another machine and every one of those 2000 calls
+  becomes a message out and a reply back; every one of those 2000
+  commits becomes a flush to the remote disk. Fewer of both is faster,
+  and 2000 commits becoming 1 is the change that usually matters most.
+  Notice that this is a TRANSACTION win, not a batch win - which is
+  exactly the subject of today's session.
+
+=== a batch that fails halfway - no transaction =================
+  BatchUpdateException caught
+  updateCounts() -&gt; [1, 1, 1, -3]   (one entry per queued statement)
+  rows before: 0, after: 3   &lt;-- the three good ones STAYED. A batch is not a transaction.
+
+=== the same batch, inside a transaction ========================
+  BatchUpdateException caught, and rolled back
+  updateCounts() -&gt; [1, 1, 1, -3]
+  rows before: 3, after: 3   &lt;-- nothing left behind
+
+=== the rule that follows =======================================
+  addBatch()/executeBatch() is about SPEED, not safety.
+  If a half-loaded table is unacceptable, put the batch inside a
+  transaction: setAutoCommit(false), executeBatch(), then commit() -
+  and rollback() in the catch. Speed and safety are separate tools.
+
+One round trip for many statements. Wrap it in a transaction if it must be all-or-nothing.</div>
+<!--@end-->
+
+  <p>
+    Here is the third mode, the one that wins. Notice how little it takes: <code>addBatch()</code> in the loop,
+    one <code>executeBatch()</code>, and <code>setAutoCommit(false)</code> with a single <code>commit()</code>
+    at the end.
+  </p>
+  <!--@code src="code/s08-advanced-jdbc/src/main/java/com/aptech/s08/E04_BatchUpdates.java" from="164" to="177" hl="2,7,9,10" title="E04 — the batch, and the transaction wrapped around it"-->
+<pre class="numbered" data-file="E04 — the batch, and the transaction wrapped around it" data-hl="2,7,9,10" style="counter-reset:line 163"><code class="lang-java">    private static void insertBatched(Connection c, String insert, boolean autoCommit) throws SQLException {
+        if (!autoCommit) c.setAutoCommit(false);
+        try (PreparedStatement ps = c.prepareStatement(insert)) {
+            for (int i = 1; i &lt;= ROWS; i++) {
+                ps.setString(1, "batched-" + i);
+                ps.setDouble(2, i);
+                ps.addBatch();                 // queue it
+            }
+            ps.executeBatch();                 // send them all
+            if (!autoCommit) c.commit();       // one commit for 2000 inserts
+        } finally {
+            if (!autoCommit) c.setAutoCommit(true);
+        }
+    }</code></pre>
+<!--@end-->
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>A batch is not a transaction</b>
+      <p>
+        This is the trap the second half of E04 springs. When a batch fails partway,
+        <code>BatchUpdateException.getUpdateCounts()</code> reports what already ran &mdash; in the run above,
+        <code>[1, 1, 1, -3]</code>: three succeeded, the fourth failed. Without a transaction around it,
+        <strong>those three are already in the table</strong>. The program then reports a failure while leaving
+        half the data behind.
+      </p>
+      <p>
+        Wrap the batch in a transaction and the same failure leaves nothing. Speed and safety are separate
+        tools, and a batch is only the speed one.
+      </p>
+    </div>
+  </div>
+
+  <!-- ===== 12. PART 6 — SCROLLABLE & UPDATABLE RESULT SETS ================ -->
+  <h2 id="part-6-resultsets"><span class="eyebrow">Part 6 of 9</span> Scrollable &amp; Updatable Result Sets</h2>
+  <p>
+    Every <code>ResultSet</code> you have written since Session 7 has been read one way: forwards, once, with
+    <code>while (rs.next())</code>. That is the default type, <code>TYPE_FORWARD_ONLY</code>, and it is the
+    cheapest one &mdash; the database can stream rows and forget them.
+  </p>
+  <p>
+    Ask for a different type and you get a cursor you can move by hand: <code>first()</code>,
+    <code>last()</code>, <code>absolute(n)</code>, <code>relative(n)</code>, <code>previous()</code>. That is
+    what a table on screen needs when the user clicks <em>last page</em> or jumps to row 500. You also choose a
+    <strong>concurrency</strong>: read-only, or updatable, which lets you edit the row under the cursor and
+    write it back with <code>updateRow()</code>.
+  </p>
+
+  <div style="text-align:center;margin:1.5rem 0">
+    <img src="../assets/img/diagrams/s08_resultset_types.svg" alt="A matrix of the three ResultSet types against the two concurrencies. TYPE_FORWARD_ONLY supports both but cannot go back a row. TYPE_SCROLL_INSENSITIVE supports both and is the useful one, for paging and for grid editing. TYPE_SCROLL_SENSITIVE is not supported by H2 in either concurrency." style="max-width:100%;height:auto">
+    <p class="text-sm text-faint" style="margin-top:.5rem">Figure 3 &mdash; what you ask for is a request. What you get is whatever the driver grants.</p>
+  </div>
+
+  <p>
+    <code>E05</code> asks the database what it supports, opens a scrollable cursor over the eight seeded
+    students, and walks it around &mdash; then does the thing this is really for: prints them three to a page.
+  </p>
+  <!--@output project="code/s08-advanced-jdbc" main="com.aptech.s08.E05_ScrollableResultSet"-->
+<div class="terminal-output">E05 - scrollable result sets and row positioning
+
+=== what this database supports =================================
+  TYPE_FORWARD_ONLY      : true
+  TYPE_SCROLL_INSENSITIVE: true
+  TYPE_SCROLL_SENSITIVE  : false
+
+=== the default - forwards only =================================
+  type: TYPE_FORWARD_ONLY   (remember this - it is what you have been using)
+    1 Ada Lovelace         88.50
+    2 Grace Hopper         91.00
+    3 Alan Turing          76.25
+    ... (stopping early for the example)
+
+=== scrollable - move the cursor by hand ========================
+  type: TYPE_SCROLL_INSENSITIVE
+  last()      -&gt; id 8, Dennis Ritchie   (there are 8 rows)
+  first()     -&gt; id 1, Ada Lovelace
+  absolute(3) -&gt; id 3, Alan Turing   (jump straight to row 3)
+  relative(2) -&gt; id 5, Margaret Hamilton   (two rows on from row 3)
+  previous()  -&gt; id 4, Katherine Johnson   (back one)
+  isAfterLast()  : false
+  isBeforeFirst(): false
+
+=== the real use: paging through a result =======================
+  8 students, 3 per page -&gt; 3 pages
+  page 1:
+    1 Ada Lovelace         88.50
+    2 Grace Hopper         91.00
+    3 Alan Turing          76.25
+  page 2:
+    4 Katherine Johnson    95.75
+    5 Margaret Hamilton    89.00
+    6 Barbara Liskov       84.50
+  page 3:
+    7 Tim Berners-Lee      79.00
+    8 Dennis Ritchie       97.25
+
+  note: these days most paging uses LIMIT/OFFSET in the SQL
+  itself, and never needs a scrollable cursor. Both work; know both.
+
+=== the cost ====================================================
+  A scrollable cursor may make the driver buffer rows in memory so it can
+  go backwards. For a ten-million-row report that is the difference
+  between a query and an outage. Ask for it when you need it.
+
+Scrollable = a cursor you can move. Forwards-only is cheaper and is the default.</div>
+<!--@end-->
+
+  <p>
+    The whole difference is the two arguments to <code>createStatement()</code>. Everything after that is a
+    cursor you drive yourself.
+  </p>
+  <!--@code src="code/s08-advanced-jdbc/src/main/java/com/aptech/s08/E05_ScrollableResultSet.java" from="60" to="84" hl="3,7,15,19,23" title="E05 — TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY, and moving the cursor by hand"-->
+<pre class="numbered" data-file="E05 — TYPE_SCROLL_INSENSITIVE, CONCUR_READ_ONLY, and moving the cursor by hand" data-hl="3,7,15,19,23" style="counter-reset:line 59"><code class="lang-java">            try (Statement st = c.createStatement(
+                    ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+                 ResultSet rs = st.executeQuery("SELECT id, name, mark FROM students ORDER BY id")) {
+
+                System.out.println("  type: " + typeName(rs.getType()));
+
+                if (rs.last()) {
+                    System.out.println("  last()      -&gt; id " + rs.getInt("id") + ", " + rs.getString("name")
+                            + "   (there are " + rs.getRow() + " rows)");
+                }
+                if (rs.first()) {
+                    System.out.println("  first()     -&gt; id " + rs.getInt("id") + ", " + rs.getString("name"));
+                }
+                if (rs.absolute(3)) {
+                    System.out.println("  absolute(3) -&gt; id " + rs.getInt("id") + ", " + rs.getString("name")
+                            + "   (jump straight to row 3)");
+                }
+                if (rs.relative(2)) {
+                    System.out.println("  relative(2) -&gt; id " + rs.getInt("id") + ", " + rs.getString("name")
+                            + "   (two rows on from row 3)");
+                }
+                if (rs.previous()) {
+                    System.out.println("  previous()  -&gt; id " + rs.getInt("id") + ", " + rs.getString("name")
+                            + "   (back one)");
+                }</code></pre>
+<!--@end-->
+
+  <p>
+    Now the second half. <code>E06</code> asks for the same scrollable cursor but this time
+    <code>CONCUR_UPDATABLE</code>, and edits the row the cursor is sitting on.
+  </p>
+  <!--@output project="code/s08-advanced-jdbc" main="com.aptech.s08.E06_UpdatableResultSet"-->
+<div class="terminal-output">E06 - updatable result sets: update, insert and delete through the cursor
+
+=== asking for an updatable cursor ==============================
+  requested concurrency: CONCUR_UPDATABLE
+  granted concurrency  : CONCUR_UPDATABLE   (the driver agreed)
+
+=== updateRow - change the row under the cursor =================
+  row 3 before: Alan Turing / 76.25
+  updateDouble("mark", 82.75) + updateRow()
+  row 3 after : Alan Turing / 82.75   (read back through the same cursor)
+
+=== insertRow - build a row, then move it into the table ========
+  inserted id 4: Katherine Johnson / 95.75
+
+=== the table now, read with a plain SELECT =====================
+  1 Ada Lovelace         88.50
+  2 Grace Hopper         91.00
+  3 Alan Turing          82.75
+  4 Katherine Johnson    95.75
+
+=== deleteRow - remove the row under the cursor =================
+  deleting Grace Hopper (id 2)
+  note: the row is gone from the TABLE, not just from this cursor.
+
+=== the table after the delete ==================================
+  1 Ada Lovelace         88.50
+  3 Alan Turing          82.75
+  4 Katherine Johnson    95.75
+
+=== the caveat - a join gives you a read-only cursor ============
+  requested: CONCUR_UPDATABLE
+  granted  : CONCUR_READ_ONLY   &lt;- the driver downgraded it, with no error
+  a join has no single row to write back to - so an updatable
+  cursor over one is read-only. Check getConcurrency() if it matters.
+
+An updatable cursor edits the row it is on. Convenient for grids, less clear than a plain UPDATE.</div>
+<!--@end-->
+
+  <p>
+    <code>updateRow()</code> writes the row under the cursor; <code>moveToInsertRow()</code> plus
+    <code>insertRow()</code> builds a new one; <code>deleteRow()</code> removes it. Notice that
+    <code>E06</code> prints the table with a plain <code>SELECT</code> after each change &mdash; so you can
+    check the cursor really did reach the database, rather than only the object in memory.
+  </p>
+  <!--@code src="code/s08-advanced-jdbc/src/main/java/com/aptech/s08/E06_UpdatableResultSet.java" from="61" to="80" hl="5,6,14,18" title="E06 — updateRow(), then moveToInsertRow()/insertRow()"-->
+<pre class="numbered" data-file="E06 — updateRow(), then moveToInsertRow()/insertRow()" data-hl="5,6,14,18" style="counter-reset:line 60"><code class="lang-java">                // ---- UPDATE a row through the cursor ----
+                System.out.println(Db.rule("updateRow - change the row under the cursor"));
+                if (rs.absolute(3)) {
+                    System.out.println("  row 3 before: " + rs.getString("name") + " / " + rs.getDouble("mark"));
+                    rs.updateDouble("mark", 82.75);
+                    rs.updateRow();                  // writes it back
+                    System.out.println("  updateDouble(\"mark\", 82.75) + updateRow()");
+                    System.out.println("  row 3 after : " + rs.getString("name") + " / " + rs.getDouble("mark")
+                            + "   (read back through the same cursor)");
+                }
+
+                // ---- INSERT a new row ----
+                System.out.println(Db.rule("insertRow - build a row, then move it into the table"));
+                rs.moveToInsertRow();                    // a blank staging row
+                rs.updateInt("id", 4);
+                rs.updateString("name", "Katherine Johnson");
+                rs.updateDouble("mark", 95.75);
+                rs.insertRow();
+                rs.moveToCurrentRow();                   // come back to where we were
+                System.out.println("  inserted id 4: Katherine Johnson / 95.75");</code></pre>
+<!--@end-->
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>The driver can silently downgrade you</b>
+      <p>
+        At the end of <code>E06</code> the same request is made over a <code>JOIN</code> &mdash; and the
+        driver hands back <code>CONCUR_READ_ONLY</code> without an error, without a warning, and without
+        telling anyone. It is being reasonable: a joined row has no single table to write back to.
+      </p>
+      <p>
+        The lesson is not "avoid joins". The lesson is that <strong>the type and concurrency you asked for are
+        what you asked for, not what you got</strong>. If your code is going to write through the cursor, check
+        <code>rs.getConcurrency()</code> first. This is the first of three places today where the honest answer
+        is "test it and read what the driver says".
+      </p>
+    </div>
+  </div>
+
+  <!-- ===== 13. PART 7 — STORED PROCEDURES ================================= -->
+  <h2 id="part-7-procedures"><span class="eyebrow">Part 7 of 9</span> Stored Procedures</h2>
+  <p>
+    A <strong>stored procedure</strong> is a routine that lives inside the database and runs there. An
+    organisation uses them for three reasons: the business rule sits in <em>one</em> place instead of in ten
+    programs; one <code>CALL</code> can do the work of several round trips; and you can grant permission to
+    <em>call a procedure</em> without granting access to the tables it touches.
+  </p>
+  <p>
+    From Java, a stored routine is called with a <code>CallableStatement</code>. The shape is the same one
+    used against Oracle or SQL Server:
+  </p>
+  <pre><code class="lang-java">CallableStatement cs = c.prepareCall("{ ? = call FEEWITHTAX(?) }");
+cs.registerOutParameter(1, Types.DOUBLE);   // the ? on the left receives the result
+cs.setDouble(2, 380.00);                    // the argument
+cs.execute();
+double answer = cs.getDouble(1);</code></pre>
+
+  <p>
+    There is a genuine wrinkle here, and it is worth facing rather than hiding. Oracle, SQL Server and
+    PostgreSQL each have a procedural language &mdash; PL/SQL, T-SQL, PL/pgSQL &mdash; in which you write the
+    body of the procedure in SQL. <strong>H2 does not.</strong> H2 has no PL/SQL at all. What it gives you
+    instead is <code>CREATE ALIAS</code>, which exposes an ordinary <strong>Java</strong> static method as if
+    it were a database function.
+  </p>
+  <p>
+    Those two methods are the routines <code>E07</code> registers. Read the second one carefully: H2 passes the
+    <code>Connection</code> in as the first parameter, so an alias can run its own queries &mdash; which is
+    exactly what a stored procedure does.
+  </p>
+  <!--@code src="code/s08-advanced-jdbc/src/main/java/com/aptech/s08/E07_StoredProcedures.java" from="30" to="47" hl="2,7,10" title="E07 — two Java methods, exposed to SQL by CREATE ALIAS"-->
+<pre class="numbered" data-file="E07 — two Java methods, exposed to SQL by CREATE ALIAS" data-hl="2,7,10" style="counter-reset:line 29"><code class="lang-java">    /** An H2 alias body: an ordinary static Java method, exposed to SQL by CREATE ALIAS. */
+    public static double feeWithTax(double fee) {
+        return Math.round(fee * 1.10 * 100.0) / 100.0;
+    }
+
+    /** A second alias: total paid against an enrolment id, seeing the database itself. */
+    public static double totalPaidFor(Connection c, int enrolmentId) throws SQLException {
+        // H2 can pass the Connection as the first parameter of an alias - so a
+        // "procedure" can run its own queries, exactly like a stored procedure would.
+        try (var ps = c.prepareStatement(
+                "SELECT COALESCE(SUM(amount), 0) FROM fee_payments WHERE enrolment_id = ?")) {
+            ps.setInt(1, enrolmentId);
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getDouble(1);
+            }
+        }
+    }</code></pre>
+<!--@end-->
+
+  <!--@output project="code/s08-advanced-jdbc" main="com.aptech.s08.E07_StoredProcedures"-->
+<div class="terminal-output">E07 - stored procedures: calling a routine that lives in the database
+
+=== does this database do stored procedures? ====================
+  supportsStoredProcedures() -&gt; false
+  H2 has no PL/SQL of its own; it exposes Java methods with CREATE ALIAS.
+
+=== CREATE ALIAS - a Java method, registered as a SQL routine ===
+  registered FEEWITHTAX and TOTALPAIDFOR
+  (in Oracle this step would be CREATE OR REPLACE PROCEDURE ... in PL/SQL)
+
+=== call it like a function =====================================
+  SELECT FEEWITHTAX(450.00) -&gt; 495.00
+
+  Note what just happened. supportsStoredProcedures() said FALSE,
+  and the routine ran anyway. The flag answers a narrower question:
+  'do you have Oracle-style PL/SQL procedures?' H2 does not - it
+  registers Java methods instead. The flag is a description, not a
+  gate. When a flag and a working call disagree, believe the call.
+
+=== CallableStatement - { ? = call name(?) } ====================
+  call FEEWITHTAX(380.00) -&gt; 418.00
+  note: OUT parameter registered first, arguments set after.
+
+=== a routine with a query inside it ============================
+  TOTALPAIDFOR(enrolment 1) -&gt; 450.00
+  TOTALPAIDFOR(enrolment 3) -&gt; 0.00
+
+=== why an organisation uses them ===============================
+  1. the rule lives in one place - change the procedure, not ten programs
+  2. fewer round trips - one CALL can do several statements
+  3. access control - grant CALL without granting the underlying tables
+
+  The trade: business logic in the database is harder to test and
+  version-control than logic in your Java. Many teams keep it thin
+  deliberately. Know what the tool is for before reaching for it.
+
+=== the part that changes between databases =====================
+  H2          CREATE ALIAS FEEWITHTAX FOR 'com.aptech.s08.....'
+  Oracle      CREATE OR REPLACE FUNCTION FEETAX(p IN NUMBER) RETURN NUMBER IS ...
+  SQL Server  CREATE PROCEDURE dbo.FeeTax @p DECIMAL AS ...
+  The CALL from Java is the same shape in all three.
+
+A stored procedure is logic the database runs. The JDBC call is portable; the CREATE is not.</div>
+<!--@end-->
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point &mdash; when a flag and a working call disagree, believe the call</b>
+      <p>
+        <code>DatabaseMetaData.supportsStoredProcedures()</code> returned <strong>false</strong>, and the very
+        next line called a routine successfully. That is not a contradiction; the flag answers a narrower
+        question than the name suggests &mdash; <em>"do you have Oracle-style PL/SQL procedures?"</em> &mdash;
+        and H2 honestly says no.
+      </p>
+      <p>
+        Careful readers are entitled to ask which answer to trust. The answer is the one you can run. A flag
+        tells you what the driver <em>claims</em>; a program that runs tells you what the database
+        <em>does</em>. When you meet the two disagreeing in your own work, write the two-line program.
+      </p>
+    </div>
+  </div>
+
+  <div class="callout callout--warn"><span class="callout__i">&#9878;&#65039;</span>
+    <div class="callout__b"><b>What transfers, and what does not</b>
+      <p>
+        The <strong>call is portable</strong>: <code>{ ? = call name(?) }</code> is the same string in Java
+        against Oracle, SQL Server and H2. The <strong><code>CREATE</code> is not</strong> &mdash;
+        <code>CREATE ALIAS ... FOR 'com.aptech...'</code> is H2-only, and the same routine on Oracle would be
+        written in PL/SQL.
+      </p>
+      <p>
+        And the honest trade: business logic inside the database is harder to unit-test, harder to version
+        control, and harder to deploy than logic in your Java. Plenty of teams keep their procedures thin on
+        purpose. Know what the tool is for before you reach for it &mdash; "the database can do it" is not the
+        same as "the database should".
+      </p>
+    </div>
+  </div>
+
+  <!-- ===== 14. PART 8 — JDBC 4.3 ========================================== -->
+  <h2 id="part-8-jdbc43"><span class="eyebrow">Part 8 of 9</span> JDBC 4.3 Enhancements</h2>
+  <p>
+    JDBC 4.3 arrived with Java 9, and it added four things. Knowing the list is not the lesson; knowing what
+    the list is <em>for</em> is.
+  </p>
+  <ul>
+    <li><strong><code>ShardingKey</code> and <code>ShardingKeyBuilder</code></strong> &mdash; a sharding key names which physical server a connection belongs to, when one logical database is split across many machines.</li>
+    <li><strong><code>beginRequest()</code> / <code>endRequest()</code></strong> &mdash; brackets around a unit of work, so a driver or pool can route it better.</li>
+    <li><strong><code>setShardingKey()</code></strong> on <code>Connection</code> and <code>ConnectionBuilder</code> &mdash; the direct form of the same idea.</li>
+    <li><strong>The <code>ConnectionBuilder</code> family</strong> &mdash; build a <code>Connection</code> without <code>DriverManager</code>, usually because a pool owns the physical connections and your code borrows one.</li>
+  </ul>
+  <p>
+    Notice the direction of travel: every one of these exists for <em>large, pooled, multi-node</em> systems.
+    This course's database is a single file in the same process, so none of them will appear in your work this
+    term &mdash; and <code>E09</code> says so plainly while still asking the driver about each one.
+  </p>
+  <!--@output project="code/s08-advanced-jdbc" main="com.aptech.s08.E09_Jdbc43"-->
+<div class="terminal-output">E09 - JDBC 4.3 enhancements, tested against a real driver
+
+=== what the driver says about itself ===========================
+  JDBC major/minor : 4.3
+  driver           : H2 JDBC Driver 2.3.232 (2024-08-11)
+
+=== JDBC 4.3: ShardingKey and its builder =======================
+  A sharding key names which SHARD a connection belongs to, when one
+  logical database is split across many servers. This course's
+  database is a single file, so there are no shards — but the API
+  can still be asked whether it is there.
+
+  Note WHERE the builder comes from: not a Connection, but a
+  DataSource (java.sql.CommonDataSource.createShardingKeyBuilder()).
+  createShardingKeyBuilder() -&gt; NOT supported by this driver
+
+=== JDBC 4.3: beginRequest / endRequest =========================
+  These bracket a unit of work so the driver can route and pool better.
+  The specification says a request boundary may not fall inside a
+  transaction. Watch whether this driver enforces that:
+  beginRequest() -&gt; accepted
+  setAutoCommit(false) inside a request -&gt; allowed
+    (the spec forbids this; H2 does not police it - so a rule in a
+     specification is only as real as the driver that implements it)
+  endRequest() -&gt; done
+
+=== JDBC 4.3: setShardingKey on Connection ======================
+  setShardingKey is the direct form of the builder above: the key it
+  wants is the very object the builder could not make. The two
+  failures are the same failure, seen twice.
+  setShardingKey(key) -&gt; NOT supported by this driver:
+    setShardingKey not implemented
+  This is the free lesson of E09: the METHOD exists (it is in
+  java.sql.Connection since Java 9) but the IMPLEMENTATION is the
+  driver's to provide, and a single-file database has no shards.
+
+=== JDBC 4.3: building a Connection without DriverManager =======
+  The old way:  DriverManager.getConnection(url, user, password)
+  The 4.3 way:  a ConnectionBuilder, usually obtained from a DataSource.
+  Its point is a connection POOL: the pool builds and owns the physical
+  connections, and your code borrows one. That is Session 8's next step
+  in a real deployment, and H2 has no pool of its own - the H2 server
+  (java -cp h2.jar org.h2.tools.Server) plus a pool such as HikariCP
+  is what a production setup would use.
+
+=== what to take from this ======================================
+  JDBC 4.3 added sharding, request boundaries and builder-based
+  connections — features aimed at large, pooled, multi-node systems.
+  On a single embedded database you will use none of them today.
+
+  What you WILL meet in the next year is a method that exists and
+  throws SQLFeatureNotSupportedException anyway. Now you have seen it,
+  and the response is the same as here: catch it, read what the driver
+  said, and design around what it actually does.
+
+A JDBC version is a promise the JDK makes; the driver decides whether to keep it.</div>
+<!--@end-->
+
+  <p>
+    There is one detail in that program worth copying into your habits. <code>createShardingKeyBuilder()</code>
+    is <strong>not</strong> on <code>Connection</code> &mdash; it is on
+    <code>java.sql.CommonDataSource</code>. Ask a <code>Connection</code> for it and your code will not
+    compile.
+  </p>
+  <!--@code src="code/s08-advanced-jdbc/src/main/java/com/aptech/s08/E09_Jdbc43.java" from="53" to="65" hl="3,4,7,9" title="E09 — the builder comes from a DataSource, and the driver is allowed to refuse"-->
+<pre class="numbered" data-file="E09 — the builder comes from a DataSource, and the driver is allowed to refuse" data-hl="3,4,7,9" style="counter-reset:line 52"><code class="lang-java">            java.sql.ShardingKey key = null;
+            try {
+                javax.sql.DataSource ds = new org.h2.jdbcx.JdbcDataSource();
+                ShardingKeyBuilder builder = ds.createShardingKeyBuilder();
+                System.out.println("  DataSource.createShardingKeyBuilder() -&gt; " + builder.getClass().getName());
+                builder.subkey("student-1", java.sql.JDBCType.VARCHAR);
+                key = builder.build();
+                System.out.println("  built a ShardingKey -&gt; " + key);
+            } catch (SQLFeatureNotSupportedException e) {
+                System.out.println("  createShardingKeyBuilder() -&gt; NOT supported by this driver");
+            } catch (SQLException e) {
+                System.out.println("  createShardingKeyBuilder() -&gt; threw " + firstLine(e.getMessage()));
+            }</code></pre>
+<!--@end-->
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point &mdash; a JDBC version is a promise the JDK makes, not one the driver keeps</b>
+      <p>
+        <code>setShardingKey</code> has been on the <code>java.sql.Connection</code> interface since Java 9.
+        It is right there in the API documentation. And it threw
+        <code>SQLFeatureNotSupportedException: setShardingKey not implemented</code>.
+      </p>
+      <p>
+        This is not an H2 flaw &mdash; a single-file database has no shards, so there is nothing to
+        implement. It is a fact of life you will meet again with other drivers and other methods: the
+        interface shipped before every database caught up. The habit that saves you is the one <code>E09</code>
+        demonstrates: <strong>call it inside a try, catch <code>SQLFeatureNotSupportedException</code>, and
+        read what the driver said</strong> &mdash; then design around what it actually does.
+      </p>
+    </div>
+  </div>
+
+  <!-- ===== 15. PART 9 — ROWSETS =========================================== -->
+  <h2 id="part-9-rowsets"><span class="eyebrow">Part 9 of 9</span> RowSets</h2>
+  <p>
+    A <code>ResultSet</code> is chained to its open <code>Connection</code>. Close the connection and the rows
+    are gone. That is a real problem for a desktop application: you do not want your table view holding a
+    database connection open while the user has a cup of tea.
+  </p>
+  <p>
+    A <strong>RowSet</strong> is a <code>ResultSet</code> that is also a JavaBean &mdash; so it can be created
+    with no connection, configured with setters, filled on demand, and read long after the connection closed.
+    You get one from a <code>RowSetFactory</code>, which you get from <code>RowSetProvider</code>. That
+    two-step exists so the provider can be swapped &mdash; by an application server, by a driver &mdash;
+    without your code changing.
+  </p>
+  <pre><code class="lang-java">RowSetFactory factory = RowSetProvider.newFactory();
+
+try (JdbcRowSet jrs = factory.createJdbcRowSet()) {      // still connected
+    jrs.setUrl(Db.H2_URL);
+    jrs.setUsername("sa");
+    jrs.setPassword("");
+    jrs.setCommand("SELECT id, name FROM students WHERE mark >= ?");
+    jrs.setDouble(1, 85.0);
+    jrs.execute();                                       // no Connection in sight
+    while (jrs.next()) { ... }
+}</code></pre>
+
+  <table>
+    <thead><tr><th>RowSet</th><th>Connected?</th><th>Reach for it when&hellip;</th></tr></thead>
+    <tbody>
+      <tr><td><code>JdbcRowSet</code></td><td>yes</td><td>you want a <code>ResultSet</code> with setters and a command of its own.</td></tr>
+      <tr><td><code>CachedRowSet</code></td><td><strong>no</strong></td><td>the rows must outlive the connection &mdash; a UI, a report, another thread.</td></tr>
+      <tr><td><code>WebRowSet</code></td><td>no</td><td>the rows must travel as XML.</td></tr>
+      <tr><td><code>FilteredRowSet</code></td><td>no</td><td>one cached result with several filtered views of it.</td></tr>
+      <tr><td><code>JoinRowSet</code></td><td>no</td><td>join several cached results without going back to the database.</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    <code>E08</code> runs through them: a <code>JdbcRowSet</code> with its own URL and query, a
+    <code>CachedRowSet</code> read <em>after</em> its connection was closed, a cache edited and written back,
+    and a <code>WebRowSet</code> printed as XML.
+  </p>
+  <!--@output project="code/s08-advanced-jdbc" main="com.aptech.s08.E08_RowSets"-->
+<div class="terminal-output">E08 - RowSets: JdbcRowSet, CachedRowSet and the factory
+
+=== the factory: RowSetProvider -&gt; RowSetFactory ================
+  RowSetProvider.newFactory() -&gt; com.sun.rowset.RowSetFactoryImpl
+  the two-step exists so the provider can be swapped without
+  changing the code that asks for a rowset.
+
+=== JdbcRowSet - connected, a ResultSet with setters ============
+  students with mark &gt;= 85:
+    8 Dennis Ritchie       97.25
+    4 Katherine Johnson    95.75
+    2 Grace Hopper         91.00
+    5 Margaret Hamilton    89.00
+    1 Ada Lovelace         88.50
+  note: no Connection or PreparedStatement in sight - the rowset
+  holds the URL and the query itself.
+
+=== CachedRowSet - filled while connected, read after close =====
+  filled from the database
+  connection closed. reading the cached rows anyway:
+    8 Dennis Ritchie       97.25
+    4 Katherine Johnson    95.75
+    2 Grace Hopper         91.00
+    ... 8 rows in total, all in memory, no connection
+
+=== edit the cache, then write it back ==========================
+  A writable CachedRowSet needs a SIMPLE command. The JDK's
+  CachedRowSetWriter builds its UPDATE by appending "WHERE id = ?"
+  to the command you gave it - and appended to an ORDER BY clause
+  that is not valid SQL. So this one selects without ordering, and
+  we find the highest mark by walking the cache ourselves.
+  highest mark: Dennis Ritchie / 97.25
+  updated the cache to 99.00 - the database does not know yet
+  database still says: 97.25   &lt;- proof the cache and the table are separate
+  acceptChanges(connection) wrote the change through
+  database now says  : 99.00
+  (registry reset to the seed data)
+
+=== WebRowSet - a CachedRowSet that speaks XML ==================
+  the rowset as XML, first lines:
+    &lt;?xml version="1.0"?&gt;
+    &lt;webRowSet xmlns="http://java.sun.com/xml/ns/jdbc" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://java.sun.com/xml/ns/jdbc http://java.sun.com/xml/ns/jdbc/webrowset.xsd"&gt;
+    &lt;properties&gt;
+    &lt;command&gt;SELECT id, title, fee FROM courses ORDER BY id&lt;/command&gt;
+    &lt;concurrency&gt;1008&lt;/concurrency&gt;
+    ... (114 lines in total)
+  useful for sending a disconnected result over a network or to a file.
+
+=== which one, when =============================================
+  JdbcRowSet    you want a ResultSet with setters, still connected
+  CachedRowSet  the result must outlive the connection - UI, reports, threads
+  WebRowSet     the result must travel as XML
+  FilteredRowSet  one cached result, several filtered views of it
+  JoinRowSet    join several cached results without going back to the database
+
+A RowSet is a ResultSet you can configure, disconnect and pass around.</div>
+<!--@end-->
+
+  <p>
+    The part worth studying is the write-back, because it shows the cache and the table are genuinely
+    separate things. The change goes into memory first, the database is asked what it thinks, and only
+    <code>acceptChanges()</code> makes them agree.
+  </p>
+  <!--@code src="code/s08-advanced-jdbc/src/main/java/com/aptech/s08/E08_RowSets.java" from="122" to="136" hl="1,4,5,10" title="E08 — edit the cache, prove the database has not changed, then acceptChanges()"-->
+<pre class="numbered" data-file="E08 — edit the cache, prove the database has not changed, then acceptChanges()" data-hl="1,4,5,10" style="counter-reset:line 121"><code class="lang-java">            editable.absolute(topRow);
+            System.out.println("  highest mark: " + topName + " / " + topMark);
+            editable.updateDouble("mark", 99.00);
+            editable.updateRow();                    // the change is in the CACHE, not the database
+            System.out.println("  updated the cache to 99.00 - the database does not know yet");
+            System.out.println("  database still says: " + markOf(topId)
+                    + "   &lt;- proof the cache and the table are separate");
+
+            try (Connection back = Db.open()) {
+                editable.acceptChanges(back);        // now push the cache back to the database
+                System.out.println("  acceptChanges(connection) wrote the change through");
+            } catch (SQLException e) {
+                System.out.println("  acceptChanges failed: " + Db.firstLine(e));
+            }
+            System.out.println("  database now says  : " + markOf(topId));</code></pre>
+<!--@end-->
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>A <code>CachedRowSet</code> that writes back needs a plain command</b>
+      <p>
+        This one cost a real debugging session while this page was being written, and the error message does
+        not name the cause. The JDK's <code>CachedRowSetWriter</code> builds its <code>UPDATE</code> by
+        appending <code>WHERE id = ?</code> <em>to the command you gave it</em>. Give it a command that
+        already ends in <code>ORDER BY mark DESC</code> and you get:
+      </p>
+      <pre><code class="lang-sql">SELECT ID, NAME, MARK FROM REGISTRY.PUBLIC.students ORDER BY mark DESC [*]WHERE ID = ?
+                                                                          ^ not valid SQL</code></pre>
+      <p>
+        The command must be a plain <code>SELECT &lt;columns&gt; FROM &lt;table&gt;</code> &mdash; no
+        <code>ORDER BY</code>, no <code>WHERE</code>. Read-only caches can have either; the moment you intend
+        to write back, keep it simple and sort or filter in Java.
+      </p>
+    </div>
+  </div>
+
+  <!-- ===== 16. GUIDED LAB ================================================= -->
+  <h2 id="lab-fee-ledger">&#128736; Guided Lab &mdash; The Fee Ledger</h2>
+  <p>
+    The registry has money in it now, and money is where transactions stop being theory. In this lab you post
+    a term&rsquo;s enrolments and fees as real units of work, and every step uses a tool from Parts 1 to 4.
+  </p>
+  <p>
+    Open <code>code/s08-advanced-jdbc</code> and read
+    <code>src/main/java/com/aptech/s08/lab/FeeLedger.java</code>. It has four steps:
+  </p>
+  <div class="steps">
+    <ol>
+      <li><strong>Enrol and pay, atomically.</strong> Insert an <code>enrolments</code> row, insert a <code>fee_payments</code> row, set the paid flag &mdash; then commit. Three writes, one unit.</li>
+      <li><strong>Make the payment fail.</strong> The same method again with a negative fee. The enrolment is written, the payment is refused, and the rollback takes <em>both</em> away.</li>
+      <li><strong>Post a batch with a savepoint.</strong> Four payments, one of them invalid. Three survive.</li>
+      <li><strong>Reconcile.</strong> Every enrolment against its course fee, with the paid flag checked against the arithmetic.</li>
+    </ol>
+  </div>
+
+  <p>
+    Run it from the project folder &mdash; the database is a file in <code>./data/</code>, and it is reset to
+    the seed data at the start, so your output will match this exactly.
+  </p>
+  <!--@output project="code/s08-advanced-jdbc" main="com.aptech.s08.lab.FeeLedger"-->
+<div class="terminal-output">GUIDED LAB - the Fee Ledger
+
+=== STEP 1 - enrol a student and take the fee, atomically =======
+  enrolment 9 created and paid, in one transaction
+  Alan Turing on Database Fundamentals owes 380.00, paid 380.00
+
+=== STEP 2 - the payment fails, so nothing survives =============
+  enrolment 10 written (not yet committed)
+  rolling back the whole unit
+  the payment failed: a fee payment must be positive (was -320.0)
+  enrolments before: 9, after: 9   -&gt; the failed pair left NOTHING behind
+
+=== STEP 3 - post four payments, one bad, keep the good three ===
+  posting against enrolment 3
+    rejected -20.00: a fee payment must be positive (was -20.0)
+  3 of 4 payments posted
+  Alan Turing on Java Programming owes 450.00, paid 380.00
+
+=== STEP 4 - reconcile every enrolment against its course fee ===
+  enr  student              course                       fee      paid  state
+  1    Ada Lovelace         Java Programming          450.00    450.00  settled
+  2    Grace Hopper         Java Programming          450.00    450.00  settled
+  3    Alan Turing          Java Programming          450.00    380.00  part-paid
+  4    Katherine Johnson    Database Fundamentals     380.00    380.00  settled
+  5    Margaret Hamilton    Database Fundamentals     380.00      0.00  unpaid
+  6    Barbara Liskov       Database Fundamentals     380.00      0.00  unpaid
+  7    Tim Berners-Lee      Web Development           320.00    320.00  settled
+  8    Dennis Ritchie       Software Engineering      520.00      0.00  unpaid
+  9    Alan Turing          Database Fundamentals     380.00    380.00  settled
+  'settled' means the payments cover the fee; the paid flag agrees.
+
+Every write in this lab was either all-or-nothing, or undoable to a savepoint.
+That is what a transaction buys: the ledger always adds up.</div>
+<!--@end-->
+
+  <h3>The method STEP 1 and STEP 2 both call</h3>
+  <p>
+    This is the whole session in fifteen lines. Read it top to bottom: auto-commit off, the three writes, the
+    commit, and then the two lines in the catch &mdash; <code>rollback()</code> and <strong><code>throw</code></strong>.
+    Take the <code>throw</code> away and STEP 2 would report success for a failure.
+  </p>
+  <!--@code src="code/s08-advanced-jdbc/src/main/java/com/aptech/s08/lab/FeeLedger.java" from="82" to="96" hl="2,7,10,11" title="FeeLedger.enrolAndPay — three writes, one commit, and a rollback that re-throws"-->
+<pre class="numbered" data-file="FeeLedger.enrolAndPay — three writes, one commit, and a rollback that re-throws" data-hl="2,7,10,11" style="counter-reset:line 81"><code class="lang-java">        int enrolAndPay(int studentId, int courseId, double fee) throws SQLException {
+            c.setAutoCommit(false);
+            try {
+                int enrolmentId = insertEnrolment(c, studentId, courseId);
+                insertPayment(c, enrolmentId, fee);
+                markPaid(c, enrolmentId);
+                c.commit();
+                return enrolmentId;
+            } catch (SQLException e) {
+                c.rollback();
+                throw e;
+            } finally {
+                c.setAutoCommit(true);
+            }
+        }</code></pre>
+<!--@end-->
+
+  <h3>STEP 3, the savepoint</h3>
+  <p>
+    One savepoint per payment. The good ones stay, the bad one is undone, and the whole thing is still
+    <em>one</em> transaction &mdash; so the final <code>commit()</code> is what makes any of it real.
+  </p>
+  <!--@code src="code/s08-advanced-jdbc/src/main/java/com/aptech/s08/lab/FeeLedger.java" from="122" to="138" hl="3,5,9,11,15" title="FeeLedger.postPaymentsWithSavepoint — keep the good, undo only the bad"-->
+<pre class="numbered" data-file="FeeLedger.postPaymentsWithSavepoint — keep the good, undo only the bad" data-hl="3,5,9,11,15" style="counter-reset:line 121"><code class="lang-java">            try {
+                for (double amount : amounts) {
+                    Savepoint point = c.setSavepoint("payment");
+                    try {
+                        insertPayment(c, enrolmentId, amount);
+                        posted++;
+                    } catch (SQLException e) {
+                        System.out.println("    rejected " + Db.money(amount) + ": " + firstLine(e.getMessage()));
+                        c.rollback(point);
+                    } finally {
+                        c.releaseSavepoint(point);
+                    }
+                }
+                // If everything posted, the enrolment is now settled.
+                markPaidIfSettled(c, enrolmentId);
+                c.commit();
+                return posted;</code></pre>
+<!--@end-->
+
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Your turn &mdash; extend the lab</b>
+      <p>Three changes worth making, in rising order of difficulty:</p>
+      <ol>
+        <li>Print the <code>enrolments</code> count <em>inside</em> STEP 2, before the rollback, so you can see the row that is about to vanish. Nothing else proves as clearly that the row existed and was undone.</li>
+        <li>Change STEP 1 so the student is already enrolled on that course. H2 will refuse the duplicate; make the program report it as a message rather than a stack trace.</li>
+        <li>Add a STEP 5 that posts a payment <em>and</em> updates a running total in a second table, both in one transaction. Then break the update on purpose and prove no payment was recorded.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ===== 17. COMMON MISTAKES ============================================ -->
+  <h2>&#9888;&#65039; Common Mistakes</h2>
+  <p>
+    Every one of these was produced by running the code on this page. The error text is copied from the runs,
+    not invented.
+  </p>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 1: committing statement by statement because auto-commit was left on</b>
+      <pre><code class="lang-java">c.setAutoCommit(true);            // the default, and the bug
+insert(c, "leaked-1");
+insert(c, "leaked-2");
+throw new SQLException("third step failed");
+// catch: c.rollback();  &lt;- and the two rows are still there</code></pre>
+      <p><strong>What the run printed:</strong>
+      <code>before: 0, after: 2 &nbsp;-&gt; 2 row(s) leaked past a rollback</code></p>
+      <p><strong>Why it is dangerous:</strong> nothing throws. <code>rollback()</code> runs without error and
+      does nothing, so the code reads as correct. <strong>Fix:</strong> if a job has more than one write,
+      <code>setAutoCommit(false)</code> <em>first</em>. That is the whole of it.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 2: catching the failure, rolling back, and returning normally</b>
+      <pre><code class="lang-java">try {
+    insert(c, "will-not-be-rolled-back");
+    throw new SQLException("a real failure");
+} catch (SQLException e) {
+    // caught and ignored - no rollback, and the caller is told nothing
+}
+c.commit();                        // and this commits the half-done work</code></pre>
+      <p><strong>What the run printed:</strong>
+      <code>broken: the caller thinks it succeeded; the row is in the table</code></p>
+      <p><strong>Why it is dangerous:</strong> the database is <em>wrong</em> and the caller is <em>misinformed</em>
+      &mdash; the worst of both. A transaction that fails silently is worse than no transaction, because you
+      trusted it. <strong>Fix:</strong> roll back <em>and</em> re-throw, every time.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 3: assuming a batch is atomic</b>
+      <pre><code class="lang-java">ps.addBatch();     // rows 1, 2, 3 - all fine
+ps.addBatch();     // row 4 - too long for the column, so it fails here
+ps.executeBatch();</code></pre>
+      <p><strong>What the run printed:</strong>
+      <code>updateCounts() -&gt; [1, 1, 1, -3]</code> and then
+      <code>rows before: 0, after: 3 &lt;-- the three good ones STAYED</code></p>
+      <p><strong>Why it is dangerous:</strong> the method throws, so you write a <code>catch</code> and move
+      on &mdash; while three rows sit in the table. <strong>Fix:</strong> the batch inside a transaction, with
+      <code>rollback()</code> in the catch. The same failing batch then printed
+      <code>rows before: 3, after: 3</code>.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 4: giving a writable <code>CachedRowSet</code> a command with <code>ORDER BY</code></b>
+      <pre><code class="lang-java">cached.setCommand("SELECT id, name, mark FROM students ORDER BY mark DESC");
+// ... later ...
+cached.acceptChanges(connection);</code></pre>
+      <p><strong>What the run printed:</strong> an H2 syntax error pointing at
+      <code>... ORDER BY mark DESC [*]WHERE ID = ?</code></p>
+      <p><strong>Why it is dangerous:</strong> the message names SQL you never wrote. The JDK&rsquo;s writer
+      appended <code>WHERE id = ?</code> to your whole command, including the sort. <strong>Fix:</strong> a
+      plain <code>SELECT &lt;columns&gt; FROM &lt;table&gt;</code>. Sort it yourself, in Java.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake 5: trusting a flag instead of the driver</b>
+      <pre><code class="lang-java">c.createShardingKeyBuilder();     // does not compile - that method is on DataSource
+c.setShardingKey(key);            // compiles, and then:
+// SQLFeatureNotSupportedException: setShardingKey not implemented</code></pre>
+      <p><strong>What the run printed:</strong>
+      <code>setShardingKey(key) -&gt; NOT supported by this driver</code></p>
+      <p><strong>Why it is dangerous:</strong> reading the API documentation is not the same as knowing what
+      your driver does. Neither is reading <code>supportsStoredProcedures()</code>, which said
+      <code>false</code> while a routine ran two lines later. <strong>Fix:</strong> wrap it in a
+      <code>try</code>, catch <code>SQLFeatureNotSupportedException</code>, and print what the driver said.</p>
+    </div>
+  </div>
+
+  <!-- ===== 18. KNOWLEDGE CHECK ============================================ -->
+  <h2>&#129504; Knowledge Check</h2>
+  <p>Ten questions on transactions and the rest of today. If you disagree with one, argue it &mdash; that is a code review.</p>
+
+  <div class="quiz" id="s08-check">
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">1. A transaction guarantees that&hellip;</div>
+      <label class="quiz__opt"><input type="radio" value="a"> every statement runs faster.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> a group of statements either all take effect or none does.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> errors cannot happen.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> the database never needs a backup.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> Atomicity. The half-finished state cannot be observed by anyone.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">2. Which call starts a transaction in JDBC?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>c.begin()</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>c.startTransaction()</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>c.setAutoCommit(false)</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>c.commit()</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> There is no <code>begin()</code>. Turning auto-commit off is what makes several statements one unit.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">3. With auto-commit <strong>on</strong>, what does <code>rollback()</code> undo?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Nothing &mdash; each statement was already committed.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> The last statement only.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Everything since the program started.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> It throws an exception.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A.</strong> E02 proved it: the row was still there afterwards. No error, no effect &mdash; which is exactly what makes it a trap.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="d">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">4. A transactional method catches its <code>SQLException</code>, rolls back, and returns normally. What is wrong?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Nothing &mdash; that is the correct pattern.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> The rollback should come before the catch.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> It should call <code>close()</code> instead.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> The caller is told the operation succeeded when it did not.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>D.</strong> Roll back <em>and</em> re-throw. The database may be correct, but the caller is now acting on a lie.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">5. What does <code>rollback(savepoint)</code> do?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Commits everything before the savepoint.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Undoes the work after the savepoint, keeping what came before.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Undoes the entire transaction.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Creates a second connection.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> A savepoint is a bookmark, not a commit &mdash; the outer <code>commit()</code> still governs all of it.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">6. Which phenomenon does <code>READ_COMMITTED</code> prevent?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> All three.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> None of them.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Dirty reads only.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Phantom reads only.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> You only ever see committed rows, so no dirty read &mdash; but the same row read twice can still differ. It is most databases&rsquo; default, including H2&rsquo;s.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">7. A batch of four inserts fails on the fourth. With auto-commit on and no transaction, what is in the table?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> The first three rows &mdash; a batch is not a transaction.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Nothing &mdash; the whole batch was rejected.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Only the fourth row.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> All four.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A.</strong> <code>getUpdateCounts()</code> returned <code>[1, 1, 1, -3]</code>: three done, one failed. Wrap the batch in a transaction if half a load is unacceptable.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="d">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">8. You ask for <code>TYPE_SCROLL_INSENSITIVE</code>, <code>CONCUR_UPDATABLE</code> over a two-table <code>JOIN</code>. What do you get?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> An exception.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Exactly what you asked for.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> A compile error.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> A read-only cursor, silently.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>D.</strong> No error, no warning. Check <code>rs.getConcurrency()</code> before you try to write through a cursor.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">9. In <code>{ ? = call FEEWITHTAX(?) }</code>, what does the first <code>?</code> hold?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> The first argument.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> The return value &mdash; you must <code>registerOutParameter</code> it.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> The connection.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Nothing; it is a placeholder the driver ignores.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> Left of the <code>=</code> is the OUT parameter, right is the IN argument. Register the OUT one before you execute.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">10. What is the point of a <code>CachedRowSet</code>?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> It makes queries run faster.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> It replaces SQL with Java.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> The rows outlive the connection, so a UI or report layer need not hold one open.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> It encrypts the result.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> It reads everything into memory while connected, then works after <code>close()</code> &mdash; and <code>acceptChanges()</code> writes edits back when you are ready.</div>
+    </div>
+    <div class="quiz__score" style="display:none"></div>
+  </div>
+
+  <!-- ===== 19. PRACTICE =================================================== -->
+  <h2>&#128170; Practice</h2>
+  <p>Three programs, in rising order. Run each one; every output below is reproducible.</p>
+
+  <details>
+    <summary><strong>&#127793; Easy: prove that a rollback undoes and a commit keeps</strong></summary>
+    <div>
+      <p>
+        Write the smallest program that shows the difference. Insert a row with auto-commit off, call
+        <code>rollback()</code>, and check it is gone. Insert another, <code>commit()</code>, and check it is
+        still there. Nothing here is new &mdash; it is E01 and E02 with the training wheels off.
+      </p>
+      <details>
+        <summary>&#128161; Hint</summary>
+        <p>You need a scratch table, since you will be writing and unwriting rows. Use a <code>count()</code> helper that runs a fresh <code>SELECT COUNT(*)</code> &mdash; reading the count from the database proves what the <em>database</em> holds, not what your program intended.</p>
+      </details>
+      <details>
+        <summary>&#9989; Solution</summary>
+        <div>
+          <!--@code src="code/s08-advanced-jdbc/src/main/java/com/aptech/s08/practice/P1_RollbackOrCommit.java" title="P1_RollbackOrCommit.java"-->
+<pre class="numbered" data-file="P1_RollbackOrCommit.java"><code class="lang-java">package com.aptech.s08.practice;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+import com.aptech.s08.Db;
+
+/**
+ * PRACTICE 1 (Easy) — prove that a rollback undoes a write, and a commit does not.
+ *
+ * &lt;p&gt;Write the smallest program that shows the difference. Insert a row with auto-commit off,
+ * roll back, and check it is gone; insert another, commit, and check it is still there. Nothing
+ * here is new — it is E01 and E02 with the training wheels off.
+ *
+ * &lt;p&gt;&lt;strong&gt;Expected output:&lt;/strong&gt; the first row is gone after the rollback, the second
+ * survives the commit.
+ */
+public class P1_RollbackOrCommit {
+
+    public static void main(String[] args) throws SQLException {
+        System.out.println("P1 - a rollback undoes, a commit keeps");
+
+        try (Connection c = Db.open()) {
+
+            try (Statement st = c.createStatement()) {
+                st.execute("DROP TABLE IF EXISTS p1_demo");
+                st.execute("CREATE TABLE p1_demo (id INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,"
+                         + " label VARCHAR(40))");
+            }
+
+            // ---- rollback ----
+            c.setAutoCommit(false);
+            try (PreparedStatement ps = c.prepareStatement("INSERT INTO p1_demo (label) VALUES (?)")) {
+                ps.setString(1, "should-vanish");
+                ps.executeUpdate();
+            }
+            System.out.println("  inserted 'should-vanish', then rollback()...");
+            c.rollback();
+            System.out.println("  rows now: " + count(c) + "   &lt;- the rollback undid it");
+
+            // ---- commit ----
+            try (PreparedStatement ps = c.prepareStatement("INSERT INTO p1_demo (label) VALUES (?)")) {
+                ps.setString(1, "should-stay");
+                ps.executeUpdate();
+            }
+            System.out.println("  inserted 'should-stay', then commit()...");
+            c.commit();
+            System.out.println("  rows now: " + count(c) + "   &lt;- the commit kept it");
+
+            c.setAutoCommit(true);
+            try (Statement st = c.createStatement();
+                 ResultSet rs = st.executeQuery("SELECT label FROM p1_demo")) {
+                while (rs.next()) System.out.println("    in the table: " + rs.getString("label"));
+            }
+
+            try (Statement st = c.createStatement()) {
+                st.execute("DROP TABLE p1_demo");
+            }
+        }
+
+        System.out.println("\nrollback() rewinds to the last commit. commit() makes it permanent.");
+    }
+
+    private static int count(Connection c) throws SQLException {
+        try (Statement st = c.createStatement();
+             ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM p1_demo")) {
+            rs.next();
+            return rs.getInt(1);
+        }
+    }
+}</code></pre>
+<!--@end-->
+          <!--@output project="code/s08-advanced-jdbc" main="com.aptech.s08.practice.P1_RollbackOrCommit"-->
+<div class="terminal-output">P1 - a rollback undoes, a commit keeps
+  inserted 'should-vanish', then rollback()...
+  rows now: 0   &lt;- the rollback undid it
+  inserted 'should-stay', then commit()...
+  rows now: 1   &lt;- the commit kept it
+    in the table: should-stay
+
+rollback() rewinds to the last commit. commit() makes it permanent.</div>
+<!--@end-->
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details>
+    <summary><strong>&#128170; Medium: a transfer that must not half-happen</strong></summary>
+    <div>
+      <p>
+        Move a balance from one account to another inside one transaction, and prove the invariant that
+        matters: <strong>the total across both accounts never changes</strong>. Then make the second update
+        fail on purpose and show the total is still intact.
+      </p>
+      <p>
+        This is the textbook transaction example, and it is worth doing by hand once &mdash; so that the
+        lab&rsquo;s fee posting is not the first time you have seen it.
+      </p>
+      <details>
+        <summary>&#128161; Hint</summary>
+        <p>Check the balance <em>inside</em> the transaction and throw if it is too low. The throw is what makes the rollback happen &mdash; put the <code>rollback()</code> in the <code>catch</code>, then re-throw. Print the total before and after; if your transaction is right, it never moves.</p>
+      </details>
+      <details>
+        <summary>&#9989; Solution</summary>
+        <div>
+          <!--@code src="code/s08-advanced-jdbc/src/main/java/com/aptech/s08/practice/P2_AtomicTransfer.java" title="P2_AtomicTransfer.java"-->
+<pre class="numbered" data-file="P2_AtomicTransfer.java"><code class="lang-java">package com.aptech.s08.practice;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+import com.aptech.s08.Db;
+
+/**
+ * PRACTICE 2 (Medium) — a transfer: two updates that must both happen, or neither.
+ *
+ * &lt;p&gt;Move a balance from one account to another inside one transaction, and prove the invariant
+ * that matters: &lt;strong&gt;the total across both accounts never changes.&lt;/strong&gt; Then deliberately
+ * make the second update fail and show the total is still intact — because the first one was
+ * rolled back.
+ *
+ * &lt;p&gt;This is the textbook transaction example, and it is worth doing once by hand so that the
+ * lab's fee posting is not the first time you have seen it.
+ *
+ * &lt;p&gt;&lt;strong&gt;Expected output:&lt;/strong&gt; the transfer succeeds and the total is unchanged; the
+ * failed transfer leaves both balances exactly where they were.
+ */
+public class P2_AtomicTransfer {
+
+    public static void main(String[] args) throws SQLException {
+        System.out.println("P2 - a transfer that must not half-happen");
+
+        try (Connection c = Db.open()) {
+
+            try (Statement st = c.createStatement()) {
+                st.execute("DROP TABLE IF EXISTS accounts");
+                st.execute("CREATE TABLE accounts (id INT PRIMARY KEY, name VARCHAR(40), balance DECIMAL(9,2))");
+                st.executeUpdate("INSERT INTO accounts VALUES "
+                        + "(1, 'Ada',   500.00),"
+                        + "(2, 'Grace', 300.00)");
+            }
+
+            double totalBefore = total(c);
+            System.out.println(Db.rule("before"));
+            print(c, "  ");
+            System.out.printf("  total: %.2f%n", totalBefore);
+
+            // ---- a transfer that works ----
+            System.out.println(Db.rule("transfer 120.00 from Ada to Grace - one transaction"));
+            transfer(c, 1, 2, 120.00);
+            print(c, "  ");
+            System.out.printf("  total: %.2f   (unchanged: %.2f)%n", total(c), totalBefore);
+
+            // ---- a transfer that fails halfway ----
+            System.out.println(Db.rule("transfer 9999.00 - more than Ada has, so it must fail"));
+            double before = total(c);
+            try {
+                transferStrict(c, 1, 2, 9999.00);   // refuses to go negative, mid-transaction
+            } catch (SQLException e) {
+                System.out.println("  transfer refused: " + firstLine(e.getMessage()));
+            }
+            print(c, "  ");
+            System.out.printf("  total: %.2f   (still %.2f - the debit was rolled back)%n", total(c), before);
+
+            System.out.println(Db.rule("why this is the whole point"));
+            System.out.println("  The debit and the credit are two statements. Without a transaction,");
+            System.out.println("  a failure between them destroys money - the debit stands and the");
+            System.out.println("  credit never arrives. The invariant 'the total is constant' is what a");
+            System.out.println("  transaction is protecting, and it is what you assert in a test.");
+
+            try (Statement st = c.createStatement()) {
+                st.execute("DROP TABLE accounts");
+            }
+        }
+
+        System.out.println("\nTwo writes, one unit. The total across the pair never changes by accident.");
+    }
+
+    /** Moves money, refusing to overdraw. The refusal happens inside the transaction, so it rolls back. */
+    static void transfer(Connection c, int from, int to, double amount) throws SQLException {
+        transferStrict(c, from, to, amount);   // allow the same code to throw for the failing case
+    }
+
+    static void transferStrict(Connection c, int from, int to, double amount) throws SQLException {
+        c.setAutoCommit(false);
+        try {
+            double fromBalance = balance(c, from);
+            if (amount &gt; fromBalance) {
+                throw new SQLException("insufficient funds: " + Db.money(fromBalance)
+                        + " available, " + Db.money(amount) + " requested");
+            }
+
+            credit(c, from, -amount);   // debit
+            credit(c, to,   +amount);   // credit
+            c.commit();
+        } catch (SQLException e) {
+            c.rollback();
+            throw e;
+        } finally {
+            c.setAutoCommit(true);
+        }
+    }
+
+    private static void credit(Connection c, int id, double delta) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement(
+                "UPDATE accounts SET balance = balance + ? WHERE id = ?")) {
+            ps.setDouble(1, delta);
+            ps.setInt(2, id);
+            ps.executeUpdate();
+        }
+    }
+
+    private static double balance(Connection c, int id) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("SELECT balance FROM accounts WHERE id = ?")) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getDouble(1) : 0;
+            }
+        }
+    }
+
+    private static double total(Connection c) throws SQLException {
+        try (Statement st = c.createStatement();
+             ResultSet rs = st.executeQuery("SELECT COALESCE(SUM(balance),0) FROM accounts")) {
+            rs.next();
+            return rs.getDouble(1);
+        }
+    }
+
+    private static void print(Connection c, String indent) throws SQLException {
+        try (Statement st = c.createStatement();
+             ResultSet rs = st.executeQuery("SELECT name, balance FROM accounts ORDER BY id")) {
+            while (rs.next()) {
+                System.out.printf("%s%-8s %9.2f%n", indent, rs.getString("name"), rs.getDouble("balance"));
+            }
+        }
+    }
+
+    private static String firstLine(String message) {
+        return Db.firstLine(message);
+    }
+}</code></pre>
+<!--@end-->
+          <!--@output project="code/s08-advanced-jdbc" main="com.aptech.s08.practice.P2_AtomicTransfer"-->
+<div class="terminal-output">P2 - a transfer that must not half-happen
+
+=== before ======================================================
+  Ada         500.00
+  Grace       300.00
+  total: 800.00
+
+=== transfer 120.00 from Ada to Grace - one transaction =========
+  Ada         380.00
+  Grace       420.00
+  total: 800.00   (unchanged: 800.00)
+
+=== transfer 9999.00 - more than Ada has, so it must fail =======
+  transfer refused: insufficient funds: 380.00 available, 9999.00 requested
+  Ada         380.00
+  Grace       420.00
+  total: 800.00   (still 800.00 - the debit was rolled back)
+
+=== why this is the whole point =================================
+  The debit and the credit are two statements. Without a transaction,
+  a failure between them destroys money - the debit stands and the
+  credit never arrives. The invariant 'the total is constant' is what a
+  transaction is protecting, and it is what you assert in a test.
+
+Two writes, one unit. The total across the pair never changes by accident.</div>
+<!--@end-->
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details>
+    <summary><strong>&#127942; Challenge: three transaction faults, and the fix for each</strong></summary>
+    <div>
+      <p>
+        Each fault below runs broken, prints the damage, then runs fixed and prints the difference. Write all
+        three, and make your output show the damage the way this one does &mdash; a fault you cannot
+        <em>see</em> is a fault you will ship.
+      </p>
+      <ol>
+        <li><strong>Auto-commit left on.</strong> A &ldquo;failed&rdquo; operation has already left rows behind.</li>
+        <li><strong>The exception swallowed.</strong> The rollback never runs and success is reported for a failure.</li>
+        <li><strong>One bad item throws away the whole batch.</strong> Four good records lost to discard one bad one &mdash; fixed with a savepoint.</li>
+      </ol>
+      <details>
+        <summary>&#128161; Hint</summary>
+        <p>Fault 2 is the subtle one, because it does not produce a wrong number &mdash; it produces a wrong <em>report</em>. To make it visible, have the broken version tell the caller &ldquo;done&rdquo; and let the fixed version hand the exception up to <code>main</code>, which prints it. The difference between the two runs is the whole lesson.</p>
+      </details>
+      <details>
+        <summary>&#9989; Solution</summary>
+        <div>
+          <!--@code src="code/s08-advanced-jdbc/src/main/java/com/aptech/s08/practice/P3_TransactionFaults.java" title="P3_TransactionFaults.java"-->
+<pre class="numbered" data-file="P3_TransactionFaults.java"><code class="lang-java">package com.aptech.s08.practice;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Savepoint;
+import java.sql.Statement;
+
+import com.aptech.s08.Db;
+
+/**
+ * PRACTICE 3 (Challenge) — three faults around transactions, and the fix for each.
+ *
+ * &lt;pre&gt;
+ *   FAULT 1  work committed statement-by-statement because auto-commit was left on
+ *            symptom: a "failed" operation has already left rows behind
+ *
+ *   FAULT 2  the exception swallowed, so the caller is told it worked
+ *            symptom: the rollback never runs and success is reported for a failure
+ *
+ *   FAULT 3  one bad item throwing away a whole batch
+ *            symptom: four good records lost to discard one bad one - fixed with a savepoint
+ * &lt;/pre&gt;
+ *
+ * &lt;p&gt;Each fault runs broken, prints the damage, then runs fixed and prints the difference.
+ *
+ * &lt;p&gt;&lt;strong&gt;Expected output:&lt;/strong&gt; fault 1 leaks a row, fault 2 reports a false success,
+ * fault 3 loses three good rows — and each fixed version avoids its damage.
+ */
+public class P3_TransactionFaults {
+
+    public static void main(String[] args) throws SQLException {
+        System.out.println("P3 - three transaction faults, and the fix for each");
+
+        try (Connection c = Db.open()) {
+            prepare(c);
+            fault1(c);
+            try {
+                fault2(c);
+            } catch (SQLException e) {
+                System.out.println("  the caller received: " + Db.firstLine(e));
+                System.out.println("  -&gt; the failure reached the top. That IS the fix: the caller");
+                System.out.println("     now knows the work was undone and can tell the user.");
+            }
+            fault3(c);
+            try (Statement st = c.createStatement()) {
+                st.execute("DROP TABLE p3_demo");
+            }
+        }
+
+        System.out.println("\nEvery fault here still compiles and still runs. That is why they ship.");
+    }
+
+    // ========================================================================
+    //  FAULT 1 — auto-commit left on
+    // ========================================================================
+    private static void fault1(Connection c) throws SQLException {
+        System.out.println(Db.rule("FAULT 1 - auto-commit left on"));
+
+        int before = count(c);
+        c.setAutoCommit(true);          // BROKEN: the default, and the mistake
+        try {
+            insert(c, "leaked-1");
+            insert(c, "leaked-2");
+            throw new SQLException("pretend the third step failed");
+        } catch (SQLException e) {
+            c.rollback();               // does nothing: each INSERT was already committed
+        }
+        int after = count(c);
+        System.out.println("  before: " + before + ", after: " + after
+                + (after &gt; before ? "   -&gt; " + (after - before) + " row(s) leaked past a rollback" : ""));
+
+        // FIXED
+        c.setAutoCommit(false);
+        int beforeFixed = count(c);
+        try {
+            insert(c, "temp-1");
+            insert(c, "temp-2");
+            throw new SQLException("third step fails again");
+        } catch (SQLException e) {
+            c.rollback();               // now this actually works
+        } finally {
+            c.setAutoCommit(true);
+        }
+        System.out.println("  fixed : before: " + beforeFixed + ", after: " + count(c)
+                + "   -&gt; nothing leaked");
+    }
+
+    // ========================================================================
+    //  FAULT 2 — the exception is swallowed
+    // ========================================================================
+    private static void fault2(Connection c) throws SQLException {
+        System.out.println(Db.rule("FAULT 2 - the exception swallowed, success reported"));
+
+        // BROKEN
+        c.setAutoCommit(false);
+        try {
+            insert(c, "will-not-be-rolled-back");
+            throw new SQLException("a real failure");
+        } catch (SQLException e) {
+            // BROKEN: caught and ignored. No rollback, no report to the caller.
+            System.out.println("  broken: caught the failure and said nothing");
+        }
+        c.commit();                     // commits the half-done work
+        c.setAutoCommit(true);
+        System.out.println("  broken: the caller thinks it succeeded; the row is in the table");
+
+        // FIXED
+        c.setAutoCommit(false);
+        try {
+            insert(c, "rolled-back");
+            throw new SQLException("a real failure");
+        } catch (SQLException e) {
+            c.rollback();
+            c.setAutoCommit(true);
+            System.out.println("  fixed : caught it, rolled back, and will re-throw to the caller");
+            throw new SQLException("propagated: " + firstLine(e.getMessage()));
+        } finally {
+            c.setAutoCommit(true);
+        }
+    }
+
+    // ========================================================================
+    //  FAULT 3 — one bad row loses the whole batch
+    // ========================================================================
+    private static void fault3(Connection c) throws SQLException {
+        System.out.println(Db.rule("FAULT 3 - one bad item destroys the whole batch"));
+        String[] labels = { "good-1", "good-2", "toolong-toolong-toolong-toolong-toolong-toolong", "good-3" };
+
+        // BROKEN: one failure rolls everything back
+        int before = count(c);
+        c.setAutoCommit(false);
+        try {
+            for (String label : labels) insert(c, label);
+            c.commit();
+        } catch (SQLException e) {
+            c.rollback();
+            System.out.println("  broken: " + firstLine(e.getMessage()));
+        } finally {
+            c.setAutoCommit(true);
+        }
+        System.out.println("  broken: " + (count(c) - before) + " of " + labels.length
+                + " rows survived   -&gt; the three good ones were lost");
+
+        // FIXED: a savepoint per item, so only the bad one is undone
+        int beforeFixed = count(c);
+        c.setAutoCommit(false);
+        int posted = 0;
+        try {
+            for (String label : labels) {
+                Savepoint point = c.setSavepoint("item");
+                try {
+                    insert(c, label);
+                    posted++;
+                } catch (SQLException e) {
+                    c.rollback(point);
+                    System.out.println("  fixed : rejected one item -&gt; " + firstLine(e.getMessage()));
+                } finally {
+                    c.releaseSavepoint(point);
+                }
+            }
+            c.commit();
+        } finally {
+            c.setAutoCommit(true);
+        }
+        System.out.println("  fixed : " + posted + " of " + labels.length
+                + " rows survived   -&gt; only the bad one was discarded");
+    }
+
+    // ------------------------------------------------------------------------
+
+    private static void prepare(Connection c) throws SQLException {
+        try (Statement st = c.createStatement()) {
+            st.execute("DROP TABLE IF EXISTS p3_demo");
+            st.execute("CREATE TABLE p3_demo (id INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,"
+                     + " label VARCHAR(40))");
+        }
+    }
+
+    private static void insert(Connection c, String label) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement("INSERT INTO p3_demo (label) VALUES (?)")) {
+            ps.setString(1, label);
+            ps.executeUpdate();       // a label longer than 40 chars throws here
+        }
+    }
+
+    private static int count(Connection c) throws SQLException {
+        try (Statement st = c.createStatement();
+             ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM p3_demo")) {
+            rs.next();
+            return rs.getInt(1);
+        }
+    }
+
+    private static String firstLine(String message) {
+        return Db.firstLine(message);
+    }
+}</code></pre>
+<!--@end-->
+          <!--@output project="code/s08-advanced-jdbc" main="com.aptech.s08.practice.P3_TransactionFaults"-->
+<div class="terminal-output">P3 - three transaction faults, and the fix for each
+
+=== FAULT 1 - auto-commit left on ===============================
+  before: 0, after: 2   -&gt; 2 row(s) leaked past a rollback
+  fixed : before: 2, after: 2   -&gt; nothing leaked
+
+=== FAULT 2 - the exception swallowed, success reported =========
+  broken: caught the failure and said nothing
+  broken: the caller thinks it succeeded; the row is in the table
+  fixed : caught it, rolled back, and will re-throw to the caller
+  the caller received: propagated: a real failure
+  -&gt; the failure reached the top. That IS the fix: the caller
+     now knows the work was undone and can tell the user.
+
+=== FAULT 3 - one bad item destroys the whole batch =============
+  broken: Value too long for column "LABEL CHARACTER VARYING(40)": "'toolong-toolong-toolong-toolong-toolong-toolong' (47)"
+  broken: 0 of 4 rows survived   -&gt; the three good ones were lost
+  fixed : rejected one item -&gt; Value too long for column "LABEL CHARACTER VARYING(40)": "'toolong-toolong-toolong-toolong-toolong-toolong' (47)"
+  fixed : 3 of 4 rows survived   -&gt; only the bad one was discarded
+
+Every fault here still compiles and still runs. That is why they ship.</div>
+<!--@end-->
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <!-- ===== 20. ASSIGNMENT A4 EXTENSION ==================================== -->
+  <h2 id="assignment-a4">&#128203; Assignment A4 &mdash; now with transactions</h2>
+  <div class="callout callout--assignment"><span class="callout__i">&#128221;</span>
+    <div class="callout__b"><b>A4 extends here &mdash; there is no new assignment card</b>
+      <p>
+        Session 7 issued A4: the Student Registry on an embedded H2 database through a DAO. It deliberately
+        left transactions out, and said so on its page. <strong>Session 8 is where that debt is paid</strong>
+        &mdash; the same registry, the same <code>StudentRegistry</code> class, with the enrolment and fee
+        operations added.
+      </p>
+      <p><strong>Add these to your A4 project:</strong></p>
+      <ol>
+        <li>Two tables: <code>enrolments(student_id, course_id, paid)</code> and <code>fee_payments(enrolment_id, amount, paid_at)</code>, with foreign keys to what they reference.</li>
+        <li><code>enrolAndPay(studentId, courseId, fee)</code> &mdash; three writes, <strong>one</strong> transaction. If any part fails, nothing is left behind.</li>
+        <li><code>postPayments(enrolmentId, amounts[])</code> &mdash; a savepoint per payment, so one bad amount does not lose the good ones.</li>
+        <li><code>reconcile()</code> &mdash; total paid against the course fee for every enrolment, with a state of <code>settled</code>, <code>part-paid</code> or <code>unpaid</code>.</li>
+      </ol>
+      <div class="assignment-card__rubric">
+        <div class="assignment-card__rubric-item"><strong>Atomicity</strong> Break the second write on purpose in a test and prove the first one is absent afterwards. A reviewer should be able to run that test.</div>
+        <div class="assignment-card__rubric-item"><strong>Honesty</strong> Every transactional method re-throws on failure. No method returns normally after a rollback.</div>
+        <div class="assignment-card__rubric-item"><strong>Repeatability</strong> Your test data is reset at the start, so the program prints the same thing on every run &mdash; the discipline <code>Db.resetRegistry()</code> uses in this session&rsquo;s code.</div>
+        <div class="assignment-card__rubric-item"><strong>Resources</strong> Connection, statement and result set all closed with try-with-resources; no connection held in a field.</div>
+      </div>
+      <p><strong>What is deliberately still not here:</strong> connection pooling, and JPA or Hibernate. Both are real; both are later. Do not reach for a framework to avoid learning what <code>commit()</code> does.</p>
+    </div>
+  </div>
+  <div class="callout callout--warn"><span class="callout__i">&#9878;&#65039;</span>
+    <div class="callout__b"><b>Academic honesty &amp; AI tools</b>
+      You may ask an AI to explain a <code>SQLException</code> or to review where your transaction boundary
+      should be. Not to write the method. If it hands you a <code>catch</code> block that rolls back and
+      returns normally, you have just caught it making Mistake 2 from this very page &mdash; say so, and fix
+      it. You will defend any line in the viva.
+    </div>
+  </div>
+
+  <!-- ===== 21. FURTHER STUDY ============================================== -->
+  <h2>&#128250; Further Study</h2>
+  <p>Each video was checked to exist and match the topic.</p>
+  <div class="video-grid">
+    <div class="video-card" data-yt="P80Js_qClUE" data-title="What is a database transaction?">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">What is a database transaction?</div><div class="video-card__channel">Hussein Nasser</div><div class="video-card__why">Parts 1&ndash;2: what atomicity costs the database, and why the log matters.</div></div>
+    </div>
+    <div class="video-card" data-yt="pomxJOFVcQs" data-title="Relational Database ACID Transactions">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Relational Database ACID Transactions (Explained by Example)</div><div class="video-card__channel">Hussein Nasser</div><div class="video-card__why">Part 1: the four letters, with the transfer example &mdash; and the isolation-level comparison table.</div></div>
+    </div>
+    <div class="video-card" data-yt="TbrCdiE53So" data-title="Isolation levels: dirty, non-repeatable and phantom reads">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Isolation + Dirty Read, Non-Repeatable Read and Phantom Read</div><div class="video-card__channel">Kartikeya Sharma</div><div class="video-card__why">Part 4: the three phenomena, one at a time, which is exactly what the isolation levels are named after.</div></div>
+    </div>
+    <div class="video-card" data-yt="3cNqfKAAt20" data-title="JDBC Batch Processing: addBatch vs executeBatch">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">JDBC Batch Processing: addBatch vs executeBatch</div><div class="video-card__channel">RuchiCodes</div><div class="video-card__why">Part 5: addBatch and executeBatch, and where the speed comes from.</div></div>
+    </div>
+  </div>
+  <h3>Read (official &amp; trusted)</h3>
+  <ul>
+    <li><a href="https://docs.oracle.com/javase/tutorial/jdbc/basics/transactions.html" target="_blank" rel="noopener">Oracle &mdash; Using Transactions</a>: the tutorial for everything in Parts 2&ndash;4, including savepoints.</li>
+    <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/Connection.html" target="_blank" rel="noopener">Java 25 API &mdash; <code>java.sql.Connection</code></a>: read the contracts for <code>setAutoCommit</code>, <code>commit</code>, <code>rollback</code> and <code>setTransactionIsolation</code>.</li>
+    <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql.rowset/javax/sql/rowset/package-summary.html" target="_blank" rel="noopener">Java 25 API &mdash; <code>javax.sql.rowset</code></a>: the RowSet family from Part 9.</li>
+    <li><a href="https://h2database.com/html/features.html" target="_blank" rel="noopener">H2 &mdash; features, including user-defined functions and <code>CREATE ALIAS</code></a>, the mechanism behind Part 7.</li>
+    <li>This course&rsquo;s <a href="../guides/databases.html">H2 &amp; MySQL guide</a> &mdash; what changes when the database is on another machine, and why that makes the batch counts matter more, not less.</li>
+  </ul>
+
+  <!-- ===== 22. CHEAT SHEET ================================================ -->
+  <h2>&#128203; Cheat Sheet &mdash; transactions in one screen</h2>
+  <div class="cheatsheet">
+    <h4>The pattern &mdash; write this from memory</h4>
+<pre><code class="lang-java">c.setAutoCommit(false);          // 1. begin: nothing is saved until you say so
+try {
+    // ... the writes that must all happen ...
+    c.commit();                  // 2. make it permanent
+} catch (SQLException e) {
+    c.rollback();                // 3. undo all of it
+    throw e;                     // 4. AND tell the caller - never swallow
+} finally {
+    c.setAutoCommit(true);       // 5. put the connection back how you found it
+}</code></pre>
+
+    <h4>What each call does</h4>
+<pre><code class="lang-java">c.setAutoCommit(false)     // begin a transaction: several statements become one unit
+c.commit()                 // make everything since the last commit permanent
+c.rollback()               // undo everything since the last commit
+c.setSavepoint("name")     // a bookmark inside the transaction
+c.rollback(point)          // rewind to the bookmark, keeping what came before
+c.releaseSavepoint(point)  // drop the bookmark - do it in a finally
+c.getAutoCommit()          // check before assuming a rollback will do anything</code></pre>
+
+    <h4>Isolation levels</h4>
+<pre><code class="lang-java">READ_UNCOMMITTED   dirty reads possible           fastest, least safe
+READ_COMMITTED     no dirty reads   &lt;- the default on most databases, incl. H2
+REPEATABLE_READ    a row read twice agrees
+SERIALIZABLE       as if run one after another     safest, least concurrent
+
+c.getTransactionIsolation()       // print it; never assume it
+c.setTransactionIsolation(level)  // change it only when you can name the phenomenon</code></pre>
+
+    <h4>Batches &mdash; speed, not safety</h4>
+<pre><code class="lang-java">ps.addBatch();      // queue it - this does NOT run it
+ps.executeBatch();  // send them all in one round trip
+// returns int[] - one entry per statement; -3 (EXECUTE_FAILED) means that one failed
+// A batch is NOT atomic. Put it inside a transaction if it must be all-or-nothing.</code></pre>
+
+    <h4>Result set types and concurrencies</h4>
+<pre><code class="lang-java">c.createStatement(ResultSet.TYPE_FORWARD_ONLY,       ResultSet.CONCUR_READ_ONLY)  // default
+c.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)  // paging
+c.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE)  // grid editing
+
+rs.first()  rs.last()  rs.absolute(3)  rs.relative(2)  rs.previous()   // move the cursor
+rs.getType()  rs.getConcurrency()   // what you ASKED for vs what you GOT - always check</code></pre>
+
+    <h4>RowSets &mdash; disconnected results</h4>
+<pre><code class="lang-java">RowSetFactory f = RowSetProvider.newFactory();
+f.createJdbcRowSet()     // connected - a ResultSet with setters
+f.createCachedRowSet()   // DISCONNECTED - survives close(); acceptChanges() writes back
+f.createWebRowSet()      // a CachedRowSet that reads and writes XML
+// a writable CachedRowSet needs a PLAIN command: SELECT cols FROM table (no ORDER BY, no WHERE)</code></pre>
+
+    <h4>Stored routines</h4>
+<pre><code class="lang-java">CallableStatement cs = c.prepareCall("{ ? = call NAME(?) }");
+cs.registerOutParameter(1, Types.DOUBLE);   // left of the = is the OUT parameter
+cs.setDouble(2, 380.00);                    // then the arguments
+cs.execute();
+double result = cs.getDouble(1);
+// H2: CREATE ALIAS NAME FOR 'com.example.Class.method'    |    Oracle: a PL/SQL function</code></pre>
+  </div>
+
+  <!-- ===== 23. SUMMARY ==================================================== -->
+  <h2>&#127891; Session Summary</h2>
+  <ol>
+    <li><strong>A transaction is several statements the database treats as one.</strong> It either all happens or none of it does, and the half-state is never visible.</li>
+    <li><strong>ACID is the guarantee:</strong> Atomicity, Consistency, Isolation, Durability &mdash; and durability is what the log on disk is for.</li>
+    <li><strong>JDBC starts a transaction by turning auto-commit off.</strong> There is no <code>begin()</code>. <code>setAutoCommit(false)</code> is what makes several statements one unit.</li>
+    <li><strong>With auto-commit on, <code>rollback()</code> does nothing and reports no error.</strong> That silence is the trap, and it is why E02 exists.</li>
+    <li><strong>The pattern is five lines, and the fourth is the one people drop:</strong> roll back <em>and</em> re-throw. A method that undoes the work and returns normally has lied to its caller.</li>
+    <li><strong>A savepoint undoes part of a transaction.</strong> It is a bookmark, not a commit &mdash; the outer <code>commit()</code> still governs everything.</li>
+    <li><strong>Isolation levels trade safety for concurrency</strong>, and are named after the three read phenomena they prevent. Print the default; do not assume it.</li>
+    <li><strong>A batch is speed, not safety.</strong> <code>[1, 1, 1, -3]</code> is three rows already in the table and one failure &mdash; which is why a batch that must be all-or-nothing goes inside a transaction.</li>
+    <li><strong>What you ask a <code>ResultSet</code> for is a request.</strong> H2 refuses <code>TYPE_SCROLL_SENSITIVE</code> outright, and downgrades an updatable cursor over a join without a word. Read <code>getType()</code> and <code>getConcurrency()</code>.</li>
+    <li><strong>A stored routine is called the same way everywhere.</strong> <code>{ ? = call name(?) }</code> is portable; the <code>CREATE</code> is not. And when a flag disagrees with a working call, believe the call.</li>
+    <li><strong>A JDBC version is a promise the JDK makes, not one the driver keeps.</strong> A method can be on the interface and still throw <code>SQLFeatureNotSupportedException</code>.</li>
+    <li><strong>A RowSet is a <code>ResultSet</code> you can configure, disconnect and pass around</strong> &mdash; and a <code>CachedRowSet</code> keeps the cache and the table separate until <code>acceptChanges()</code>.</li>
+  </ol>
+  <div class="newwords"><b>&#128218; All new words from this session</b>
+    <dl>
+      <dt>Transaction</dt><dd>A group of statements the database treats as one unit: all of it, or none of it.</dd>
+      <dt>ACID</dt><dd>Atomicity, Consistency, Isolation, Durability &mdash; the four guarantees a transaction gives.</dd>
+      <dt>Atomicity</dt><dd>The property that a half-finished transaction can never be observed.</dd>
+      <dt>Auto-commit</dt><dd>The default mode where every statement is its own transaction. Turned off to begin one.</dd>
+      <dt>commit()</dt><dd>Makes everything since the last commit permanent.</dd>
+      <dt>rollback()</dt><dd>Undoes everything since the last commit. Does nothing when auto-commit is on.</dd>
+      <dt>Savepoint</dt><dd>A bookmark inside a transaction; <code>rollback(point)</code> rewinds to it, keeping earlier work.</dd>
+      <dt>Isolation level</dt><dd>How much of each other&rsquo;s unfinished work concurrent transactions may see.</dd>
+      <dt>Dirty read</dt><dd>Reading a row another transaction changed but has not committed.</dd>
+      <dt>Non-repeatable read</dt><dd>Reading the same row twice inside one transaction and getting two answers.</dd>
+      <dt>Phantom read</dt><dd>Running the same query twice and getting a different set of rows.</dd>
+      <dt>Batch update</dt><dd>Queuing many statements with <code>addBatch()</code> and sending them in one call with <code>executeBatch()</code>.</dd>
+      <dt>BatchUpdateException</dt><dd>The failure a batch throws; <code>getUpdateCounts()</code> reports which statements had already run.</dd>
+      <dt>Scrollable ResultSet</dt><dd>A cursor you can move in any direction, instead of only forwards.</dd>
+      <dt>Updatable ResultSet</dt><dd>A cursor that can edit the row it is on with <code>updateRow()</code>, <code>insertRow()</code> or <code>deleteRow()</code>.</dd>
+      <dt>Stored procedure</dt><dd>A routine that lives in the database and is called with a <code>CallableStatement</code>.</dd>
+      <dt>CallableStatement</dt><dd>The JDBC statement for calling stored routines: <code>{ ? = call name(?) }</code>.</dd>
+      <dt>CREATE ALIAS</dt><dd>H2&rsquo;s way of exposing a Java method as a database routine &mdash; its substitute for PL/SQL.</dd>
+      <dt>Sharding key</dt><dd>A value naming which shard a connection belongs to, when one database spans several servers. New in JDBC 4.3.</dd>
+      <dt>RowSet</dt><dd>A <code>ResultSet</code> that is also a JavaBean: configurable, fillable, and passable between layers.</dd>
+      <dt>CachedRowSet</dt><dd>A disconnected RowSet: rows are read into memory and stay usable after the connection closes.</dd>
+      <dt>RowSetProvider / RowSetFactory</dt><dd>The two-step way to obtain a RowSet, so the provider can be swapped without changing your code.</dd>
+    </dl>
+  </div>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Next session: Session 9 &mdash; design patterns and testing</b>
+      You now have a registry that stores data safely and a DAO that owns the SQL. Session 9 asks the two
+      questions that follow: <strong>is this code structured so the next person can change it</strong>
+      (patterns &mdash; factory, singleton, observer, MVC), and <strong>how do you prove it still works after
+      you do</strong> (unit testing with JUnit, and testing a DAO without a live database). Bring your
+      transactional A4; you will write tests against it.
+    </div>
+  </div>
+
+
+</main>
+
+<script src="../assets/js/course.js"></script>
+
+</body>
+</html>

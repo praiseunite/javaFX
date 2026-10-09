@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" width="100%" height="100%">
+  <defs>
+    <filter id="rsShadow" x="-8%" y="-8%" width="116%" height="125%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub   { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .colhd { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; font-weight: 800; fill: #334155; }
+    .type  { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; font-weight: 700; fill: #0f172a; }
+    .cell  { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; fill: #334155; }
+    .ok    { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 800; fill: #15803d; }
+    .bad   { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 800; fill: #b91c1c; }
+    .note  { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; fill: #334155; }
+  </style>
+
+  <rect width="900" height="400" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">ResultSet types &#215; concurrencies</text>
+  <text x="30" y="54" class="sub">What you ask for is a request, not a promise. Both figures come from the driver, and E05 and E06 print them.</text>
+
+  <rect x="24" y="76" width="852" height="34" rx="8" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1.2"/>
+  <text x="44"  y="98" class="colhd">Type (how the cursor may move)</text>
+  <text x="360" y="98" class="colhd">CONCUR_READ_ONLY</text>
+  <text x="624" y="98" class="colhd">CONCUR_UPDATABLE</text>
+
+  <rect x="24" y="114" width="852" height="72" rx="8" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.2"/>
+  <text x="44"  y="140" class="type">TYPE_FORWARD_ONLY</text>
+  <text x="44"  y="158" class="cell" fill="#64748b">the default &#8212; what every example before today used</text>
+  <text x="360" y="146" class="ok">SUPPORTED</text>
+  <text x="360" y="164" class="cell">one pass, cheapest</text>
+  <text x="624" y="146" class="ok">SUPPORTED</text>
+  <text x="624" y="164" class="cell">rarely useful: you cannot go back to a row</text>
+
+  <rect x="24" y="190" width="852" height="72" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.4"/>
+  <text x="44"  y="216" class="type">TYPE_SCROLL_INSENSITIVE</text>
+  <text x="44"  y="234" class="cell" fill="#64748b">a snapshot: the cursor moves, the rows do not change</text>
+  <text x="360" y="222" class="ok">SUPPORTED</text>
+  <text x="360" y="240" class="cell">paging and reports (E05)</text>
+  <text x="624" y="222" class="ok">SUPPORTED</text>
+  <text x="624" y="240" class="cell">grid editing through the cursor (E06)</text>
+
+  <rect x="24" y="266" width="852" height="72" rx="8" fill="#fef2f2" stroke="#fecaca" stroke-width="1.4"/>
+  <text x="44"  y="292" class="type">TYPE_SCROLL_SENSITIVE</text>
+  <text x="44"  y="310" class="cell" fill="#64748b">the cursor moves and sees others' committed changes</text>
+  <text x="360" y="298" class="bad">NOT SUPPORTED</text>
+  <text x="360" y="316" class="cell">H2 says so &#8212; checked, not assumed</text>
+  <text x="624" y="298" class="bad">NOT SUPPORTED</text>
+  <text x="624" y="316" class="cell">the driver is allowed to refuse</text>
+
+  <rect x="24" y="348" width="852" height="36" rx="9" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+  <text x="44" y="371" class="note">Ask for CONCUR_UPDATABLE over a JOIN and the driver hands back CONCUR_READ_ONLY &#8212; silently. Always read getConcurrency() before writing through a cursor.</text>
+</svg>

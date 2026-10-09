@@ -65,7 +65,8 @@
   <!-- Course Map -->
   <span class="eyebrow">the path</span>
   <h2>Course Map</h2>
-  <p>5 weeks, 18 sessions, 7 bridge lessons, 6 graded assignments, and a capstone project.</p>
+  <p>5 weeks, 18 sessions, 7 bridge lessons, graded assignments, and a capstone project.
+  Sessions 1&ndash;8 and every bridge lesson are written and ready; the rest are on the way.</p>
 
   <h3>Week 0 &mdash; Java Foundations Bridge <span class="text-faint text-sm">(Self-paced pre-work)</span></h3>
   <div class="cardgrid" id="grid-bridge"></div>
@@ -164,22 +165,30 @@ document.addEventListener("course:ready", function () {
     groups[gid].forEach(function (slug) {
       var m = P.find(function (x) { return x.slug === slug; });
       if (!m) return;
-      var a = document.createElement("a");
-      a.className = "card" + (done[slug] ? " is-done" : "");
-      // Fix path for index (root level)
-      var href = m.file;
-      if (href.startsWith("../")) href = href.substring(3);
-      a.href = href;
-      a.setAttribute("data-slug", slug);
-      a.innerHTML = "<span class='k'>" + m.unit + "</span><b>" + m.title + "</b>";
-      host.appendChild(a);
+      // A session that has not been written yet is shown, but not as a link:
+      // a card that 404s is worse than a card that says "soon".
+      var el = document.createElement(m.coming ? "div" : "a");
+      el.className = "card" + (m.coming ? " is-coming" : "") + (done[slug] ? " is-done" : "");
+      if (!m.coming) {
+        // Fix path for index (root level)
+        var href = m.file;
+        if (href.startsWith("../")) href = href.substring(3);
+        el.href = href;
+        el.setAttribute("data-slug", slug);
+      }
+      el.innerHTML = "<span class='k'>" + m.unit + "</span><b>" + m.title + "</b>" +
+        (m.coming ? "<span class='card__soon'>soon</span>" : "");
+      host.appendChild(el);
     });
   });
 
-  // Resume button → first not-done content page
+  // Resume button → first not-done page that actually exists.
   var order = ["b1","b2","b3","b4","b5","b6","b7",
-    "s01","s02","s03","s04","s05","s06","s07","s08",
-    "s09","s10","s11","s12","s13","s14","s15","s16","s17","s18"];
+    "s01","s02","s03","s04","s05","s06","s07","s08"]
+    .filter(function (s) {
+      var m = P.find(function (x) { return x.slug === s; });
+      return m && !m.coming;
+    });
   var next = order.find(function (s) { return !done[s]; });
   var btn = document.getElementById("resumeBtn");
   if (btn && next && next !== "b1") {

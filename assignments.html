@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Assignments A1–A6 — Building Rich Java Applications with JavaFX and AI Tools</title>
+  <meta name="description" content="Every graded assignment for Building Rich Java Applications with JavaFX and AI Tools: A1 to A6, the starter project for each, what to hand in, and the four-dimension rubric every one is marked against.">
+  <link rel="stylesheet" href="assets/css/course.css">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "assignments";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== HERO ============================================================ -->
+  <section class="hero">
+    <span class="tag">Assessment &middot; 6 assignments &middot; 40% of your grade</span>
+    <h1>Assignments A1&ndash;A6</h1>
+    <p class="lede">
+      Six problem sets, one roughly every week, together worth <strong>40%</strong> of the course.
+      They are not extra work bolted onto the sessions &mdash; each one is a session's idea, built
+      again from scratch with less help. Every assignment ships with a starter project and a
+      <strong>SelfCheck</strong> program that tells you exactly what still fails, so you always know
+      where you stand before your teacher does.
+    </p>
+    <div class="meta">
+      <span>&#128203; 6 assignments &middot; 40%</span>
+      <span>&#128736; 2 lab tasks &middot; 10%</span>
+      <span>&#9201; 3&ndash;4 hours each</span>
+      <span>&#128100; Individual work</span>
+    </div>
+  </section>
+
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+  <!-- ===== HOW IT WORKS ==================================================== -->
+  <h2>How Each Assignment Works</h2>
+  <p>
+    Every assignment follows the same pattern, so once you have done A1 you know how to approach all
+    of them. You are never asked to write a program from a blank file.
+  </p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Step</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr><td><strong>1. Open the starter</strong></td><td>In IntelliJ, <strong>File &rarr; Open</strong> the <code>code/aN-&hellip;-starter</code> folder. You get a complete project with a <code>pom.xml</code>.</td></tr>
+        <tr><td><strong>2. Run SelfCheck first</strong></td><td>It will report something like <code>0 passed, 12 failed</code>. <strong>That is expected.</strong> You are not behind &mdash; you are at the start.</td></tr>
+        <tr><td><strong>3. Do the TODOs, one at a time</strong></td><td>Each one has a hint. After each, re-run <code>SelfCheck</code> and watch a FAIL turn into a PASS. This is the whole loop.</td></tr>
+        <tr><td><strong>4. Target: all PASS</strong></td><td>When <code>SelfCheck</code> reports every check passing, run the <code>Main</code> program and try it yourself.</td></tr>
+        <tr><td><strong>5. Hand in</strong></td><td>Commit your work to your repository. Your teacher may also ask for a short demo or a viva question.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>The rubric &mdash; every assignment, the same four dimensions</b>
+      <div class="assignment-card__rubric">
+        <div class="assignment-card__rubric-item"><strong>Correctness (work it, prove it)</strong> Does it do what the brief asks? <code>SelfCheck</code> all green, from a clean build, repeatedly.</div>
+        <div class="assignment-card__rubric-item"><strong>Design (the right shape)</strong> Is the right collection, the right concurrency tool, the right transaction boundary used &mdash; and could you defend the choice?</div>
+        <div class="assignment-card__rubric-item"><strong>Style (a human reads this)</strong> Clear names, consistent formatting, no dead code, no leftover <code>System.out.println</code> debugging.</div>
+        <div class="assignment-card__rubric-item"><strong>Documentation &amp; tests</strong> Comments that give the <em>reason</em>, not the obvious; Javadoc on public methods; tests that would catch a regression.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== THE ASSIGNMENTS ================================================= -->
+  <h2>The Six Assignments</h2>
+  <p>
+    Each assignment builds on the one before it. A1 and A2 are separate programs; from A3 onwards you
+    are extending the same Student Registry you have been carrying since Session 1, until it becomes
+    the core of your capstone.
+  </p>
+
+  <!-- A1 -->
+  <div class="assignment-card">
+    <div class="assignment-card__header">&#128203; A1 &middot; Student Registry &middot; worth 10% of your course grade</div>
+    <p><strong>Issued:</strong> <a href="sessions/s01-java-utility-apis.html">Session 1</a>.
+       <strong>Due:</strong> before the start of <a href="sessions/s03-file-handling.html">Session 3</a> (your teacher will confirm the date).
+       &nbsp;<strong>Time needed:</strong> about 3&ndash;4 hours. &nbsp;<strong>Work:</strong> individual.</p>
+    <h4>&#127919; The brief</h4>
+    <p>
+      Aptech's front desk needs a small program to register students, find them, count them per course
+      and manage a waiting list for the computer lab. The menu and screen output are
+      <strong>already written</strong> &mdash; your job is the engine behind it, the class
+      <code>StudentRegistry</code>, using the right collection for each task.
+    </p>
+    <h4>&#128230; What you get</h4>
+    <ul>
+      <li><code>code/a1-student-registry-starter</code> &mdash; open this folder in IntelliJ</li>
+      <li><code>Student.java</code> and <code>Main.java</code> &mdash; complete, do not change</li>
+      <li><code>SelfCheck.java</code> &mdash; the automatic checker, do not change. Target: <strong>12 passed</strong></li>
+      <li><code>StudentRegistry.java</code> &mdash; the file you complete; every method has a <code>// TODO</code> and a hint</li>
+    </ul>
+    <p class="text-sm text-faint">Practises: every part of Session 1 &mdash; <code>List</code>, <code>Set</code>, <code>Map</code>, <code>Queue</code>, sorting and searching.</p>
+  </div>
+
+  <!-- A2 -->
+  <div class="assignment-card">
+    <div class="assignment-card__header">&#128203; A2 &middot; Student Record File Manager &middot; worth 10% of your course grade</div>
+    <p><strong>Issued:</strong> <a href="sessions/s03-file-handling.html">Session 3</a>.
+       <strong>Due:</strong> before the start of <a href="sessions/s05-multithreading.html">Session 5</a> (your teacher will confirm).
+       &nbsp;<strong>Time needed:</strong> about 3&ndash;4 hours. &nbsp;<strong>Work:</strong> individual.</p>
+    <h4>&#127919; The brief</h4>
+    <p>
+      The registry from A1 now has to survive being switched off. Read student records from a file,
+      clean them up, write them back, and prove the whole round trip loses nothing &mdash; using
+      <code>Path</code>, <code>Files</code>, buffered readers and writers, and the Stream API.
+    </p>
+    <h4>&#128230; What you get</h4>
+    <ul>
+      <li><code>code/a2-student-file-manager-starter</code></li>
+      <li>A sample data file with deliberately messy rows for you to parse and normalise</li>
+      <li><code>SelfCheck</code> &mdash; all checks must pass</li>
+    </ul>
+    <p class="text-sm text-faint">Practises: every part of Session 3 &mdash; streams, buffering, charsets, and why a <code>try</code>-with-resources is not optional.</p>
+  </div>
+
+  <!-- A3 -->
+  <div class="assignment-card">
+    <div class="assignment-card__header">&#128203; A3 &middot; Concurrent File Processor &middot; worth 10% of your course grade</div>
+    <p><strong>Issued:</strong> <a href="sessions/s05-multithreading.html">Session 5</a>.
+       <strong>Due:</strong> before the start of <a href="sessions/s06-review-1.html">Session 6</a> (your teacher will confirm).
+       &nbsp;<strong>Time needed:</strong> about 3&ndash;4 hours. &nbsp;<strong>Work:</strong> individual.</p>
+    <h4>&#127919; The brief</h4>
+    <p>
+      Process many files at once, without losing a single one and without corrupting a shared total.
+      This is the assignment where the two classic concurrency bugs stop being theory: you will meet
+      a race condition, and you will be expected to explain <em>which line</em> caused it.
+    </p>
+    <h4>&#128230; What you get</h4>
+    <ul>
+      <li><code>code/a3-concurrent-file-processor-starter</code></li>
+      <li>Reuses the <code>DownloadManager</code> shape from lab task L4</li>
+      <li><code>SelfCheck</code> &mdash; all checks must pass, and must keep passing when run repeatedly</li>
+    </ul>
+    <p class="text-sm text-faint">Practises: executors, thread pools, <code>Future</code>, and the atomicity discipline Sessions 4&ndash;5 drilled.</p>
+  </div>
+
+  <!-- A4 -->
+  <div class="assignment-card">
+    <div class="assignment-card__header">&#128203; A4 &middot; Student Registry on H2 &middot; worth 10% of your course grade</div>
+    <p><strong>Issued:</strong> <a href="sessions/s07-jdbc-api.html">Session 7</a>.
+       <strong>Extended in:</strong> <a href="sessions/s08-advanced-jdbc.html">Session 8</a>.
+       <strong>Due:</strong> before the start of <strong>Session 12</strong> <span class="text-faint text-sm">(coming soon)</span> (your teacher will confirm).
+       &nbsp;<strong>Time needed:</strong> about 4&ndash;5 hours. &nbsp;<strong>Work:</strong> individual.</p>
+    <h4>&#127919; The brief &mdash; two halves, one project</h4>
+    <p>
+      Take the Student Registry you have carried since Session 1 and give it a real database: an
+      embedded H2 file, reached through JDBC, behind a DAO. This assignment is issued in Session 7
+      and <strong>extended in Session 8</strong> rather than replaced &mdash; keep your code, you
+      build on it.
+    </p>
+    <h4>Part 1 &mdash; the DAO (Session 7)</h4>
+    <ol>
+      <li><code>createSchema()</code> &mdash; two tables, safe to call twice (<code>IF NOT EXISTS</code>)</li>
+      <li><code>insert(&hellip;)</code> &mdash; add a student and return the <strong>database-generated id</strong></li>
+      <li><code>findById(id)</code> &mdash; one student, or <code>null</code> when there is none</li>
+      <li><code>searchByName(text)</code> &mdash; a <strong>parameterized</strong> <code>LIKE</code> search. <code>SelfCheck</code> fires an SQL injection at it; it must return nothing</li>
+      <li><code>updateMark</code> and <code>delete</code> &mdash; each returns the number of rows changed</li>
+      <li><code>count()</code> and <code>columnNames()</code> &mdash; the latter read from <code>DatabaseMetaData</code>, not hard-coded</li>
+    </ol>
+    <h4>Part 2 &mdash; transactions (Session 8)</h4>
+    <ol>
+      <li>Two tables: <code>enrolments(student_id, course_id, paid)</code> and <code>fee_payments(enrolment_id, amount, paid_at)</code>, with foreign keys to what they reference</li>
+      <li><code>enrolAndPay(studentId, courseId, fee)</code> &mdash; three writes, <strong>one</strong> transaction. If any part fails, nothing is left behind</li>
+      <li><code>postPayments(enrolmentId, amounts[])</code> &mdash; a savepoint per payment, so one bad amount does not lose the good ones</li>
+      <li><code>reconcile()</code> &mdash; total paid against the course fee for every enrolment, with a state of <code>settled</code>, <code>part-paid</code> or <code>unpaid</code></li>
+    </ol>
+    <div class="assignment-card__rubric">
+      <div class="assignment-card__rubric-item"><strong>Correctness</strong> <code>SelfCheck</code> reports all PASS, from a clean build, every run.</div>
+      <div class="assignment-card__rubric-item"><strong>Safety</strong> Every value goes through a <code>?</code>. The injection check passes because there is no concatenation anywhere.</div>
+      <div class="assignment-card__rubric-item"><strong>Atomicity</strong> Break the second write on purpose in a test and prove the first one is absent afterwards. A reviewer should be able to run that test.</div>
+      <div class="assignment-card__rubric-item"><strong>Resources</strong> Every <code>Connection</code>, <code>Statement</code> and <code>ResultSet</code> closed with try-with-resources; no connection held in a field.</div>
+    </div>
+    <h4>&#128230; What you get</h4>
+    <ul>
+      <li><code>code/a4-student-registry-jdbc-starter</code> &mdash; including <code>lib/h2-2.3.232.jar</code>, so it compiles and runs offline with no download</li>
+      <li>Worked reference: <code>code/s08-advanced-jdbc</code> &mdash; the same techniques, fully commented</li>
+      <li>The <a href="guides/databases.html">H2 &amp; MySQL guide</a> for anything the sessions did not cover</li>
+    </ul>
+  </div>
+
+  <!-- A5 / A6 -->
+  <div class="callout callout--note"><span class="callout__i">&#128204;</span>
+    <div class="callout__b"><b>A5 and A6 &mdash; issued in the weeks ahead</b>
+      <p>Two assignments are still to be issued, and their briefs will appear here on the day:</p>
+      <ul>
+        <li><strong>A5 &middot; Design patterns + testing</strong> &mdash; refactor the registry behind a repository interface and prove it with a JUnit suite. Issued around <strong>Session 9</strong> <span class="text-faint text-sm">(coming soon)</span>.</li>
+        <li><strong>A6 &middot; JavaFX</strong> &mdash; the core UI of your capstone as a standalone application. Issued around <strong>Session 13</strong> <span class="text-faint text-sm">(coming soon)</span>.</li>
+      </ul>
+      <p>Nothing about the rubric changes: same four dimensions, same starter-plus-SelfCheck pattern.</p>
+    </div>
+  </div>
+
+  <!-- ===== LAB TASKS ======================================================= -->
+  <h2>Lab Tasks (10% &mdash; Labs &amp; Participation)</h2>
+  <p>
+    Lab tasks are smaller than assignments &mdash; one to two hours &mdash; and are marked
+    pass/fail in class rather than graded. They exist to make sure the <em>practical</em> part of a
+    session actually landed before you move on.
+  </p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Task</th><th>What you build</th><th>Pass means</th><th>Starter</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>L2</strong><br><span class="text-sm text-faint"><a href="sessions/s02-generics.html">Session 2</a>, due start of Session 3</span></td>
+          <td>Generic Toolkit &mdash; a toolbox of <strong>generic static methods</strong> plus one generic class <code>Shelf&lt;T&gt;</code>. All method headers, including the generics, are given; you write the bodies.</td>
+          <td>SelfCheck shows <strong>9/9</strong>, and you can explain any method for one minute.</td>
+          <td><code>code/l2-generic-toolkit-starter</code></td>
+        </tr>
+        <tr>
+          <td><strong>L4</strong><br><span class="text-sm text-faint"><a href="sessions/s04-threading.html">Session 4</a>, due start of Session 5</span></td>
+          <td>Download Manager &mdash; create download threads, start them together, wait for them, count how many are running, cancel one, run a daemon status reporter, and start a virtual thread.</td>
+          <td>SelfCheck shows <strong>7/7</strong>, and you can explain how your <code>cancel</code> method works.</td>
+          <td><code>code/l4-download-manager-starter</code></td>
+        </tr>
+        <tr>
+          <td><strong>Repair Clinic</strong><br><span class="text-sm text-faint"><a href="sessions/s06-review-1.html">Session 6</a>, in class</span></td>
+          <td>Broken programs to diagnose and fix &mdash; the review session's practical.</td>
+          <td>Every fault found and explained, not just patched.</td>
+          <td><code>code/s06-repair-clinic-starter</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== HONESTY ========================================================= -->
+  <h2>Working with AI Tools &mdash; the Rule</h2>
+  <div class="callout callout--warn"><span class="callout__i">&#9878;&#65039;</span>
+    <div class="callout__b"><b>AI is a tutor, not a ghost-writer</b>
+      <p>
+        This course teaches you to use AI tools well, so they are allowed. The line is simple:
+      </p>
+      <ul>
+        <li><strong>Allowed:</strong> asking an AI to explain an exception message, to suggest where a resource leak might be, to review your transaction boundary, or to quiz you on a topic.</li>
+        <li><strong>Not allowed:</strong> asking it to write the method, the class or the program you are handing in.</li>
+      </ul>
+      <p>
+        And you will be asked to <strong>defend any line in a viva</strong>. AI-generated code you do
+        not understand is worse than no code at all, because you will be asked to explain it and
+        cannot. A useful habit: when an AI does give you code, look for the mistake it is most likely
+        to make in <em>this</em> topic &mdash; string concatenation in SQL, a <code>catch</code> that
+        rolls back and then returns normally, a shared counter incremented without a lock &mdash; and
+        check whether it made it. Catching that is a skill this course grades.
+      </p>
+    </div>
+  </div>
+
+  <!-- ===== CHECKLIST ======================================================= -->
+  <h2>Before You Hand In &mdash; the 60-Second Checklist</h2>
+  <div class="cheatsheet">
+    <h4>&#9989; Every time</h4>
+    <ul>
+      <li><strong>SelfCheck is green</strong> &mdash; and you ran it <em>twice</em>, so you know it is not luck</li>
+      <li><strong>Clean build</strong> &mdash; delete <code>target/</code> (or <code>out/</code>) and build again from nothing</li>
+      <li><strong>No placeholders left</strong> &mdash; no <code>// TODO</code>, no <code>throw new UnsupportedOperationException()</code></li>
+      <li><strong>No debugging leftovers</strong> &mdash; the print statements you added to find the bug are gone</li>
+      <li><strong>Every method named for what it does</strong> &mdash; <code>calc2()</code> is not a name</li>
+      <li><strong>You can explain every line</strong> &mdash; if you cannot, delete it and write it again yourself</li>
+    </ul>
+  </div>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Where to go next</b>
+      <p><a href="schedule.html">The 5-week schedule</a> shows when each assignment is due &middot;
+      <a href="project.html">the capstone brief</a> shows where A4 ends up &middot;
+      <a href="glossary.html">the glossary</a> is there when a term goes past you.</p>
+    </div>
+  </div>
+
+</main>
+
+<script src="assets/js/course.js"></script>
+</body>
+</html>

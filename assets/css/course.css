@@ -198,6 +198,16 @@ hr { border:none; border-top:1px solid var(--line); margin:2.5rem 0; }
   border-radius:var(--radius-xs);
   background:var(--surface-2); color:var(--ink-faint);
 }
+/* Pages on the learning path that are not written yet. The manifest marks them
+   `coming: true`, so they render as text rather than a link that would 404. */
+.sidebar__link.is-coming {
+  opacity:.55; cursor:default;
+}
+.sidebar__link.is-coming:hover { background:transparent; color:var(--ink-soft); text-decoration:none; }
+.sidebar__tag--soon {
+  margin-left:auto; background:transparent; color:var(--ink-faint);
+  border:1px dashed var(--line);
+}
 
 /* ---- Main content area ---------------------------------------------------- */
 .page {
@@ -664,6 +674,14 @@ tr:hover td { background:var(--surface-2); }
   font-size:.75rem; color:var(--success);
   margin-top:.35rem; font-weight:600;
 }
+/* A session that is planned but not written yet: shown, never clickable. */
+.card.is-coming { opacity:.55; cursor:default; border-style:dashed; }
+.card.is-coming:hover { transform:none; border-color:var(--line); box-shadow:none; }
+.card__soon {
+  display:inline-block; margin-top:.35rem; padding:.1rem .5rem;
+  font-size:.7rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+  color:var(--ink-faint); border:1px dashed var(--line); border-radius:999px;
+}
 
 /* ---- Pager ---------------------------------------------------------------- */
 .pager {
@@ -726,6 +744,8 @@ details > div, details > p { padding:0 1rem 1rem; }
 .schedule-grid__cell--week {
   background:var(--accent-bg); font-weight:700; color:var(--accent);
 }
+/* A planned session in the schedule: shown, but not a link yet. */
+.schedule-grid__cell .is-coming { opacity:.55; }
 
 /* ---- Glossary ------------------------------------------------------------- */
 .glossary-filter {

@@ -303,11 +303,11 @@ FIXED - try-with-resources closes it for you
 Doing it at the same time should cost about 300 ms, not 1200 ms.
 
 BROKEN - the sleep is INSIDE the lock
-  four cooks finished in 1217 ms
+  four cooks finished in 1223 ms
   nobody crashed and the answer is correct - it is just serialised
 
 FIXED - the sleep is OUTSIDE the lock
-  four cooks finished in 302 ms
+  four cooks finished in 301 ms
 
 Same work, same four cooks. A lock protects data, not time:
 do the slow work first, then lock only the few lines that touch
@@ -342,8 +342,8 @@ the shared value.</div>
   <!--@output project="code/s06-review-1" main="com.aptech.s06.drills.D5_LockOrderDeadlock"-->
 <div class="terminal-output">Drill 5a - the standoff (this one really does deadlock)
 
-Chef Ben picks up the spoon.
 Chef Ada picks up the pot.
+Chef Ben picks up the spoon.
 Chef Ada now needs the spoon ...
 Chef Ben now needs the pot ...
 
@@ -912,8 +912,8 @@ which is the time of the SLOWEST job (600 ms), not the sum of all three.</div>
 4 chefs x 100,000 orders = 400,000 expected
 
 BEFORE - a plain int with count++ spelled out:
-  actual       : 117,404
-  lost updates : 282,596
+  actual       : 116,034
+  lost updates : 283,966
   -&gt; wrong, and it will be a different wrong number next run.
 
 AFTER - LongAdder, one indivisible increment:
@@ -1278,7 +1278,7 @@ FAIL  F3  Session 3 - the report really reaches the disk
 FAIL  F4  Session 4 - countAlive follows the workers' life
       -&gt; threads that have never been started are not alive
 FAIL  F5  Session 5 - the files are processed at the same time
-      -&gt; 3 files of 20 lines x 20 ms took 1232 ms - one after another is about 1200 ms. Are they overlapping?
+      -&gt; 3 files of 20 lines x 20 ms took 1234 ms - one after another is about 1200 ms. Are they overlapping?
 
 0 passed, 5 failed.
 Repair the FAILs above one at a time, then run SelfCheck again.</div>
@@ -1700,7 +1700,7 @@ FAULT 2 - a writer that is never closed
   fixed : 10 bytes on disk after close()   PASS - try-with-resources flushed it
 
 FAULT 3 - a shared int with count++ spelled out
-  broken: 116,289 of 400,000   &lt;- lost 283,711 updates
+  broken: 114,326 of 400,000   &lt;- lost 285,674 updates
   fixed : 400,000 of 400,000   PASS - LongAdder lost nothing</div>
 <!--@end-->
         </div>

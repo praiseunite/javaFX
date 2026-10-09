@@ -28,8 +28,9 @@ Videos in the *Further Study* sections need internet; everything else works offl
 
 | Status | Sessions |
 |---|---|
-| ✅ Ready | Java Foundations Bridge B1–B7 · Session 1 – Java Utility APIs · Session 2 – Generics · Session 3 – File Handling, Streams & Serialization · Session 4 – Threading · Session 5 – Multithreading & Concurrency · Session 6 – Try It Yourself: Sessions 1–5 · Session 7 – The JDBC API · Reference guide: H2 & MySQL |
-| 🛠 Coming | Sessions 8–18, capstone project |
+| ✅ Ready | Java Foundations Bridge B1–B7 · Session 1 – Java Utility APIs · Session 2 – Generics · Session 3 – File Handling, Streams & Serialization · Session 4 – Threading · Session 5 – Multithreading & Concurrency · Session 6 – Try It Yourself: Sessions 1–5 · Session 7 – The JDBC API · Session 8 – Advanced JDBC · Reference guide: H2 & MySQL |
+| ✅ Ready | Reference pages: [5-week schedule](schedule.html) · [assignments & labs](assignments.html) · [capstone project](project.html) · [further study & videos](resources.html) · [glossary A–Z](glossary.html) |
+| 🛠 Coming | Sessions 9–18, capstone project |
 
 ## Run the Java code
 

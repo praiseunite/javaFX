@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Glossary A–Z — Building Rich Java Applications with JavaFX and AI Tools</title>
+  <meta name="description" content="Every new word from every session of the course, A to Z, with the session it came from. Filter as you type.">
+  <link rel="stylesheet" href="assets/css/course.css">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "glossary";</script>
+</head>
+<body>
+
+<main class="page">
+  <section class="hero">
+    <span class="tag">Reference &middot; 125 terms</span>
+    <h1>Glossary A&ndash;Z</h1>
+    <p class="lede">
+      Every word the course introduces in one place. Each entry is the definition as the session
+      itself gave it, followed by the session it came from &mdash; so when a term goes past you in
+      class, you can find it again here in seconds. Nothing on this page needs the internet.
+    </p>
+    <div class="meta">
+      <span>&#128218; 125 terms</span>
+      <span>&#128203; Bridge B1&ndash;B7 &middot; Sessions 1&ndash;8</span>
+      <span>&#128269; Filter as you type</span>
+    </div>
+  </section>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128161;</span>
+    <div class="callout__b"><b>How to use this page</b>
+      <p>Start typing in the box to filter &mdash; the search looks inside the definitions too, so
+      <em>"atomic"</em> finds every entry that mentions atomicity, not just the one called
+      <em>Atomicity</em>. Use the letter bar to jump. Nothing here is a substitute for the session
+      page: every term links back to the session that taught it.</p>
+    </div>
+  </div>
+
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+  <h2>Find a term</h2>
+  <input class="glossary-filter" type="search" placeholder="Type to filter &mdash; e.g. transaction, thread, stream" aria-label="Filter glossary terms" autocomplete="off">
+  <p class="text-sm text-faint" id="glossaryCount" role="status" aria-live="polite"></p>
+  <p class="text-sm"><a href="#letter-a">A</a> &middot; <a href="#letter-b">B</a> &middot; <a href="#letter-c">C</a> &middot; <a href="#letter-d">D</a> &middot; <a href="#letter-e">E</a> &middot; <a href="#letter-f">F</a> &middot; <a href="#letter-g">G</a> &middot; <a href="#letter-h">H</a> &middot; <a href="#letter-i">I</a> &middot; <a href="#letter-j">J</a> &middot; <a href="#letter-k">K</a> &middot; <a href="#letter-l">L</a> &middot; <a href="#letter-m">M</a> &middot; <a href="#letter-n">N</a> &middot; <a href="#letter-p">P</a> &middot; <a href="#letter-r">R</a> &middot; <a href="#letter-s">S</a> &middot; <a href="#letter-t">T</a> &middot; <a href="#letter-u">U</a> &middot; <a href="#letter-v">V</a> &middot; <a href="#letter-w">W</a></p>
+
+  <h3 id="letter-a">A</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>ACID</dt>
+      <dd>Atomicity, Consistency, Isolation, Durability &mdash; the four guarantees a transaction gives. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>API</dt>
+      <dd>Ready-made classes and methods you can use. <span class="text-faint">&mdash; Session 1</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Atomic</dt>
+      <dd>An operation that happens completely or not at all, with no half-steps. <code>count++</code> is <em>not</em> atomic. <span class="text-faint">&mdash; Session 5</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>AtomicInteger</code>, <code>LongAdder</code></dt>
+      <dd>Classes that do an increment as one indivisible step, with no lock written by hand. <span class="text-faint">&mdash; Session 5</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Atomicity</dt>
+      <dd>The property that a half-finished transaction can never be observed. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Auto-commit</dt>
+      <dd>The default mode where every statement is its own transaction. Turned off to begin one. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-b">B</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Batch update</dt>
+      <dd>Queuing many statements with <code>addBatch()</code> and sending them in one call with <code>executeBatch()</code>. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>BatchUpdateException</dt>
+      <dd>The failure a batch throws; <code>getUpdateCounts()</code> reports which statements had already run. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Binary search</dt>
+      <dd>Finding a value in sorted data by repeatedly halving the search area. <span class="text-faint">&mdash; Session 1</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Bounded type</dt>
+      <dd><code>&lt;T extends X&gt;</code>: T must be X or a subtype of X. <span class="text-faint">&mdash; Session 2</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Buffer, flush</dt>
+      <dd>A block of memory that collects data to reduce disk trips / forcing buffered data out to the disk. <span class="text-faint">&mdash; Session 3</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Byte, byte stream</dt>
+      <dd>A value 0&ndash;255 / a stream that moves raw bytes (<code>InputStream</code>/<code>OutputStream</code>). <span class="text-faint">&mdash; Session 3</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-c">C</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>CachedRowSet</dt>
+      <dd>A disconnected RowSet: rows are read into memory and stay usable after the connection closes. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>caching_sha2_password</dt>
+      <dd>MySQL 8's default authentication plugin. Stronger than the old one, and the reason for the public-key message. <span class="text-faint">&mdash; Guide</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>CallableStatement</dt>
+      <dd>The JDBC statement for calling stored routines: <code>{ ? = call name(?) }</code>. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Character stream, encoding, UTF-8</dt>
+      <dd>A stream of text characters (<code>Reader</code>/<code>Writer</code>) / the rule that turns characters into bytes / the standard encoding (1&ndash;4 bytes per character). <span class="text-faint">&mdash; Session 3</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Checked exception, try-with-resources</dt>
+      <dd>An error you must catch or declare (<code>IOException</code>) / <code>try (&hellip;)</code>, which closes resources automatically. <span class="text-faint">&mdash; Session 3</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Circular wait</dt>
+      <dd>The condition a deadlock needs: each thread holds what the next one is waiting for. <span class="text-faint">&mdash; Session 6</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Classpath</dt>
+      <dd>The list of places the JVM looks for classes and jars. Your driver must be on it to run, and on it again to compile. <span class="text-faint">&mdash; Guide</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Collection, element</dt>
+      <dd>A container object / one item inside it. <span class="text-faint">&mdash; Session 1</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>commit()</dt>
+      <dd>Makes everything since the last commit permanent. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Comparable / Comparator</dt>
+      <dd>A class's own natural order / a separate, swappable sorting rule. <span class="text-faint">&mdash; Session 1</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Compile time / run time</dt>
+      <dd>When code is checked and translated / when it actually runs. <span class="text-faint">&mdash; Session 2</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Compile-time vs run-time failure</dt>
+      <dd>A refusal from <code>javac</code> before anything runs, versus a fault that waits for the right input at 3&nbsp;a.m. <span class="text-faint">&mdash; Session 6</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>CompletableFuture</code></dt>
+      <dd>A promise of a result that arrives later, with steps chained onto it. <span class="text-faint">&mdash; Session 5</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Concurrency, scheduler</dt>
+      <dd>Several things in progress at once / the OS part that decides which thread runs. <span class="text-faint">&mdash; Session 4</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>ConcurrentHashMap</code>, <code>BlockingQueue</code>, <code>CopyOnWriteArrayList</code></dt>
+      <dd>Thread-safe collections that do the locking, waiting and waking for you. <span class="text-faint">&mdash; Session 5</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Connection</dt>
+      <dd>An open session with the database. A resource: close it when done. <span class="text-faint">&mdash; Session 7</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Connector/J</dt>
+      <dd>MySQL's official JDBC driver. Driver class <code>com.mysql.cj.jdbc.Driver</code>. <span class="text-faint">&mdash; Guide</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Console</dt>
+      <dd>The class for talking to a real terminal, including hidden password input. <span class="text-faint">&mdash; Session 3</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>CREATE ALIAS</dt>
+      <dd>H2&rsquo;s way of exposing a Java method as a database routine &mdash; its substitute for PL/SQL. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Critical section</dt>
+      <dd>The lines of code that touch shared data and must run for one thread at a time. <span class="text-faint">&mdash; Session 5</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>CSV</dt>
+      <dd>Comma-separated values: a simple text format for tables. <span class="text-faint">&mdash; Session 3</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-d">D</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Daemon thread / user thread</dt>
+      <dd>A background thread that doesn't keep the JVM alive / one that does. <span class="text-faint">&mdash; Session 4</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>DAO</dt>
+      <dd>Data Access Object: a class that owns the SQL for one table and hands callers objects. <span class="text-faint">&mdash; Session 7</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>DatabaseMetaData</dt>
+      <dd>A description of the database itself: tables, columns, keys, features. <span class="text-faint">&mdash; Session 7</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Deadlock, lock ordering</dt>
+      <dd>Threads frozen in a circular wait / the one agreed sequence that makes it impossible. <span class="text-faint">&mdash; Session 5</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Dirty read</dt>
+      <dd>Reading a row another transaction changed but has not committed. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Driver</dt>
+      <dd>The vendor's jar that implements the <code>java.sql</code> interfaces for one database. <span class="text-faint">&mdash; Session 7</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Driver (JDBC driver)</dt>
+      <dd>The vendor's jar that translates <code>java.sql.*</code> calls into a specific database's language. <span class="text-faint">&mdash; Guide</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>DriverManager</dt>
+      <dd>The class that reads a JDBC URL and hands back a <code>Connection</code> from the matching driver. <span class="text-faint">&mdash; Session 7</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-e">E</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Embedded database</dt>
+      <dd>A database engine that runs inside your program, as a library, with no separate server process. H2 is one. <span class="text-faint">&mdash; Session 7 · Guide</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>EOF</dt>
+      <dd>End Of File. <span class="text-faint">&mdash; Session 3</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>ExecutorService</code></dt>
+      <dd>An object that runs submitted tasks on threads for you (more in Session 5). <span class="text-faint">&mdash; Session 4</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-f">F</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Failure report</dt>
+      <dd>The message a check or a compiler prints: the type, the method, the line, and what it expected. <span class="text-faint">&mdash; Session 6</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>FIFO, LIFO, Deque</dt>
+      <dd>First-in-first-out (queue) / last-in-first-out (stack) / double-ended queue. <span class="text-faint">&mdash; Session 1</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>File lock</dt>
+      <dd>A marker H2 places while a file database is open, preventing a second process from writing it. The cause of "may be already in use". <span class="text-faint">&mdash; Guide</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-g">G</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Generated key</dt>
+      <dd>The id a database assigns to an inserted row, read with <code>getGeneratedKeys()</code>. <span class="text-faint">&mdash; Session 7</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Generic class, generic interface, generic method</dt>
+      <dd>A class / interface / method that declares its own type parameter(s). <span class="text-faint">&mdash; Session 2</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Generics</dt>
+      <dd>Classes, interfaces and methods that take types as parameters. <span class="text-faint">&mdash; Session 2</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Generics <code>&lt;T&gt;</code>, diamond <code>&lt;&gt;</code></dt>
+      <dd>The type of element a collection holds; Java fills in the right-hand side for you. <span class="text-faint">&mdash; Session 1</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>GRANT</dt>
+      <dd>MySQL's way of giving a user rights, always scoped to particular objects. <code>GRANT ALL ON registry.*</code> is scoped to one database. <span class="text-faint">&mdash; Guide</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Guarded block, spurious wake-up</dt>
+      <dd>A <code>while</code>-loop around <code>wait()</code> / a wake-up that happens with no signal, which is why the loop is required. <span class="text-faint">&mdash; Session 5</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-h">H</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Hash code, bucket</dt>
+      <dd>The number an object turns itself into / the slot a HashSet or HashMap puts it in. <span class="text-faint">&mdash; Session 1</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Heap</dt>
+      <dd>The internal shape of a PriorityQueue: the smallest is always on top. <span class="text-faint">&mdash; Session 1</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-i">I</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>In-memory database</dt>
+      <dd>A database that exists only in RAM and vanishes when the last connection closes. Fast, and deliberately temporary. <span class="text-faint">&mdash; Guide</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Index</dt>
+      <dd>A position number, starting at 0. <span class="text-faint">&mdash; Session 1</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Instantiate</dt>
+      <dd>Create an object from a class: <code>new Box&lt;&gt;()</code>. <span class="text-faint">&mdash; Session 2</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Interface vs class (implementation)</dt>
+      <dd>The rules ("job advert") vs the object that does the work. <span class="text-faint">&mdash; Session 1</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Intrinsic lock / monitor</dt>
+      <dd>The built-in lock every Java object carries; what <code>synchronized</code> uses. <span class="text-faint">&mdash; Session 5</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Isolate</dt>
+      <dd>To narrow a fault down to one method, then one line, so that the fix is obvious. <span class="text-faint">&mdash; Session 6</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Isolation level</dt>
+      <dd>How much of each other&rsquo;s unfinished work concurrent transactions may see. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Iterator</dt>
+      <dd>A cursor that walks through a collection (<code>hasNext</code>, <code>next</code>, <code>remove</code>). <span class="text-faint">&mdash; Session 1</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-j">J</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>JDBC</dt>
+      <dd>Java Database Connectivity: the JDK's API for talking to a relational database. <span class="text-faint">&mdash; Session 7</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>JDBC URL</dt>
+      <dd>The string that names a database and tells <code>DriverManager</code> which driver to use. The <code>jdbc:</code> prefix, then a vendor protocol. <span class="text-faint">&mdash; Guide</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>join</code>, <code>sleep</code>, <code>interrupt</code></dt>
+      <dd>Wait for another thread / pause this one / politely ask a thread to stop. <span class="text-faint">&mdash; Session 4</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-k">K</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Key, value, entry</dt>
+      <dd>The lookup part / the stored part / one key=value pair of a Map. <span class="text-faint">&mdash; Session 1</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-l">L</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Lambda <code>x -&gt; &hellip;</code> / method reference <code>Class::method</code></dt>
+      <dd>A short inline function / a shortcut for a lambda that just calls one method. <span class="text-faint">&mdash; Session 1</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Lock ordering</dt>
+      <dd>Agreeing a single sequence for taking several locks, and following it in every thread. <span class="text-faint">&mdash; Session 6</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Lost update</dt>
+      <dd>An increment that one thread overwrites before another has finished with it. <span class="text-faint">&mdash; Session 5</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-m">M</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Marker interface, <code>serialVersionUID</code>, <code>transient</code></dt>
+      <dd>An interface with no methods (<code>Serializable</code>) / a class's version number / "don't save this field". <span class="text-faint">&mdash; Session 3</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Multithreading</dt>
+      <dd>One program doing several jobs at the same time, each on its own thread. <span class="text-faint">&mdash; Session 5</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Mutual exclusion / visibility</dt>
+      <dd>Only one thread inside at a time / a lock's guarantee that changes are seen by the next thread. <span class="text-faint">&mdash; Session 5</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-n">N</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Non-repeatable read</dt>
+      <dd>Reading the same row twice inside one transaction and getting two answers. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-p">P</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Package / import</dt>
+      <dd>A folder of related classes / the line that lets you use a class from another package. <span class="text-faint">&mdash; Session 1</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Parameterized query</dt>
+      <dd>A query whose values are bound through <code>?</code> &mdash; the defence against injection. <span class="text-faint">&mdash; Session 7</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Path, relative path, working directory</dt>
+      <dd>A file's address / an address measured from the current folder / the current folder (the project folder in IntelliJ). <span class="text-faint">&mdash; Session 3</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>PECS</dt>
+      <dd>Producer Extends, Consumer Super: the rule for choosing a wildcard. <span class="text-faint">&mdash; Session 2</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Phantom read</dt>
+      <dd>Running the same query twice and getting a different set of rows. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Pinning</dt>
+      <dd>When a virtual thread can't release its carrier while waiting (mostly fixed since JDK 24). <span class="text-faint">&mdash; Session 4</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Platform thread / virtual thread / carrier thread</dt>
+      <dd>A wrapper around an OS thread / a cheap thread managed by Java / the platform thread a virtual thread runs on. <span class="text-faint">&mdash; Session 4</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Port</dt>
+      <dd>The number a network service listens on. MySQL's default is 3306; H2's server and console use 9092 and 8082. <span class="text-faint">&mdash; Guide</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>PreparedStatement</dt>
+      <dd>A statement with <code>?</code> placeholders; values are bound separately and can never become SQL. <span class="text-faint">&mdash; Session 7</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Priority</dt>
+      <dd>A 1&ndash;10 hint to the scheduler, never a guarantee. <span class="text-faint">&mdash; Session 4</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-r">R</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Race condition</dt>
+      <dd>A bug where the timing of threads corrupts shared data. <span class="text-faint">&mdash; Session 5</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Raw type</dt>
+      <dd>A generic type used without <code>&lt;&hellip;&gt;</code>, like <code>List</code>. Unsafe; only for old code. <span class="text-faint">&mdash; Session 2</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Regression</dt>
+      <dd>Something that used to work and no longer does, because of a change made somewhere else. <span class="text-faint">&mdash; Session 6</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Reproduce</dt>
+      <dd>To make a fault happen on demand. Without this you cannot tell a fix from a coincidence. <span class="text-faint">&mdash; Session 6</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Resource leak</dt>
+      <dd>A file handle, connection or thread that is never released. Harmless once, fatal after a few thousand times. <span class="text-faint">&mdash; Session 6</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>ResultSet</dt>
+      <dd>A cursor over the rows a query returned. Starts before row one; <code>next()</code> advances it. <span class="text-faint">&mdash; Session 7</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>ResultSetMetaData</dt>
+      <dd>A description of one query's result: column count, names and types. <span class="text-faint">&mdash; Session 7</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>rollback()</dt>
+      <dd>Undoes everything since the last commit. Does nothing when auto-commit is on. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>RowSet</dt>
+      <dd>A <code>ResultSet</code> that is also a JavaBean: configurable, fillable, and passable between layers. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>RowSetProvider / RowSetFactory</dt>
+      <dd>The two-step way to obtain a RowSet, so the provider can be swapped without changing your code. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>Runnable</code></dt>
+      <dd>An interface with one method, <code>run()</code>: a job a thread can do. <span class="text-faint">&mdash; Session 4</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-s">S</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Savepoint</dt>
+      <dd>A bookmark inside a transaction; <code>rollback(point)</code> rewinds to it, keeping earlier work. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Scrollable ResultSet</dt>
+      <dd>A cursor you can move in any direction, instead of only forwards. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Self-check</dt>
+      <dd>A program that measures your own work and prints a pass/fail count, so correctness is a number rather than an opinion. <span class="text-faint">&mdash; Session 6</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Serialization / deserialization</dt>
+      <dd>Turning an object into bytes / rebuilding a copy from them. <span class="text-faint">&mdash; Session 3</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Sharding key</dt>
+      <dd>A value naming which shard a connection belongs to, when one database spans several servers. New in JDBC 4.3. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Silent failure</dt>
+      <dd>A fault that throws nothing and exits cleanly &mdash; an empty file, a duplicated student, a serialised job. The hardest kind to find. <span class="text-faint">&mdash; Session 6</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>SQL dialect</dt>
+      <dd>The specific spelling of SQL that a database accepts. Standard SQL is the common core; the edges differ. <span class="text-faint">&mdash; Guide</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>SQL injection</dt>
+      <dd>An attack where input concatenated into SQL changes the query's meaning. <span class="text-faint">&mdash; Session 7</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>start()</code> / <code>run()</code></dt>
+      <dd>Begin a new thread that runs the job / the job itself. <span class="text-faint">&mdash; Session 4</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Statement</dt>
+      <dd>A channel for fixed SQL with no input values. <span class="text-faint">&mdash; Session 7</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Static method</dt>
+      <dd>A method you call on the class name, such as <code>Arrays.sort(a)</code>, without <code>new</code>. <span class="text-faint">&mdash; Session 1</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Stored procedure</dt>
+      <dd>A routine that lives in the database and is called with a <code>CallableStatement</code>. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Stream, input stream, output stream</dt>
+      <dd>An ordered flow of data into / out of a program. <span class="text-faint">&mdash; Session 3</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Symptom vs cause</dt>
+      <dd>What you can see (the wrong total) versus why it happens (a lost update). Fixing the symptom is the most common beginner mistake. <span class="text-faint">&mdash; Session 6</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-t">T</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Thread dump, <code>ThreadMXBean</code></dt>
+      <dd>A snapshot of every thread and what it is doing / the JVM API that can name the threads in a deadlock. <span class="text-faint">&mdash; Session 5</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Thread pool, <code>ExecutorService</code>, <code>Future</code></dt>
+      <dd>A managed set of reused threads / the manager you submit tasks to / the receipt you call <code>get()</code> on for a result. <span class="text-faint">&mdash; Session 5</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Thread states</dt>
+      <dd>NEW, RUNNABLE, BLOCKED, WAITING, TIMED_WAITING, TERMINATED. <span class="text-faint">&mdash; Session 4</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Thread, process, main thread</dt>
+      <dd>A path of execution / a running program / the thread that runs <code>main</code>. <span class="text-faint">&mdash; Session 4</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Transaction</dt>
+      <dd>A group of statements the database treats as one unit: all of it, or none of it. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Two-tier / three-tier</dt>
+      <dd>SQL written inline (two-tier) versus SQL behind a DAO (three-tier). <span class="text-faint">&mdash; Session 7</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Type erasure</dt>
+      <dd>The compiler removes type arguments after checking them; at run time T is Object (or its bound). <span class="text-faint">&mdash; Session 2 · Session 6</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Type inference</dt>
+      <dd>The compiler working out a type you didn't write. <span class="text-faint">&mdash; Session 2</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Type parameter / type argument</dt>
+      <dd>The placeholder (<code>T</code> in <code>Box&lt;T&gt;</code>) / the real type that fills it (<code>String</code> in <code>Box&lt;String&gt;</code>). <span class="text-faint">&mdash; Session 2</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Type witness</dt>
+      <dd>Naming the type yourself on a generic method call: <code>List.&lt;Integer&gt;of()</code>. <span class="text-faint">&mdash; Session 2</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-u">U</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Updatable ResultSet</dt>
+      <dd>A cursor that can edit the row it is on with <code>updateRow()</code>, <code>insertRow()</code> or <code>deleteRow()</code>. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>utf8mb4</dt>
+      <dd>The MySQL character set that stores the full range of Unicode, including emoji. The right default for text. <span class="text-faint">&mdash; Guide</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-v">V</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Virtual thread, carrier thread, pinning</dt>
+      <dd>A cheap thread managed by Java / the platform thread it runs on / when a virtual thread cannot release its carrier while waiting. <span class="text-faint">&mdash; Session 5</span></dd>
+    </dl>
+  </div>
+
+  <h3 id="letter-w">W</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Wildcard <code>?</code></dt>
+      <dd>"Some unknown type." Upper-bounded <code>? extends X</code>, lower-bounded <code>? super X</code>, unbounded <code>?</code>. <span class="text-faint">&mdash; Session 2</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Wrapper class, autoboxing</dt>
+      <dd><code>Integer</code> for <code>int</code> and so on; Java converts automatically. <span class="text-faint">&mdash; Session 1</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Wrapping (Decorator)</dt>
+      <dd>Building a stream by putting one inside another, each adding a skill. <span class="text-faint">&mdash; Session 3</span></dd>
+    </dl>
+  </div>
+
+  <script>
+  /* Live count beside the filter. course.js does the hiding; this only reports it. */
+  (function () {
+    function start() {
+      var box = document.querySelector(".glossary-filter");
+      var out = document.getElementById("glossaryCount");
+      if (!box || !out) return;
+      var items = Array.prototype.slice.call(document.querySelectorAll(".glossary-item"));
+      function update() {
+        var n = items.filter(function (i) { return !i.classList.contains("hidden"); }).length;
+        out.textContent = n + (n === 1 ? " term" : " terms") +
+          (n === items.length ? "" : " of " + items.length);
+      }
+      box.addEventListener("input", function () {
+        /* course.js registers its own input listener on this same element and does
+           the hiding. It is registered after this one, so a synchronous read here
+           would count the previous keystroke's state. Defer to the end of the task. */
+        setTimeout(update, 0);
+      });
+      update();
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
+    else start();
+  })();
+  </script>
+
+</main>
+
+<script src="assets/js/course.js"></script>
+</body>
+</html>

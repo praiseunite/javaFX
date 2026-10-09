@@ -36,22 +36,23 @@
     { slug: "s08", file: "sessions/s08-advanced-jdbc.html",      unit: "Session 8",  title: "Advanced JDBC" },
 
     { group: "Week 3 — Design & Testing" },
-    { slug: "s09", file: "sessions/s09-design-patterns.html",    unit: "Session 9",  title: "Design Patterns & Advanced Features" },
-    { slug: "s10", file: "sessions/s10-unit-testing-ai.html",    unit: "Session 10", title: "Unit Testing & AI Tools" },
-    { slug: "s11", file: "sessions/s11-data-structures.html",    unit: "Session 11", title: "Java Data Structures" },
-    { slug: "s12", file: "sessions/s12-review-2.html",           unit: "Review",     title: "Try It Yourself: Sessions 6–10" },
+    { slug: "s09", file: "sessions/s09-design-patterns.html",    unit: "Session 9",  title: "Design Patterns & Advanced Features", coming: true },
+    { slug: "s10", file: "sessions/s10-unit-testing-ai.html",    unit: "Session 10", title: "Unit Testing & AI Tools", coming: true },
+    { slug: "s11", file: "sessions/s11-data-structures.html",    unit: "Session 11", title: "Java Data Structures", coming: true },
+    { slug: "s12", file: "sessions/s12-review-2.html",           unit: "Review",     title: "Try It Yourself: Sessions 6–10", coming: true },
 
     { group: "Week 4 — JavaFX Foundations" },
-    { slug: "s13", file: "sessions/s13-intro-javafx.html",       unit: "Session 13", title: "Introduction to JavaFX" },
-    { slug: "s14", file: "sessions/s14-javafx-text-shapes.html", unit: "Session 14", title: "Text, Transforms & Shapes" },
-    { slug: "s15", file: "sessions/s15-javafx-layouts-ui.html",  unit: "Session 15", title: "Layouts, CSS, Controls & Charts" },
-    { slug: "s16", file: "sessions/s16-javafx-events.html",      unit: "Session 16", title: "Event Handling" },
+    { slug: "s13", file: "sessions/s13-intro-javafx.html",       unit: "Session 13", title: "Introduction to JavaFX", coming: true },
+    { slug: "s14", file: "sessions/s14-javafx-text-shapes.html", unit: "Session 14", title: "Text, Transforms & Shapes", coming: true },
+    { slug: "s15", file: "sessions/s15-javafx-layouts-ui.html",  unit: "Session 15", title: "Layouts, CSS, Controls & Charts", coming: true },
+    { slug: "s16", file: "sessions/s16-javafx-events.html",      unit: "Session 16", title: "Event Handling", coming: true },
 
     { group: "Week 5 — JavaFX Advanced & Capstone" },
-    { slug: "s17", file: "sessions/s17-javafx-media.html",       unit: "Session 17", title: "Media with JavaFX" },
-    { slug: "s18", file: "sessions/s18-review-3.html",           unit: "Review",     title: "Try It Yourself: Sessions 11–15" },
+    { slug: "s17", file: "sessions/s17-javafx-media.html",       unit: "Session 17", title: "Media with JavaFX", coming: true },
+    { slug: "s18", file: "sessions/s18-review-3.html",           unit: "Review",     title: "Try It Yourself: Sessions 11–15", coming: true },
 
     { group: "Resources" },
+    { slug: "schedule",    file: "schedule.html",      unit: "Ref", title: "5-Week Schedule" },
     { slug: "assignments", file: "assignments.html",   unit: "Ref", title: "Assignments (A1–A6)" },
     { slug: "project",     file: "project.html",       unit: "Ref", title: "Capstone Project" },
     { slug: "resources",   file: "resources.html",     unit: "Ref", title: "Further Study & Videos" },
@@ -60,6 +61,9 @@
   ];
 
   var PAGES = MANIFEST.filter(function (m) { return m.slug; });
+  // Pages that actually exist. Progress and "of N" counts use these only, so a
+  // student is never told they are 30% done when half the course is unwritten.
+  var AVAILABLE = PAGES.filter(function (p) { return !p.coming; });
   var SLUG  = window.PAGE || "index";
   var idx   = PAGES.findIndex(function (p) { return p.slug === SLUG; });
 
@@ -141,8 +145,8 @@
 
   /* ---- Topbar -------------------------------------------------------------- */
   function buildTopbar() {
-    var doneCount = PAGES.filter(function (p) { return done[p.slug]; }).length;
-    var pct = Math.round((doneCount / PAGES.length) * 100);
+    var doneCount = AVAILABLE.filter(function (p) { return done[p.slug]; }).length;
+    var pct = Math.round((doneCount / AVAILABLE.length) * 100);
 
     var bar = document.createElement("header");
     bar.className = "topbar";
@@ -187,15 +191,23 @@
         nav.appendChild(g);
         return;
       }
-      var a = document.createElement("a");
-      a.className = "sidebar__link" + (m.slug === SLUG ? " is-current" : "") + (done[m.slug] ? " is-done" : "");
-      a.href = href(m.file);
+      var a = document.createElement(m.coming ? "span" : "a");
+      a.className = "sidebar__link" + (m.slug === SLUG ? " is-current" : "") +
+                    (done[m.slug] ? " is-done" : "") + (m.coming ? " is-coming" : "");
+      if (!m.coming) a.href = href(m.file);
       if (m.slug === SLUG) a.setAttribute("aria-current", "page");
       var tag = document.createElement("span");
       tag.className = "sidebar__tag";
       tag.textContent = m.unit;
       a.appendChild(tag);
       a.appendChild(document.createTextNode(" " + m.title));
+      if (m.coming) {
+        var soon = document.createElement("span");
+        soon.className = "sidebar__tag sidebar__tag--soon";
+        soon.textContent = "soon";
+        soon.title = "This page has not been written yet";
+        a.appendChild(soon);
+      }
       nav.appendChild(a);
     });
 
@@ -219,8 +231,11 @@
   }
   function buildPager() {
     if (idx < 0) return;
-    var prev = idx > 0 ? PAGES[idx - 1] : null;
-    var next = idx < PAGES.length - 1 ? PAGES[idx + 1] : null;
+    // Skip pages that are not written yet — a "Next" button into a 404 is worse
+    // than no button at all.
+    var prev = null, next = null;
+    for (var i = idx - 1; i >= 0; i--) { if (!PAGES[i].coming) { prev = PAGES[i]; break; } }
+    for (var j = idx + 1; j < PAGES.length; j++) { if (!PAGES[j].coming) { next = PAGES[j]; break; } }
 
     var pager = document.createElement("div");
     pager.className = "pager";
@@ -240,7 +255,7 @@
       var sb = document.querySelector(".sidebar__link.is-current");
       if (sb) sb.classList.toggle("is-done", !!done[SLUG]);
       var fill = document.querySelector(".topbar__progress-fill");
-      if (fill) fill.style.width = Math.round(PAGES.filter(function (p) { return done[p.slug]; }).length / PAGES.length * 100) + "%";
+      if (fill) fill.style.width = Math.round(AVAILABLE.filter(function (p) { return done[p.slug]; }).length / AVAILABLE.length * 100) + "%";
     });
     pager.appendChild(btn);
     if (next) pager.appendChild(pagerLink(next, "next"));
