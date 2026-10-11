@@ -3147,9 +3147,9 @@ public final class P1_CsvRepository {
 javac -encoding UTF-8 -cp "lib/h2-2.3.232.jar" -d target/classes $(find src/main/java -name "*.java")
 java -cp "target/classes:lib/h2-2.3.232.jar" com.aptech.a5.SelfCheck</code></pre>
       <p>
-        (On Windows, the classpath separator is <code>;</code> not <code>:</code>. The
-        <code>lib/</code> folder needs the H2 jar &mdash; copy it from
-        <code>code/s08-advanced-jdbc/lib/</code>; <code>lib/README.txt</code> says how.)
+        (On Windows, the classpath separator is <code>;</code> not <code>:</code>. The H2 jar is
+        already in the starter at <code>lib/h2-2.3.232.jar</code> &mdash; nothing to download and
+        nothing to copy; <code>lib/README.txt</code> says how to add it to an IDE.)
       </p>
       <p>
         Each check prints <code>PASS</code> or <code>FAIL</code> with the reason, and an unfinished

@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 452" width="100%" height="100%">
+  <defs>
+    <filter id="jlShadow" x="-8%" y="-8%" width="116%" height="125%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub   { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .step  { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 800; fill: #94a3b8; letter-spacing: .06em; }
+    .name  { font-family: system-ui, -apple-system, sans-serif; font-size: 12.5px; font-weight: 800; fill: #0f172a; }
+    .code  { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10.5px; fill: #334155; }
+    .mini  { font-family: system-ui, -apple-system, sans-serif; font-size: 10.5px; fill: #475569; }
+    .note  { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; fill: #334155; }
+  </style>
+
+  <rect width="900" height="452" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">The lifecycle: two annotations wrap the class, two wrap every test</text>
+  <text x="30" y="54" class="sub">Read the order top to bottom. The middle pair is what makes each test start from the same place.</text>
+
+  <g filter="url(#jlShadow)">
+    <rect x="24" y="78" width="852" height="42" rx="10" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.5"/>
+
+    <rect x="24"  y="150" width="268" height="44" rx="9" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+    <rect x="316" y="150" width="268" height="44" rx="9" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+    <rect x="608" y="150" width="268" height="44" rx="9" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+
+    <rect x="24"  y="202" width="268" height="58" rx="9" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+    <rect x="316" y="202" width="268" height="58" rx="9" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+    <rect x="608" y="202" width="268" height="58" rx="9" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+
+    <rect x="24"  y="268" width="268" height="44" rx="9" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+    <rect x="316" y="268" width="268" height="44" rx="9" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+    <rect x="608" y="268" width="268" height="44" rx="9" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+
+    <rect x="24" y="328" width="852" height="42" rx="10" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1.5"/>
+  </g>
+
+  <!-- before all -->
+  <text x="44" y="105" class="name">@BeforeAll &#183; static &#183; once, before the first test of the class</text>
+
+  <text x="24" y="143" class="step">FOR EACH TEST, IN THIS ORDER</text>
+
+  <!-- column 1 -->
+  <text x="40" y="171" class="name">@BeforeEach</text>
+  <text x="40" y="187" class="mini">a brand-new store, one student</text>
+  <text x="40" y="222" class="name">@Test &#183; the first test</text>
+  <text x="40" y="239" class="code">assertEquals(1, store.count());</text>
+  <text x="40" y="252" class="mini">sees exactly one student</text>
+  <text x="40" y="289" class="name">@AfterEach</text>
+  <text x="40" y="305" class="mini">the store is thrown away</text>
+
+  <!-- column 2 -->
+  <text x="332" y="171" class="name">@BeforeEach</text>
+  <text x="332" y="187" class="mini">a brand-new store, one student</text>
+  <text x="332" y="222" class="name">@Test &#183; the second test</text>
+  <text x="332" y="239" class="code">store.save(grace);</text>
+  <text x="332" y="252" class="mini">makes a mess: count is now 2</text>
+  <text x="332" y="289" class="name">@AfterEach</text>
+  <text x="332" y="305" class="mini">the store is thrown away</text>
+
+  <!-- column 3 -->
+  <text x="624" y="171" class="name">@BeforeEach</text>
+  <text x="624" y="187" class="mini">a brand-new store, one student</text>
+  <text x="624" y="222" class="name">@Test &#183; the third test</text>
+  <text x="624" y="239" class="code">assertEquals(1, store.count());</text>
+  <text x="624" y="252" class="mini">the mess is gone</text>
+  <text x="624" y="289" class="name">@AfterEach</text>
+  <text x="624" y="305" class="mini">the store is thrown away</text>
+
+  <!-- after all -->
+  <text x="44" y="355" class="name">@AfterAll &#183; static &#183; once, after the last test of the class</text>
+
+  <rect x="24" y="386" width="852" height="50" rx="9" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="44" y="407" class="note">Nothing is shared between the three columns. Take @BeforeEach away and the third test fails with</text>
+  <text x="44" y="425" class="note">&#8220;expected: &lt;1&gt; but was: &lt;2&gt;&#8221; &#8212; a suite that passes alone and fails together, which is worse than no suite at all.</text>
+</svg>

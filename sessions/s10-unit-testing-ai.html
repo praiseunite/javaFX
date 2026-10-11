@@ -1,0 +1,2352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session 10 — Unit Testing &amp; AI Tools</title>
+  <meta name="description" content="Session 10 of Building Rich Java Applications with JavaFX and AI Tools: enhanced unit testing and documentation with AI. JUnit 5 from the ground up — assertions, the lifecycle, parameterised tests over two stores, and a suite you deliberately break — then AI-assisted test generation and Javadoc, and how to critique what comes back. Every program compiled and run, with real output.">
+  <link rel="stylesheet" href="../assets/css/course.css">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "s10";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== 1. HERO ========================================================= -->
+  <section class="hero">
+    <span class="tag">Week 3 &middot; Day 2 &middot; Session 10 &middot; 2 hours in class</span>
+    <h1>Session 10 &mdash; Unit Testing &amp; AI Tools</h1>
+    <p class="lede">
+      Your registry works and it is <em>worked on</em>, which is not the same thing. Session 9 put a
+      seam in it. Today you find out whether the seam is real, because the only honest answer to
+      &ldquo;does this still work?&rdquo; is <strong>a test that would go red if it stopped</strong>.
+      You already wrote a test runner by hand &mdash; it is sitting in your A5 starter, 402 lines of
+      it &mdash; and today you find out what it cannot do and let <strong>JUnit 5</strong> do it
+      instead. Then the second half: <strong>the AI tools</strong>. You will generate tests and
+      documentation with an assistant and then <em>critique</em> what comes back, because a green
+      suite you cannot explain is not evidence.
+    </p>
+    <div class="meta">
+      <span>&#128218; Learner's Guide: SG &middot; XP &middot; TG &mdash; Session 10</span>
+      <span>&#9201; ~2 hours + practice at home</span>
+      <span>&#9989; Before this: Sessions 1&ndash;9</span>
+      <span>&#128203; Assignment A5 Part 2 &mdash; issued here</span>
+    </div>
+  </section>
+
+  <!-- ===== 2. OBJECTIVES =================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this session you can&hellip;</b>
+    <ol>
+      <li><strong>Say</strong> what a test runner does, having read the one you wrote in Session 9, and <strong>name</strong> four things it cannot do that JUnit can.</li>
+      <li><strong>Write</strong> a JUnit 5 test class, run it three ways (IDE, console launcher, Maven), and <strong>read</strong> a failure message out loud.</li>
+      <li><strong>Choose</strong> the right assertion for the claim &mdash; <code>assertEquals</code>, <code>assertThrows</code>, <code>assertAll</code>, <code>assertNull</code>, <code>assertInstanceOf</code> &mdash; and <strong>explain</strong> why <code>expected</code> comes first.</li>
+      <li><strong>Use</strong> <code>@BeforeEach</code> to give every test its own starting state, and <strong>describe</strong> the order the four lifecycle annotations run in.</li>
+      <li><strong>Run one suite against two implementations</strong> with <code>@ParameterizedTest</code> and <code>@MethodSource</code>, and <strong>explain</strong> what a green run against both actually proves.</li>
+      <li><strong>Break your own code on purpose</strong> and <strong>name</strong> the test that caught it &mdash; and say why a test you have never seen fail is not yet a test.</li>
+      <li><strong>Spot</strong> the four shapes of a test that cannot fail: no assertion, comparing a value to itself, swallowing the failure, and asserting the setup instead of the code.</li>
+      <li><strong>Install and configure</strong> a coding assistant, point it at your JDK and your project, and <strong>say</strong> what leaves the machine when you use it.</li>
+      <li><strong>Prompt</strong> an assistant for test cases against an interface, then <strong>keep or reject</strong> each one with a stated reason.</li>
+      <li><strong>Run</strong> <code>javadoc</code>, read its warnings, and <strong>critique</strong> an AI-drafted doc comment against the code it describes.</li>
+      <li><strong>Decide</strong> whether a test is worth keeping, and <strong>argue</strong> for confidence over a coverage percentage.</li>
+    </ol>
+  </div>
+
+  <!-- ===== 3. TABLE OF CONTENTS ============================================ -->
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== 5. ROADMAP ====================================================== -->
+  <h2>Your Roadmap for Today</h2>
+  <div class="roadmap">
+    <a href="#part-1-selfcheck">Part 1: What SelfCheck Cannot Do</a>
+    <a href="#part-2-first-test">Part 2: Your First Test</a>
+    <a href="#part-3-assertions">Part 3: Assertions</a>
+    <a href="#part-4-isolation">Part 4: Isolation &mdash; the Lifecycle</a>
+    <a href="#part-5-two-stores">Part 5: One Suite, Two Stores</a>
+    <a href="#part-6-must-fail">Part 6: A Test That Must Fail</a>
+    <a href="#part-7-assistant">Part 7: Devin Desktop &mdash; Install &amp; Configure</a>
+    <a href="#part-8-ai-tests">Part 8: AI-Assisted Test Generation</a>
+    <a href="#part-9-ai-docs">Part 9: AI-Enhanced Documentation</a>
+    <a href="#part-10-worth-keeping">Part 10: What Makes a Test Worth Keeping</a>
+    <a href="#lab-first-suite">Guided Lab: From SelfCheck to a Suite</a>
+  </div>
+
+  <!-- ===== 6. WHY THIS MATTERS ============================================= -->
+  <h2>Why This Matters</h2>
+  <p>
+    Session 9 gave the registry a shape that survives change. But shape is a claim about the future,
+    and claims about the future need evidence. The only evidence that software works is
+    <strong>a program that checks it and fails when it stops being true</strong>. Everything else
+    &mdash; a demo, a screenshot, a colleague saying it looked fine &mdash; is a story.
+  </p>
+  <p>
+    This is not a formality you do at the end. On a real team, the test suite <em>is</em> the
+    specification: it is the only document that is checked, every single build, against the code as
+    it actually is. A comment goes stale silently. A test goes red. That difference is why the
+    registry&rsquo;s interface from Session 9 is worth so much more now: an interface with a suite
+    behind it is a promise somebody is keeping.
+  </p>
+
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; the smoke alarm, not the fire brigade</b>
+      A test is not there to put the fire out. It is there to wake you up at 3 a.m. with a noise you
+      cannot ignore, in the room where the fire actually is. A smoke alarm that never goes off is not
+      a good smoke alarm &mdash; it is an untested one, and you have no idea whether it works. That is
+      why this session spends a whole example deliberately setting a fire.
+    </div>
+  </div>
+
+  <!-- ===== 7. PART 1 — WHAT SELFCHECK CANNOT DO ============================ -->
+  <h2 id="part-1-selfcheck"><span class="eyebrow">Part 1 of 10</span> What <code>SelfCheck</code> Cannot Do</h2>
+  <p>
+    Open <code>code/a5-patterned-registry-starter/src/main/java/com/aptech/a5/SelfCheck.java</code>.
+    It is 402 lines, it is the thing you have been running after every requirement, and it is worth
+    looking at properly before you replace it &mdash; because <strong>you wrote a test framework</strong>,
+    and nobody told you that is what you were doing.
+  </p>
+
+  <!--@code src="code/a5-patterned-registry-starter/src/main/java/com/aptech/a5/SelfCheck.java" from="38" to="86" title="SelfCheck.java — the runner, and the twelve checks it runs"-->
+<pre class="numbered" data-file="SelfCheck.java — the runner, and the twelve checks it runs" style="counter-reset:line 37"><code class="lang-java">public class SelfCheck {
+
+    private static int passed = 0;
+    private static int failed = 0;
+
+    private interface Check {
+        void run() throws Exception;
+    }
+
+    private static final Map&lt;Integer, Course&gt; COURSES = Map.of(
+            1, Course.of(1, "Java Programming", 12, "450.00"),
+            2, Course.of(2, "Database Fundamentals", 10, "380.00"),
+            3, Course.of(3, "Web Development", 8, "320.00"),
+            4, Course.of(4, "Software Engineering", 14, "520.00"));
+
+    public static void main(String[] args) throws Exception {
+        System.out.println("=== A5 Self-Check ===\n");
+
+        // Set BEFORE anything touches AppConfig: the singleton reads the properties once, at the
+        // moment the class is first used, so a property set later has no effect at all.
+        System.setProperty("registry.store", "h2");
+        System.setProperty("registry.locale", "fr");
+        System.setProperty("registry.exportDir", "selfcheck-tmp/export");
+
+        run("R1 the in-memory store answers all six questions", SelfCheck::r1);
+        run("R2 the database store answers the same six questions", SelfCheck::r2);
+        run("R2 a null mark comes back null, not 0", SelfCheck::r2NullMark);
+        run("R2 a search is a value, so an injection returns nothing", SelfCheck::r2Injection);
+        run("R3 the factory picks the store by name", SelfCheck::r3);
+        run("R4 the configuration is one instance, read once", SelfCheck::r4);
+        run("R5 two fee rules, one call site", SelfCheck::r5);
+        run("R6 the listener records what it was told", SelfCheck::r6);
+        run("R7 the same messages in two languages", SelfCheck::r7);
+        run("R8 export and read back is a round trip", SelfCheck::r8RoundTrip);
+        run("R8 a student with no mark survives the round trip", SelfCheck::r8Nulls);
+        run("R8 walk, glob and deleteAll", SelfCheck::r8Files);
+
+        Files.deleteIfExists(Path.of("selfcheck-tmp", "export"));
+        Files.deleteIfExists(Path.of("selfcheck-tmp", "roundtrip"));
+        Files.deleteIfExists(Path.of("selfcheck-tmp"));
+
+        System.out.println("\n" + passed + " passed, " + failed + " failed.");
+        System.out.println(failed == 0
+                ? "The registry is structured. Session 10 is going to be easy."
+                : "Fix the FAILs above, then run SelfCheck again.");
+        if (failed &gt; 0) {
+            System.exit(1);
+        }
+    }</code></pre>
+<!--@end-->
+
+  <p>
+    Read what is there. A <code>Check</code> interface with one method. A <code>run(name, check)</code>
+    loop that calls it and catches the failure. A <code>PASS</code>/<code>FAIL</code> line with the
+    reason. A tally, and <code>System.exit(1)</code> so a script can tell whether it worked. That is
+    a test runner: it is a small, honest one, and it does exactly what JUnit does at the top level.
+  </p>
+  <p>
+    Now the interesting question. What can it <em>not</em> do?
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>What you want</th><th><code>SelfCheck</code></th><th>JUnit 5</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Run one test on its own, from the IDE</td>
+        <td>No. It is one <code>main</code>; you get all of it or none.</td>
+        <td>A green arrow in the gutter, per method.</td>
+      </tr>
+      <tr>
+        <td>Give every test a fresh starting state</td>
+        <td>No. The store is a local in <code>main</code>, and by requirement R4 they share one.</td>
+        <td><code>@BeforeEach</code> &mdash; Part 4.</td>
+      </tr>
+      <tr>
+        <td>Run the same test against two implementations</td>
+        <td>Only by writing the block twice, by hand.</td>
+        <td><code>@ParameterizedTest</code> &mdash; Part 5.</td>
+      </tr>
+      <tr>
+        <td>See <em>which</em> assertion failed, and both values</td>
+        <td>Only if you wrote the message yourself, every time.</td>
+        <td><code>expected: &lt;A&gt; but was: &lt;B&gt;</code>, printed for you.</td>
+      </tr>
+      <tr>
+        <td>A machine-readable result for a build server</td>
+        <td>An exit code, and text.</td>
+        <td>Exit code, XML report, and every IDE on earth reads it.</td>
+      </tr>
+      <tr>
+        <td>Keep going after one failure</td>
+        <td>Depends on the <code>Check</code> you wrote &mdash; it is your job to remember.</td>
+        <td>The runner's job, not yours.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    None of that is a criticism of what you wrote. It is the point: <strong>you now know what a test
+    runner is, because you built one.</strong> Nothing in JUnit will feel like magic today, because
+    you have already written the loop, the counter and the exit code yourself. What you have not
+    written is the thousand small decisions around it &mdash; how a test is discovered, named,
+    isolated and reported &mdash; and those are exactly what a real framework is for.
+  </p>
+
+  <div class="callout callout--note"><span class="callout__i">&#128161;</span>
+    <div class="callout__b"><b>Two words that are not the same</b>
+      A <strong>unit test</strong> checks one piece of code &mdash; <code>Student.grade()</code>, or
+      one method of a store &mdash; with everything else real but small. A <strong>check</strong> is
+      anything that tells you yes or no: a <code>SelfCheck</code> line, a <code>main</code> that
+      prints the answer, a look at the output. Both are useful and only one of them is repeatable
+      by a machine at 3 a.m. Today is about the second kind.
+    </div>
+  </div>
+
+  <p>
+    The rest of this session works in <code>code/s10-unit-testing/</code>, a small project that is
+    only the registry: the <code>Student</code> and <code>Course</code> records, the
+    <code>StudentRepository</code> interface from Session 9, and two implementations of it. No
+    database is involved anywhere today &mdash; which is not a simplification, it is a
+    demonstration. Session 9's interface was worth extracting <em>because</em> it makes this
+    possible.
+  </p>
+
+  <!-- ===== 8. PART 2 — YOUR FIRST TEST ===================================== -->
+  <h2 id="part-2-first-test"><span class="eyebrow">Part 2 of 10</span> Your First Test</h2>
+  <p>
+    A test class looks like a normal Java class with two differences: it has no <code>main</code>,
+    and its methods are annotated. That is the whole of it.
+  </p>
+
+  <!--@code src="code/s10-unit-testing/src/main/java/com/aptech/s10/repository/StudentRepository.java" from="20" to="47" title="StudentRepository.java — the thing under test"-->
+<pre class="numbered" data-file="StudentRepository.java — the thing under test" style="counter-reset:line 19"><code class="lang-java">public interface StudentRepository {
+
+    /** The student with this id, or an empty Optional. Absence is normal: no null, no throw. */
+    Optional&lt;Student&gt; findById(int id);
+
+    /** Every student, in a stable order, so two runs give the same answer. */
+    List&lt;Student&gt; findAll();
+
+    /** Every student on one course. */
+    List&lt;Student&gt; findByCourse(int courseId);
+
+    /** Every student whose name contains the fragment, case-insensitively. */
+    List&lt;Student&gt; findByNameContaining(String fragment);
+
+    /**
+     * Inserts when {@code student.id() == 0} and returns the stored student with the id the
+     * store chose. Updates when the id is already set. The caller never invents an id.
+     */
+    Student save(Student student);
+
+    /** True when something was actually removed. */
+    boolean deleteById(int id);
+
+    int count();
+
+    /** Which store this is, in words — "in-memory", "file". It ends up in test names. */
+    String storeName();
+}</code></pre>
+<!--@end-->
+
+  <p>
+    Eight methods, no <code>java.sql</code>, no checked exception. This is the contract, and a
+    contract is exactly the kind of thing a test suite is for: it says what every implementation
+    must do, and it can be checked against any of them.
+  </p>
+
+  <h3>Example 1 &mdash; four tests, four passes</h3>
+
+  <img src="../assets/img/diagrams/s10_test_anatomy.svg" alt="A test in three parts — arrange builds what the test needs, act makes the single call under test, assert checks the result — beside the red-to-green loop: write a failing test, make it pass, improve the code with the test holding it steady" width="100%">
+
+  <p>
+    The code below is the whole file. Read the three comments at the top of it first; they are the
+    entire mental model.
+  </p>
+
+  <!--@code src="code/s10-unit-testing/src/test/java/com/aptech/s10/tests/E01_FirstTest.java" from="33" to="70" title="E01_FirstTest.java"-->
+<pre class="numbered" data-file="E01_FirstTest.java" style="counter-reset:line 32"><code class="lang-java">class E01_FirstTest {
+
+    /** Builds a student with this mark. Every test below reads better because of this one line. */
+    private static Student withMark(String mark) {
+        return Student.unsaved("Ada Lovelace", "ada@example.com", 1, new BigDecimal(mark));
+    }
+
+    @Test
+    @DisplayName("a student who has not been marked has no grade")
+    void noMarkHasNoGrade() {
+        Student ada = Student.unsaved("Ada Lovelace", "ada@example.com", 1, null);
+
+        // Not "F". Being unmarked is not the same as having failed, and that is a decision the
+        // code makes on purpose — so it is worth a test that would notice if it changed.
+        assertEquals("-", ada.grade());
+    }
+
+    @Test
+    @DisplayName("80 is an A")
+    void eightyIsAnA() {
+        assertEquals("A", withMark("80").grade());
+    }
+
+    @Test
+    @DisplayName("79.99 is a B, not an A")
+    void justUnderEightyIsAB() {
+        // The boundary is the interesting value. This test and the one above it are what stop
+        // "&gt;=" quietly becoming "&gt;".
+        assertEquals("B", withMark("79.99").grade());
+    }
+
+    @Test
+    @DisplayName("a mark of 100 is an A and a mark of 0 is an F")
+    void theEndsOfTheRangeAreBothCovered() {
+        assertEquals("A", withMark("100").grade());
+        assertEquals("F", withMark("0").grade());
+    }
+}</code></pre>
+<!--@end-->
+
+  <p>Run it and you get this, exactly:</p>
+
+  <!--@junit project="code/s10-unit-testing" select="--select-class=com.aptech.s10.tests.E01_FirstTest"-->
+<div class="terminal-output">Thanks for using JUnit! Support its development at https://junit.org/sponsoring
+
+
+Test run finished after &lt;N&gt; ms
+[         4 containers found      ]
+[         0 containers skipped    ]
+[         4 containers started    ]
+[         0 containers aborted    ]
+[         4 containers successful ]
+[         0 containers failed     ]
+[         4 tests found           ]
+[         0 tests skipped         ]
+[         4 tests started         ]
+[         0 tests aborted         ]
+[         4 tests successful      ]
+[         0 tests failed          ]</div>
+<!--@end-->
+
+  <p>
+    Four tests, four passes, and the display names you wrote are what appears. Notice what is
+    <em>absent</em>: no <code>main</code>, no counter, no <code>if</code>, no exit code. You wrote
+    &ldquo;this should be true&rdquo; four times and the framework did the rest.
+  </p>
+
+  <h3>The red half of red&ndash;green</h3>
+  <p>
+    A suite that passes proves nothing until you have watched it fail. Open
+    <code>Student.java</code>, find <code>grade()</code>, and change one character:
+  </p>
+  <pre><code class="lang-java">if (m &gt;= 80) return "A";     //  before
+if (m &gt;  80) return "A";     //  after - one character, one boundary</code></pre>
+  <p>Run the suite again. <code>eightyIsAnA</code> goes red, and the message is the whole reason a framework beats a hand-rolled loop:</p>
+  <pre><code class="lang-text">expected: &lt;A&gt; but was: &lt;B&gt;</code></pre>
+  <p>
+    That is a sentence, not a stack trace. It names the value you said should be there and the value
+    that actually was. Put the <code>=</code> back, run it again, and it is green &mdash; and
+    <em>now</em> you have a test. A test is not green; a test is something you have watched go red
+    for the right reason.
+  </p>
+
+  <h3>Three ways to run the same test class</h3>
+  <p>
+    This matters more than it looks. The console launcher is what this page uses, and it is the one
+    that works with no IDE and no Maven. Learn that one first.
+  </p>
+  <div class="steps">
+    <div class="steps__title">&#128295; Running a suite &mdash; pick one</div>
+    <div class="step"><div class="step__check"></div><span class="step__num">1</span>
+      <div class="step__text"><strong>IntelliJ.</strong> Open the project, add both jars in <code>lib/</code> as a library, then click the green arrow beside the class name. Fastest once it is set up, and it is the only one that gives you a re-run button that re-runs <em>just the test that failed</em>.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">2</span>
+      <div class="step__text"><strong>The console launcher</strong> &mdash; no IDE, no Maven, no build file. Compile the main tree, compile the test tree against it, then run the jar (the exact three commands are in the Guided Lab). This is what a build server does, and it works over SSH on a machine with nothing installed.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">3</span>
+      <div class="step__text"><strong>Maven</strong> &mdash; <code>mvn test</code>, if you have Maven and a network. It fetches JUnit for you and writes an XML report. The <code>pom.xml</code> in the project is already set up; you never need it, and it is good to know it exists.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">4</span>
+      <div class="step__text"><strong>One test, not the class.</strong> Every route above can run a single method. That is the habit worth forming: when one test fails, run <em>it</em>, not the suite, until it is green.</div></div>
+  </div>
+
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>The mistake everybody makes once</b>
+      You change the assertion instead of the code, to make the suite go green. It is a two-second
+      edit, it feels like progress, and it destroys the only thing the suite was doing for you.
+      <strong>If the code and the test disagree, one of them is wrong &mdash; and it is almost never
+      the test you just watched fail for a reason you can name.</strong> When you really do find a
+      bad test, fix it deliberately and say why.
+    </div>
+  </div>
+
+  <!-- ===== 9. PART 3 — ASSERTIONS ========================================== -->
+  <h2 id="part-3-assertions"><span class="eyebrow">Part 3 of 10</span> Assertions &mdash; the Whole Vocabulary</h2>
+  <p>
+    An assertion is a claim plus the evidence that would disprove it. There are about a dozen in
+    JUnit and you will use six of them for years. Example 2 uses each one on code that really
+    exists, so nothing here is a syntax demonstration.
+  </p>
+
+  <!--@code src="code/s10-unit-testing/src/test/java/com/aptech/s10/tests/E02_Assertions.java" from="45" to="88" title="E02_Assertions.java — the first four assertions"-->
+<pre class="numbered" data-file="E02_Assertions.java — the first four assertions" style="counter-reset:line 44"><code class="lang-java">class E02_Assertions {
+
+    private static Student ada() {
+        return Student.unsaved("Ada Lovelace", "ada@example.com", 1, new BigDecimal("88.50"));
+    }
+
+    @Test
+    @DisplayName("assertEquals is for values that should be the same")
+    void assertEqualsIsForValues() {
+        assertEquals("Ada Lovelace", ada().name());
+        assertEquals(5, "Hello".length());
+    }
+
+    @Test
+    @DisplayName("assertNotEquals is for the thing that must have changed")
+    void assertNotEqualsIsForChange() {
+        Student before = ada();
+        Student after = before.withMark(new BigDecimal("95.00"));
+
+        // A record's withMark makes a copy, so the original is untouched. That is worth knowing.
+        assertEquals(new BigDecimal("88.50"), before.mark());
+        assertNotEquals(before.mark(), after.mark());
+    }
+
+    @Test
+    @DisplayName("assertTrue and assertFalse are for yes/no questions")
+    void booleanAssertions() {
+        StudentRepository store = new InMemoryStudentRepository();
+        assertTrue(store.findAll().isEmpty(), "a new store should have nothing in it");
+        assertTrue(store.count() == 0);
+
+        Student stored = store.save(ada());
+        assertFalse(stored.id() == 0, "save() must hand back the id the store chose");
+    }
+
+    @Test
+    @DisplayName("assertNull and assertNotNull are for absence")
+    void nullAssertions() {
+        Student unmarked = Student.unsaved("Nia Okoro", "nia@example.com", null, null);
+        assertNull(unmarked.mark(), "no mark is null, not zero");
+        assertNull(unmarked.courseId());
+
+        assertNotNull(ada().mark());
+    }</code></pre>
+<!--@end-->
+
+  <p>
+    <strong><code>assertEquals(expected, actual)</code> &mdash; expected first.</strong> Getting the
+    two the wrong way round does not break the test. It breaks the <em>message</em>, and the message
+    is the only thing you have at three in the morning when a build fails on somebody else&rsquo;s
+    machine. Read a failure as a sentence: &ldquo;expected <em>A</em>, but was <em>B</em>&rdquo; only
+    makes sense if <em>A</em> is what you asked for.
+  </p>
+
+  <h3>The two that earn their place</h3>
+  <!--@code src="code/s10-unit-testing/src/test/java/com/aptech/s10/tests/E02_Assertions.java" from="90" to="143" title="E02_Assertions.java — assertThrows, assertDoesNotThrow and assertAll"-->
+<pre class="numbered" data-file="E02_Assertions.java — assertThrows, assertDoesNotThrow and assertAll" style="counter-reset:line 89"><code class="lang-java">    @Test
+    @DisplayName("assertThrows proves the guard actually guards")
+    void theValidationRulesAreReal() {
+        // The compact constructor promises no invalid Student can exist. Three ways to try.
+        IllegalArgumentException noName = assertThrows(IllegalArgumentException.class,
+                () -&gt; Student.unsaved("   ", "ada@example.com", 1, null));
+        assertTrue(noName.getMessage().contains("name"), "the message should say what was wrong: " + noName.getMessage());
+
+        assertThrows(IllegalArgumentException.class,
+                () -&gt; Student.unsaved("Ada Lovelace", "not-an-email", 1, null));
+
+        assertThrows(IllegalArgumentException.class,
+                () -&gt; Student.unsaved("Ada Lovelace", "ada@example.com", 1, new BigDecimal("101")));
+    }
+
+    @Test
+    @DisplayName("saving an id that nobody has is refused, not quietly inserted")
+    void anIdNobodyHasIsRefused() {
+        // This one exists to be contrasted with BrokenRepository in Example 5, which inserts
+        // instead of refusing — and so turns one mistake into two students.
+        StudentRepository store = new InMemoryStudentRepository();
+
+        // id 0 means "insert me", so this one is fine and does not throw.
+        assertDoesNotThrow(() -&gt; store.save(ada()));
+
+        // A non-zero id that is not in the store is a mistake, and the store says which one.
+        IllegalArgumentException refused = assertThrows(IllegalArgumentException.class,
+                () -&gt; store.save(new Student(9999, "Ghost", "ghost@example.com", 1, null, true)));
+        assertTrue(refused.getMessage().contains("9999"),
+                "the message should name the bad id, got: " + refused.getMessage());
+
+        assertEquals(1, store.count(), "the refused save must not have added anybody");
+    }
+
+    @Test
+    @DisplayName("assertDoesNotThrow is for the happy path you want to keep")
+    void assertDoesNotThrowIsForTheHappyPath() {
+        assertDoesNotThrow(() -&gt; Student.unsaved("Ada Lovelace", "ada@example.com", 1, null));
+    }
+
+    @Test
+    @DisplayName("assertAll reports every failure, not just the first")
+    void assertAllChecksEverything() {
+        Student ada = ada();
+
+        // Without assertAll this test stops at the first mismatch. With it, you get all four
+        // answers in one run — which is the difference between one fix and four round trips.
+        assertAll("Ada's fields",
+                () -&gt; assertEquals("Ada Lovelace", ada.name()),
+                () -&gt; assertEquals("ada@example.com", ada.email()),
+                () -&gt; assertEquals(1, ada.courseId()),
+                () -&gt; assertTrue(ada.active()),
+                () -&gt; assertEquals("A", ada.grade()));
+    }</code></pre>
+<!--@end-->
+
+  <ul>
+    <li>
+      <strong><code>assertThrows</code></strong> &mdash; because <code>Student</code>&rsquo;s compact
+      constructor is a <em>promise</em> that no invalid student can exist. A promise nobody tests is a
+      comment. Note what the first one does with the value <code>assertThrows</code> hands back: it
+      <em>is</em> the exception, so you can assert on its message too &mdash; which is how you check
+      that the store named the bad id rather than just complaining.
+    </li>
+    <li>
+      <strong><code>assertAll</code></strong> &mdash; because a test that stops at the first failure
+      hides the other three. When you are checking five fields of one object you want all five answers
+      in one run: that is the difference between one fix and four round trips.
+    </li>
+  </ul>
+
+  <h3>The trap at the bottom of the file: money</h3>
+  <p>
+    <code>BigDecimal</code> is the one type in this course where <code>assertEquals</code> is the
+    wrong tool. Two amounts can be the same number of naira and still not be <code>equals</code>,
+    because <code>equals</code> compares the <strong>scale</strong> &mdash; the number of decimal
+    places written down.
+  </p>
+  <!--@code src="code/s10-unit-testing/src/test/java/com/aptech/s10/tests/E02_Assertions.java" from="153" to="165" title="E02_Assertions.java — the trap"-->
+<pre class="numbered" data-file="E02_Assertions.java — the trap" style="counter-reset:line 152"><code class="lang-java">    @Test
+    @DisplayName("money is compared, not equalled — and here is why")
+    void moneyNeedsCompareTo() {
+        BigDecimal fee = Money.of("450.00");
+
+        // Two BigDecimal values can be the same number and still not be equals(),
+        // because equals() also compares the scale — the number of decimal places.
+        assertNotEquals(fee, new BigDecimal("450.0"), "450.00 and 450.0 are NOT equals()");
+
+        // compareTo asks the question you actually meant: are these the same amount of money?
+        assertEquals(0, fee.compareTo(new BigDecimal("450.0")));
+        assertEquals(0, Money.percent(new BigDecimal("450.00"), "0.90").compareTo(new BigDecimal("405.00")));
+    }</code></pre>
+<!--@end-->
+  <p>
+    <code>450.0</code> and <code>450.00</code> are not <code>equals</code>, and they <em>are</em>
+    <code>compareTo == 0</code>. The rule that follows is short and worth memorising:
+    <strong>money is compared with <code>compareTo</code>, everything else is
+    <code>assertEquals</code></strong>. If you ever write <code>assertEquals(fee1, fee2)</code> in
+    this course, you have found a bug.
+  </p>
+
+  <p>Here is the whole file running:</p>
+  <!--@junit project="code/s10-unit-testing" select="--select-class=com.aptech.s10.tests.E02_Assertions"-->
+<div class="terminal-output">Thanks for using JUnit! Support its development at https://junit.org/sponsoring
+
+
+Test run finished after &lt;N&gt; ms
+[         4 containers found      ]
+[         0 containers skipped    ]
+[         4 containers started    ]
+[         0 containers aborted    ]
+[         4 containers successful ]
+[         0 containers failed     ]
+[        10 tests found           ]
+[         0 tests skipped         ]
+[        10 tests started         ]
+[         0 tests aborted         ]
+[        10 tests successful      ]
+[         0 tests failed          ]</div>
+<!--@end-->
+
+  <div class="callout callout--tip"><span class="callout__i">&#128161;</span>
+    <div class="callout__b"><b>The third argument nobody uses, and should</b>
+      Every assertion takes an optional message: <code>assertEquals(1, store.count(), "the refused
+      save must not have added anybody")</code>. It costs one line and it is what turns
+      <code>expected: &lt;1&gt; but was: &lt;2&gt;</code> into an explanation. Use it whenever the
+      assertion is not obvious from the line above it &mdash; which is most of the time in a test
+      that sets up real data.
+    </div>
+  </div>
+
+  <p>
+    One more thing to notice about the run above, because it is the habit this session is really
+    teaching: <code>theValidationRulesAreReal</code> is not checking that some method returns a
+    value. It is checking that <strong>the guard actually guards</strong> &mdash; that a blank name,
+    a broken email and a mark of 101 are all refused. A test is worth writing when somebody could
+    plausibly break the thing tomorrow without noticing.
+  </p>
+
+  <!-- ===== 10. PART 4 — ISOLATION ========================================== -->
+  <h2 id="part-4-isolation"><span class="eyebrow">Part 4 of 10</span> Isolation &mdash; the Lifecycle</h2>
+  <p>
+    Here is the bug that has been waiting for you since Session 9. In <code>SelfCheck</code>, R1 and
+    R2 share one store, and every check adds to it. So check 6 sees whatever checks 1 to 5 left
+    behind. That works today because you wrote them in an order that happens to be safe &mdash; and
+    it is a trap, because <strong>the day somebody reorders those checks, a passing self-check
+    becomes a failing one without a single line of behaviour changing</strong>.
+  </p>
+  <p>
+    A test that depends on the order it ran in is worse than no test, because it teaches you to
+    ignore red. JUnit&rsquo;s answer is four annotations, and they have an order:
+  </p>
+
+  <img src="../assets/img/diagrams/s10_junit_lifecycle.svg" alt="The four JUnit lifecycle annotations: @BeforeAll once before the class, @BeforeEach, @Test and @AfterEach around every test, @AfterAll once after the class" width="100%">
+
+  <ul>
+    <li><code>@BeforeAll</code> &mdash; <code>static</code>, once, before the first test of the class.</li>
+    <li><code>@BeforeEach</code> &mdash; before <em>every</em> test. This is the one that matters.</li>
+    <li><code>@AfterEach</code> &mdash; after every test.</li>
+    <li><code>@AfterAll</code> &mdash; <code>static</code>, once, after the last test.</li>
+  </ul>
+
+  <p>
+    JUnit deliberately does <strong>not</strong> promise to run your test methods in any particular
+    order. That is not an oversight &mdash; the order is randomised-ish on purpose, so that a suite
+    which depends on it fails on your machine rather than in production. Example 3 is the one place
+    in this course where the order is pinned, so that the output you are about to read is the same
+    every time:
+  </p>
+
+  <!--@code src="code/s10-unit-testing/src/test/java/com/aptech/s10/tests/E03_Lifecycle.java" from="41" to="111" title="E03_Lifecycle.java"-->
+<pre class="numbered" data-file="E03_Lifecycle.java" style="counter-reset:line 40"><code class="lang-java">@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+class E03_Lifecycle {
+
+    /** Built fresh by {@code @BeforeEach}, so every test starts from the same known state. */
+    private StudentRepository store;
+
+    @BeforeAll
+    static void beforeAnything() {
+        System.out.println("@BeforeAll   once, before the first test of the class");
+    }
+
+    @AfterAll
+    static void afterEverything() {
+        System.out.println("@AfterAll    once, after the last test of the class");
+    }
+
+    @BeforeEach
+    void freshStoreForEveryTest() {
+        store = new InMemoryStudentRepository();
+        store.save(Student.unsaved("Ada Lovelace", "ada@example.com", 1, new BigDecimal("88.50")));
+        System.out.println("@BeforeEach  a new store, holding exactly one student");
+    }
+
+    @AfterEach
+    void afterEveryTest() {
+        System.out.println("@AfterEach   this test is over; the store is about to be discarded");
+    }
+
+    @Test
+    @Order(1)
+    @DisplayName("the first test sees exactly one student")
+    void firstTestSeesOneStudent() {
+        assertEquals(1, store.count());
+    }
+
+    @Test
+    @Order(2)
+    @DisplayName("the second test may make a mess")
+    void secondTestMakesAMess() {
+        store.save(Student.unsaved("Grace Hopper", "grace@example.com", 1, new BigDecimal("91.00")));
+        assertEquals(2, store.count(), "this test's own insert should be visible to it");
+    }
+
+    @Test
+    @Order(3)
+    @DisplayName("the third test proves the second test's mess is gone")
+    void thirdTestStartsClean() {
+        // If this fails with "expected: &lt;1&gt; but was: &lt;2&gt;", the tests are sharing a store and
+        // @BeforeEach is missing — the single most common cause of a suite that passes alone
+        // and fails together.
+        assertEquals(1, store.count(), "if this is 2, two tests are sharing state");
+        assertTrue(store.findById(2).isEmpty(), "Grace should not exist in a fresh store");
+    }
+
+    @Test
+    @Order(4)
+    @DisplayName("a temporary folder, made new for this test and deleted after it")
+    void aFreshFolderForEveryTest(@TempDir Path tempDir) {
+        StudentRepository onDisk = new FileBackedStudentRepository(tempDir);
+        onDisk.save(Student.unsaved("Ada Lovelace", "ada@example.com", 1, new BigDecimal("88.50")));
+
+        // A second store opened on the same folder sees what the first one wrote — it really
+        // is on disk, not in a list pretending to be.
+        assertEquals(1, new FileBackedStudentRepository(tempDir).count());
+
+        // JUnit created this folder for this test alone and deletes it afterwards, so the next
+        // test asking for @TempDir gets a genuinely empty one. That is why a file-backed store
+        // is still testable: nothing it writes outlives the test that wrote it.
+        System.out.println("@TempDir     a throwaway folder, created for this test only");
+    }
+}</code></pre>
+<!--@end-->
+
+  <p>Run it, and read the printed lines rather than the summary &mdash; they are the lesson:</p>
+  <!--@junit project="code/s10-unit-testing" select="--select-class=com.aptech.s10.tests.E03_Lifecycle"-->
+<div class="terminal-output">Thanks for using JUnit! Support its development at https://junit.org/sponsoring
+
+@BeforeAll   once, before the first test of the class
+@BeforeEach  a new store, holding exactly one student
+@AfterEach   this test is over; the store is about to be discarded
+@BeforeEach  a new store, holding exactly one student
+@AfterEach   this test is over; the store is about to be discarded
+@BeforeEach  a new store, holding exactly one student
+@AfterEach   this test is over; the store is about to be discarded
+@BeforeEach  a new store, holding exactly one student
+@TempDir     a throwaway folder, created for this test only
+@AfterEach   this test is over; the store is about to be discarded
+@AfterAll    once, after the last test of the class
+
+Test run finished after &lt;N&gt; ms
+[         4 containers found      ]
+[         0 containers skipped    ]
+[         4 containers started    ]
+[         0 containers aborted    ]
+[         4 containers successful ]
+[         0 containers failed     ]
+[         4 tests found           ]
+[         0 tests skipped         ]
+[         4 tests started         ]
+[         0 tests aborted         ]
+[         4 tests successful      ]
+[         0 tests failed          ]</div>
+<!--@end-->
+
+  <p>
+    Count the <code>@BeforeEach</code> lines. Four. There are four tests, so the store was rebuilt
+    four times, and each test saw a store holding exactly one student. Now delete
+    <code>@BeforeEach</code>'s body &mdash; or delete the whole method &mdash; and run it again.
+    <code>thirdTestStartsClean</code> goes red:
+  </p>
+  <pre><code class="lang-text">if this is 2, two tests are sharing state ==&gt; expected: &lt;1&gt; but was: &lt;2&gt;</code></pre>
+  <p>
+    That single failure is the most common bug in the history of automated testing, and now you have
+    seen it on purpose instead of meeting it at midnight before a deadline.
+  </p>
+
+  <h3><code>@TempDir</code> &mdash; and why a file store is testable at all</h3>
+  <p>
+    The fourth test in that class takes a <code>@TempDir Path</code> argument. JUnit creates a
+    brand-new empty folder for that test, hands it over, and <strong>deletes it afterwards</strong>.
+    That is the entire reason a file-backed store can be tested without leaving litter on your
+    machine or on a build server: the test writes to a folder that exists only for it.
+  </p>
+  <p>
+    It also shows the difference between the two kinds of failure. The in-memory store can only be
+    wrong about <em>logic</em>. The file store can also be wrong about the disk &mdash; and the test
+    that catches that is the one that opens a second store on the same folder and finds what the
+    first one wrote. If the data were only in a list, that second store would be empty.
+  </p>
+
+  <!-- ===== 11. PART 5 — ONE SUITE, TWO STORES ============================== -->
+  <h2 id="part-5-two-stores"><span class="eyebrow">Part 5 of 10</span> One Suite, Two Stores</h2>
+  <p>
+    This is the centre of the session, and it is why Session 9 made you extract an interface.
+  </p>
+  <p>
+    A test written against <code>StudentRepository</code> never names an implementation. It says
+    &ldquo;any store must do this&rdquo;. So the interesting question is not <em>does the in-memory
+    store pass?</em> &mdash; it is <strong>how would you ever find out that your test only describes
+    the in-memory store?</strong> The answer is a second store, and one method that hands both to
+    the same test.
+  </p>
+
+  <img src="../assets/img/diagrams/s10_one_suite_two_stores.svg" alt="One parameterised test method, a method source returning two stores, and two identical runs of the same assertions against an in-memory store and a file store" width="100%">
+
+  <h3>The method source</h3>
+  <p>
+    Two annotations do all of it. <code>@ParameterizedTest</code> says &ldquo;this method runs more
+    than once&rdquo;, and <code>@MethodSource("stores")</code> says where the arguments come from.
+    Here is the whole of <code>stores()</code>:
+  </p>
+
+  <!--@code src="code/s10-unit-testing/src/test/java/com/aptech/s10/tests/E04_BothStoresTest.java" from="59" to="69" title="E04_BothStoresTest.java — two stores, one name each"-->
+<pre class="numbered" data-file="E04_BothStoresTest.java — two stores, one name each" style="counter-reset:line 58"><code class="lang-java">    /**
+     * The two stores, with a name each so the report says which one failed.
+     *
+     * &lt;p&gt;This method is called again for every test method in the class, which is why the file
+     * store gets a brand-new folder each time rather than sharing one.
+     */
+    static Stream&lt;Arguments&gt; stores() {
+        return Stream.of(
+                Arguments.of(Named.of("in-memory", new InMemoryStudentRepository())),
+                Arguments.of(Named.of("file", new FileBackedStudentRepository(newStoreFolder()))));
+    }</code></pre>
+<!--@end-->
+
+  <p>
+    Read it as a sentence: <em>for the in-memory store, and for the file store, run this test</em>.
+    <code>Named.of("file", store)</code> wraps a store in a <strong>label</strong>; the test method
+    still receives the store on its own, and the label is only there for the report. That is why a
+    failure tells you <em>which</em> store broke instead of just that something did.
+  </p>
+
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>Each <code>Arguments.of(...)</code> holds one value, not two</b>
+      The temptation is to write the label as a second argument &mdash;
+      <code>Arguments.of("file", store)</code>. JUnit then has <strong>two</strong> values to place
+      in a method that takes <strong>one</strong> parameter, so it tries to put the
+      <code>String</code> into the <code>StudentRepository</code> parameter and every test in the
+      class dies with <code>No built-in converter for source type java.lang.String</code>. That
+      message names the wrong thing entirely, which is what makes it expensive. <code>Named.of</code>
+      exists so that a label and its value travel as a single argument.
+    </div>
+  </div>
+
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>One detail that will bite you if you skip it</b>
+      The file store needs a folder, and that folder must be <strong>different for every
+      invocation</strong>. <code>newStoreFolder()</code> calls <code>Files.createTempDirectory</code>
+      so each one gets a name nothing else is using. Give both runs the same folder and the second
+      run finds the first run&rsquo;s data still on disk, asserts against it, and passes or fails for
+      reasons that have nothing to do with your code. A test with a shared fixture is a test that
+      lies to you.
+    </div>
+  </div>
+
+  <p>Three of the twelve tests, so you can see what &ldquo;written against the interface&rdquo; looks like:</p>
+
+  <!--@code src="code/s10-unit-testing/src/test/java/com/aptech/s10/tests/E04_BothStoresTest.java" from="147" to="184" title="E04_BothStoresTest.java — three of the twelve"-->
+<pre class="numbered" data-file="E04_BothStoresTest.java — three of the twelve" style="counter-reset:line 146"><code class="lang-java">    @ParameterizedTest(name = "{0}: the search does not care about capital letters")
+    @MethodSource("stores")
+    @DisplayName("the search does not care about capital letters")
+    void searchIsCaseInsensitive(StudentRepository store) {
+        store.save(ada());
+
+        for (String needle : List.of("lovelace", "LOVELACE", "LoveLace", "Ada")) {
+            assertEquals(1, store.findByNameContaining(needle).size(),
+                    "searching for \"" + needle + "\" should find Ada Lovelace");
+        }
+        assertTrue(store.findByNameContaining("Turing").isEmpty());
+    }
+
+    @ParameterizedTest(name = "{0}: deleteById says whether it actually removed anyone")
+    @MethodSource("stores")
+    @DisplayName("deleteById says whether it actually removed anyone")
+    void deleteReportsHonestly(StudentRepository store) {
+        Student stored = store.save(ada());
+
+        assertTrue(store.deleteById(stored.id()), "a student who was there should report true");
+        assertFalse(store.deleteById(stored.id()), "a student who is gone should report false");
+        assertFalse(store.deleteById(9999), "an id nobody has should report false");
+        assertEquals(0, store.count());
+    }
+
+    @ParameterizedTest(name = "{0}: a null mark comes back null, not zero")
+    @MethodSource("stores")
+    @DisplayName("a null mark comes back null, not zero")
+    void aNullMarkStaysNull(StudentRepository store) {
+        // The trap this catches: a store that reads a missing number as 0 turns "not marked
+        // yet" into "scored nothing", and the report then fails a student who was never assessed.
+        Student stored = store.save(margaret());
+        Student back = store.findById(stored.id()).orElseThrow();
+
+        assertNull(back.mark(), "a missing mark must not become 0");
+        assertEquals(2, back.courseId().intValue(), "the course the student IS on must not be lost in the round trip");
+        assertEquals("-", back.grade(), "and so the grade is a dash, not an F");
+    }</code></pre>
+<!--@end-->
+
+  <p>
+    Notice that none of those three methods mentions <code>InMemoryStudentRepository</code> or
+    <code>FileBackedStudentRepository</code> anywhere. They take a <code>StudentRepository</code> and
+    ask it the questions the interface promises to answer. That is the entire technique.
+  </p>
+
+  <h3>Store number two, and why it is a different <em>kind</em> of store</h3>
+  <p>
+    The file store is not a second copy of the in-memory one with a different backing. It can fail in
+    ways a list cannot: the folder may not exist, the disk may refuse, a student with no mark has to
+    survive being written down and read back. It stores one student per line, with an empty field
+    meaning null &mdash; and that empty-field convention is what keeps &ldquo;not marked yet&rdquo;
+    from becoming &ldquo;scored zero&rdquo;:
+  </p>
+
+  <!--@code src="code/s10-unit-testing/src/main/java/com/aptech/s10/repository/FileBackedStudentRepository.java" from="136" to="153" title="FileBackedStudentRepository.java — the format"-->
+<pre class="numbered" data-file="FileBackedStudentRepository.java — the format" style="counter-reset:line 135"><code class="lang-java">    /** A student as one line. A null becomes an empty field, so it can come back as null. */
+    private static String render(Student s) {
+        return s.id() + SEP + s.name() + SEP + s.email() + SEP
+                + (s.courseId() == null ? "" : s.courseId()) + SEP
+                + (s.mark() == null ? "" : s.mark().toPlainString()) + SEP
+                + s.active();
+    }
+
+    private static Student parse(String line) {
+        String[] f = line.split("\\" + SEP, -1);
+        return new Student(
+                Integer.parseInt(f[0]),
+                f[1],
+                f[2],
+                f[3].isEmpty() ? null : Integer.valueOf(f[3]),
+                f[4].isEmpty() ? null : new BigDecimal(f[4]),
+                Boolean.parseBoolean(f[5]));
+    }</code></pre>
+<!--@end-->
+
+  <p>Now run the suite. Twelve tests, two stores each:</p>
+
+  <!--@junit project="code/s10-unit-testing" select="--select-class=com.aptech.s10.tests.E04_BothStoresTest"-->
+<div class="terminal-output">Thanks for using JUnit! Support its development at https://junit.org/sponsoring
+
+
+Test run finished after &lt;N&gt; ms
+[        16 containers found      ]
+[         0 containers skipped    ]
+[        16 containers started    ]
+[         0 containers aborted    ]
+[        16 containers successful ]
+[         0 containers failed     ]
+[        24 tests found           ]
+[         0 tests skipped         ]
+[        24 tests started         ]
+[         0 tests aborted         ]
+[        24 tests successful      ]
+[         0 tests failed          ]</div>
+<!--@end-->
+
+  <p>
+    Count the invocations, not the test methods: every line in that report ran twice. The
+    <code>{0}</code> in <code>@ParameterizedTest(name = "{0}: ...")</code> is what put
+    <code>in-memory</code> and <code>file</code> at the front of each one.
+  </p>
+
+  <div class="callout callout--key"><span class="callout__i">&#128273;</span>
+    <div class="callout__b"><b>The sentence this part exists for</b>
+      <strong>If a test passes against the in-memory store and fails against the file store, the
+      test was describing the in-memory store, not the interface.</strong> That is what a second
+      implementation is <em>for</em>. It is not extra work &mdash; it is the only way to find out
+      whether the contract you wrote down is the contract you meant. Assignment A5 asks for exactly
+      this, against the two stores <em>you</em> built.
+    </div>
+  </div>
+
+  <p>
+    And the corollary is worth saying too, because it is where most students lose marks: when a test
+    fails on one store and not the other, <strong>do not change the test</strong>. Either the store
+    is wrong, or the interface was too vague to say which behaviour was required. Both of those are
+    findings. Editing the assertion makes the red go away and leaves the ambiguity in the code.
+  </p>
+
+  <!-- ===== 12. PART 6 — A TEST THAT MUST FAIL ============================== -->
+  <h2 id="part-6-must-fail"><span class="eyebrow">Part 6 of 10</span> A Test That Must Fail</h2>
+  <p>
+    Everything so far has been green, and green is the least informative colour in software. So here
+    is a store with exactly three faults and nothing else wrong with it. It holds a real
+    <code>InMemoryStudentRepository</code> and forwards almost everything to it &mdash; which is why
+    most of the suite will still pass, and why the failures will be so easy to read:
+  </p>
+
+  <!--@code src="code/s10-unit-testing/src/main/java/com/aptech/s10/repository/BrokenRepository.java" from="50" to="73" title="BrokenRepository.java — three faults, and nothing else"-->
+<pre class="numbered" data-file="BrokenRepository.java — three faults, and nothing else" style="counter-reset:line 49"><code class="lang-java">    /** Fault 1: the case is not folded, so a search is only as good as its capitals. */
+    @Override
+    public List&lt;Student&gt; findByNameContaining(String fragment) {
+        return real.findAll().stream()
+                .filter(s -&gt; s.name().contains(fragment))
+                .toList();
+    }
+
+    /** Fault 3: an unknown id is inserted with a fresh id instead of being refused. */
+    @Override
+    public Student save(Student student) {
+        if (student.id() != 0 &amp;&amp; real.findById(student.id()).isEmpty()) {
+            return real.save(Student.unsaved(student.name(), student.email(),
+                    student.courseId(), student.mark()));
+        }
+        return real.save(student);
+    }
+
+    /** Fault 2: it reports success whether or not there was anything to delete. */
+    @Override
+    public boolean deleteById(int id) {
+        real.deleteById(id);
+        return true;
+    }</code></pre>
+<!--@end-->
+
+  <p>
+    Three careful mistakes, each of which a real implementation could plausibly make: a case-sensitive
+    search, a delete that reports success without checking, and an unknown id that becomes a new
+    student instead of an error. Now point four tests at it &mdash; three aimed at the faults, one
+    aimed at everything else, so you can see the difference. Here are all four:
+  </p>
+
+  <!--@code src="code/s10-unit-testing/src/test/java/com/aptech/s10/tests/E05_BrokenStoreTest.java" from="62" to="98" title="E05_BrokenStoreTest.java — three tests that go red, one that stays green"-->
+<pre class="numbered" data-file="E05_BrokenStoreTest.java — three tests that go red, one that stays green" style="counter-reset:line 61"><code class="lang-java">    @Test
+    @DisplayName("FAILS: the search should not care about capital letters")
+    void searchIsCaseInsensitive() {
+        assertEquals(1, store.findByNameContaining("LOVELACE").size(),
+                "searching for LOVELACE should find Ada Lovelace");
+    }
+
+    @Test
+    @DisplayName("FAILS: deleteById should report false when it removed nobody")
+    void deleteReportsHonestly() {
+        // It removed nothing — Ada is still there. A caller that trusts this return value will
+        // tell a user their record is gone when it is not:
+        assertFalse(store.deleteById(9999), "nothing was deleted, so this must be false");
+        assertEquals(1, store.count(), "the store still holds Ada, which is why false was correct");
+    }
+
+    @Test
+    @DisplayName("FAILS: saving an unknown id should be refused, not turned into a new student")
+    void saveRefusesAnUnknownId() {
+        assertThrows(IllegalArgumentException.class,
+                () -&gt; store.save(new Student(9999, "Ghost", "ghost@example.com", 1, null, true)),
+                "an update to a student who is not there must not become a new student");
+
+        assertEquals(1, store.count(), "the refused save must not have added anybody");
+    }
+
+    @Test
+    @DisplayName("PASSES: everything else about this store is correct")
+    void theRestOfTheStoreIsFine() {
+        // Four of the eight methods are inherited unchanged and work perfectly. Knowing that is
+        // worth something: the fault is in three named places, not in the whole class.
+        assertTrue(store.findById(1).isPresent());
+        assertEquals(List.of("Ada Lovelace"), store.findAll().stream().map(Student::name).toList());
+        assertEquals("broken", store.storeName());
+        assertEquals(2, store.save(Student.unsaved("Grace Hopper", "grace@example.com", 1, null)).id(),
+                "inserting a brand-new student still works");
+    }</code></pre>
+<!--@end-->
+
+  <p>
+    Run it &mdash; and note that a failing suite is <strong>content</strong> on this page, not an
+    error. The output you are about to see is the lesson:
+  </p>
+
+  <!--@junit project="code/s10-unit-testing" select="--select-class=com.aptech.s10.tests.E05_BrokenStoreTest" details="summary"-->
+<div class="terminal-output">Thanks for using JUnit! Support its development at https://junit.org/sponsoring
+
+
+Failures (3):
+  JUnit Jupiter:E05_BrokenStoreTest:FAILS: the search should not care about capital letters
+    MethodSource [className = 'com.aptech.s10.tests.E05_BrokenStoreTest', methodName = 'searchIsCaseInsensitive', methodParameterTypes = '']
+    =&gt; org.opentest4j.AssertionFailedError: searching for LOVELACE should find Ada Lovelace ==&gt; expected: &lt;1&gt; but was: &lt;0&gt;
+       org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+       org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+       org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+       org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:150)
+       org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:563)
+       com.aptech.s10.tests.E05_BrokenStoreTest.searchIsCaseInsensitive(E05_BrokenStoreTest.java:65)
+       java.base/java.lang.reflect.Method.invoke(Method.java:565)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+  JUnit Jupiter:E05_BrokenStoreTest:FAILS: deleteById should report false when it removed nobody
+    MethodSource [className = 'com.aptech.s10.tests.E05_BrokenStoreTest', methodName = 'deleteReportsHonestly', methodParameterTypes = '']
+    =&gt; org.opentest4j.AssertionFailedError: nothing was deleted, so this must be false ==&gt; expected: &lt;false&gt; but was: &lt;true&gt;
+       org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+       org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+       org.junit.jupiter.api.AssertFalse.failNotFalse(AssertFalse.java:63)
+       org.junit.jupiter.api.AssertFalse.assertFalse(AssertFalse.java:36)
+       org.junit.jupiter.api.Assertions.assertFalse(Assertions.java:239)
+       com.aptech.s10.tests.E05_BrokenStoreTest.deleteReportsHonestly(E05_BrokenStoreTest.java:74)
+       java.base/java.lang.reflect.Method.invoke(Method.java:565)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+  JUnit Jupiter:E05_BrokenStoreTest:FAILS: saving an unknown id should be refused, not turned into a new student
+    MethodSource [className = 'com.aptech.s10.tests.E05_BrokenStoreTest', methodName = 'saveRefusesAnUnknownId', methodParameterTypes = '']
+    =&gt; org.opentest4j.AssertionFailedError: an update to a student who is not there must not become a new student ==&gt; Expected java.lang.IllegalArgumentException to be thrown, but nothing was thrown.
+       org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:152)
+       org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:73)
+       org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:39)
+       org.junit.jupiter.api.Assertions.assertThrows(Assertions.java:3153)
+       com.aptech.s10.tests.E05_BrokenStoreTest.saveRefusesAnUnknownId(E05_BrokenStoreTest.java:81)
+       java.base/java.lang.reflect.Method.invoke(Method.java:565)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+
+Test run finished after &lt;N&gt; ms
+[         4 containers found      ]
+[         0 containers skipped    ]
+[         4 containers started    ]
+[         0 containers aborted    ]
+[         4 containers successful ]
+[         0 containers failed     ]
+[         4 tests found           ]
+[         0 tests skipped         ]
+[         4 tests started         ]
+[         0 tests aborted         ]
+[         1 tests successful      ]
+[         3 tests failed          ]</div>
+<!--@end-->
+
+  <p>
+    Read that result twice, because it is the point of the entire example. <strong>Three failed and
+    one passed.</strong> A suite that goes <em>completely</em> red tells you almost nothing: something
+    is broken, somewhere. A suite where three named behaviours fail and the rest pass has told you
+    <strong>exactly</strong> what is wrong &mdash; and, just as usefully, what is still fine.
+  </p>
+  <p>
+    Look at what each failure leads with. It is the display name you wrote &mdash;
+    &ldquo;FAILS: the search should not care about capital letters&rdquo; &mdash; not a file and a
+    line. That is the difference between a test suite and a stack trace: the suite reports
+    <em>behaviours</em>, and the names are only as good as the ones you gave them. This is why the
+    house style puts a whole sentence in the name instead of <code>test1()</code>.
+  </p>
+  <p>
+    That is what &ldquo;a test that fails for a reason you can name&rdquo; means in the A5 rubric, and
+    it is the sentence to write in your write-up.
+  </p>
+
+  <h3>The inverse: tests that cannot fail</h3>
+  <p>
+    Now the more dangerous case. Example 6 is four tests. Every one of them passes. Not one of them
+    would notice if <code>Student.grade()</code> were deleted tomorrow:
+  </p>
+
+  <!--@code src="code/s10-unit-testing/src/test/java/com/aptech/s10/tests/E06_WhatCannotFail.java" from="54" to="101" title="E06_WhatCannotFail.java — four green tests that prove nothing"-->
+<pre class="numbered" data-file="E06_WhatCannotFail.java — four green tests that prove nothing" style="counter-reset:line 53"><code class="lang-java">    @Test
+    @DisplayName("...passes, because it never asks a question")
+    void thisTestAssertsNothing() {
+        Student student = ada();
+        student.grade();
+        student.name();
+
+        // No assertion. If grade() returned null, or threw, or returned "Z" — this test would
+        // still pass. It proves the methods do not crash, and nothing else. If that is all you
+        // wanted to know, say so in the name; otherwise it is a false sense of safety.
+    }
+
+    @Test
+    @DisplayName("...passes, because a value always equals itself")
+    void thisTestComparesAValueToItself() {
+        String grade = ada().grade();
+
+        // True for every possible value of grade. This is a tautology wearing a test's clothes —
+        // and it is astonishingly easy to write by accident when you meant (expected, actual).
+        assertEquals(grade, grade);
+    }
+
+    @Test
+    @DisplayName("...passes, because it catches the evidence")
+    void thisTestSwallowsItsOwnFailure() {
+        try {
+            // This assertion is false: a mark of 10 is an F, not an A.
+            assertEquals("A", ada().withMark(new BigDecimal("10")).grade());
+        } catch (AssertionError swallowed) {
+            // Empty on purpose, to show what it does. JUnit never hears about the failure, so
+            // the test is green and the bug ships. A catch that logs and continues is the same
+            // mistake with better manners.
+        }
+    }
+
+    @Test
+    @DisplayName("...passes, because it asserts the setup instead of the code")
+    void thisTestAssertsTheSetupNotTheCode() {
+        StudentRepository store = new InMemoryStudentRepository();
+        Student saved = store.save(ada());
+
+        // saved was built by save(). Asserting on it tests Student's constructor, not the store.
+        // The store is never asked anything, so nothing about the store is checked. A useful
+        // version of this test asks the store the question back:
+        //     assertEquals(saved, store.findById(saved.id()).orElseThrow());
+        assertEquals(1, saved.id());
+        assertTrue(saved.active());
+    }</code></pre>
+<!--@end-->
+
+  <!--@junit project="code/s10-unit-testing" select="--select-class=com.aptech.s10.tests.E06_WhatCannotFail"-->
+<div class="terminal-output">Thanks for using JUnit! Support its development at https://junit.org/sponsoring
+
+
+Test run finished after &lt;N&gt; ms
+[         4 containers found      ]
+[         0 containers skipped    ]
+[         4 containers started    ]
+[         0 containers aborted    ]
+[         4 containers successful ]
+[         0 containers failed     ]
+[         4 tests found           ]
+[         0 tests skipped         ]
+[         4 tests started         ]
+[         0 tests aborted         ]
+[         4 tests successful      ]
+[         0 tests failed          ]</div>
+<!--@end-->
+
+  <p>
+    Four passes, zero failures, and the suite is worthless. This is the most dangerous state a test
+    suite can be in, because <em>a green tick is exactly what you were hoping to see</em> &mdash; and
+    it is the one result nobody investigates.
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>The shape</th><th>Why it can never go red</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>The test asserts nothing</td>
+        <td>Calling a method is not testing it. If <code>grade()</code> returned <code>null</code>, threw, or returned <code>"Z"</code>, this would still pass. It proves the methods do not crash, and nothing else.</td>
+      </tr>
+      <tr>
+        <td><code>assertEquals(grade, grade)</code></td>
+        <td>True for every possible value. This is a tautology wearing a test&rsquo;s clothes, and it is astonishingly easy to write by accident when you meant <code>(expected, actual)</code>.</td>
+      </tr>
+      <tr>
+        <td>An empty <code>catch</code> around a failing assertion</td>
+        <td>JUnit never hears about the failure, so the test is green and the bug ships. A <code>catch</code> that logs and continues is the same mistake with better manners.</td>
+      </tr>
+      <tr>
+        <td>It asserts the setup, not the code</td>
+        <td>The test checks what <em>it</em> just built. The store is never asked anything, so nothing about the store is checked. Ask the question back: <code>assertEquals(saved, store.findById(saved.id()).orElseThrow())</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout--key"><span class="callout__i">&#128273;</span>
+    <div class="callout__b"><b>One question, asked of every test you write or accept</b>
+      <strong>If I broke the code, would this go red?</strong> A test you cannot imagine failing is
+      not a test &mdash; it is a comment that costs electricity to run. Part 8 is about spotting
+      these four shapes in generated code, and all four are shapes an assistant produces readily.
+    </div>
+  </div>
+
+  <p>
+    One warning about how this example is usually misused. If you delete the broken-store tests now
+    that you have seen the red, you have learned nothing durable. The habit worth keeping is the one
+    A5 asks for: <strong>break your own code on purpose</strong> &mdash; change a <code>&gt;=</code>
+    to a <code>&gt;</code>, make a search case-sensitive, return <code>true</code> from a delete
+    &mdash; and check that something goes red. If nothing fails, the test was not testing anything.
+  </p>
+
+  <!-- ===== 13. PART 7 — THE ASSISTANT ===================================== -->
+  <h2 id="part-7-assistant"><span class="eyebrow">Part 7 of 10</span> Devin Desktop (formerly Windsurf) &mdash; Install &amp; Configure</h2>
+
+  <div class="callout callout--note"><span class="callout__i">&#128161;</span>
+    <div class="callout__b"><b>First, the rename &mdash; and why it is worth thirty seconds</b>
+      If you searched for <em>Windsurf</em> and found <em>Devin Desktop</em>, nothing is wrong.
+      Cognition&rsquo;s own documentation says: <em>&ldquo;Devin Desktop is the new name for
+      Windsurf&hellip; It&rsquo;s the same IDE, same editor, and has the same features.&rdquo;</em> The
+      change arrived in a normal over-the-air update on <strong>2 June 2026</strong>, and the
+      documentation is explicit that <em>&ldquo;Only the name and branding are changing&rdquo;</em>
+      &mdash; plans and pricing included. Session 4 named it by its old name, which is why this page
+      names both.
+      <br><br>
+      The useful lesson is not the new name. It is that <strong>a tool you learned six months ago may
+      now be called something else, and the only reliable source is the vendor&rsquo;s own
+      documentation</strong>. Blog posts, YouTube tutorials and search results lag behind by months.
+      When you meet an unfamiliar name for a familiar thing, go to the primary source before you
+      conclude you have the wrong product.
+      <br><br>
+      Source: <a href="https://docs.devin.ai/desktop/devin-desktop-faq" target="_blank" rel="noopener">Devin Desktop FAQ</a>.
+    </div>
+  </div>
+
+  <h3>Install it</h3>
+  <p>
+    Get it from the official documentation, not from a link in a video description:
+    <a href="https://docs.devin.ai/desktop/install" target="_blank" rel="noopener">docs.devin.ai/desktop/install</a>.
+    That page carries the download buttons for macOS, Windows and Linux. This course deliberately
+    does not print a direct download URL, because installers change and a stale link is how people
+    end up with the wrong thing.
+  </p>
+
+  <table>
+    <thead><tr><th>Where</th><th>The official requirement</th></tr></thead>
+    <tbody>
+      <tr><td>macOS</td><td>Minimum OS version: OS X Yosemite</td></tr>
+      <tr><td>Windows</td><td>Minimum OS version: Windows 10</td></tr>
+      <tr><td>Linux</td><td>glibc &ge; 2.28 and glibcxx &ge; 3.4.25 &mdash; e.g. Ubuntu 20.04+, Debian 10+, Fedora 36+, CentOS 8+, RHEL 8+</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    Two things on that page are worth knowing before you choose how to install. On Linux, take the
+    <code>.deb</code> or <code>.rpm</code> package rather than the tarball, because the documentation
+    says plainly that <em>&ldquo;the tarball does not update itself&rdquo;</em>. And the package is now
+    called <code>devin-desktop</code>, while the repository URLs still carry the old
+    <code>windsurf</code> name &mdash; the same rename, visible in the plumbing.
+  </p>
+  <p>
+    After installing, the onboarding asks you to choose a theme, offers to import your settings from
+    VS Code or Cursor, and asks you to sign in with a Devin account, which can be created free.
+    Releases for every published version are listed at
+    <a href="https://docs.devin.ai/desktop/releases" target="_blank" rel="noopener">docs.devin.ai/desktop/releases</a>
+    if you need to pin a specific one.
+  </p>
+
+  <div class="callout callout--warn"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>If your lab blocks the install, this course still works</b>
+      Nothing in A5 depends on this tool. The assignment&rsquo;s AI half is marked on <strong>the test
+      cases and your critique</strong>, never on which program produced them. If you cannot install it
+      &mdash; no administrator rights, no account, no network &mdash; use any assistant you can reach,
+      or none at all: write the test cases yourself and critique a classmate&rsquo;s. You will be
+      marked on the same thing either way, which is your judgement.
+    </div>
+  </div>
+
+  <h3>Configure it for this course</h3>
+  <div class="steps">
+    <div class="steps__title">&#9881;&#65039; Four things to set up before you use it</div>
+    <div class="step"><div class="step__check"></div><span class="step__num">1</span>
+      <div class="step__text"><strong>Open the project folder, not the file.</strong> Open <code>code/s10-unit-testing/</code> (or your A5 starter). An assistant that can see the whole project can read <code>StudentRepository.java</code>; an assistant looking at one file can only guess at it. Most bad generated tests come from this one mistake.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">2</span>
+      <div class="step__text"><strong>Point it at a JDK 21 or newer.</strong> Every project in this course sets <code>&lt;maven.compiler.release&gt;21&lt;/maven.compiler.release&gt;</code>, and the code uses records, switch expressions and text blocks, so a JDK older than 21 cannot build it. If the assistant is configured for Java 8 or 11 it will suggest rewrites that do not match the project &mdash; or flag correct code as an error. (The lab machines here run JDK 25, which is fine: a newer JDK builds the Java 21 target without complaint.)</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">3</span>
+      <div class="step__text"><strong>Get the Java extensions from the Open VSX Registry.</strong> The official extension documentation states: <em>&ldquo;It uses the Open VSX Registry for extensions, accessible via the Extensions panel or website.&rdquo;</em> In the Java category it names <strong>Extension Pack for Java</strong> (the bundle), <strong>redhat.java</strong> (the language server), <strong>Java debug</strong>, and &mdash; the one that matters today &mdash; <strong>Java Test Runner</strong>, described as running and debugging JUnit and TestNG tests from inside the editor. Source: <a href="https://docs.devin.ai/desktop/recommended-extensions" target="_blank" rel="noopener">Recommended Extensions</a>.</div></div>
+    <div class="step"><div class="step__check"></div><span class="step__num">4</span>
+      <div class="step__text"><strong>Add <code>lib/</code> to the project&rsquo;s libraries</strong> so the editor can see H2 and the JUnit jar. Without it every <code>import org.junit</code> is underlined red even though the command line compiles perfectly &mdash; a false alarm that costs an hour if you do not know it is one.</div></div>
+  </div>
+
+  <div class="callout callout--warn"><span class="callout__i">&#128274;</span>
+    <div class="callout__b"><b>Two documentation pages that do not say the same thing &mdash; read both</b>
+      The extensions page above says extensions come from the <strong>Open VSX Registry</strong>. A
+      different page in the same documentation set states flatly: <em>&ldquo;You cannot install
+      extensions through any marketplace on Devin Desktop.&rdquo;</em> Those two sentences look like a
+      contradiction. The most likely reading is that Open VSX is the supported route and the Microsoft
+      VS Code Marketplace is not &mdash; but this course is not going to tell you that is certain,
+      because we could not confirm it from the vendor&rsquo;s own words.
+      <br><br>
+      <strong>What you can rely on:</strong> the extension documentation lists the Java extensions by
+      name, so Java is supported. <strong>What to do:</strong> open the Extensions panel and try it.
+      Ten seconds of trying beats an hour of reading, and this is what verifying a tool actually looks
+      like in practice &mdash; you will do it for the rest of your career.
+    </div>
+  </div>
+
+  <div class="callout callout--warn"><span class="callout__i">&#128274;</span>
+    <div class="callout__b"><b>What leaves the machine when you use any AI assistant</b>
+      This course could not verify the data-handling details of this product from official
+      documentation, and we are not going to guess at them on a page you are expected to trust. So
+      here is the rule instead, and it applies to every assistant, in every tool, forever:
+      <ul>
+        <li><strong>Assume anything you paste or open may be sent to a server and retained.</strong> That is how these tools work. If you cannot assume that, do not use that tool on that code.</li>
+        <li><strong>Never paste credentials, connection strings, API keys, real customer records or
+          personal data.</strong> Course data such as <code>ada@example.com</code> is invented for
+          exactly this reason &mdash; keep it invented.</li>
+        <li><strong>Read your institution&rsquo;s policy.</strong> Many colleges and employers state
+          which assistants are permitted and what may be submitted to them. That policy outranks this
+          page.</li>
+        <li><strong>You will defend any line you hand in.</strong> The course&rsquo;s AI rule has not
+          changed: an assistant may explain, review, suggest and quiz. It may not write what you
+          submit.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== 14. PART 8 — AI-ASSISTED TEST GENERATION ======================== -->
+  <h2 id="part-8-ai-tests"><span class="eyebrow">Part 8 of 10</span> AI-Assisted Test Generation</h2>
+  <p>
+    An assistant is genuinely good at this job, and it is worth being precise about <em>why</em>:
+    writing a test is mostly mechanical once you have decided what should be true. The mechanical
+    part is what you delegate. <strong>Deciding what should be true is what you keep</strong>, and
+    it is the only part that is marked.
+  </p>
+
+  <img src="../assets/img/diagrams/s10_ai_loop.svg" alt="Four steps: prompt, generate, critique, decide — with a loop back from reject to a sharper prompt, and the four shapes of a test that cannot fail" width="100%">
+
+  <h3>Step 1 &mdash; a prompt that can actually be answered</h3>
+  <p>
+    The single biggest cause of useless generated tests is a vague prompt. Compare these two:
+  </p>
+  <pre><code class="lang-text">BAD
+    write some tests for my StudentRepository
+
+GOOD
+    Here is an interface, StudentRepository, and one implementation,
+    InMemoryStudentRepository, in the same project.
+
+    Write JUnit 5 tests for the in-memory implementation that check ONLY the
+    behaviour StudentRepository promises in its own javadoc:
+      - findById returns an empty Optional for an id nobody has
+      - save() with id 0 inserts and returns the stored student with an id
+      - save() with an id that is not in the store throws IllegalArgumentException
+      - findByNameContaining is case-insensitive
+      - deleteById returns false when it removed nobody
+      - a student whose mark is null reads back with a null mark, not zero
+
+    Use JUnit 5 only. Use @BeforeEach for a fresh store. Do not use a database.
+    For each test, say in one line which behaviour it protects.</code></pre>
+  <p>
+    The good prompt names the interface, names the behaviours, names the framework, bans the thing you
+    do not want, and &mdash; the part everybody forgets &mdash; <strong>asks for the reason</strong>.
+    A test with a stated reason can be judged. A test without one is just code.
+  </p>
+
+  <h3>Step 2 &mdash; read every line before you run anything</h3>
+  <p>
+    What comes back will look confident and well-formatted, and it will compile. That is not evidence
+    of anything. It has never run your program, and it cannot: it produced text about code, not
+    behaviour of code. Expect, specifically, these four shapes from Part 6 &mdash; they are exactly
+    what an assistant produces when it has been asked to &ldquo;write tests&rdquo; without being told
+    what must be true.
+  </p>
+
+  <table>
+    <thead><tr><th>What you will see</th><th>What to do with it</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>A test that asserts <strong>what the code does</strong> rather than what it <em>should</em> do &mdash; usually because it read the implementation instead of the interface.</td>
+        <td>Reject it, or rewrite it against the interface. A test that copies current behaviour locks in current bugs, and it is the most common failure in generated suites. <strong>This is the one to watch for hardest.</strong></td>
+      </tr>
+      <tr>
+        <td>No test for the <strong>null mark</strong>, or for any awkward boundary.</td>
+        <td>Add it yourself. Assistants test the happy path beautifully and skip the case that actually breaks a registry &mdash; and the null mark is the single most valuable test in A5.</td>
+      </tr>
+      <tr>
+        <td>Every test building its own store inline, or worse, one store shared across the class.</td>
+        <td>Refactor to <code>@BeforeEach</code>. It does not know your suite will be run twice against two stores, so it does not think about isolation.</td>
+      </tr>
+      <tr>
+        <td>A test method that <strong>asserts nothing</strong>, or wraps an assertion in a <code>try</code>/<code>catch</code>, or compares a value to itself.</td>
+        <td>Delete it. These are the four shapes from Part 6, and a green result from any of them is worse than no test, because it looks like evidence.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Step 3 &mdash; the critique, which is the marked work</h3>
+  <p>
+    Ask one question of every test in the draft: <strong>if I broke the code, would this go red?</strong>
+    If you cannot answer it, you cannot keep the test. Then do something stronger than reading: break
+    the code and find out. Change <code>findByNameContaining</code> to be case-sensitive. Change the
+    null check to a default of zero. Re-run and watch which tests notice.
+  </p>
+  <p>
+    A keep-or-reject decision with a reason is the deliverable. <em>&ldquo;It passes&rdquo;</em> is
+    not a reason &mdash; every test in Example 6 passes. <em>&ldquo;It checks that a search ignores
+    capitals, and I proved it catches the case-sensitive version&rdquo;</em> is a reason.
+  </p>
+
+  <div class="callout callout--key"><span class="callout__i">&#128273;</span>
+    <div class="callout__b"><b>Why the critique is worth more than the generation</b>
+      Generating a test suite now takes seconds and will only get cheaper. Knowing whether a suite is
+      <em>worth anything</em> is a judgement, and judgement is what you are being trained for. A
+      junior developer who can explain why three of eleven generated tests were rejected is more
+      useful than one who can produce a hundred green ticks &mdash; and one of them will still be
+      employable in five years.
+    </div>
+  </div>
+
+  <!-- ===== 15. PART 9 — AI-ENHANCED DOCUMENTATION ========================== -->
+  <h2 id="part-9-ai-docs"><span class="eyebrow">Part 9 of 10</span> AI-Enhanced Documentation</h2>
+  <p>
+    Documentation has the same shape of problem as tests, and the same answer: <strong>a machine can
+    draft it, only a person can say whether it is true</strong>. And there is a tool on your machine
+    right now that will tell you when a comment has drifted away from the code: the JDK&rsquo;s own
+    <code>javadoc</code>.
+  </p>
+
+  <h3>Run the documentation tool first</h3>
+  <pre><code class="lang-bash">cd code/s10-unit-testing
+javadoc -d target/docs -encoding UTF-8 -Xdoclint:all -quiet \
+        -sourcepath src/main/java -subpackages com.aptech.s10</code></pre>
+  <p>
+    <code>-Xdoclint:all</code> is the important flag and it is not the default everywhere: it makes
+    <code>javadoc</code> complain about a broken <code>@link</code>, a <code>@param</code> for a
+    parameter that no longer exists, an HTML tag you opened and never closed, or a
+    <code>@throws</code> for an exception the method cannot throw. Read the warnings rather than the
+    generated HTML &mdash; the warnings are the part that catches drift. A doc comment that
+    <em>compiles</em> can still be a lie; a doc comment with a bad <code>@param</code> is a lie the
+    compiler can catch for you.
+  </p>
+
+  <h3>Then ask an assistant to draft one, and look at it properly</h3>
+  <p>
+    Here is the shape of what usually comes back when you ask for documentation for
+    <code>StudentRepository.save</code>. Read it as a reviewer, not as a recipient:
+  </p>
+  <pre><code class="lang-java">/**
+ * Saves the given student to the repository.
+ *
+ * @param student the student to save
+ * @return the saved student
+ * @throws SQLException if a database error occurs
+ * @throws IllegalArgumentException if the student is null
+ */</code></pre>
+  <p>Now the review. There are four problems in six lines, and every one of them is a real pattern:</p>
+  <table>
+    <thead><tr><th>The line</th><th>What is wrong with it</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><em>&ldquo;Saves the given student to the repository.&rdquo;</em></td>
+        <td><strong>It restates the signature.</strong> The method is called <code>save</code>, it takes a student, and it is on a repository. The sentence adds nothing a reader did not already have. Good documentation says what the caller <em>cannot</em> see: that id 0 means insert, that any other id must already exist, and that the returned object carries the id the store chose.</td>
+      </tr>
+      <tr>
+        <td><em><code>@throws SQLException</code></em></td>
+        <td><strong>It invents an exception that does not exist.</strong> This interface deliberately declares no checked exception and imports no <code>java.sql</code> &mdash; that absence is the whole design from Session 9. The assistant saw &ldquo;repository&rdquo; and assumed a database. Documentation that contradicts the design is worse than none, because it teaches the next person the wrong shape.</td>
+      </tr>
+      <tr>
+        <td><em><code>@throws IllegalArgumentException if the student is null</code></em></td>
+        <td><strong>It describes a guard that is not there.</strong> Passing <code>null</code> to <code>save</code> produces a <code>NullPointerException</code> on the first field access, not a helpful <code>IllegalArgumentException</code>. The method <em>does</em> throw <code>IllegalArgumentException</code> &mdash; for an unknown non-zero id. The assistant got the right exception for the wrong reason, which is the hardest kind of wrong to spot.</td>
+      </tr>
+      <tr>
+        <td><em><code>@return the saved student</code></em></td>
+        <td><strong>It misses the one thing a caller needs.</strong> The returned student is not the argument &mdash; it is the argument <em>with the id the store assigned</em>. That single fact is why the method returns anything at all.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128161;</span>
+    <div class="callout__b"><b>The test for any doc comment, human or generated</b>
+      Delete the comment, read the signature, and ask: <em>what did I just lose?</em> If the answer is
+      &ldquo;nothing&rdquo;, the comment was decoration. If the answer is a fact you could not have
+      guessed &mdash; a boundary, a convention, a reason &mdash; it was worth writing. That question
+      is also the fastest way to review an entire generated documentation pass, because the empty
+      comments all fail it identically.
+    </div>
+  </div>
+
+  <p>
+    One fair note in the assistant&rsquo;s favour: the comments you have been reading all session are
+    full of exactly the kind of fact that is hard to generate &mdash; why a copy is returned, why
+    <code>Locale.ROOT</code> and not the default, why an empty field in the file format means null.
+    Those came from a person who had decided something. An assistant can explain a decision it can
+    see in the code. It cannot tell you about the requirement that produced it, and it will invent a
+    plausible one when pressed.
+  </p>
+
+  <!-- ===== 16. PART 10 — WORTH KEEPING ===================================== -->
+  <h2 id="part-10-worth-keeping"><span class="eyebrow">Part 10 of 10</span> What Makes a Test Worth Keeping</h2>
+  <p>
+    There is a number that looks like the answer to this question and is not: <strong>coverage</strong>.
+    A coverage tool reports the percentage of your lines that ran while the tests executed. It is easy
+    to measure, easy to put on a dashboard, and easy to satisfy without testing anything. Example 6
+    would score well on it: four tests executing <code>grade()</code>, <code>name()</code>,
+    <code>save()</code> and <code>findById()</code>, and not one of them able to fail.
+  </p>
+  <p>
+    <strong>Coverage measures what ran, never what was checked.</strong> A line can run inside a test
+    that asserts nothing. That is why this course does not install a coverage tool: the number would
+    be the wrong thing to teach you to optimise, and you would optimise it.
+  </p>
+
+  <h3>Four questions, and a test that survives all four is worth keeping</h3>
+  <ol>
+    <li><strong>If I broke the code, would this go red?</strong> The only question that matters. Everything below is a way of asking it.</li>
+    <li><strong>Does it name a behaviour?</strong> A test called <code>deleteReportsHonestly</code> tells the next person what the store promises. A test called <code>testDelete2</code> tells them nothing, and will be deleted the first time it fails at an inconvenient moment.</li>
+    <li><strong>Does it set up its own state?</strong> If it needs the test above it to have run first, it is not a test &mdash; it is a step in a script that happens to be executed by JUnit.</li>
+    <li><strong>Would I be surprised if it failed?</strong> If not, it is checking something you already know for certain, and it will never tell you anything. A test earns its place by being able to fail for a reason that would matter.</li>
+  </ol>
+
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; the seatbelt, not the speedometer</b>
+      Coverage is a speedometer: it tells you how fast you went, not whether you were safe. A hundred
+      tests that all pass and none of which can fail is a car with a very impressive dashboard and no
+      brakes. What you want is the boring thing that has already saved you once &mdash; and the way you
+      find out whether it works is by pulling hard on it, deliberately, before you need it. That is
+      why Part 6 exists and why A5 asks you to break your own store.
+    </div>
+  </div>
+
+  <p>
+    And the last thing, which is really the first thing. A test suite is not paperwork you produce
+    once. It is the thing that lets you change the code next month <em>without being afraid</em>. The
+    measure of a good suite is not how many tests it has; it is how much of your own code you are
+    willing to rewrite on a Friday afternoon because you know something is watching. That is what
+    confidence means here, and it is the only thing worth optimising.
+  </p>
+
+  <!-- ===== 17. GUIDED LAB ================================================= -->
+  <h2 id="lab-first-suite"><span class="eyebrow">Guided Lab</span> From <code>SelfCheck</code> to a Suite</h2>
+
+  <p>
+    Last week you wrote <code>SelfCheck</code>: four hundred lines, twelve named checks, a
+    <code>PASS</code>/<code>FAIL</code> tally and <code>System.exit(1)</code>. It works, and you built
+    it, so you know exactly what it costs. Today you replace it &mdash; for the repository at least
+    &mdash; with fifty lines of annotations. Do the six steps in order; each one is a thing you could
+    not do last week.
+  </p>
+
+  <div class="steps">
+    <div class="steps__title">&#128295; Six steps, about an hour</div>
+
+    <div class="step"><div class="step__check"></div><span class="step__num">1</span>
+      <div class="step__text">
+        <strong>Compile and run one test class.</strong> From the session folder:
+        <pre><code class="lang-bash">cd code/s10-unit-testing
+
+javac -encoding UTF-8 -d out \
+      -cp "lib/junit-platform-console-standalone-1.14.4.jar" \
+      $(find src/main/java src/test/java -name "*.java")
+
+java -jar lib/junit-platform-console-standalone-1.14.4.jar execute \
+     --class-path "out:lib/junit-platform-console-standalone-1.14.4.jar" \
+     --select-class=com.aptech.s10.tests.E01_FirstTest \
+     --disable-ansi-colors</code></pre>
+        On Windows the classpath separator is <code>;</code>, not <code>:</code>, and
+        <code>$(find &hellip;)</code> is a shell substitution cmd.exe does not have &mdash; open the
+        folder in IntelliJ instead, where a green &#9654; in the gutter does all of this. Either way
+        you should see four tests, four green ticks, and a summary line counting them.
+        <br><br>
+        <em>Why the two commands and not one?</em> Because they are genuinely two jobs. The first is
+        <code>javac</code> turning source into class files; the second is the launcher <em>finding</em>
+        those class files and running them. An IDE hides both, which is convenient right up until the
+        day it can&rsquo;t and you need to know which one broke.
+      </div></div>
+
+    <div class="step"><div class="step__check"></div><span class="step__num">2</span>
+      <div class="step__text">
+        <strong>Now break it on purpose.</strong> Open
+        <code>src/main/java/com/aptech/s10/model/Student.java</code> and change <code>grade()</code>&rsquo;s
+        <code>&gt;= 80</code> to <code>&gt;= 90</code>. Re-run step 1 without recompiling the main tree
+        &mdash; just run the <code>java</code> command again &mdash; and notice that <em>nothing
+        changed</em>. You edited source, not class files; the launcher is running the old ones.
+        Recompile, re-run, and watch <code>eightyIsAnA</code> go red.
+        <br><br>
+        <strong>Exactly one test, and that precision is the lesson.</strong> 79.99 is still a B and 100
+        is still an A, so those tests are right to stay green. A mutation that turns the whole suite
+        red has told you nothing; a mutation that turns <em>one named test</em> red has told you which
+        behaviour you broke. Nothing went red that should not have, and nothing stayed green that
+        should have gone red &mdash; which is the only way to know a suite is tight.
+        <br><br>
+        Read the failure out loud. It names the expectation, the reality, and the method:
+        <code>expected: &lt;A&gt; but was: &lt;B&gt;</code>. That is the whole of what a failing test
+        gives you, and it is more than <code>SelfCheck</code> ever did &mdash; you know <em>which</em>
+        behaviour broke before you have opened the file.
+        <br><br>
+        <strong>Put it back</strong> and confirm green before you go on.
+      </div></div>
+
+    <div class="step"><div class="step__check"></div><span class="step__num">3</span>
+      <div class="step__text">
+        <strong>Find the hole your suite has.</strong> <code>E01</code> checks 80, just under 80, and
+        100 and 0 &mdash; four marks. Break <code>grade()</code> a third time, somewhere those four
+        marks cannot see: change the <code>&gt;= 50</code> case to <code>&gt;= 40</code>. Now a mark of
+        45 is a <code>D</code> when it should be an <code>F</code>.
+        <br><br>
+        Recompile, re-run <code>E01</code> as in step 1, and it <strong>stays green</strong>. Nothing
+        in it ever asks about a mark between 40 and 49, so nothing goes red. That is the uncomfortable
+        part: <code>E01</code> was never wrong, it was just silent, and silence looks exactly like
+        success. A grade of <code>D</code> for a failing student ships.
+        <br><br>
+        Write the test that catches it, in <code>E01</code>, in the house style: a name that states the
+        behaviour, an <code>assertEquals</code> whose message says what a failure means. Then run
+        <strong>the mutation again</strong> and confirm your new test goes red. A test you have never
+        seen fail is a test you are trusting on faith.
+      </div></div>
+
+    <div class="step"><div class="step__check"></div><span class="step__num">4</span>
+      <div class="step__text">
+        <strong>Run the same suite against a second store.</strong>
+        <pre><code class="lang-bash">java -jar lib/junit-platform-console-standalone-1.14.4.jar execute \
+     --class-path "out:lib/junit-platform-console-standalone-1.14.4.jar" \
+     --select-class=com.aptech.s10.tests.E04_BothStoresTest \
+     --details=tree --disable-ansi-colors</code></pre>
+        <code>--details=tree</code> here rather than the launcher&rsquo;s own default, because you want
+        to <em>see</em> the fan-out: twelve test methods, each appearing twice, once prefixed
+        <code>in-memory:</code> and once <code>file:</code>. Count them. Twenty-four runs out of
+        twelve methods is the single most valuable trick in this session, and it is four lines of
+        code in <code>E04</code>&rsquo;s <code>stores()</code>.
+        <br><br>
+        The page&rsquo;s embedded output uses <code>--details=summary</code> instead &mdash; the banner,
+        the elapsed line and the twelve count lines, with nothing per-test. That matters for a reason
+        beyond tidiness: <code>tree</code> and <code>verbose</code> print a time beside every test, so
+        their output is different on every run, and output that changes on every run cannot be pasted
+        into a page. <strong><code>--details=none</code> sounds like the quiet one and is not</strong>
+        &mdash; run it once and you will see the banner and nothing else, no summary at all, which is
+        the opposite of what the option name suggests.
+      </div></div>
+
+    <div class="step"><div class="step__check"></div><span class="step__num">5</span>
+      <div class="step__text">
+        <strong>Break the store, not the test.</strong> Open <code>E05_BrokenStoreTest</code> and read
+        which four behaviours it points at <code>BrokenRepository</code>. Run it and look at what
+        happens: <strong>the run fails, and the failure is the lesson.</strong> Three tests go red, one
+        stays green. Then answer, in one sentence each: what does the green one prove that the red
+        three cannot? And why is a suite that goes <em>entirely</em> red worth less than this one?
+        <br><br>
+        This is also the first time you have run a command that exits non-zero on purpose. In a
+        pipeline that matters &mdash; a red suite must fail the build &mdash; which is why the exit code
+        is the interface between a test runner and everything around it.
+      </div></div>
+
+    <div class="step"><div class="step__check"></div><span class="step__num">6</span>
+      <div class="step__text">
+        <strong>Run everything, and prove the suite is what you think it is.</strong>
+        <pre><code class="lang-bash">java -jar lib/junit-platform-console-standalone-1.14.4.jar execute \
+     --class-path "out:lib/junit-platform-console-standalone-1.14.4.jar" \
+     --select-package com.aptech.s10.tests \
+     --disable-ansi-colors</code></pre>
+        Six classes run. <strong>Five pass and one fails</strong>, and the failing one is supposed to.
+        If that surprises you, re-read step 5 before you go on: a suite is a report, and reports
+        contain bad news.
+        <br><br>
+        <strong>The last move, and the one that belongs in your A5 write-up.</strong> Break something
+        real in <code>FileBackedStudentRepository</code> &mdash; in <code>parse()</code>, make an empty
+        mark field read back as <code>0</code> instead of <code>null</code>. Run the whole
+        package again and watch <em>which</em> tests notice. It should be the
+        <code>file:</code>-prefixed ones and no others, and that split is the proof that your two
+        stores really are two stores rather than one store tested twice.
+      </div></div>
+  </div>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128161;</span>
+    <div class="callout__b"><b>What to write down before you move on</b>
+      Three sentences, in your own words, for the A5 write-up: (1) one thing <code>SelfCheck</code>
+      could do that JUnit cannot do as easily; (2) one thing JUnit did today that
+      <code>SelfCheck</code> would have needed fifty lines for; (3) the mutation you ran and which
+      test caught it. The third one is the one that gets marked, because it is the only one you
+      cannot get from a tutorial.
+    </div>
+  </div>
+
+  <!-- ===== 18. COMMON MISTAKES ============================================= -->
+  <h2>&#9888;&#65039; Common Mistakes</h2>
+
+  <div class="callout callout--warn"><span class="callout__i">&#10060;</span>
+    <div class="callout__b"><b>Mistake 1 &mdash; <code>assertEquals(actual, expected)</code></b>
+      <p>
+        JUnit&rsquo;s signature is <code>assertEquals(expected, actual)</code>. Swap them and the test
+        still passes &mdash; the comparison is symmetric &mdash; but <strong>every failure message you
+        ever read is now backwards</strong>. <code>expected: &lt;88.50&gt; but was: &lt;91.00&gt;</code>
+        will tell you the code returned 88.50 when it should have returned 91.00, when the truth is
+        the opposite.
+      </p>
+      <p>
+        Nothing catches this. Not the compiler, not the test runner, not your IDE. The only defence is
+        a habit: <em>expected first</em>, always, until it is automatic. If you only remember one thing
+        from this page, remember this one.
+      </p>
+    </div>
+  </div>
+
+  <div class="callout callout--warn"><span class="callout__i">&#10060;</span>
+    <div class="callout__b"><b>Mistake 2 &mdash; a shared store, and a suite that depends on its own order</b>
+      <p>
+        The tempting shortcut is one <code>private StudentRepository store = new InMemoryStudentRepository();</code>
+        field, seeded once, shared by every test. It works beautifully &mdash; until you run a single
+        test on its own and it fails, or you reorder two methods and two tests swap results.
+      </p>
+      <p>
+        A test that only passes after another test has run is not a test; it is a step in a script.
+        <code>@BeforeEach</code> is the fix and it costs one line: fresh state before every test, so
+        the order cannot matter. <strong>The diagnostic is simple</strong> &mdash; run your suite
+        twice with the methods in a different order, or run one method alone. If the answer changes,
+        you have shared state.
+      </p>
+    </div>
+  </div>
+
+  <div class="callout callout--warn"><span class="callout__i">&#10060;</span>
+    <div class="callout__b"><b>Mistake 3 &mdash; <code>assertEquals</code> on <code>BigDecimal</code>, and the scale trap</b>
+      <p>
+        <code>BigDecimal.equals</code> compares the <em>value and the scale</em>, so
+        <code>new BigDecimal("450.0")</code> and <code>new BigDecimal("450.00")</code> are
+        <strong>not equal</strong> even though <code>compareTo</code> says they are the same number.
+        A test that asserts <code>equals</code> on money is therefore testing how many decimal places
+        your formatting produced, which is almost never what you meant.
+      </p>
+      <p>
+        Use <code>assertEquals(0, expected.compareTo(actual))</code> when you care about the amount, or
+        assert on <code>toPlainString()</code> when you genuinely care about the scale. <code>E02</code>
+        shows both, side by side, because the difference is invisible until the day it fails on a value
+        that is numerically correct.
+      </p>
+    </div>
+  </div>
+
+  <div class="callout callout--warn"><span class="callout__i">&#10060;</span>
+    <div class="callout__b"><b>Mistake 4 &mdash; the test that catches nothing, and the green that means nothing</b>
+      <p>
+        Four shapes, all of which pass and none of which test anything: a method with no assertion; an
+        assertion inside a <code>try</code> whose <code>catch</code> swallows the failure; a
+        <code>try</code>/<code>catch</code> around the call being tested, so the exception you were
+        checking for is absorbed before the assertion; and asserting a value against itself.
+      </p>
+      <p>
+        Example 6 is four of these, deliberately, and all four go green. <strong>A green tick is not
+        evidence unless the test could have gone red</strong> &mdash; and the way you find out is not
+        to read the test more carefully. It is to break the code and watch.
+      </p>
+    </div>
+  </div>
+
+  <div class="callout callout--warn"><span class="callout__i">&#10060;</span>
+    <div class="callout__b"><b>Mistake 5 &mdash; a test that describes the implementation instead of the interface</b>
+      <p>
+        This is the one that hurts most, because it is invisible for months. You write a test that
+        asserts <em>what the code currently does</em> rather than what the interface promises &mdash;
+        often by reading the implementation while writing it. The test passes, the suite is green, and
+        you have just frozen a bug into place: fixing it later turns the suite red and the temptation
+        is to change the test.
+      </p>
+      <p>
+        <strong>Write tests against the interface and its javadoc, not against the class in front of
+        you.</strong> If you cannot tell which you are doing, that is the signal: the
+        <code>StudentRepository</code> javadoc says what is promised, and anything a test asserts that
+        the javadoc does not promise is either a behaviour you should document or a bug you are
+        preserving. And note where this bites hardest &mdash; an AI assistant writing tests has almost
+        certainly read the implementation, so this is the single most common defect in generated
+        suites. Part 8 is largely about catching it.
+      </p>
+    </div>
+  </div>
+
+  <div class="callout callout--warn"><span class="callout__i">&#10060;</span>
+    <div class="callout__b"><b>Mistake 6 &mdash; a <code>@MethodSource</code> that returns the wrong shape</b>
+      <p>
+        <code>@ParameterizedTest</code> will not run a source method that returns the wrong thing, and
+        the failure appears as an error on the <em>test class</em> rather than as a failing test, which
+        makes it look like a configuration problem. In <code>E04</code>, <code>stores()</code> returns
+        <code>Stream&lt;Arguments&gt;</code>, and each <code>Arguments.of(&hellip;)</code> must match the
+        test method&rsquo;s parameters in <em>number, order and type</em>.
+      </p>
+      <p>
+        The version of this that costs an hour is counting the label as a parameter. Write
+        <code>Arguments.of("file", store)</code> and you have handed JUnit two values for a method
+        that takes one, so it feeds the <code>String</code> to the store parameter and all twelve
+        tests fail with:
+      </p>
+<pre><code class="lang-text">org.junit.jupiter.api.extension.ParameterResolutionException:
+  Error converting parameter at index 0: No built-in converter for source type
+  java.lang.String and target type com.aptech.s10.repository.StudentRepository</code></pre>
+      <p>
+        Nothing in that message says &ldquo;you passed one argument too many&rdquo;, and the type it
+        names &mdash; <code>StudentRepository</code> &mdash; is the one you did <em>not</em> get wrong.
+        <strong>One value per <code>Arguments.of</code></strong>: wrap the label around the value with
+        <code>Named.of("file", store)</code> and the two travel as a single argument.
+      </p>
+      <p>
+        Two details in that method are load-bearing and easy to lose: it must be
+        <code>static</code> unless the test is annotated <code>@TestInstance(PER_CLASS)</code>, and it
+        is called <strong>again for every test method</strong> &mdash; which is why
+        <code>E04</code>&rsquo;s file store gets a brand-new folder each time rather than sharing one.
+      </p>
+    </div>
+  </div>
+
+  <div class="callout callout--warn"><span class="callout__i">&#10060;</span>
+    <div class="callout__b"><b>Mistake 7 &mdash; naming a test method after the assertion it calls</b>
+      <p>
+        It reads well and it does not compile. Write
+        <code>void assertThrows() { assertThrows(IllegalArgumentException.class, &hellip;); }</code>
+        and the method name <em>shadows the static import for the whole class</em>: inside every other
+        test, the name <code>assertThrows</code> now means your zero-argument method, and the call
+        that used to work fails with a message about the wrong number of arguments:
+      </p>
+<pre><code class="lang-text">E02_Assertions.java:9: error: method assertThrows in class E02_Assertions cannot be applied to given types;
+        assertThrows(IllegalArgumentException.class,
+        ^
+  required: no arguments
+  found:    Class&lt;IllegalArgumentException&gt;,()-&gt;Studen[...]null)
+  reason: actual and formal argument lists differ in length</code></pre>
+      <p>
+        Nothing in that message says &ldquo;your method name has eaten the static import&rdquo;, and
+        <code>required: no arguments</code> describes a method you know takes two. (The
+        <code>[...]</code> is javac&rsquo;s own abbreviation of the lambda, not yours.) The giveaway
+        is that the name in <code>cannot be applied to given types</code> is a method you wrote
+        yourself. Name the method after the <strong>behaviour</strong> &mdash;
+        <code>theValidationRulesAreReal</code>, <code>assertDoesNotThrowIsForTheHappyPath</code>
+        &mdash; and the collision never happens. A test method should say what the code should
+        <em>do</em>, which is also what makes a failure readable, so this mistake and the right thing
+        to do happen to be the same sentence.
+      </p>
+    </div>
+  </div>
+
+  <!-- ===== 19. KNOWLEDGE CHECK ============================================ -->
+  <h2>&#129504; Knowledge Check</h2>
+  <p>Ten questions. Answer before you look &mdash; the explanations are where the marks are.</p>
+
+  <div class="quiz" id="s10-check">
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">1. What is the only real test of whether a test is worth keeping?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Whether it passes.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Whether it raises the coverage percentage.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Whether it would go red if you broke the code it covers.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Whether it follows the arrange&ndash;act&ndash;assert shape.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> Every test in Example 6 passes and none of them is a test. Structure (D) is a habit, not evidence, and coverage (B) counts lines that ran, not things that were checked.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">2. <code>assertEquals(88.50, mark)</code> fails with <code>expected: &lt;88.50&gt; but was: &lt;88.5&gt;</code>. What happened?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> The mark really is wrong.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>BigDecimal.equals</code> compares scale as well as value, so the two are unequal though <code>compareTo</code> returns 0.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>assertEquals</code> cannot compare <code>BigDecimal</code> at all.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> The double literal lost precision on the way in.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> The number is right and the representation differs. Assert <code>compareTo == 0</code> when you mean the amount, or <code>toPlainString()</code> when you mean the scale. E02 shows both.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">3. Why does <code>E04</code> run its suite against two stores instead of one?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> A test that passes in memory and fails on the file store was describing the in-memory store, not the interface.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> To double the number of tests, which looks better in the report.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Because the file store is slower and needs its own tests.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Because JUnit requires two implementations for <code>@ParameterizedTest</code>.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A.</strong> That is what a second implementation is <em>for</em>. It is also what A5 Part 2 requirement 1 asks for &mdash; and why Session 9 spent a week extracting the interface.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="d">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">4. What does <code>@BeforeEach</code> guarantee?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> That the tests run in the order they are written.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> That the setup runs once and is shared, which is faster.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> That the test class is created once for all tests.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> That each test starts from the same fresh state, so no test can depend on another having run.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>D.</strong> Once-per-class is <code>@BeforeAll</code> (C), and it must be <code>static</code> for exactly that reason. Order (A) is <code>@TestMethodOrder</code>, and you should not need it for correctness.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">5. In <code>E04</code>, why does the file store get a new folder from <code>Files.createTempDirectory</code> on every call to <code>stores()</code>?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Because the file store cannot overwrite a file that already exists.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Because <code>stores()</code> is called once per test method, and a shared folder would let one test see the previous test&rsquo;s data.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> To make the tests run faster by spreading the I/O.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Because JUnit forbids two tests sharing a directory.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> A shared fixture is a test that lies to you. Note the two halves of the fix: unique folder per invocation, and <code>@TempDir</code> in E03 for the single-folder case &mdash; JUnit makes it and deletes it.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">6. <code>E05</code> points four tests at <code>BrokenRepository</code> and three go red. Why is that better than all four going red?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> It is not better &mdash; a completely red suite is stronger evidence.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Because three failures is under the limit JUnit allows per class.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Because a suite that is entirely red tells you only that something is wrong; three named failures out of four tell you exactly which behaviours are wrong and that the rest still work.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Because the fourth test is <code>@Disabled</code>.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> The three faults in <code>BrokenRepository</code> are named behaviours &mdash; case-sensitive search, a dishonest <code>deleteById</code>, and a silent insert. The failure messages name the behaviour, not a line number. And the passing test is itself information: it says the rest of the store is fine.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">7. A generated test asserts that <code>findByNameContaining("A")</code> returns exactly one student. What is the most likely problem?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> It was written by reading the implementation, so it will fail the moment the search is fixed or the data changes &mdash; it records what the code does rather than what it should.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> One assertion is too few; generated tests should use <code>assertAll</code>.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> It should have used <code>@ParameterizedTest</code>.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Nothing &mdash; it is a perfectly good test.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A.</strong> This is Mistake 5, and it is the hardest defect in a generated suite because it is green. A test should assert the behaviour the interface promises &mdash; case-insensitivity &mdash; not a count that happens to be true today.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="d">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">8. What does a coverage percentage actually measure?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> How much of the code is correct.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> How many behaviours are protected against regression.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> How many assertions the suite contains.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Which lines executed during the test run &mdash; whether or not anything was checked.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>D.</strong> Example 6 would score well: four tests executing real methods and asserting nothing. That is why this course installs no coverage tool &mdash; the number would be the wrong thing to teach you to optimise.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">9. When would you still write <code>SelfCheck</code> rather than JUnit?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Never &mdash; JUnit does everything <code>SelfCheck</code> does and more.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> When the checks are really a sequence &mdash; a walkthrough whose steps build on each other, where &ldquo;test 3 failed&rdquo; is meaningless without tests 1 and 2.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> When the project has no <code>lib/</code> folder for the jar.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> When you want the output to be coloured.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> The property JUnit is built on &mdash; every test independent, any order, one may run alone &mdash; is exactly what a walkthrough must not have. That is also why A5 keeps <code>SelfCheck</code>: it is a diagnostic, and it is a hundred lines you own.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">10. An AI assistant generates eleven tests and all eleven pass. What have you learned?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> The repository is correct.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> The tests are correct, because they compile and run.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> That eleven pieces of text are consistent with the code as it stands &mdash; which is not the same as eleven tests, and tells you nothing until you have read them and broken something.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> That the assistant had access to your database.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> Green means &ldquo;consistent with the current code&rdquo;, and a test written by reading the code is consistent with it by construction. The only way to find out whether it is a test is to break the code and watch &mdash; which is Part 5 of the lab, and it is the marked half of A5.</div>
+    </div>
+
+  </div>
+
+  <!-- ===== 20. PRACTICE =================================================== -->
+  <h2>&#128170; Practice</h2>
+  <p>Three programs. Do them in order; each one assumes the last.</p>
+
+  <div class="callout callout--note"><span class="callout__i">&#128221;</span>
+    <div class="callout__b"><b>Practice 1 &mdash; Mutation testing by hand</b>
+      <p>
+        This is the exercise that turns everything above into a habit. Take the six test classes and
+        make <strong>ten deliberate mutations</strong> in <code>src/main/java</code>, one at a time.
+        After each mutation, recompile and run the whole package, then write down which tests went
+        red and which stayed green. Suggested ten: flip <code>&gt;= 80</code> to <code>&gt; 80</code>;
+        change <code>Locale.ROOT</code> to the default locale; make <code>findAll</code> return the
+        internal list instead of a copy; make <code>save</code> accept an unknown id; make
+        <code>deleteById</code> always return <code>true</code>; drop the blank-name check; drop the
+        <code>@</code> check in the email validation; make <code>parse()</code> read an empty field as
+        <code>0</code>; change <code>HALF_UP</code> to <code>DOWN</code> in <code>Money</code>; make
+        <code>nextId</code> start at <code>0</code>.
+      </p>
+      <p>
+        <strong>The deliverable is the table</strong>, and it has a column for every mutation that
+        <em>no test noticed</em>. Those are your suite&rsquo;s blind spots, and every suite has some.
+        Then write a test for the worst one. Reverting each mutation before the next is part of the
+        discipline &mdash; two mutations at once and you cannot attribute the failure.
+      </p>
+    </div>
+  </div>
+
+  <div class="callout callout--note"><span class="callout__i">&#128221;</span>
+    <div class="callout__b"><b>Practice 2 &mdash; A third store, and not one new test</b>
+      <p>
+        Write <code>MapStudentRepository</code>: the same eight methods, backed by a
+        <code>HashMap&lt;Integer, Student&gt;</code> instead of a <code>List</code>. Deliberately
+        less code than the list version &mdash; lookups become <code>map.get(id)</code>, and you have
+        to keep <code>nextId</code> yourself and work out where <code>LinkedHashMap</code> matters
+        (it does: <code>findAll</code> should keep insertion order, or the tests that check order will
+        tell you so).
+      </p>
+      <p>
+        Then add <strong>one line</strong> to <code>E04</code>&rsquo;s <code>stores()</code> and run it.
+        Every test in that file now checks your new store. If something fails, you have found a place
+        where the interface was written to fit the first implementation &mdash; which is precisely the
+        bug this design exists to expose. <strong>Count the tests that ran.</strong> The number should
+        go up by twelve, and you should have written none of them.
+      </p>
+    </div>
+  </div>
+
+  <div class="callout callout--note"><span class="callout__i">&#128221;</span>
+    <div class="callout__b"><b>Practice 3 &mdash; The prompt, the critique, and the receipt</b>
+      <p>
+        <strong>Part A.</strong> Write the precise prompt from Part 8 &mdash; interface, behaviours,
+        framework, exclusions, and the one-line reason per test &mdash; for a class of your own
+        choosing, at least four behaviours. Keep the exact prompt; it goes in your write-up.
+      </p>
+      <p>
+        <strong>Part B.</strong> Run it. Before you run a single test, read the draft and mark each
+        test <em>keep</em>, <em>fix</em> or <em>reject</em>, with a reason. The four shapes from Mistake
+        4 and the implementation-reading defect from Mistake 5 are what you are looking for; expect to
+        find at least one of each if the prompt did not rule them out.
+      </p>
+      <p>
+        <strong>Part C &mdash; the receipt.</strong> For every test you kept, break the code it covers
+        and show it going red. A kept test with no mutation behind it is an opinion.
+      </p>
+      <p>
+        <strong>Part D.</strong> Rewrite the prompt with what you learned &mdash; add the exclusions you
+        found yourself needing, tighten the requirement about the interface, and say what the first
+        prompt cost you in wasted reading. Run it again and compare the two drafts. <strong>The
+        difference between them is the thing being marked</strong>, far more than either draft.
+      </p>
+      <p>
+        If you have no assistant available, do Part A, then swap drafts with a classmate: critique
+        theirs against the same four shapes and take their critique of yours. The critique is the
+        assessed work, and it works identically on a human&rsquo;s draft.
+      </p>
+    </div>
+  </div>
+
+  <!-- ===== 21. ASSIGNMENT A5 PART 2 ======================================= -->
+  <h2 id="assignment-a5-part-2">&#128203; Assignment A5, Part 2 &mdash; the JUnit Suite</h2>
+  <div class="callout callout--assignment"><span class="callout__i">&#128221;</span>
+    <div class="callout__b"><b>The second half of A5 is issued today</b>
+      <p>
+        <strong>Due before the start of Session 11.</strong> Session 9 asked you to restructure the
+        registry so that the store was swappable. This half asks you to <em>prove</em> that it is: one
+        suite, run against the two stores you built, plus a critique of an AI&rsquo;s attempt at the
+        same job.
+      </p>
+      <p>
+        <strong>Start from the skeleton:</strong>
+        <code>code/a5-patterned-registry-starter/src/test/java/com/aptech/a5/StudentRepositoryTest.java</code>.
+        One test is worked as an example; five carry a <code>TODO</code> in the same voice as the
+        <code>R1</code>&ndash;<code>R8</code> stubs. The
+        <code>stores()</code> method is <strong>given</strong> &mdash; it already hands out your
+        in-memory store and your H2 store, and part of the exercise is reading it until you can say
+        why it works.
+      </p>
+      <div class="tablewrap">
+        <table>
+          <caption>The four requirements, and what each one proves</caption>
+          <thead><tr><th>Req</th><th>Deliverable</th><th>What it proves</th></tr></thead>
+          <tbody>
+            <tr><td><strong>1</strong></td><td>One suite written against <code>StudentRepository</code>, executed against <strong>both</strong> <code>InMemoryStudentRepository</code> and <code>H2StudentRepository</code> via <code>@ParameterizedTest</code> and <code>@MethodSource</code>.</td><td>That your two stores really do implement one contract. A test that passes on one and fails on the other has found a bug in the store <em>or</em> in the interface, and either answer is a pass.</td></tr>
+            <tr><td><strong>2</strong></td><td>Named tests for the awkward cases, not just the happy path: an id nobody has, a search in the wrong case, a <code>deleteById</code> that removes nobody, an insert that must be given an id, and <strong>a student with no mark</strong>.</td><td>That you decided what must be true before you wrote the test. The null-mark test is the single most valuable one in this assignment &mdash; it is the case a round trip usually loses.</td></tr>
+            <tr><td><strong>3</strong></td><td>A test that <strong>fails on purpose</strong>, with a comment saying which behaviour it is checking and why the failure is correct.</td><td>That you have seen your suite go red, and that you can tell a real failure from a broken test. A suite you have never seen fail is a suite you are trusting on faith.</td></tr>
+            <tr><td><strong>4</strong></td><td>The <strong>AI half</strong>: the exact prompt you used, the test cases that came back, your keep/fix/reject decision on each with a reason, and the mutation that proves each kept test can fail.</td><td>Your judgement. This is the marked half, and it is marked on the critique &mdash; not on which tool produced the draft, and not on how many tests there are.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>Your feedback loop, again, is the code.</strong> From the starter folder:</p>
+      <pre><code class="lang-bash">cd code/a5-patterned-registry-starter
+javac -encoding UTF-8 -d out \
+      -cp "lib/h2-2.3.232.jar:lib/junit-platform-console-standalone-1.14.4.jar" \
+      $(find src/main/java src/test/java -name "*.java")
+
+java -jar lib/junit-platform-console-standalone-1.14.4.jar execute \
+     --class-path "out:lib/h2-2.3.232.jar:lib/junit-platform-console-standalone-1.14.4.jar" \
+     --select-class=com.aptech.a5.StudentRepositoryTest \
+     --details=tree --disable-ansi-colors</code></pre>
+      <p>
+        (On Windows, <code>;</code> not <code>:</code>. Both jars are already in the starter&rsquo;s
+        <code>lib/</code> &mdash; nothing to download. <code>lib/README.txt</code> covers adding them
+        in an IDE, which is the recommended route.) <strong>A <code>TODO</code> test throws
+        <code>UnsupportedOperationException</code> until you write it</strong>, so an unfinished
+        requirement appears as a red test naming its own <code>TODO</code> rather than as a compile
+        error &mdash; you can see your progress instead of your first mistake.
+      </p>
+      <div class="assignment-card__rubric">
+        <div class="assignment-card__rubric-item"><strong>The suite names no implementation</strong> Apart from <code>stores()</code>, no test method mentions a concrete store. If a test body says <code>new InMemoryStudentRepository()</code>, the suite is no longer a test of the interface.</div>
+        <div class="assignment-card__rubric-item"><strong>Every test states a behaviour</strong> Method names read as sentences &mdash; <code>saveRefusesAnUnknownId</code>, not <code>testSave3</code>. Each assertion carries a message saying what a failure would mean.</div>
+        <div class="assignment-card__rubric-item"><strong>Isolation is real</strong> Fresh state per test, via <code>@BeforeEach</code> or the given <code>stores()</code>. Proof: any single test passes when run alone, and the suite passes in any order.</div>
+        <div class="assignment-card__rubric-item"><strong>The null mark survives the round trip</strong> A student saved with no mark reads back with a <code>null</code> mark, a dash for a grade, and their real course &mdash; against <strong>both</strong> stores. This is the test that catches <code>wasNull()</code> on H2 and empty-field parsing on the in-memory side.</div>
+        <div class="assignment-card__rubric-item"><strong>Nothing asserts what the code happens to do</strong> No test pins a count that is true only because of today&rsquo;s seed data, and no test asserts the current behaviour of something the interface does not promise. If you kept such a test, the critique explains why.</div>
+        <div class="assignment-card__rubric-item"><strong>The failing test is deliberate and explained</strong> Requirement 3&rsquo;s test is clearly commented as intentional, names the behaviour, and sits apart from the passing suite so a reader is not left guessing whether your work is broken.</div>
+        <div class="assignment-card__rubric-item"><strong>The critique is the marked work</strong> The prompt, the decisions, and the reasons are all present. &ldquo;It passed&rdquo; is not a reason. &ldquo;It asserted a count that only holds for the seed data, so I replaced it with a case-insensitivity check&rdquo; is.</div>
+        <div class="assignment-card__rubric-item"><strong>Every kept test can fail</strong> Each kept test has a mutation behind it &mdash; you broke the code and watched it go red. This is the requirement students most often skip, and the one that most separates a real suite from a plausible one.</div>
+        <div class="assignment-card__rubric-item"><strong>SelfCheck still passes</strong> Your repository refactor from Part 1 is untouched, all twelve checks still pass, and <code>grep -rn "new H2StudentRepository\|new InMemoryStudentRepository" src/main/java</code> still returns hits in the factory and nowhere else.</div>
+      </div>
+      <p><strong>The AI rule for this half, stated plainly.</strong> An assistant may explain a concept, review your test cases, suggest cases you missed, and generate a draft for you to critique &mdash; that draft <em>is</em> requirement 4. It may not write the suite you submit. You will defend any line you hand in, in a viva, and the defence is easier than it sounds: you will have broken the code yourself, so you will know which test caught it.</p>
+    </div>
+  </div>
+
+  <!-- ===== 22. FURTHER STUDY ============================================== -->
+  <h2>&#128250; Further Study</h2>
+  <h3>Read (official &amp; trusted)</h3>
+  <ul>
+    <li><a href="https://docs.junit.org/5.14.4/user-guide/" target="_blank" rel="noopener">The JUnit 5.14.4 User Guide</a>: the reference for everything today, pinned to the version this course uses. Read the <em>Writing Tests</em> and <em>Parameterized Tests</em> sections in full &mdash; they are short, and they are the two parts this session used. (Bookmark the 5.14.4 link rather than a &ldquo;current&rdquo; one: the JUnit project has started publishing JUnit 6 under &ldquo;current&rdquo;, and its pages will not match what you are running.)</li>
+    <li><a href="https://docs.junit.org/5.14.4/api/org.junit.jupiter.api/org/junit/jupiter/api/Assertions.html" target="_blank" rel="noopener">JUnit 5.14.4 API &mdash; <code>Assertions</code></a>: every assertion that exists, on one page. Worth reading once from top to bottom; most people use eight of them and guess at the rest.</li>
+    <li><a href="https://docs.junit.org/5.14.4/user-guide/" target="_blank" rel="noopener">JUnit 5.14.4 User Guide &mdash; the <em>Console Launcher</em> section</a>: the tool this page&rsquo;s output comes from, including every <code>--select-*</code> option, the <code>--details</code> levels and the exit codes. This is how a test suite runs in a pipeline with no IDE.</li>
+    <li><a href="https://martinfowler.com/bliki/TestCoverage.html" target="_blank" rel="noopener">Martin Fowler &mdash; Test Coverage</a>: the short, precise case for why a coverage number is not a quality measure. Read it before anyone puts coverage on a dashboard near you.</li>
+    <li><a href="https://martinfowler.com/bliki/SelfTestingCode.html" target="_blank" rel="noopener">Martin Fowler &mdash; Self-Testing Code</a>: where &ldquo;if you break it, something goes red&rdquo; comes from, and why it is one of the two or three ideas that separate a maintainable codebase from a fragile one.</li>
+    <li><a href="https://docs.junit.org/5.14.4/user-guide/" target="_blank" rel="noopener">JUnit 5.14.4 User Guide &mdash; the <em>test execution order</em> section</a>: why the default order is deliberately unspecified, and what depending on it really costs you.</li>
+    <li><a href="https://docs.devin.ai/desktop/devin-desktop-faq" target="_blank" rel="noopener">Devin Desktop FAQ</a> and <a href="https://docs.devin.ai/desktop/recommended-extensions" target="_blank" rel="noopener">Recommended Extensions</a>: the two primary sources behind Part 7.</li>
+    <li>Book: Kent Beck, <em>Test-Driven Development: By Example</em>. The book that made this normal. Read the first three chapters even if you never adopt the full discipline &mdash; the red&ndash;green&ndash;refactor loop is Part 2 at length.</li>
+  </ul>
+
+  <h3>Watch</h3>
+  <p>Each video was checked to exist and match the topic.</p>
+  <div class="video-grid">
+    <div class="video-card" data-yt="flpmSXVTqBI" data-title="Java Testing - JUnit 5 Crash Course">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java Testing - JUnit 5 Crash Course</div><div class="video-card__channel">freeCodeCamp.org</div><div class="video-card__why">Parts 2 to 4: the whole of today&rsquo;s first half at a lecture pace &mdash; a test written, run, watched go red, and fixed. Longer than this page, and easier to follow the first time.</div></div>
+    </div>
+    <div class="video-card" data-yt="vZm0lHciFsQ" data-title="Java Unit Testing with JUnit - Tutorial - How to Create And Use Unit Tests">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java Unit Testing with JUnit - Tutorial - How to Create And Use Unit Tests</div><div class="video-card__channel">Coding with John</div><div class="video-card__why">Part 2: the green &#9654; in the gutter, the red bar, and the failure message read out loud &mdash; which is the IDE route this page recommends on Windows.</div></div>
+    </div>
+    <div class="video-card" data-yt="_b9LYhzzdHg" data-title="Parameterized Tests in JUnit 5: CsvSource, MethodSource, ArgumentsSource">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Parameterized Tests in JUnit 5: CsvSource, MethodSource, ArgumentsSource</div><div class="video-card__channel">Alexander Sergeenko</div><div class="video-card__why">Part 5: <code>@MethodSource</code> beside the two sources this session does not use &mdash; worth seeing so you can tell <em>why</em> a <code>Stream&lt;Arguments&gt;</code> of stores is the right one.</div></div>
+    </div>
+    <div class="video-card" data-yt="GM3P5vAOjx8" data-title="JavaDoc: A Simple Overview">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">JavaDoc: A Simple Overview</div><div class="video-card__channel">Brandan Jones</div><div class="video-card__why">Part 9: the tags, the HTML that comes out, and what <code>javadoc</code> actually does with your comments &mdash; before an AI writes any of them for you.</div></div>
+    </div>
+    <div class="video-card" data-yt="Y5cWEg4Dofs" data-title="AI's Weakness: Unit Tests! (And How to Handle It)">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">AI's Weakness: Unit Tests! (And How to Handle It)</div><div class="video-card__channel">Josh Anderson</div><div class="video-card__why">Parts 8 and 10: an argument for the critique you are being marked on &mdash; generated tests that pass because they assert what the code does, not what it should.</div></div>
+    </div>
+  </div>
+
+  <!-- ===== 23. CHEAT SHEET ================================================ -->
+  <h2>&#128203; Cheat Sheet &mdash; the whole session in two screens</h2>
+  <div class="cheatsheet">
+    <h4>The one question</h4>
+<pre><code class="lang-text">"If I broke the code, would this test go red?"
+        yes  -&gt;  it is a test
+        no   -&gt;  it is decoration, however green it is
+
+The way to find out is NOT to read the test more carefully.
+It is to break the code and watch. Every time.</code></pre>
+
+    <h4>Anatomy &mdash; and the vocabulary</h4>
+<pre><code class="lang-java">@Test                                                  // this method IS a test
+@DisplayName("a new store is empty")                   // the human-readable name
+void aNewStoreIsEmpty() {
+    // ARRANGE  - build exactly what this test needs, and nothing else
+    StudentRepository store = new InMemoryStudentRepository();
+
+    // ACT      - one call, the one under test
+    Student stored = store.save(ada());
+
+    // ASSERT   - EXPECTED first, ACTUAL second. Always.
+    assertEquals("Ada Lovelace", stored.name());
+}</code></pre>
+
+    <h4>Assertions</h4>
+<pre><code class="lang-java">assertEquals(expected, actual);                        // ORDER MATTERS for the message
+assertEquals(expected, actual, "why this matters");
+assertNotEquals(before, after);
+assertTrue(cond);            assertFalse(cond);
+assertNull(x);               assertNotNull(x);
+assertThrows(IllegalArgumentException.class, () -&gt; store.save(ghost));
+assertDoesNotThrow(() -&gt; store.findById(1));
+assertInstanceOf(FileBackedStudentRepository.class, store);
+assertAll("the whole student",
+        () -&gt; assertEquals("Ada", s.name()),            // runs ALL of them, then reports
+        () -&gt; assertEquals(1, s.courseId()));           // no early exit on first failure
+
+// BigDecimal: equals compares VALUE AND SCALE
+assertEquals(0, new BigDecimal("450.00").compareTo(total));   // the amount
+assertEquals("450.00", total.toPlainString());                // the scale</code></pre>
+
+    <h4>The lifecycle, in order</h4>
+<pre><code class="lang-java">@BeforeAll  static void onceBeforeAnything() { }   // static: no instance exists yet
+@BeforeEach       void freshStatePerTest()  { }   // runs before EVERY @Test
+@AfterEach        void cleanUpPerTest()     { }
+@AfterAll   static void onceAtTheVeryEnd()  { }
+
+@TempDir Path folder;   // field OR parameter. JUnit creates a fresh folder per test
+                        // and deletes it afterwards. This is why a file store is testable.</code></pre>
+
+    <h4>One suite, two stores &mdash; the centre of the session</h4>
+<pre><code class="lang-java">@ParameterizedTest(name = "{0}: a new store is empty")
+@MethodSource("stores")                                  // must be static (default lifecycle)
+void aNewStoreIsEmpty(StudentRepository store) { ... }   // no store is ever named here
+
+static Stream&lt;Arguments&gt; stores() {
+    return Stream.of(
+        Arguments.of(Named.of("in-memory", new InMemoryStudentRepository())),
+        Arguments.of(Named.of("file", new FileBackedStudentRepository(newStoreFolder()))));
+}
+// ONE value per Arguments.of. Two values -> JUnit puts the String in the store parameter.
+// "file:" printed by {0} is the Named label, NOT a second argument.
+// Twelve test methods -&gt; 24 runs. Add a third store: EVERY test checks it, no test changes.
+// stores() is called once PER TEST METHOD - hence a new folder each time.</code></pre>
+
+    <h4>Running it without an IDE</h4>
+<pre><code class="lang-bash">javac -encoding UTF-8 -d out -cp "lib/junit-platform-console-standalone-1.14.4.jar" \
+      $(find src/main/java src/test/java -name "*.java")
+
+java -jar lib/junit-platform-console-standalone-1.14.4.jar execute \
+     --class-path "out:lib/junit-platform-console-standalone-1.14.4.jar" \
+     --select-class=com.aptech.s10.tests.E01_FirstTest \
+     --disable-ansi-colors
+#    --select-package com.aptech.s10.tests     every class
+#    --details=tree                            show the fan-out, and the timings
+#    --disable-ansi-colors                     no escape codes: needed when piping to a file
+# separator: ':' on macOS/Linux, ';' on Windows
+# exit code 0 = all green, non-zero = something failed. THAT is the pipeline interface.</code></pre>
+
+    <h4>The four shapes of a test that cannot fail</h4>
+<pre><code class="lang-text">1. no assertion at all
+2. the assertion is inside a try whose catch swallows the failure
+3. a try/catch around the call under test, absorbing the exception you meant to catch
+4. asserting a value against itself
+
+...and the fifth, which is green and looks fine:
+5. the test asserts what the code DOES, not what the interface PROMISES
+   (the most common defect in a generated suite - Mistake 5)</code></pre>
+
+    <h4>The AI loop</h4>
+<pre><code class="lang-text">PROMPT      name the interface, the behaviours, the framework, the exclusions,
+            and ask for a one-line reason per test
+GENERATE    it has never run your program. Green means "consistent with the code",
+            and a test written from the code is consistent by construction.
+CRITIQUE    if I broke this, would it go red?  break it. watch. decide.
+DECIDE      keep / fix / reject - WITH A REASON. The reason is the marked work.</code></pre>
+
+    <h4>Why two stores</h4>
+<pre><code class="lang-text">Passes in memory, fails on file:
+    the test was describing the in-memory store, not the interface.
+    That is the bug this design exists to find - and it is why Session 9
+    spent a week extracting an interface with no java.sql in it.</code></pre>
+  </div>
+
+  <!-- ===== 24. SUMMARY =================================================== -->
+  <h2>&#127891; Session Summary</h2>
+  <ol>
+    <li><strong>A test is only a test if it can fail.</strong> The question is never &ldquo;does it pass?&rdquo; but &ldquo;if I broke the code, would this go red?&rdquo; &mdash; and the only way to answer it is to break the code and watch.</li>
+    <li><strong><code>assertEquals(expected, actual)</code> &mdash; expected first.</strong> Swap them and everything still passes while every failure message you ever read is backwards. Nothing catches this; only a habit does.</li>
+    <li><strong><code>@BeforeEach</code> is what makes a test order-independent.</strong> A test that only passes after another has run is a step in a script. Run one test alone, or run the suite in a different order, and you will know.</li>
+    <li><strong><code>assertAll</code> reports every failure, not the first.</strong> One round trip through the edit&ndash;compile&ndash;run loop instead of four.</li>
+    <li><strong><code>BigDecimal.equals</code> compares scale as well as value.</strong> <code>450.0</code> is not <code>450.00</code>. Use <code>compareTo == 0</code> when you mean the amount.</li>
+    <li><strong>One suite, two stores, is the centre of this session.</strong> <code>@ParameterizedTest</code> plus a <code>@MethodSource</code> returning <code>Stream&lt;Arguments&gt;</code> runs twelve methods twenty-four times. Add a third store and every test checks it without a line changing.</li>
+    <li><strong>A test that passes in memory and fails on the file store was describing the in-memory store.</strong> That is what a second implementation is <em>for</em>. It is not extra work &mdash; it is the only way to find out whether the contract you wrote down is the contract you meant.</li>
+    <li><strong><code>@TempDir</code> is why a file store is testable.</strong> JUnit makes a fresh folder per test and deletes it. Without it, a green suite depends on the order the tests happened to run in.</li>
+    <li><strong>A deliberately failing suite is a result, not a broken tool.</strong> A red run exits non-zero, and that exit code is the interface between a test runner and the pipeline around it.</li>
+    <li><strong>A suite that is entirely red tells you nothing.</strong> Three named failures out of four tells you exactly which behaviours are wrong and that the rest still work &mdash; which is why Example 5 sabotages exactly three methods.</li>
+    <li><strong>A green tick is not evidence unless the test could have gone red.</strong> Example 6 is four tests that assert nothing, and all four pass.</li>
+    <li><strong>Coverage measures what ran, never what was checked.</strong> Example 6 would score well on it. That is why this course installs no coverage tool.</li>
+    <li><strong>Write tests against the interface and its javadoc, not against the class in front of you.</strong> A test that records current behaviour freezes current bugs, and it is the most common defect in a generated suite.</li>
+    <li><strong>An assistant has never run your program.</strong> It produced text that is consistent with the code it read. Green means &ldquo;consistent&rdquo;, which is not the same as &ldquo;correct&rdquo;, and definitely not the same as &ldquo;tested&rdquo;.</li>
+    <li><strong>The critique is the marked work, not the generation.</strong> Generating tests now takes seconds and will only get cheaper; knowing whether a suite is worth anything is a judgement, and judgement is what you are being trained for.</li>
+    <li><strong>Documentation that restates the signature is decoration.</strong> Delete the comment, read the signature, and ask what you just lost. If the answer is a fact you could not have guessed, it was worth writing.</li>
+    <li><strong><code>javadoc -Xdoclint:all</code> catches drift the compiler cannot.</strong> A <code>@param</code> for a parameter that no longer exists, a <code>@throws</code> for an exception the method cannot throw.</li>
+    <li><strong>Verify your tools against primary sources.</strong> A tool you learned six months ago may have been renamed, and the vendor&rsquo;s own documentation is the only reliable answer. Part 7 spent thirty seconds on exactly this.</li>
+    <li><strong>A suite is what lets you change code you did not write.</strong> The measure is not how many tests it has; it is how much of your own code you are willing to rewrite on a Friday afternoon because you know something is watching.</li>
+  </ol>
+
+  <div class="newwords"><b>&#128218; All new words from this session</b>
+    <dl>
+      <dt>Unit test</dt><dd>A test of one piece of behaviour, run without a database, a network, a user interface or a person. Fast, isolated, and repeatable.</dd>
+      <dt>Test suite</dt><dd>A set of tests run together, reported together, and able to fail a build together.</dd>
+      <dt>JUnit 5</dt><dd>The standard testing framework for Java. Jupiter is the part you write against; the Platform is the part that finds and runs what you wrote.</dd>
+      <dt>Jupiter</dt><dd>The JUnit 5 module providing <code>@Test</code> and the assertions &mdash; the API in your test files.</dd>
+      <dt>Test engine</dt><dd>The part that actually discovers and executes tests. Jupiter is one; the Platform can host others.</dd>
+      <dt>Console Launcher</dt><dd>The command-line runner inside the standalone jar. Runs a suite with no IDE, and returns an exit code a pipeline can read.</dd>
+      <dt><code>@Test</code></dt><dd>Marks a method as a test. It must be non-static, take no parameters and return <code>void</code>.</dd>
+      <dt>Assertion</dt><dd>A statement that a fact must hold. If it does not, the test fails and the message says why.</dd>
+      <dt><code>assertEquals(expected, actual)</code></dt><dd>Value equality, in that order &mdash; the order decides which value the failure message calls &ldquo;expected&rdquo;.</dd>
+      <dt><code>assertThrows</code></dt><dd>Asserts that a piece of code throws a particular exception &mdash; and hands you the exception so you can check its message.</dd>
+      <dt><code>assertAll</code></dt><dd>Groups assertions so that all of them run and all failures are reported, rather than stopping at the first.</dd>
+      <dt><code>@DisplayName</code></dt><dd>A human-readable name for a test, printed instead of the method name.</dd>
+      <dt><code>@BeforeEach</code> / <code>@AfterEach</code></dt><dd>Setup and teardown that run around <em>every</em> test. Where isolation comes from.</dd>
+      <dt><code>@BeforeAll</code> / <code>@AfterAll</code></dt><dd>Setup and teardown that run once for the whole class. Must be <code>static</code>, because no test instance exists yet.</dd>
+      <dt>Test lifecycle</dt><dd>The order JUnit runs things in: all-lifecycle, then each test&rsquo;s before, test, after, then all-lifecycle again.</dd>
+      <dt>Test isolation</dt><dd>The property that a test&rsquo;s result does not depend on any other test having run, or on the order. The thing <code>@BeforeEach</code> buys.</dd>
+      <dt>Fixture</dt><dd>The state a test needs before it can run &mdash; the students in the store, the folder on disk. Built per test, never shared.</dd>
+      <dt>Parameterized test</dt><dd>One test method run many times with different inputs, reported as separate invocations: <code>@ParameterizedTest</code>.</dd>
+      <dt><code>@MethodSource</code></dt><dd>Supplies a parameterized test&rsquo;s arguments from a method. Must be <code>static</code> under the default lifecycle, and is called once per test method.</dd>
+      <dt><code>Arguments</code></dt><dd>One row of inputs for a parameterized test. The values must match the test&rsquo;s parameters in number, order and type.</dd>
+      <dt>Mutation testing</dt><dd>Deliberately breaking the code to see whether the tests notice. Doing it by hand is the fastest way to learn what a suite is really worth.</dd>
+      <dt><code>@TempDir</code></dt><dd>A JUnit-managed temporary folder, fresh for each test and deleted afterwards. What makes a file-backed store testable.</dd>
+      <dt>Exit code</dt><dd>The number a program returns to its caller. Zero for a green suite, non-zero for a failure &mdash; the interface between a test runner and CI.</dd>
+      <dt>Test coverage</dt><dd>The fraction of lines executed during a test run. It measures what ran, not what was checked &mdash; which is why this session argues confidence over coverage.</dd>
+      <dt>Regression</dt><dd>A bug that reappears, or a new one caused by a change. What a test suite exists to catch.</dd>
+      <dt>Confidence</dt><dd>What a good suite actually produces: the willingness to change code you did not write. The only measure worth optimising.</dd>
+      <dt>doclint</dt><dd>The JDK&rsquo;s Javadoc checker, enabled with <code>-Xdoclint:all</code>. Catches broken links and <code>@param</code>/<code>@throws</code> tags that no longer match the code.</dd>
+      <dt>Open VSX Registry</dt><dd>The extension registry the Devin Desktop documentation names, reached through the Extensions panel. Not the Microsoft VS Code Marketplace.</dd>
+      <dt>Devin Desktop</dt><dd>The current name for the IDE previously called Windsurf, renamed by an over-the-air update on 2 June 2026. Same editor, same features, new branding.</dd>
+      <dt>Red&ndash;green loop</dt><dd>Write a test that fails, make it pass, then improve the code with the test holding it steady. The loop at the centre of test-driven development.</dd>
+    </dl>
+  </div>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Next session: Session 11 &mdash; Java Data Structures</b>
+      Today you learned to check that code does what it promises. Next week you meet the collections
+      the promises are built on: <code>List</code>, <code>Set</code>, <code>Map</code> and
+      <code>Queue</code> as <em>choices</em> with consequences &mdash; what each one costs, when a
+      lookup is O(1) and when it quietly is not, and why <code>HashMap</code> needs
+      <code>equals</code> and <code>hashCode</code> to agree. You have already met the failure mode:
+      <code>E04</code>&rsquo;s <code>findAll</code> hands out a copy because a <code>List</code> you
+      can reach into is a <code>List</code> you can corrupt &mdash; and Session 11 is the session that
+      explains, properly, what you were protecting against.
+      <br><br>
+      <strong>Bring your A5 suite.</strong> It is due before the start of that session, and the
+      mutation table from Practice 1 is the part worth showing.
+    </div>
+  </div>
+
+
+
+
+
+</main>
+
+<script src="../assets/js/course.js"></script>
+</body>
+</html>

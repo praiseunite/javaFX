@@ -16,10 +16,14 @@ tools/verify-playgrounds/cases-i18n.txt
 # Build output and IDE files
 target/
 out/
+bin/
 *.class
 .idea/
 *.iml
 .vscode/
+.project
+.classpath
+.settings/
 
 # OS clutter
 .DS_Store

@@ -37,7 +37,7 @@
 
     { group: "Week 3 — Design & Testing" },
     { slug: "s09", file: "sessions/s09-design-patterns.html",    unit: "Session 9",  title: "Design Patterns & Advanced Features" },
-    { slug: "s10", file: "sessions/s10-unit-testing-ai.html",    unit: "Session 10", title: "Unit Testing & AI Tools", coming: true },
+    { slug: "s10", file: "sessions/s10-unit-testing-ai.html",    unit: "Session 10", title: "Unit Testing & AI Tools" },
     { slug: "s11", file: "sessions/s11-data-structures.html",    unit: "Session 11", title: "Java Data Structures", coming: true },
     { slug: "s12", file: "sessions/s12-review-2.html",           unit: "Review",     title: "Try It Yourself: Sessions 6–10", coming: true },
 

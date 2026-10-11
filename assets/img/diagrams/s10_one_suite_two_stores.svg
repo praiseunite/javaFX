@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 452" width="100%" height="100%">
+  <defs>
+    <filter id="osShadow" x="-8%" y="-8%" width="116%" height="125%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.10"/>
+    </filter>
+    <marker id="osArrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub   { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .step  { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 800; fill: #94a3b8; letter-spacing: .06em; }
+    .name  { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 800; fill: #0f172a; }
+    .code  { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10.5px; fill: #334155; }
+    .mini  { font-family: system-ui, -apple-system, sans-serif; font-size: 10.5px; fill: #475569; }
+    .lbl   { font-family: system-ui, -apple-system, sans-serif; font-size: 10.5px; font-weight: 700; fill: #64748b; }
+    .note  { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; fill: #334155; }
+  </style>
+
+  <rect width="900" height="452" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">One suite, two stores: write the test once, run it twice</text>
+  <text x="30" y="54" class="sub">The test is written against the interface and never names an implementation, so JUnit can hand it either store.</text>
+
+  <g filter="url(#osShadow)">
+    <rect x="24"  y="110" width="252" height="200" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+    <rect x="316" y="140" width="252" height="140" rx="10" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+    <rect x="592" y="100" width="284" height="94"  rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+    <rect x="592" y="216" width="284" height="94"  rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  </g>
+
+  <!-- the suite -->
+  <text x="40" y="134" class="step">THE SUITE &#183; WRITTEN ONCE</text>
+  <text x="40" y="158" class="name">@ParameterizedTest</text>
+  <text x="40" y="178" class="code">@MethodSource("stores")</text>
+  <text x="40" y="196" class="code">void searchIsCaseInsensitive(</text>
+  <text x="40" y="212" class="code">        StudentRepository store) {</text>
+  <text x="40" y="232" class="code">    assertTrue(store</text>
+  <text x="40" y="248" class="code">        .findByNameContaining(</text>
+  <text x="40" y="264" class="code">            "TURING").isEmpty());</text>
+  <text x="40" y="290" class="mini">Written against the interface.</text>
+  <text x="40" y="304" class="mini">Names no implementation at all.</text>
+
+  <!-- the method source -->
+  <text x="332" y="162" class="step">THE METHOD SOURCE</text>
+  <text x="332" y="184" class="name">stores()</text>
+  <text x="332" y="206" class="code">Arguments.of("in-memory", new</text>
+  <text x="332" y="222" class="code">    InMemoryStudentRepository())</text>
+  <text x="332" y="240" class="code">Arguments.of("file", new File</text>
+  <text x="332" y="256" class="code">    BackedStudentRepository(dir))</text>
+  <text x="332" y="274" class="mini">a name to print, and a store to test</text>
+
+  <!-- the two runs -->
+  <text x="608" y="124" class="step">RUN 1</text>
+  <text x="608" y="147" class="name">in-memory</text>
+  <text x="608" y="167" class="mini">the same test, the same assertions</text>
+  <text x="608" y="181" class="mini">an empty ArrayList behind them</text>
+
+  <text x="608" y="240" class="step">RUN 2</text>
+  <text x="608" y="263" class="name">file</text>
+  <text x="608" y="283" class="mini">the same test, the same assertions</text>
+  <text x="608" y="297" class="mini">a folder on disk behind them</text>
+
+  <!-- arrows -->
+  <line x1="276" y1="205" x2="312" y2="205" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#osArrow)"/>
+  <text x="294" y="197" class="lbl" text-anchor="middle">calls</text>
+
+  <text x="578" y="136" class="lbl" text-anchor="middle">two stores</text>
+  <path d="M568,205 H578 V147 H588" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#osArrow)"/>
+  <path d="M568,205 H578 V263 H588" fill="none" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#osArrow)"/>
+
+  <rect x="24" y="330" width="852" height="52" rx="9" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+  <text x="44" y="351" class="note">Add a third implementation and every test in this file starts checking it, without a line below changing. That is</text>
+  <text x="44" y="369" class="note">what a second store is for &#8212; not extra work, but the only way to find out what your interface really promises.</text>
+
+  <rect x="24" y="394" width="852" height="50" rx="9" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="44" y="414" class="note">If a test passes against one store and fails against the other, the test was describing the store, not the interface.</text>
+  <text x="44" y="432" class="note">Fix the interface or fix the store &#8212; never the assertion. Assignment A5 runs this same suite against your in-memory and H2 stores.</text>
+</svg>

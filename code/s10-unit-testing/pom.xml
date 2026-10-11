@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Session 10 — Unit Testing & AI Tools: JUnit 5 against the Student Registry repository
+  interface from Session 9, and the second half of assignment A5.
+
+  Open this folder in IntelliJ (File → Open → select this folder). The JUnit jar is already
+  in lib/; on first open add it with:
+      File → Project Structure → Libraries → + → Java → select lib/junit-platform-console-standalone-1.14.4.jar
+  Then any test class gets a green ▶ in the gutter. Maven users get the same library from the
+  <dependency> below instead — either route works, and nothing is downloaded at run time.
+
+  There is NO database here on purpose. This session is about tests, so the file store writes
+  to a folder JUnit creates and deletes for each test (@TempDir) — see E03 and E04.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.aptech</groupId>
+    <artifactId>s10-unit-testing</artifactId>
+    <version>1.0</version>
+    <name>Session 10 - Unit Testing and AI Tools</name>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <junit.version>5.14.4</junit.version>
+    </properties>
+
+    <dependencies>
+        <!-- JUnit 5. junit-jupiter is the aggregate artifact: it brings the @Test annotations
+             (jupiter-api), the assertions, and the engine that actually runs them
+             (jupiter-engine). The vendored lib/junit-platform-console-standalone jar is the
+             offline path and contains the same thing plus the launcher, in one file. -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- surefire is what `mvn test` calls. This version is new enough to find JUnit 5
+                 on the classpath and to run @ParameterizedTest without extra configuration. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+            </plugin>
+        </plugins>
+    </build>
+</project>

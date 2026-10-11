@@ -13,7 +13,7 @@
 
 <main class="page">
   <section class="hero">
-    <span class="tag">Reference &middot; 70 videos &middot; 53 readings</span>
+    <span class="tag">Reference &middot; 75 videos &middot; 60 readings</span>
     <h1>Further Study &amp; Videos</h1>
     <p class="lede">
       Every video and every documentation link the sessions recommend, gathered in one place and
@@ -21,8 +21,8 @@
       revision strategy. Each card says <em>which part of the session</em> it supports.
     </p>
     <div class="meta">
-      <span>&#128250; 70 videos</span>
-      <span>&#128214; 53 readings</span>
+      <span>&#128250; 75 videos</span>
+      <span>&#128214; 60 readings</span>
       <span>&#127760; Videos need internet &mdash; everything else is offline</span>
     </div>
   </section>
@@ -487,6 +487,42 @@
     <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/nio/ByteBuffer.html" target="_blank" rel="noopener">Java 25 API &mdash; <code>ByteBuffer</code></a> read <code>flip</code>, <code>clear</code> and <code>compact</code> side by side, with their <em>invariants</em> &mdash; it is the fastest way to stop confusing the three.</li>
     <li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-8.html#jls-8.10" target="_blank" rel="noopener">The Java Language Specification &mdash; records</a> the normative description of what a record gives you, including the compact constructor from Part 11.</li>
     <li><a href="guides/databases.html">H2 &amp; MySQL guide</a> &mdash; what changes when the registry lives on another machine, which is where a repository interface starts paying for itself.</li>
+  </ul>
+
+  <h2 id="s10-unit-testing-ai">Session 10 &mdash; Unit Testing &amp; AI Tools</h2>
+  <p class="text-sm"><a href="sessions/s10-unit-testing-ai.html">Open Session 10 &rarr;</a></p>
+  <h3>Watch</h3>
+  <div class="video-grid">
+    <div class="video-card" data-yt="flpmSXVTqBI" data-title="Java Testing - JUnit 5 Crash Course">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java Testing - JUnit 5 Crash Course</div><div class="video-card__channel">freeCodeCamp.org</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="vZm0lHciFsQ" data-title="Java Unit Testing with JUnit - Tutorial - How to Create And Use Unit Tests">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java Unit Testing with JUnit - Tutorial - How to Create And Use Unit Tests</div><div class="video-card__channel">Coding with John</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="_b9LYhzzdHg" data-title="Parameterized Tests in JUnit 5: CsvSource, MethodSource, ArgumentsSource">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Parameterized Tests in JUnit 5: CsvSource, MethodSource, ArgumentsSource</div><div class="video-card__channel">Alexander Sergeenko</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="GM3P5vAOjx8" data-title="JavaDoc: A Simple Overview">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">JavaDoc: A Simple Overview</div><div class="video-card__channel">Brandan Jones</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="Y5cWEg4Dofs" data-title="AI's Weakness: Unit Tests! (And How to Handle It)">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">AI's Weakness: Unit Tests! (And How to Handle It)</div><div class="video-card__channel">Josh Anderson</div><div class="video-card__why"></div></div>
+    </div>
+  </div>
+  <h3>Read (official &amp; trusted)</h3>
+  <ul>
+    <li><a href="https://docs.junit.org/5.14.4/user-guide/" target="_blank" rel="noopener">The JUnit 5.14.4 User Guide</a> the reference for everything today, pinned to the version this course uses. Read the <em>Writing Tests</em> and <em>Parameterized Tests</em> sections in full &mdash; they are short, and they are the two parts this session used. (Bookmark the 5.14.4 link rather than a &ldquo;current&rdquo; one: the JUnit project has started publishing JUnit 6 under &ldquo;current&rdquo;, and its pages will not match what you are running.)</li>
+    <li><a href="https://docs.junit.org/5.14.4/api/org.junit.jupiter.api/org/junit/jupiter/api/Assertions.html" target="_blank" rel="noopener">JUnit 5.14.4 API &mdash; <code>Assertions</code></a> every assertion that exists, on one page. Worth reading once from top to bottom; most people use eight of them and guess at the rest.</li>
+    <li><a href="https://docs.junit.org/5.14.4/user-guide/" target="_blank" rel="noopener">JUnit 5.14.4 User Guide &mdash; the <em>Console Launcher</em> section</a> the tool this page&rsquo;s output comes from, including every <code>--select-*</code> option, the <code>--details</code> levels and the exit codes. This is how a test suite runs in a pipeline with no IDE.</li>
+    <li><a href="https://martinfowler.com/bliki/TestCoverage.html" target="_blank" rel="noopener">Martin Fowler &mdash; Test Coverage</a> the short, precise case for why a coverage number is not a quality measure. Read it before anyone puts coverage on a dashboard near you.</li>
+    <li><a href="https://martinfowler.com/bliki/SelfTestingCode.html" target="_blank" rel="noopener">Martin Fowler &mdash; Self-Testing Code</a> where &ldquo;if you break it, something goes red&rdquo; comes from, and why it is one of the two or three ideas that separate a maintainable codebase from a fragile one.</li>
+    <li><a href="https://docs.junit.org/5.14.4/user-guide/" target="_blank" rel="noopener">JUnit 5.14.4 User Guide &mdash; the <em>test execution order</em> section</a> why the default order is deliberately unspecified, and what depending on it really costs you.</li>
+    <li><a href="https://docs.devin.ai/desktop/devin-desktop-faq" target="_blank" rel="noopener">Devin Desktop FAQ</a> and <a href="https://docs.devin.ai/desktop/recommended-extensions" target="_blank" rel="noopener">Recommended Extensions</a>: the two primary sources behind Part 7.</li>
   </ul>
 
   <h2 id="databases">Guide &mdash; H2 &amp; MySQL: the two databases</h2>

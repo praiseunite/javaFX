@@ -20,5 +20,28 @@
       <artifactId>h2</artifactId>
       <version>2.3.232</version>
     </dependency>
+
+    <!-- Part 2 of this assignment. junit-jupiter brings the @Test annotations, the assertions
+         and the parameterised tests. It is here for students with Maven and an internet
+         connection; the vendored lib/junit-platform-console-standalone jar is the offline path
+         and is the one the course actually uses, so both routes do the same job. -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.14.4</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <!-- `mvn test` needs to know to look in src/test/java, and surefire is what runs the
+           tests once they are compiled. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.2</version>
+      </plugin>
+    </plugins>
+  </build>
 </project>

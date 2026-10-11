@@ -13,7 +13,7 @@
 
 <main class="page">
   <section class="hero">
-    <span class="tag">Reference &middot; 158 terms</span>
+    <span class="tag">Reference &middot; 187 terms</span>
     <h1>Glossary A&ndash;Z</h1>
     <p class="lede">
       Every word the course introduces in one place. Each entry is the definition as the session
@@ -21,7 +21,7 @@
       class, you can find it again here in seconds. Nothing on this page needs the internet.
     </p>
     <div class="meta">
-      <span>&#128218; 158 terms</span>
+      <span>&#128218; 187 terms</span>
       <span>&#128203; Bridge B1&ndash;B7 &middot; Sessions 1&ndash;8</span>
       <span>&#128269; Filter as you type</span>
     </div>
@@ -54,6 +54,36 @@
     <dl>
       <dt>API</dt>
       <dd>Ready-made classes and methods you can use. <span class="text-faint">&mdash; Session 1</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>Arguments</code></dt>
+      <dd>One row of inputs for a parameterized test. The values must match the test&rsquo;s parameters in number, order and type. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>assertAll</code></dt>
+      <dd>Groups assertions so that all of them run and all failures are reported, rather than stopping at the first. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>assertEquals(expected, actual)</code></dt>
+      <dd>Value equality, in that order &mdash; the order decides which value the failure message calls &ldquo;expected&rdquo;. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Assertion</dt>
+      <dd>A statement that a fact must hold. If it does not, the test fails and the message says why. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>assertThrows</code></dt>
+      <dd>Asserts that a piece of code throws a particular exception &mdash; and hands you the exception so you can check its message. <span class="text-faint">&mdash; Session 10</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -98,6 +128,18 @@
     <dl>
       <dt>BatchUpdateException</dt>
       <dd>The failure a batch throws; <code>getUpdateCounts()</code> reports which statements had already run. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>@BeforeAll</code> / <code>@AfterAll</code></dt>
+      <dd>Setup and teardown that run once for the whole class. Must be <code>static</code>, because no test instance exists yet. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>@BeforeEach</code> / <code>@AfterEach</code></dt>
+      <dd>Setup and teardown that run around <em>every</em> test. Where isolation comes from. <span class="text-faint">&mdash; Session 10</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -236,6 +278,12 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Confidence</dt>
+      <dd>What a good suite actually produces: the willingness to change code you did not write. The only measure worth optimising. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Connection</dt>
       <dd>An open session with the database. A resource: close it when done. <span class="text-faint">&mdash; Session 7</span></dd>
     </dl>
@@ -250,6 +298,12 @@
     <dl>
       <dt>Console</dt>
       <dd>The class for talking to a real terminal, including hidden password input. <span class="text-faint">&mdash; Session 3</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Console Launcher</dt>
+      <dd>The command-line runner inside the standalone jar. Runs a suite with no IDE, and returns an exit code a pipeline can read. <span class="text-faint">&mdash; Session 10</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -304,8 +358,26 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Devin Desktop</dt>
+      <dd>The current name for the IDE previously called Windsurf, renamed by an over-the-air update on 2 June 2026. Same editor, same features, new branding. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Dirty read</dt>
       <dd>Reading a row another transaction changed but has not committed. <span class="text-faint">&mdash; Session 8</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>@DisplayName</code></dt>
+      <dd>A human-readable name for a test, printed instead of the method name. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>doclint</dt>
+      <dd>The JDK&rsquo;s Javadoc checker, enabled with <code>-Xdoclint:all</code>. Catches broken links and <code>@param</code>/<code>@throws</code> tags that no longer match the code. <span class="text-faint">&mdash; Session 10</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -344,6 +416,12 @@
     <dl>
       <dt><code>ExecutorService</code></dt>
       <dd>An object that runs submitted tasks on threads for you (more in Session 5). <span class="text-faint">&mdash; Session 4</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Exit code</dt>
+      <dd>The number a program returns to its caller. Zero for a green suite, non-zero for a failure &mdash; the interface between a test runner and CI. <span class="text-faint">&mdash; Session 10</span></dd>
     </dl>
   </div>
 
@@ -394,6 +472,12 @@
     <dl>
       <dt>FileSystem</dt>
       <dd>An abstraction over <em>a</em> file system &mdash; the disk, or the contents of a zip file, addressed the same way. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Fixture</dt>
+      <dd>The state a test needs before it can run &mdash; the students in the store, the folder on disk. Built per test, never shared. <span class="text-faint">&mdash; Session 10</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -560,6 +644,18 @@
       <dd>Wait for another thread / pause this one / politely ask a thread to stop. <span class="text-faint">&mdash; Session 4</span></dd>
     </dl>
   </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>JUnit 5</dt>
+      <dd>The standard testing framework for Java. Jupiter is the part you write against; the Platform is the part that finds and runs what you wrote. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Jupiter</dt>
+      <dd>The JUnit 5 module providing <code>@Test</code> and the assertions &mdash; the API in your test files. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
 
   <h3 id="letter-k">K</h3>
   <div class="glossary-item">
@@ -616,6 +712,12 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt><code>@MethodSource</code></dt>
+      <dd>Supplies a parameterized test&rsquo;s arguments from a method. Must be <code>static</code> under the default lifecycle, and is called once per test method. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Model&ndash;View&ndash;Controller (MVC)</dt>
       <dd>A three-way split: the model decides the rules, the view decides the presentation, the controller decides the wiring. <span class="text-faint">&mdash; Session 9</span></dd>
     </dl>
@@ -624,6 +726,12 @@
     <dl>
       <dt>Multithreading</dt>
       <dd>One program doing several jobs at the same time, each on its own thread. <span class="text-faint">&mdash; Session 5</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Mutation testing</dt>
+      <dd>Deliberately breaking the code to see whether the tests notice. Doing it by hand is the fastest way to learn what a suite is really worth. <span class="text-faint">&mdash; Session 10</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -650,6 +758,12 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Open VSX Registry</dt>
+      <dd>The extension registry the Devin Desktop documentation names, reached through the Extensions panel. Not the Microsoft VS Code Marketplace. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Open/Closed principle</dt>
       <dd>Open to extension, closed to modification: add a class instead of editing the ones that work. <span class="text-faint">&mdash; Session 9</span></dd>
     </dl>
@@ -672,6 +786,12 @@
     <dl>
       <dt>Parameterized query</dt>
       <dd>A query whose values are bound through <code>?</code> &mdash; the defence against injection. <span class="text-faint">&mdash; Session 7</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Parameterized test</dt>
+      <dd>One test method run many times with different inputs, reported as separate invocations: <code>@ParameterizedTest</code>. <span class="text-faint">&mdash; Session 10</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -750,8 +870,14 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Red&ndash;green loop</dt>
+      <dd>Write a test that fails, make it pass, then improve the code with the test holding it steady. The loop at the centre of test-driven development. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Regression</dt>
-      <dd>Something that used to work and no longer does, because of a change made somewhere else. <span class="text-faint">&mdash; Session 6</span></dd>
+      <dd>A bug that reappears, or a new one caused by a change. What a test suite exists to catch. <span class="text-faint">&mdash; Session 6 · Session 10</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -928,6 +1054,48 @@
   <h3 id="letter-t">T</h3>
   <div class="glossary-item">
     <dl>
+      <dt><code>@TempDir</code></dt>
+      <dd>A JUnit-managed temporary folder, fresh for each test and deleted afterwards. What makes a file-backed store testable. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>@Test</code></dt>
+      <dd>Marks a method as a test. It must be non-static, take no parameters and return <code>void</code>. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Test coverage</dt>
+      <dd>The fraction of lines executed during a test run. It measures what ran, not what was checked &mdash; which is why this session argues confidence over coverage. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Test engine</dt>
+      <dd>The part that actually discovers and executes tests. Jupiter is one; the Platform can host others. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Test isolation</dt>
+      <dd>The property that a test&rsquo;s result does not depend on any other test having run, or on the order. The thing <code>@BeforeEach</code> buys. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Test lifecycle</dt>
+      <dd>The order JUnit runs things in: all-lifecycle, then each test&rsquo;s before, test, after, then all-lifecycle again. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Test suite</dt>
+      <dd>A set of tests run together, reported together, and able to fail a build together. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Text block</dt>
       <dd>A multi-line string literal written with <code>"""</code>, so the text in the source is the text you get. <span class="text-faint">&mdash; Session 9</span></dd>
     </dl>
@@ -994,6 +1162,12 @@
   </div>
 
   <h3 id="letter-u">U</h3>
+  <div class="glossary-item">
+    <dl>
+      <dt>Unit test</dt>
+      <dd>A test of one piece of behaviour, run without a database, a network, a user interface or a person. Fast, isolated, and repeatable. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
   <div class="glossary-item">
     <dl>
       <dt>Updatable ResultSet</dt>
