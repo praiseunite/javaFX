@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" width="100%" height="100%">
+  <defs>
+    <filter id="bsShadow" x="-8%" y="-8%" width="116%" height="125%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub   { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .head  { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 800; fill: #94a3b8; letter-spacing: .06em; }
+    .lbl   { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; font-weight: 700; fill: #475569; }
+    .bit   { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10px; font-weight: 700; }
+    .idx   { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 8.5px; fill: #94a3b8; }
+    .card  { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; font-weight: 800; }
+    .m     { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; fill: #334155; }
+    .note  { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; fill: #334155; }
+    .d     { font-family: system-ui, -apple-system, sans-serif; font-size: 10.5px; fill: #64748b; }
+  </style>
+
+  <rect width="900" height="470" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">BitSet: 64 answers packed into one long</text>
+  <text x="30" y="54" class="sub">Numbers 2, 3, 5, 7 and 11 are in the set. Nothing stores those five numbers &#8212; only the bits at their positions.</text>
+
+  <!-- word 1 -->
+  <text x="24" y="88" class="head">WORD 0 &#183; BITS 0&#8211;63</text>
+  <g filter="url(#bsShadow)">
+    <rect x="24" y="98" width="852" height="72" rx="9" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+  </g>
+
+  <!-- 16 drawn cells, each standing for 4 bits -->
+  <g>
+    <rect x="36"  y="108" width="48" height="34" rx="4" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="88"  y="108" width="48" height="34" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <rect x="140" y="108" width="48" height="34" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <rect x="192" y="108" width="48" height="34" rx="4" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="244" y="108" width="48" height="34" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <rect x="296" y="108" width="48" height="34" rx="4" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="348" y="108" width="48" height="34" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <rect x="400" y="108" width="48" height="34" rx="4" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="452" y="108" width="48" height="34" rx="4" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="504" y="108" width="48" height="34" rx="4" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="556" y="108" width="48" height="34" rx="4" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <rect x="608" y="108" width="48" height="34" rx="4" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="660" y="108" width="48" height="34" rx="4" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="712" y="108" width="48" height="34" rx="4" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="764" y="108" width="48" height="34" rx="4" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="816" y="108" width="48" height="34" rx="4" fill="#ffffff" stroke="#e2e8f0"/>
+  </g>
+
+  <g class="bit" fill="#b91c1c" text-anchor="middle">
+    <text x="112" y="130">1</text>
+    <text x="164" y="130">1</text>
+    <text x="268" y="130">1</text>
+    <text x="372" y="130">1</text>
+    <text x="580" y="130">1</text>
+  </g>
+  <g class="idx" text-anchor="middle">
+    <text x="60" y="158">0-3</text>
+    <text x="112" y="158">4-7</text>
+    <text x="164" y="158">8-11</text>
+    <text x="216" y="158">12-15</text>
+    <text x="268" y="158">16-19</text>
+    <text x="320" y="158">20-23</text>
+    <text x="372" y="158">24-27</text>
+    <text x="424" y="158">28-31</text>
+    <text x="476" y="158">32-35</text>
+    <text x="528" y="158">36-39</text>
+    <text x="580" y="158">40-43</text>
+    <text x="632" y="158">44-47</text>
+    <text x="684" y="158">48-51</text>
+    <text x="736" y="158">52-55</text>
+    <text x="788" y="158">56-59</text>
+    <text x="840" y="158">60-63</text>
+  </g>
+
+  <text x="24" y="190" class="d">Each drawn cell stands for four neighbouring numbers, so the five lit cells above are 2, 3, 5, 7 and 11.</text>
+
+  <!-- what you can ask -->
+  <text x="24" y="222" class="head">WHAT THE SAME OBJECT CAN ANSWER</text>
+  <g filter="url(#bsShadow)">
+    <rect x="24" y="232" width="412" height="146" rx="11" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  </g>
+  <text x="46" y="258" class="card" fill="#1d4ed8">Reading it back</text>
+  <text x="46" y="282" class="m">get(3) &#8594; true &#160;&#160; get(4) &#8594; false</text>
+  <text x="46" y="304" class="m">cardinality() &#8594; 5</text>
+  <text x="46" y="326" class="m">length() &#8594; 12 &#160;(highest set bit + 1)</text>
+  <text x="46" y="348" class="m">nextSetBit(4) &#8594; 5 &#160;(search from here up)</text>
+  <text x="46" y="368" class="d">toString() prints {2, 3, 5, 7, 11} &#8212; a readable set.</text>
+
+  <g filter="url(#bsShadow)">
+    <rect x="464" y="232" width="412" height="146" rx="11" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+  </g>
+  <text x="486" y="258" class="card" fill="#047857">Set algebra, in one call each</text>
+  <text x="486" y="282" class="m">a.and(b) &#160;&#160;&#160;&#160;&#8594; in both</text>
+  <text x="486" y="304" class="m">a.or(b) &#160;&#160;&#160;&#160;&#160;&#8594; in either</text>
+  <text x="486" y="326" class="m">a.xor(b) &#160;&#160;&#160;&#160;&#8594; in one but not both</text>
+  <text x="486" y="348" class="m">a.andNot(b) &#160;&#8594; in a, not in b</text>
+  <text x="486" y="368" class="d">These mutate the receiver &#8212; clone() first to keep the original.</text>
+
+  <!-- footer -->
+  <g filter="url(#bsShadow)">
+    <rect x="24" y="394" width="852" height="58" rx="9" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+  </g>
+  <text x="44" y="416" class="note"><tspan font-weight="bold">size() is a multiple of 64</tspan> &#8212; it counts the bits the BitSet has room for, not the answers in it.</text>
+  <text x="44" y="436" class="note">For this set size() is 64 while length() is 12. The sieve example prints both, so you can see the difference.</text>
+</svg>

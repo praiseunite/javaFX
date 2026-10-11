@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 580" width="100%" height="100%">
+  <defs>
+    <filter id="tgShadow" x="-8%" y="-8%" width="116%" height="125%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub   { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .head  { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 800; fill: #94a3b8; letter-spacing: .06em; }
+    .old   { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; font-weight: 700; fill: #0f172a; }
+    .new   { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; font-weight: 700; fill: #1d4ed8; }
+    .why   { font-family: system-ui, -apple-system, sans-serif; font-size: 10.5px; fill: #64748b; }
+    .pill  { font-family: system-ui, -apple-system, sans-serif; font-size: 9.5px; font-weight: 800; letter-spacing: .05em; }
+    .note  { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; fill: #334155; }
+  </style>
+
+  <rect width="900" height="580" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">Two generations of the same six ideas</text>
+  <text x="30" y="54" class="sub">Every class the manual names has a replacement &#8212; except two, which were right the first time and still are.</text>
+
+  <rect x="24" y="72" width="852" height="30" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="44"  y="92" class="head">SHIPPED 1995</text>
+  <text x="336" y="92" class="head">WHAT WE USE NOW</text>
+  <text x="700" y="92" class="head">STATUS</text>
+
+  <!-- row 1 -->
+  <text x="44"  y="132" class="old">Enumeration</text>
+  <text x="336" y="130" class="new">Iterator</text>
+  <text x="336" y="146" class="why">plus Collections.list() and asIterator() to convert</text>
+  <rect x="676" y="120" width="180" height="24" rx="12" fill="#fef2f2" stroke="#fecaca"/>
+  <text x="766" y="136" class="pill" fill="#b91c1c" text-anchor="middle">REPLACED</text>
+  <line x1="24" y1="164" x2="876" y2="164" stroke="#eef2f7"/>
+
+  <!-- row 2 -->
+  <text x="44"  y="190" class="old">Vector</text>
+  <text x="336" y="188" class="new">ArrayList</text>
+  <text x="336" y="204" class="why">locking every method was never the same as locking a sequence</text>
+  <rect x="676" y="178" width="180" height="24" rx="12" fill="#fef2f2" stroke="#fecaca"/>
+  <text x="766" y="194" class="pill" fill="#b91c1c" text-anchor="middle">REPLACED</text>
+  <line x1="24" y1="222" x2="876" y2="222" stroke="#eef2f7"/>
+
+  <!-- row 3 -->
+  <text x="44"  y="248" class="old">Stack</text>
+  <text x="336" y="246" class="new">ArrayDeque, through Deque</text>
+  <text x="336" y="262" class="why">a stack that cannot be indexed cannot be indexed wrongly</text>
+  <rect x="676" y="236" width="180" height="24" rx="12" fill="#fef2f2" stroke="#fecaca"/>
+  <text x="766" y="252" class="pill" fill="#b91c1c" text-anchor="middle">REPLACED</text>
+  <line x1="24" y1="280" x2="876" y2="280" stroke="#eef2f7"/>
+
+  <!-- row 4 -->
+  <text x="44"  y="306" class="old">Hashtable</text>
+  <text x="336" y="304" class="new">HashMap</text>
+  <text x="336" y="320" class="why">or ConcurrentHashMap when threads share it (Session 5)</text>
+  <rect x="676" y="294" width="180" height="24" rx="12" fill="#fef2f2" stroke="#fecaca"/>
+  <text x="766" y="310" class="pill" fill="#b91c1c" text-anchor="middle">REPLACED</text>
+  <line x1="24" y1="338" x2="876" y2="338" stroke="#eef2f7"/>
+
+  <!-- row 5 -->
+  <text x="44"  y="364" class="old">Dictionary</text>
+  <text x="336" y="362" class="new">Map</text>
+  <text x="336" y="378" class="why">the abstract parent; its javadoc calls itself obsolete</text>
+  <rect x="676" y="352" width="180" height="24" rx="12" fill="#fef2f2" stroke="#fecaca"/>
+  <text x="766" y="368" class="pill" fill="#b91c1c" text-anchor="middle">REPLACED</text>
+  <line x1="24" y1="396" x2="876" y2="396" stroke="#eef2f7"/>
+
+  <!-- row 6 -->
+  <text x="44"  y="422" class="old">Properties</text>
+  <text x="336" y="420" class="new">Properties</text>
+  <text x="336" y="436" class="why">config files never went away, so neither did the class that reads them</text>
+  <rect x="676" y="410" width="180" height="24" rx="12" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="766" y="426" class="pill" fill="#047857" text-anchor="middle">STILL RIGHT</text>
+  <line x1="24" y1="454" x2="876" y2="454" stroke="#eef2f7"/>
+
+  <!-- row 7 -->
+  <text x="44"  y="480" class="old">BitSet</text>
+  <text x="336" y="478" class="new">BitSet</text>
+  <text x="336" y="494" class="why">64 yes-or-no answers per long, with and/or/cardinality built in</text>
+  <rect x="676" y="468" width="180" height="24" rx="12" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="766" y="484" class="pill" fill="#047857" text-anchor="middle">STILL RIGHT</text>
+
+  <g filter="url(#tgShadow)">
+    <rect x="24" y="512" width="852" height="48" rx="9" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  </g>
+  <text x="44" y="532" class="note"><tspan font-weight="bold">None of the left-hand column is deprecated.</tspan> All six compile on JDK 21 with no warning at all.</text>
+  <text x="44" y="550" class="note">&#8220;Old&#8221; and &#8220;forbidden&#8221; are different words &#8212; and the difference is the whole session.</text>
+</svg>

@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" width="100%" height="100%">
+  <defs>
+    <filter id="dgShadow" x="-8%" y="-8%" width="116%" height="125%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.10"/>
+    </filter>
+    <marker id="dgArr" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#3b82f6"/>
+    </marker>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub   { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .head  { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 800; fill: #94a3b8; letter-spacing: .06em; }
+    .lbl   { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; font-weight: 700; fill: #475569; }
+    .cell  { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; font-weight: 700; }
+    .idx   { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 9px; fill: #94a3b8; }
+    .code  { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; fill: #1d4ed8; }
+    .note  { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; fill: #334155; }
+    .d     { font-family: system-ui, -apple-system, sans-serif; font-size: 10.5px; fill: #64748b; }
+    .num   { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; font-weight: 700; fill: #0f172a; }
+  </style>
+
+  <rect width="900" height="520" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">Growing by doubling: four elements, then eight</text>
+  <text x="30" y="54" class="sub">An array cannot get longer. To hold a fifth element, the list builds a bigger array and copies everything into it.</text>
+
+  <!-- row A -->
+  <text x="24" y="98" class="lbl">after four adds</text>
+  <text x="24" y="115" class="d">size 4, capacity 4 &#8212; full</text>
+  <g filter="url(#dgShadow)">
+    <rect x="180" y="80" width="56" height="40" rx="5" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
+    <rect x="242" y="80" width="56" height="40" rx="5" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
+    <rect x="304" y="80" width="56" height="40" rx="5" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
+    <rect x="366" y="80" width="56" height="40" rx="5" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
+  </g>
+  <g class="cell" fill="#1d4ed8" text-anchor="middle">
+    <text x="208" y="105">10</text>
+    <text x="270" y="105">20</text>
+    <text x="332" y="105">30</text>
+    <text x="394" y="105">40</text>
+  </g>
+  <g class="idx" text-anchor="middle">
+    <text x="208" y="132">[0]</text>
+    <text x="270" y="132">[1]</text>
+    <text x="332" y="132">[2]</text>
+    <text x="394" y="132">[3]</text>
+  </g>
+  <text x="446" y="105" class="note" fill="#b91c1c">no room for add(50)</text>
+
+  <!-- the growth -->
+  <path d="M 270 138 L 270 196" stroke="#3b82f6" stroke-width="2" marker-end="url(#dgArr)"/>
+  <text x="286" y="164" class="code">add(50) &#8594; new int[8] &#183; copy 4 elements &#183; then write</text>
+  <text x="286" y="182" class="d">The old array is thrown away. Four element copies just happened, and the caller sees none of it.</text>
+
+  <!-- row B -->
+  <text x="24" y="228" class="lbl">after five adds</text>
+  <text x="24" y="245" class="d">size 5, capacity 8</text>
+  <g filter="url(#dgShadow)">
+    <rect x="180" y="210" width="56" height="40" rx="5" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
+    <rect x="242" y="210" width="56" height="40" rx="5" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
+    <rect x="304" y="210" width="56" height="40" rx="5" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
+    <rect x="366" y="210" width="56" height="40" rx="5" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.6"/>
+    <rect x="428" y="210" width="56" height="40" rx="5" fill="#d1fae5" stroke="#10b981" stroke-width="1.8"/>
+    <rect x="490" y="210" width="56" height="40" rx="5" fill="#f8fafc" stroke="#e2e8f0"/>
+    <rect x="552" y="210" width="56" height="40" rx="5" fill="#f8fafc" stroke="#e2e8f0"/>
+    <rect x="614" y="210" width="56" height="40" rx="5" fill="#f8fafc" stroke="#e2e8f0"/>
+  </g>
+  <g class="cell" fill="#1d4ed8" text-anchor="middle">
+    <text x="208" y="235">10</text>
+    <text x="270" y="235">20</text>
+    <text x="332" y="235">30</text>
+    <text x="394" y="235">40</text>
+  </g>
+  <text x="456" y="235" class="cell" fill="#047857" text-anchor="middle">50</text>
+  <g class="idx" text-anchor="middle">
+    <text x="208" y="262">[0]</text>
+    <text x="270" y="262">[1]</text>
+    <text x="332" y="262">[2]</text>
+    <text x="394" y="262">[3]</text>
+    <text x="456" y="262">[4]</text>
+    <text x="518" y="262">[5]</text>
+    <text x="580" y="262">[6]</text>
+    <text x="642" y="262">[7]</text>
+  </g>
+  <text x="686" y="235" class="note" fill="#64748b">three still free</text>
+
+  <!-- cost table -->
+  <text x="24" y="302" class="head">THE COST, COUNTED &#8212; NOT TIMED</text>
+  <rect x="24" y="312" width="852" height="30" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="44"  y="332" class="head">ADD</text>
+  <text x="220" y="332" class="head">CAPACITY BEFORE &#8594; AFTER</text>
+  <text x="560" y="332" class="head">ELEMENT COPIES</text>
+  <text x="780" y="332" class="head">TOTAL COPIES</text>
+
+  <text x="44"  y="362" class="num">1st &#8230; 4th</text>
+  <text x="220" y="362" class="num">4 &#8594; 4</text>
+  <text x="560" y="362" class="num">0</text>
+  <text x="780" y="362" class="num">0</text>
+  <line x1="24" y1="374" x2="876" y2="374" stroke="#eef2f7"/>
+
+  <text x="44"  y="394" class="num">5th</text>
+  <text x="220" y="394" class="num">4 &#8594; 8</text>
+  <text x="560" y="394" class="num">4</text>
+  <text x="780" y="394" class="num">4</text>
+  <line x1="24" y1="406" x2="876" y2="406" stroke="#eef2f7"/>
+
+  <text x="44"  y="426" class="num">9th</text>
+  <text x="220" y="426" class="num">8 &#8594; 16</text>
+  <text x="560" y="426" class="num">8</text>
+  <text x="780" y="426" class="num">12</text>
+
+  <g filter="url(#dgShadow)">
+    <rect x="24" y="442" width="852" height="62" rx="9" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  </g>
+  <text x="44" y="464" class="note"><tspan font-weight="bold">Twelve copies for nine adds</tspan> &#8212; and the twelfth add would have copied sixteen.</text>
+  <text x="44" y="484" class="note">The expensive add gets rarer as the list gets bigger, so the average cost per add stays flat. That is what</text>
+  <text x="44" y="500" class="note">&#8220;add() is O(1)&#8221; has always meant: not every add, but the average one.</text>
+</svg>

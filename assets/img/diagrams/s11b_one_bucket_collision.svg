@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 460" width="100%" height="100%">
+  <defs>
+    <filter id="cbShadow" x="-8%" y="-8%" width="116%" height="125%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub   { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; fill: #64748b; }
+    .head  { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 800; fill: #94a3b8; letter-spacing: .06em; }
+    .bkt   { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; font-weight: 700; fill: #64748b; }
+    .key   { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; font-weight: 700; fill: #b91c1c; }
+    .code  { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; fill: #b91c1c; }
+    .note  { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; fill: #334155; }
+    .d     { font-family: system-ui, -apple-system, sans-serif; font-size: 10.5px; fill: #64748b; }
+    .good  { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; font-weight: 700; fill: #047857; }
+  </style>
+
+  <rect width="900" height="460" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">One bad hashCode() and the map stops being a map</text>
+  <text x="30" y="56" class="sub">public int hashCode() { return 1; }</text>
+
+  <text x="24" y="88" class="head">EIGHT BUCKETS &#183; EVERY KEY COMPUTED THE SAME INDEX &#183; CHAIN READS NEWEST FIRST</text>
+
+  <rect x="24" y="98" width="280" height="34" rx="6" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+  <text x="40" y="120" class="bkt">bucket 1</text>
+  <text x="150" y="120" class="key">"Femi" &#8594; "Eze" &#8594; "Dara" &#8594; "Chidi" &#8594; "Ben" &#8594; "Ada"</text>
+
+  <g>
+    <rect x="24" y="138" width="280" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <rect x="24" y="170" width="280" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <rect x="24" y="202" width="280" height="26" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  </g>
+  <text x="40" y="156" class="d">buckets 0, 2, 3, 4, 5 &#8230; all empty</text>
+  <text x="40" y="188" class="d">every key's index is 1 &amp; 7 = 1</text>
+  <text x="40" y="220" class="d">so there is exactly one chain, of length 6</text>
+
+  <!-- cost comparison -->
+  <text x="336" y="88" class="head">WHAT get() COSTS NOW</text>
+  <g filter="url(#cbShadow)">
+    <rect x="336" y="98" width="540" height="60" rx="9" fill="#fef2f2" stroke="#fecaca" stroke-width="1.5"/>
+  </g>
+  <text x="356" y="122" class="code">hashCode() = 1</text>
+  <text x="500" y="122" class="note">&#8594; one bucket, 6 keys, up to 6 equals() calls per lookup</text>
+  <text x="356" y="144" class="d">Average chain length grows with the number of keys, so get() became a linear scan.</text>
+
+  <g filter="url(#cbShadow)">
+    <rect x="336" y="170" width="540" height="60" rx="9" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+  </g>
+  <text x="356" y="194" class="good">hashCode() = spread</text>
+  <text x="520" y="194" class="note">&#8594; keys spread over the eight buckets, ~1 equals() call</text>
+  <text x="356" y="216" class="d">Chain length stays near 1 no matter how many keys you store. That is the O(1).</text>
+
+  <!-- the rule -->
+  <g filter="url(#cbShadow)">
+    <rect x="336" y="246" width="540" height="132" rx="9" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  </g>
+  <text x="356" y="272" class="head">THE TWO HALVES OF THE SAME PROMISE</text>
+  <text x="356" y="296" class="note"><tspan font-family="ui-monospace, monospace" font-weight="bold">equals</tspan> decides when two keys ARE the same key.</text>
+  <text x="356" y="318" class="note"><tspan font-family="ui-monospace, monospace" font-weight="bold">hashCode</tspan> decides which bucket to look in first.</text>
+  <text x="356" y="344" class="note">Let them disagree and the map breaks in the quietest way possible:</text>
+  <text x="356" y="364" class="note">two keys that equals() says are equal sit in different buckets, so the map holds</text>
+  <text x="356" y="382" class="note">both &#8212; and a map that should hold one key holds two.</text>
+
+  <rect x="24" y="396" width="852" height="52" rx="9" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+  <text x="44" y="418" class="note"><tspan font-weight="bold">The repair is two lines:</tspan> hash on the fields equals() compares, and let your IDE or the JDK's</text>
+  <text x="44" y="438" class="note"><tspan font-family="ui-monospace, monospace" font-weight="bold">Objects.hash(&#8230;)</tspan> write it, so the two lists can never drift apart again. Session 11B does exactly that and counts the difference.</text>
+</svg>

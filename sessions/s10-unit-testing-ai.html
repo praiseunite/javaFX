@@ -1978,6 +1978,8 @@ java -jar lib/junit-platform-console-standalone-1.14.4.jar execute \
       <div class="quiz__explain"><strong>C.</strong> Green means &ldquo;consistent with the current code&rdquo;, and a test written by reading the code is consistent with it by construction. The only way to find out whether it is a test is to break the code and watch &mdash; which is Part 5 of the lab, and it is the marked half of A5.</div>
     </div>
 
+    <div class="quiz__score" style="display:none"></div>
+
   </div>
 
   <!-- ===== 20. PRACTICE =================================================== -->
@@ -2327,14 +2329,15 @@ DECIDE      keep / fix / reject - WITH A REASON. The reason is the marked work.<
 
   <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
     <div class="callout__b"><b>Next session: Session 11 &mdash; Java Data Structures</b>
-      Today you learned to check that code does what it promises. Next week you meet the collections
-      the promises are built on: <code>List</code>, <code>Set</code>, <code>Map</code> and
-      <code>Queue</code> as <em>choices</em> with consequences &mdash; what each one costs, when a
-      lookup is O(1) and when it quietly is not, and why <code>HashMap</code> needs
-      <code>equals</code> and <code>hashCode</code> to agree. You have already met the failure mode:
-      <code>E04</code>&rsquo;s <code>findAll</code> hands out a copy because a <code>List</code> you
-      can reach into is a <code>List</code> you can corrupt &mdash; and Session 11 is the session that
-      explains, properly, what you were protecting against.
+      Today you learned to check that code does what it promises. Next week you meet the classes Java
+      shipped <em>first</em>: <code>Enumeration</code>, <code>BitSet</code>, <code>Stack</code> and
+      <code>Dictionary</code> &mdash; the originals from 1995, still sitting in code written before you
+      were born. You will read them, see exactly where they bite, and learn why each one was replaced.
+      You have already met the failure mode: <code>E04</code>&rsquo;s <code>findAll</code> hands out a
+      copy because a <code>List</code> you can reach into is a <code>List</code> you can corrupt.
+      <code>Vector</code> &mdash; the class <code>Stack</code> is built on &mdash; is where that hazard
+      was born, and Session 11 shows you why. The week after, you go further: you build the replacement
+      yourself, and watch <code>equals</code> and <code>hashCode</code> break in your own hands.
       <br><br>
       <strong>Bring your A5 suite.</strong> It is due before the start of that session, and the
       mutation table from Practice 1 is the part worth showing.

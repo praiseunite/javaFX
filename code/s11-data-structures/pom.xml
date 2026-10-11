@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Session 11 — Java Data Structures: the classes Java shipped first.
+
+  The Presenter's Manual gives this session four bullets — explain the Enumeration interface,
+  describe the BitSet class, describe the Stack classes, explain the Dictionary classes — so
+  this project is deliberately plain Java. There is no JUnit here (that is Session 10) and no
+  database (that is Sessions 7-8). Everything in this folder runs on a bare JDK.
+
+  Open this folder in IntelliJ (File → Open → select the folder that contains this pom.xml).
+  Classes with a main() get a green ▶ in the gutter; the example numbering (E00, E01, ...)
+  matches the parts of the session page, in the manual's order.
+
+  src/main/resources holds the two kinds of configuration the Dictionary bullet is about:
+  app.properties (read with java.util.Properties) and the labels/labels_fr pair (read with
+  ResourceBundle, which is built on Properties).
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.aptech</groupId>
+    <artifactId>s11-data-structures</artifactId>
+    <version>1.0</version>
+    <name>Session 11 - Java Data Structures</name>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+</project>

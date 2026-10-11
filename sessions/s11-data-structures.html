@@ -1,0 +1,2675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session 11 — Java Data Structures</title>
+  <meta name="description" content="Session 11 of Building Rich Java Applications with JavaFX and AI Tools: the data structures the manual's Session 10 names — the Enumeration interface, the BitSet class, the Stack classes and the Dictionary classes. The originals from 1995, still compiling without a warning on JDK 21, still sitting in code written before you were born — read, run, and proved not deprecated by reflection.">
+  <link rel="stylesheet" href="../assets/css/course.css">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "s11";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== 1. HERO ========================================================= -->
+  <section class="hero">
+    <span class="tag">Week 3 &middot; Day 3 &middot; Session 11 &middot; 2 hours in class</span>
+    <h1>Session 11 &mdash; Java Data Structures</h1>
+    <p class="lede">
+      Everything you have used so far was designed to be used. Today you meet the classes Java shipped
+      <em>first</em>: <code>Enumeration</code>, <code>BitSet</code>, <code>Stack</code> and
+      <code>Dictionary</code>. They are not deprecated, they are not broken, and they are not going
+      away &mdash; <strong>they are in code written before you were born, and you will read far more
+      old code than you write new code.</strong> So you will read each one, watch it work, see exactly
+      where it bites, and learn why each was replaced. Two of the four &mdash; <code>BitSet</code> and
+      <code>Properties</code> &mdash; were right the first time and are still the right answer today,
+      and calling them relics would be teaching you a falsehood.
+    </p>
+    <div class="meta">
+      <span>&#128218; Learner's Guide: SG &middot; XP &middot; TG &mdash; Session 11</span>
+      <span>&#9201; ~2 hours + practice at home</span>
+      <span>&#9989; Before this: Sessions 1&ndash;10</span>
+      <span>&#128203; Assignment A5 &mdash; due before this session</span>
+    </div>
+  </section>
+
+  <!-- ===== 2. OBJECTIVES =================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this session you can&hellip;</b>
+    <ol>
+      <li><strong>Explain</strong> what the <code>Enumeration</code> interface does, and <strong>say</strong> the four things <code>Iterator</code> added that made it obsolete.</li>
+      <li><strong>Find</strong> an <code>Enumeration</code> in the wild &mdash; on <code>Vector</code>, on <code>Hashtable</code>, on <code>Properties</code> &mdash; and <strong>convert</strong> one to a <code>List</code> or an <code>Iterator</code> with one call.</li>
+      <li><strong>Describe</strong> what a <code>BitSet</code> stores, and <strong>use</strong> one to solve a real problem (the sieve of Eratosthenes) rather than to print a set.</li>
+      <li><strong>Describe</strong> the <code>Stack</code> classes, and <strong>predict</strong> what <code>search()</code> returns without running the program.</li>
+      <li><strong>Prove</strong> that <code>Stack extends Vector</code>, and <strong>explain</strong> why that inheritance is the design mistake rather than a bonus.</li>
+      <li><strong>Explain</strong> the <code>Dictionary</code> classes: why <code>Dictionary</code> is abstract, and what <code>Hashtable</code> refuses that <code>HashMap</code> accepts.</li>
+      <li><strong>Show</strong> that legacy does not mean deprecated, by <strong>checking</strong> <code>@Deprecated</code> on the real classes instead of taking anyone's word for it.</li>
+      <li><strong>Reproduce, diagnose and fix</strong> three defects in a 1996-style program where every defect is caused by the choice of class rather than by a careless line.</li>
+      <li><strong>Run</strong> one check suite against two implementations, and <strong>use</strong> the result as the evidence that a rewrite changed nothing observable.</li>
+      <li><strong>Decide</strong>, for a given piece of legacy code, whether to wrap it or rewrite it &mdash; and <strong>justify</strong> the answer.</li>
+    </ol>
+  </div>
+
+  <!-- ===== 3. TABLE OF CONTENTS ============================================ -->
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== 5. ROADMAP ====================================================== -->
+  <h2>Your Roadmap for Today</h2>
+  <div class="roadmap">
+    <a href="#part-1-1995">Part 1: What &ldquo;Data Structures&rdquo; Meant in 1995</a>
+    <a href="#part-2-enumeration">Part 2: The Enumeration Interface</a>
+    <a href="#part-3-where">Part 3: Where You Still Meet It</a>
+    <a href="#part-4-bitset">Part 4: The BitSet Class</a>
+    <a href="#part-5-stack">Part 5: The Stack Classes</a>
+    <a href="#part-6-vector">Part 6: Stack Is a Vector</a>
+    <a href="#part-7-dictionary">Part 7: The Dictionary Classes</a>
+    <a href="#part-8-properties">Part 8: Properties, the Survivor</a>
+    <a href="#part-9-reading">Part 9: Reading Legacy Code You Didn&rsquo;t Write</a>
+    <a href="#lab-stock-ledger">Guided Lab: The Stock Ledger</a>
+  </div>
+
+  <!-- ===== 6. WHY THIS MATTERS ============================================= -->
+  <h2>Why This Matters</h2>
+  <p>
+    Here is a number that surprises every class: <strong>a working developer spends more time reading
+    code than writing it</strong>, and a large share of the code they read was written before they
+    joined the company &mdash; often before they were born. Java is thirty years old and famously
+    backwards-compatible: the <code>Vector</code> you will meet on Monday morning in a payment system
+    is the same class that shipped in 1995, still compiling, still correct, still working. The company
+    is not going to rewrite it because a book told you to prefer <code>ArrayList</code>.
+  </p>
+  <p>
+    So the skill this session teaches is not "use the modern class". It is
+    <strong>reading code you did not write, in a style you were not taught, and knowing what it will
+    do</strong>. That is why every claim here is proved by a program rather than asserted: the four
+    classes from the manual's list are handed out with their real behaviour, including the parts that
+    will cost you an afternoon if you assume they work like your classes. And it is why two of them are
+    presented as survivors rather than relics &mdash; a developer who deletes <code>Properties</code>
+    because it sounds old has broken a working application for a slogan.
+  </p>
+
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; the inherited toolbox</b>
+      A retiring engineer leaves you their toolbox. Every tool in it works, and most of them are shaped
+      exactly like yours. But one screwdriver has a chisel tip, because the person who owned it needed
+      a chisel one afternoon and never put it back. Nothing in the box is broken. Nothing in it is
+      labelled. The dangerous part is not the old tools &mdash; it is the one whose <em>name</em>
+      promises less than it does. In this session that screwdriver is <code>Stack</code>, which is
+      called a stack and behaves like a list.
+    </div>
+  </div>
+
+  <!-- ===== 7. PART 1 — 1995 ================================================ -->
+  <h2 id="part-1-1995"><span class="eyebrow">Part 1 of 9</span> What &ldquo;Data Structures&rdquo; Meant in 1995</h2>
+  <p>
+    In Session 1 you met a table with a row for the legacy classes &mdash; <code>Vector</code>,
+    <code>Hashtable</code>, <code>Stack</code>, <code>Enumeration</code> &mdash; and a column that told
+    you what to use instead. That row is true, and today is where it gets filled in. But before any of
+    that, one question has to be settled, because everything else depends on the answer:
+  </p>
+  <p>
+    <strong>Are these classes deprecated?</strong> Students assume yes, and the assumption is
+    expensive: it leads to deleting working code. The rule in this course is that a fact must be
+    <em>shown by a program</em>, so this one is not going to be asserted. A class is deprecated only if
+    it carries the <code>@Deprecated</code> annotation, and that annotation is retained at run time
+    &mdash; which means a program can ask each class directly.
+  </p>
+
+  <!--@code src="code/s11-data-structures/src/main/java/com/aptech/s11/E00_LegacyIsNotDeprecated.java" title="E00_LegacyIsNotDeprecated.java — asking the classes themselves"-->
+<pre class="numbered" data-file="E00_LegacyIsNotDeprecated.java — asking the classes themselves"><code class="lang-java">package com.aptech.s11;
+
+import java.lang.reflect.Method;
+import java.util.BitSet;
+import java.util.Date;
+import java.util.Dictionary;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.Stack;
+import java.util.Vector;
+
+/**
+ * E00 — framing: "legacy" is not a synonym for "deprecated".
+ *
+ * The session page claims that the six legacy classes are old but NOT deprecated. Rather than
+ * assert that, this program proves it: java.lang.Deprecated is declared with
+ * {@code @Retention(RUNTIME)}, so reflection can see it. If the JDK ever deprecates one of these
+ * classes, this output changes on its own and the page follows.
+ *
+ * Two genuinely deprecated members are checked alongside them as controls, so the result is a
+ * comparison rather than a lone "false".
+ */
+public class E00_LegacyIsNotDeprecated {
+
+    public static void main(String[] args) {
+        Class&lt;?&gt;[] legacy = {
+                Enumeration.class, BitSet.class, Stack.class,
+                Vector.class, Dictionary.class, Hashtable.class
+        };
+
+        System.out.println("Are the six \"legacy\" classes actually deprecated?");
+        System.out.println("java.lang.Deprecated is retained at run time, so this is a real test,");
+        System.out.println("not a reading of the javadoc.");
+        System.out.println();
+
+        for (Class&lt;?&gt; c : legacy) {
+            System.out.printf("  %-12s deprecated? %s%n",
+                    c.getSimpleName(), c.isAnnotationPresent(Deprecated.class));
+        }
+
+        System.out.println();
+        System.out.println("Members the JDK did deprecate, checked the same way:");
+        report(Date.class, "getYear");
+        report(Thread.class, "stop");
+
+        System.out.println();
+        System.out.println("A legacy method, checked the same way:");
+        report(Vector.class, "addElement", Object.class);
+    }
+
+    /** Prints whether one method carries @Deprecated, or says so if this JDK no longer has it. */
+    private static void report(Class&lt;?&gt; owner, String name, Class&lt;?&gt;... params) {
+        String label = owner.getSimpleName() + "." + name + "()";
+        try {
+            Method m = owner.getMethod(name, params);
+            System.out.printf("  %-18s deprecated? %s%n", label, m.isAnnotationPresent(Deprecated.class));
+        } catch (NoSuchMethodException e) {
+            System.out.printf("  %-18s (not present in this JDK)%n", label);
+        }
+    }
+}</code></pre>
+<!--@end-->
+
+  <p>
+    The program reflects over all six legacy classes and prints whether each carries
+    <code>@Deprecated</code>. It also checks three controls, so that a "false everywhere" bug in the
+    program would be visible: two methods that genuinely <em>are</em> deprecated, and one legacy method
+    that is not.
+  </p>
+
+  <!--@output project="code/s11-data-structures" main="com.aptech.s11.E00_LegacyIsNotDeprecated"-->
+<div class="terminal-output">Are the six "legacy" classes actually deprecated?
+java.lang.Deprecated is retained at run time, so this is a real test,
+not a reading of the javadoc.
+
+  Enumeration  deprecated? false
+  BitSet       deprecated? false
+  Stack        deprecated? false
+  Vector       deprecated? false
+  Dictionary   deprecated? false
+  Hashtable    deprecated? false
+
+Members the JDK did deprecate, checked the same way:
+  Date.getYear()     deprecated? true
+  Thread.stop()      deprecated? true
+
+A legacy method, checked the same way:
+  Vector.addElement() deprecated? false</div>
+<!--@end-->
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      <strong>Legacy and deprecated are different words, and the difference is the whole session.</strong>
+      All six classes are undeprecated on JDK 21 and compile with no warning at all. They are not
+      forbidden &mdash; they are <em>superseded</em>: newer classes do the same job better, and the old
+      ones are kept forever because removing them would break the world's Java. What that means in
+      practice is that you will meet them, you may not delete them on sight, and you need to know
+      exactly how they differ from the ones you were taught.
+    </div>
+  </div>
+
+  <!-- ===== 8. PART 2 — ENUMERATION ========================================= -->
+  <h2 id="part-2-enumeration"><span class="eyebrow">Part 2 of 9</span> Bullet 1: The <code>Enumeration</code> Interface</h2>
+  <p>
+    <code>Enumeration</code> is how Java 1.0 walked a collection, and it is the smallest interface in
+    this session: <strong>two methods</strong>. It is the ancestor of the <code>Iterator</code> you
+    have used since Session 1, and the two do the same job with different words. The program below
+    walks one <code>Vector</code> both ways so the difference is visible rather than described.
+  </p>
+
+  <!--@code src="code/s11-data-structures/src/main/java/com/aptech/s11/E01_Enumeration.java" from="21" to="39" title="E01_Enumeration.java — the same Vector, walked two ways"-->
+<pre class="numbered" data-file="E01_Enumeration.java — the same Vector, walked two ways" style="counter-reset:line 20"><code class="lang-java">    public static void main(String[] args) {
+        Vector&lt;String&gt; roll = new Vector&lt;&gt;();
+        roll.add("Ada");
+        roll.add("Ben");
+        roll.add("Chidi");
+
+        System.out.println("The same Vector, walked two ways.");
+        System.out.println();
+
+        System.out.println("1. Enumeration - the 1995 way");
+        for (Enumeration&lt;String&gt; e = roll.elements(); e.hasMoreElements(); ) {
+            System.out.println("   " + e.nextElement());
+        }
+
+        System.out.println();
+        System.out.println("2. Iterator - the way you already write");
+        for (Iterator&lt;String&gt; it = roll.iterator(); it.hasNext(); ) {
+            System.out.println("   " + it.next());
+        }</code></pre>
+<!--@end-->
+
+  <figure class="concept-visual">
+    <img src="../assets/img/diagrams/s11_enumeration_vs_iterator.svg" alt="Two interface cards side by side: Enumeration with hasMoreElements and nextElement, and Iterator with hasNext, next, remove and forEachRemaining, joined by an arrow labelled replaced by, above a table comparing removal, for-each support and behaviour when the collection changes." loading="lazy">
+    <figcaption><strong>Figure 1.</strong> The two interfaces, method for method. <code>Enumeration</code> has two methods and no more; <code>Iterator</code> added <code>remove()</code>, <code>forEachRemaining()</code>, for-each support and fail-fast detection.</figcaption>
+  </figure>
+
+  <!--@output project="code/s11-data-structures" main="com.aptech.s11.E01_Enumeration"-->
+<div class="terminal-output">The same Vector, walked two ways.
+
+1. Enumeration - the 1995 way
+   Ada
+   Ben
+   Chidi
+
+2. Iterator - the way you already write
+   Ada
+   Ben
+   Chidi
+
+3. Collections.enumeration(...) - wrapping a modern List
+   walked 3 elements with no index to get wrong
+
+4. What Iterator adds that Enumeration never had: remove()
+   after it.next(); it.remove();      -&gt; [Ben, Chidi]
+   the same Vector, but via asIterator() -&gt; java.lang.UnsupportedOperationException
+
+Why Iterator replaced it: hasNext()/next() are shorter than
+hasMoreElements()/nextElement(), it can remove(), it offers
+forEachRemaining(), and it fails fast when the collection changes
+underneath you.</div>
+<!--@end-->
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      <strong><code>Iterator</code> won because it fails loudly.</strong> Four things separate them, and
+      only one of them is about typing: shorter names, <code>remove()</code>,
+      <code>forEachRemaining()</code>, and &mdash; the one that matters &mdash; <strong>fail-fast
+      detection</strong>. If the collection changes while an <code>Iterator</code> is walking it, you
+      get a <code>ConcurrentModificationException</code>. An <code>Enumeration</code> says nothing and
+      quietly gives you the wrong answer. <em>A crash you can see beats a wrong number you cannot</em>
+      is the reason the Collections Framework was written at all.
+    </div>
+  </div>
+
+  <!-- ===== 9. PART 3 — WHERE YOU STILL MEET IT ============================= -->
+  <h2 id="part-3-where"><span class="eyebrow">Part 3 of 9</span> Bullet 1: Where You Still Meet It</h2>
+  <p>
+    An obsolete interface is not an absent one. <code>Enumeration</code> still appears in the JDK
+    itself, in methods that were written in 1995 and cannot be changed without breaking every program
+    that calls them. The next lines of the same example show the two ways you convert one.
+  </p>
+
+  <!--@code src="code/s11-data-structures/src/main/java/com/aptech/s11/E01_Enumeration.java" from="41" to="65" title="E01_Enumeration.java — Collections.enumeration, and asIterator()"-->
+<pre class="numbered" data-file="E01_Enumeration.java — Collections.enumeration, and asIterator()" style="counter-reset:line 40"><code class="lang-java">        System.out.println();
+        System.out.println("3. Collections.enumeration(...) - wrapping a modern List");
+        List&lt;String&gt; modern = List.of("Ada", "Ben", "Chidi");
+        int seen = 0;
+        for (Enumeration&lt;String&gt; e = Collections.enumeration(modern); e.hasMoreElements(); ) {
+            e.nextElement();
+            seen++;
+        }
+        System.out.println("   walked " + seen + " elements with no index to get wrong");
+
+        System.out.println();
+        System.out.println("4. What Iterator adds that Enumeration never had: remove()");
+        Iterator&lt;String&gt; removable = roll.iterator();
+        removable.next();
+        removable.remove();
+        System.out.println("   after it.next(); it.remove();      -&gt; " + roll);
+
+        Iterator&lt;String&gt; wrapped = roll.elements().asIterator();
+        wrapped.next();
+        try {
+            wrapped.remove();
+        } catch (UnsupportedOperationException ex) {
+            System.out.println("   the same Vector, but via asIterator() -&gt; "
+                    + ex.getClass().getName());
+        }</code></pre>
+<!--@end-->
+
+  <h3>The places it still shows up</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>You call</th><th>You get</th><th>Found on</th></tr></thead>
+      <tbody>
+        <tr><td><code>vector.elements()</code></td><td>an <code>Enumeration</code></td><td><code>Vector</code> &mdash; and therefore on <code>Stack</code></td></tr>
+        <tr><td><code>hashtable.elements()</code></td><td>an <code>Enumeration</code> of values</td><td><code>Hashtable</code></td></tr>
+        <tr><td><code>hashtable.keys()</code></td><td>an <code>Enumeration</code> of keys</td><td><code>Hashtable</code></td></tr>
+        <tr><td><code>properties.propertyNames()</code></td><td>an <code>Enumeration</code> of keys</td><td><code>Properties</code> &mdash; Part 8</td></tr>
+        <tr><td><code>zipFile.entries()</code></td><td>an <code>Enumeration</code> of entries</td><td><code>java.util.zip.ZipFile</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    And when a modern library hands <em>you</em> a <code>List</code> but something downstream insists on
+    an <code>Enumeration</code>, you go the other way with
+    <code>Collections.enumeration(list)</code> &mdash; which is the third thing the example printed.
+    Since Java 9 there is a fourth route: <code>enumeration.asIterator()</code>, which adapts an old
+    source to the new interface so the rest of your code never learns where it came from.
+  </p>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Tip &mdash; the one line to memorise</b>
+      <code>Collections.list(enumeration)</code> drains an <code>Enumeration</code> straight into an
+      <code>ArrayList</code>, and it is the shortest way to get out of 1995. It is also the honest
+      answer to "how do I sort the keys of a <code>Hashtable</code>?" &mdash; collect them, then sort
+      them, because a hash-backed collection has no order to preserve in the first place.
+    </div>
+  </div>
+
+  <div class="callout callout--warn"><span class="callout__i">&#9888;</span>
+    <div class="callout__b"><b>Watch out &mdash; <code>asIterator()</code> does not add <code>remove()</code></b>
+      It returns an <code>Iterator</code>, and <code>Iterator</code> has a <code>remove()</code>, but
+      calling it throws <code>UnsupportedOperationException</code> &mdash; even on a
+      <code>Vector</code> that can be modified perfectly well. The adapter is read-only because an
+      <code>Enumeration</code> has no removal operation to forward. If you need to remove while
+      walking, copy into a real <code>List</code> first, or use <code>iterator()</code>.
+    </div>
+  </div>
+
+  <!-- ===== 10. PART 4 — BITSET ============================================= -->
+  <h2 id="part-4-bitset"><span class="eyebrow">Part 4 of 9</span> Bullet 2: The <code>BitSet</code> Class</h2>
+  <p>
+    <code>BitSet</code> is the first of the two survivors, and it is worth being blunt about why: it is
+    <strong>not a legacy class in any useful sense</strong>. It has been improved in almost every
+    release since 1995 &mdash; <code>stream()</code> arrived in Java 8, <code>valueOf</code> in Java 9
+    &mdash; and there is still no faster way to hold a set of small non-negative integers.
+  </p>
+  <p>
+    A <code>BitSet</code> stores no numbers at all. It stores <em>bits</em>, one per possible value:
+    number <code>n</code> is "in the set" when bit <code>n</code> is 1. Sixty-four answers fit in a
+    single <code>long</code>, which is why a set of a million booleans costs 128&nbsp;KB rather than a
+    megabyte, and why set algebra &mdash; and, or, xor &mdash; is a handful of machine instructions per
+    64 numbers instead of a loop.
+  </p>
+
+  <!--@code src="code/s11-data-structures/src/main/java/com/aptech/s11/E02_BitSet.java" title="E02_BitSet.java — set operations, then a real use"-->
+<pre class="numbered" data-file="E02_BitSet.java — set operations, then a real use"><code class="lang-java">package com.aptech.s11;
+
+import java.util.BitSet;
+
+/**
+ * E02 — the BitSet class: a set of non-negative ints, packed one bit each.
+ *
+ * Manual bullet 2 of 4: "Describe the BitSet class".
+ *
+ * BitSet is the surprise of this session. Every other class here is legacy in the sense of
+ * "superseded": there is a modern replacement and you should prefer it. BitSet has no
+ * replacement, because nothing else does what it does — it is not deprecated, and for dense
+ * sets of small integers it is still the right answer.
+ */
+public class E02_BitSet {
+
+    public static void main(String[] args) {
+        setOperations();
+        theSieve();
+    }
+
+    private static void setOperations() {
+        System.out.println("1. A BitSet is a set of numbers, stored as bits");
+        BitSet a = new BitSet();
+        a.set(1);
+        a.set(3);
+        a.set(5);
+        BitSet b = new BitSet();
+        b.set(3);
+        b.set(5);
+        b.set(7);
+
+        System.out.println("   a                  = " + a);
+        System.out.println("   b                  = " + b);
+        System.out.println("   a.cardinality()    = " + a.cardinality() + "   (how many bits are set)");
+
+        BitSet both = (BitSet) a.clone();
+        both.and(b);
+        BitSet either = (BitSet) a.clone();
+        either.or(b);
+        BitSet exactlyOne = (BitSet) a.clone();
+        exactlyOne.xor(b);
+        BitSet onlyA = (BitSet) a.clone();
+        onlyA.andNot(b);
+
+        System.out.println("   a AND b            = " + both + "   (in both)");
+        System.out.println("   a OR b             = " + either + "   (in either)");
+        System.out.println("   a XOR b            = " + exactlyOne + "   (in exactly one)");
+        System.out.println("   a ANDNOT b         = " + onlyA + "   (in a, but not in b)");
+
+        System.out.println();
+        System.out.println("2. Looking things up without walking the set");
+        System.out.println("   a.get(3)           = " + a.get(3));
+        System.out.println("   a.get(4)           = " + a.get(4));
+        System.out.println("   a.nextSetBit(0)    = " + a.nextSetBit(0));
+        System.out.println("   a.nextSetBit(2)    = " + a.nextSetBit(2));
+        System.out.println("   a.nextSetBit(4)    = " + a.nextSetBit(4));
+        System.out.println("   a.nextSetBit(6)    = " + a.nextSetBit(6) + "   (-1 means: no more set bits)");
+
+        a.flip(1);
+        System.out.println("   after a.flip(1)    = " + a + "   (flip toggles one bit)");
+        System.out.println("   a.length()         = " + a.length() + "   (highest set bit + 1)");
+        System.out.println("   a.size()           = " + a.size() + "   (room reserved; always a multiple of 64)");
+    }
+
+    private static void theSieve() {
+        int limit = 60;
+
+        // composite[i] is true when i is known NOT to be prime.
+        BitSet composite = new BitSet(limit + 1);
+        for (int p = 2; p * p &lt;= limit; p++) {
+            if (!composite.get(p)) {
+                for (int multiple = p * p; multiple &lt;= limit; multiple += p) {
+                    composite.set(multiple);
+                }
+            }
+        }
+
+        // Start with every number 2..limit, then strike out the composites.
+        BitSet primes = new BitSet(limit + 1);
+        primes.set(2, limit + 1);
+        primes.andNot(composite);
+
+        System.out.println();
+        System.out.println("3. A real use: the sieve of Eratosthenes up to " + limit);
+        System.out.println("   primes        = " + primes);
+        System.out.println("   cardinality() = " + primes.cardinality() + " primes found");
+        System.out.println("   length()      = " + primes.length() + " bits for the numbers 0 to " + limit);
+        System.out.println();
+        System.out.println("   No boolean[" + (limit + 1) + "], no HashSet&lt;Integer&gt;, no boxing: one bit per");
+        System.out.println("   number, and the whole sieve fits in " + primes.size() / 64 + " long.");
+    }
+}</code></pre>
+<!--@end-->
+
+  <figure class="concept-visual">
+    <img src="../assets/img/diagrams/s11_bitset_words.svg" alt="A strip of sixteen cells representing sixty-four bits, with five cells lit for the numbers 2, 3, 5, 7 and 11, above two panels listing what the object can be asked for reading back and set algebra, and a footer noting size is a multiple of sixty-four while length is twelve." loading="lazy">
+    <figcaption><strong>Figure 2.</strong> Where the five numbers actually live. Nothing stores <code>2, 3, 5, 7, 11</code> &mdash; only the bits at those positions. <code>size()</code> reports the room the set has (64), while <code>length()</code> reports the highest set bit plus one (12).</figcaption>
+  </figure>
+
+  <!--@output project="code/s11-data-structures" main="com.aptech.s11.E02_BitSet"-->
+<div class="terminal-output">1. A BitSet is a set of numbers, stored as bits
+   a                  = {1, 3, 5}
+   b                  = {3, 5, 7}
+   a.cardinality()    = 3   (how many bits are set)
+   a AND b            = {3, 5}   (in both)
+   a OR b             = {1, 3, 5, 7}   (in either)
+   a XOR b            = {1, 7}   (in exactly one)
+   a ANDNOT b         = {1}   (in a, but not in b)
+
+2. Looking things up without walking the set
+   a.get(3)           = true
+   a.get(4)           = false
+   a.nextSetBit(0)    = 1
+   a.nextSetBit(2)    = 3
+   a.nextSetBit(4)    = 5
+   a.nextSetBit(6)    = -1   (-1 means: no more set bits)
+   after a.flip(1)    = {3, 5}   (flip toggles one bit)
+   a.length()         = 6   (highest set bit + 1)
+   a.size()           = 64   (room reserved; always a multiple of 64)
+
+3. A real use: the sieve of Eratosthenes up to 60
+   primes        = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59}
+   cardinality() = 17 primes found
+   length()      = 60 bits for the numbers 0 to 60
+
+   No boolean[61], no HashSet&lt;Integer&gt;, no boxing: one bit per
+   number, and the whole sieve fits in 1 long.</div>
+<!--@end-->
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      <strong><code>size()</code> is not <code>cardinality()</code>.</strong> This trips up everybody
+      once. <code>cardinality()</code> is how many numbers are in the set; <code>length()</code> is one
+      past the highest one; <code>size()</code> is how many bits the object has room for, and it is
+      always a multiple of 64. A set holding <code>{2, 3, 5}</code> reports
+      <code>cardinality() = 3</code>, <code>length() = 6</code> and <code>size() = 64</code> &mdash;
+      three different numbers, all correct, answering three different questions.
+    </div>
+  </div>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Tip &mdash; when a <code>BitSet</code> is the right answer today</b>
+      Whenever the thing you are tracking <em>is</em> a small integer with a bounded range:
+      attendance, permissions, "which of these 200 features are enabled", "which of these blocks are
+      free on disk", the classic sieve in this example. The moment your set holds objects, strings or
+      negative numbers, it is the wrong tool &mdash; <code>HashSet</code> is.
+    </div>
+  </div>
+
+  <!-- ===== 11. PART 5 — STACK ============================================== -->
+  <h2 id="part-5-stack"><span class="eyebrow">Part 5 of 9</span> Bullet 3: The <code>Stack</code> Classes</h2>
+  <p>
+    Notice the manual's wording: <em>the Stack <strong>classes</strong></em>. The plural is doing real
+    work, and it is the same trick as the Dictionary bullet later. There is a <code>Stack</code> class,
+    and there is the class it is built on, <code>Vector</code> &mdash; and you cannot describe the first
+    honestly without naming the second.
+  </p>
+  <p>
+    Start with what a stack <em>is</em>, because <code>Stack</code> gets that part right. It is
+    last-in-first-out: the most recent thing you put on is the first thing you take off. And it has one
+    method whose result students almost never predict, which is why it is worth running before reading
+    the explanation.
+  </p>
+
+  <!--@code src="code/s11-data-structures/src/main/java/com/aptech/s11/E03_Stack.java" from="27" to="55" title="E03_Stack.java — LIFO, and the counting that surprises everyone"-->
+<pre class="numbered" data-file="E03_Stack.java — LIFO, and the counting that surprises everyone" style="counter-reset:line 26"><code class="lang-java">    private static void lastInFirstOut() {
+        System.out.println("1. A stack is last in, first out");
+        Stack&lt;String&gt; plates = new Stack&lt;&gt;();
+        plates.push("bottom");
+        plates.push("middle");
+        plates.push("top");
+        System.out.println("   pushed bottom, middle, top -&gt; " + plates);
+        System.out.println("   peek()  -&gt; " + plates.peek() + "   (look without taking)");
+        System.out.println("   pop()   -&gt; " + plates.pop());
+        System.out.println("   after pop() -&gt; " + plates);
+        System.out.println();
+    }
+
+    private static void oneBasedFromTheTop() {
+        System.out.println("2. search() counts from 1 at the TOP, not 0 at the bottom");
+        Stack&lt;String&gt; plates = new Stack&lt;&gt;();
+        plates.push("bottom");
+        plates.push("middle");
+        plates.push("top");
+        System.out.println("   plates.search(\"top\")     -&gt; " + plates.search("top") + "   (the top is 1)");
+        System.out.println("   plates.search(\"middle\")  -&gt; " + plates.search("middle"));
+        System.out.println("   plates.search(\"bottom\")  -&gt; " + plates.search("bottom"));
+        System.out.println("   plates.search(\"missing\") -&gt; " + plates.search("missing") + "   (-1 when it is not there)");
+        System.out.println();
+        System.out.println("   So a Stack's position is 1-based AND measured from the top, while an");
+        System.out.println("   ArrayList's index is 0-based from the bottom. Code that mixes the two");
+        System.out.println("   is off by one, and the lab has exactly that bug.");
+        System.out.println();
+    }</code></pre>
+<!--@end-->
+
+  <!--@output project="code/s11-data-structures" main="com.aptech.s11.E03_Stack"-->
+<div class="terminal-output">1. A stack is last in, first out
+   pushed bottom, middle, top -&gt; [bottom, middle, top]
+   peek()  -&gt; top   (look without taking)
+   pop()   -&gt; top
+   after pop() -&gt; [bottom, middle]
+
+2. search() counts from 1 at the TOP, not 0 at the bottom
+   plates.search("top")     -&gt; 1   (the top is 1)
+   plates.search("middle")  -&gt; 2
+   plates.search("bottom")  -&gt; 3
+   plates.search("missing") -&gt; -1   (-1 when it is not there)
+
+   So a Stack's position is 1-based AND measured from the top, while an
+   ArrayList's index is 0-based from the bottom. Code that mixes the two
+   is off by one, and the lab has exactly that bug.
+
+3. Stack extends Vector - so a Stack is a Vector, with everything that implies
+   plates instanceof Vector -&gt; true
+   plates instanceof List   -&gt; true
+   after plates.add(0, ...) -&gt; [sneaked in at the bottom, bottom, top]
+   plates.get(1)            -&gt; bottom
+
+   A stack has two operations that matter. This one has inherited dozens,
+   so it can be reached into at any index, in any order. The design mistake
+   is is-a where has-a was meant: a Stack is not a Vector with extras.
+
+4. Every Vector method is synchronized - and that is still not enough
+   Start: [Ada]
+
+   Two callers each run the SAME two steps: isEmpty(), then remove(0).
+   Each step is locked. Written in an order a scheduler may produce:
+
+   A: isEmpty()  -&gt; false
+   B: isEmpty()  -&gt; false
+   A: remove(0)  -&gt; Ada
+   B: remove(0)  -&gt; java.lang.ArrayIndexOutOfBoundsException: Array index out of range: 0
+
+   Neither call was interrupted. Neither method was unsafe on its own. The
+   bug lives in the GAP BETWEEN them, and synchronized inside Vector cannot
+   close a gap it cannot see. Locking each step is not locking the sequence.
+
+5. The replacement: ArrayDeque, used through the Deque interface
+   push(), push() -&gt; [top, bottom]   (printed from the head)
+   peek()         -&gt; top
+   pop()          -&gt; top
+   after pop()    -&gt; [bottom]
+
+   ArrayDeque is a stack and a queue in one class, it is not synchronized, and
+   it cannot be indexed - so the mistake in Part 3 is impossible to make.
+   Prefer it unless you genuinely need Vector's per-method locking.</div>
+<!--@end-->
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      <strong><code>search()</code> is 1-based, and it counts from the top.</strong> A stack holding
+      <code>bottom, middle, top</code> answers <code>search("top") = 1</code>,
+      <code>search("middle") = 2</code>, <code>search("bottom") = 3</code>, and <code>-1</code> for
+      anything not present. An <code>ArrayList</code>'s index is 0-based and measured from the bottom,
+      so code that mixes the two is off by one &mdash; and the lab has exactly that bug, written by
+      somebody who assumed <code>search</code> worked like <code>indexOf</code>.
+    </div>
+  </div>
+
+  <!-- ===== 12. PART 6 — STACK IS A VECTOR ================================== -->
+  <h2 id="part-6-vector"><span class="eyebrow">Part 6 of 9</span> Bullet 3: <code>Stack</code> Is a <code>Vector</code></h2>
+  <p>
+    Here is why <code>Stack</code> is no longer recommended, and it has nothing to do with speed.
+    <code>Stack extends Vector</code>. It does not <em>contain</em> a list &mdash; it <strong>is</strong>
+    one, with <code>push</code> and <code>pop</code> bolted on. So a "stack" arrives carrying every
+    method <code>Vector</code> has ever had: <code>get(i)</code>, <code>set(i, e)</code>,
+    <code>add(index, element)</code>, <code>insertElementAt</code>, <code>remove(i)</code>,
+    <code>indexOf</code>, <code>capacity</code>, <code>setSize</code>. The next two sections of the
+    example show what that means in practice.
+  </p>
+
+  <!--@code src="code/s11-data-structures/src/main/java/com/aptech/s11/E03_Stack.java" from="57" to="97" title="E03_Stack.java — the inherited surface, and the gap between two locked calls"-->
+<pre class="numbered" data-file="E03_Stack.java — the inherited surface, and the gap between two locked calls" style="counter-reset:line 56"><code class="lang-java">    private static void itIsAVector() {
+        System.out.println("3. Stack extends Vector - so a Stack is a Vector, with everything that implies");
+        Stack&lt;String&gt; plates = new Stack&lt;&gt;();
+        plates.push("bottom");
+        plates.push("top");
+        System.out.println("   plates instanceof Vector -&gt; " + (plates instanceof Vector));
+        System.out.println("   plates instanceof List   -&gt; " + (plates instanceof List));
+        plates.add(0, "sneaked in at the bottom");
+        System.out.println("   after plates.add(0, ...) -&gt; " + plates);
+        System.out.println("   plates.get(1)            -&gt; " + plates.get(1));
+        System.out.println();
+        System.out.println("   A stack has two operations that matter. This one has inherited dozens,");
+        System.out.println("   so it can be reached into at any index, in any order. The design mistake");
+        System.out.println("   is is-a where has-a was meant: a Stack is not a Vector with extras.");
+        System.out.println();
+    }
+
+    private static void theGapBetweenTwoCalls() {
+        System.out.println("4. Every Vector method is synchronized - and that is still not enough");
+        Vector&lt;String&gt; shelf = new Vector&lt;&gt;();
+        shelf.add("Ada");
+        System.out.println("   Start: " + shelf);
+        System.out.println();
+        System.out.println("   Two callers each run the SAME two steps: isEmpty(), then remove(0).");
+        System.out.println("   Each step is locked. Written in an order a scheduler may produce:");
+        System.out.println();
+        System.out.println("   A: isEmpty()  -&gt; " + shelf.isEmpty());
+        System.out.println("   B: isEmpty()  -&gt; " + shelf.isEmpty());
+        System.out.println("   A: remove(0)  -&gt; " + shelf.remove(0));
+        try {
+            shelf.remove(0);
+            System.out.println("   B: remove(0)  -&gt; (no error)");
+        } catch (RuntimeException ex) {
+            System.out.println("   B: remove(0)  -&gt; " + ex);
+        }
+        System.out.println();
+        System.out.println("   Neither call was interrupted. Neither method was unsafe on its own. The");
+        System.out.println("   bug lives in the GAP BETWEEN them, and synchronized inside Vector cannot");
+        System.out.println("   close a gap it cannot see. Locking each step is not locking the sequence.");
+        System.out.println();
+    }</code></pre>
+<!--@end-->
+
+  <figure class="concept-visual">
+    <img src="../assets/img/diagrams/s11_stack_is_a_vector.svg" alt="On the left, a stack of three plates labelled top, middle and bottom with a fourth plate labelled sneaked in pushed in at the bottom by an arrow labelled add(0, x). On the right, two panels listing the five methods Stack owns against the many methods inherited from Vector, above a verdict panel showing how containment would avoid the problem." loading="lazy">
+    <figcaption><strong>Figure 3.</strong> A stack has five operations that matter and inherited dozens that do not. <code>add(0, x)</code> compiles, runs, and puts an element at the <em>bottom</em> &mdash; which is not a stack operation and cannot be prevented, because a <code>Stack</code> is a <code>Vector</code>.</figcaption>
+  </figure>
+
+  <div class="callout callout--danger"><span class="callout__i">&#9940;</span>
+    <div class="callout__b"><b>Do not &mdash; <code>synchronized</code> on every method is not thread safety</b>
+      <code>Vector</code> locks every method individually, and the check-then-act gap above is what that
+      buys you: two callers each check <code>isEmpty()</code>, both are told <code>false</code>, both
+      proceed, and the second <code>remove(0)</code> fails. Neither call was interrupted. Neither method
+      was unsafe on its own. <strong>The bug lives in the gap between them, and
+      <code>synchronized</code> inside <code>Vector</code> cannot close a gap it cannot see.</strong>
+      Locking each step is not locking the sequence &mdash; you met the same shape in Sessions 4 and 5,
+      and this is the library example of it.
+    </div>
+  </div>
+
+  <p>
+    The last section of the example is the replacement, and Session 1 already told you its name.
+    <code>ArrayDeque</code>, used through the <code>Deque</code> interface, is a stack and a queue in
+    one class. It is not synchronised, and &mdash; the part that matters here &mdash; <strong>it cannot
+    be indexed</strong>, so the <code>add(0, x)</code> mistake above is not a rule you have to
+    remember. It is impossible to write.
+  </p>
+
+  <!--@code src="code/s11-data-structures/src/main/java/com/aptech/s11/E03_Stack.java" from="99" to="112" title="E03_Stack.java — the replacement"-->
+<pre class="numbered" data-file="E03_Stack.java — the replacement" style="counter-reset:line 98"><code class="lang-java">    private static void theReplacement() {
+        System.out.println("5. The replacement: ArrayDeque, used through the Deque interface");
+        Deque&lt;String&gt; plates = new ArrayDeque&lt;&gt;();
+        plates.push("bottom");
+        plates.push("top");
+        System.out.println("   push(), push() -&gt; " + plates + "   (printed from the head)");
+        System.out.println("   peek()         -&gt; " + plates.peek());
+        System.out.println("   pop()          -&gt; " + plates.pop());
+        System.out.println("   after pop()    -&gt; " + plates);
+        System.out.println();
+        System.out.println("   ArrayDeque is a stack and a queue in one class, it is not synchronized, and");
+        System.out.println("   it cannot be indexed - so the mistake in Part 3 is impossible to make.");
+        System.out.println("   Prefer it unless you genuinely need Vector's per-method locking.");
+    }</code></pre>
+<!--@end-->
+
+  <!-- ===== 13. PART 7 — DICTIONARY ========================================= -->
+  <h2 id="part-7-dictionary"><span class="eyebrow">Part 7 of 9</span> Bullet 4: The <code>Dictionary</code> Classes</h2>
+  <p>
+    The manual says <em>the Dictionary <strong>classes</strong></em> again, and again it is plural for a
+    reason: it is a family of three, and they are related by inheritance.
+    <code>Dictionary</code> is the abstract parent, <code>Hashtable</code> is its only direct child, and
+    <code>Properties</code> is <code>Hashtable</code>'s child. Its own javadoc calls
+    <code>Dictionary</code> obsolete and says <code>Map</code> supersedes it &mdash; which is a fact the
+    program can check rather than repeat.
+  </p>
+
+  <!--@code src="code/s11-data-structures/src/main/java/com/aptech/s11/E04_Dictionary.java" from="37" to="99" title="E04_Dictionary.java — the abstract parent, and what Hashtable refuses"-->
+<pre class="numbered" data-file="E04_Dictionary.java — the abstract parent, and what Hashtable refuses" style="counter-reset:line 36"><code class="lang-java">    private static void theAbstractParent() {
+        System.out.println("1. Dictionary is the abstract parent, and Hashtable is its only child");
+        System.out.println("   Dictionary is abstract? "
+                + Modifier.isAbstract(Dictionary.class.getModifiers()));
+        System.out.println("   Its javadoc says it is obsolete and superseded by Map.");
+        System.out.println();
+
+        Dictionary&lt;String, String&gt; countries = new Hashtable&lt;&gt;();
+        countries.put("NG", "Nigeria");
+        countries.put("GH", "Ghana");
+        countries.put("KE", "Kenya");
+        System.out.println("   A Dictionary variable holding a Hashtable:");
+        System.out.println("   countries.get(\"NG\") -&gt; " + countries.get("NG"));
+        System.out.println("   countries.size()    -&gt; " + countries.size());
+
+        List&lt;String&gt; codes = new ArrayList&lt;&gt;();
+        for (Enumeration&lt;String&gt; keys = countries.keys(); keys.hasMoreElements(); ) {
+            codes.add(keys.nextElement());
+        }
+        Collections.sort(codes);
+        System.out.println("   countries.keys()    -&gt; an Enumeration, not an Iterator: " + codes);
+        System.out.println();
+        System.out.println("   So bullet 1 and bullet 4 are the same design: the Dictionary family");
+        System.out.println("   hands out Enumerations. See E01 for what Iterator added.");
+        System.out.println();
+    }
+
+    private static void noNullsAllowed() {
+        System.out.println("2. Hashtable refuses null - both values and keys");
+        Hashtable&lt;String, String&gt; legacy = new Hashtable&lt;&gt;();
+        legacy.put("NG", "Nigeria");
+        try {
+            legacy.put("XX", null);
+        } catch (NullPointerException ex) {
+            System.out.println("   hashtable.put(\"XX\", null)      -&gt; " + ex);
+        }
+        try {
+            legacy.put(null, "Nowhere");
+        } catch (NullPointerException ex) {
+            System.out.println("   hashtable.put(null, \"Nowhere\") -&gt; " + ex);
+        }
+
+        Map&lt;String, String&gt; modern = new HashMap&lt;&gt;();
+        modern.put("NG", "Nigeria");
+        modern.put("XX", null);
+        modern.put(null, "Nowhere");
+        System.out.println("   hashMap.put(\"XX\", null)        -&gt; accepted");
+        System.out.println("   hashMap.put(null, \"Nowhere\")   -&gt; accepted");
+        System.out.println();
+        System.out.println("   A HashMap allows ONE null key and any number of null values. A Hashtable");
+        System.out.println("   allows neither, so \"no value yet\" is a state it cannot even represent.");
+        System.out.println("   That is the first bug in the lab.");
+
+        try {
+            new ConcurrentHashMap&lt;String, String&gt;().put("XX", null);
+        } catch (NullPointerException ex) {
+            System.out.println();
+            System.out.println("   ConcurrentHashMap (Session 5) also refuses nulls, and deliberately: with");
+            System.out.println("   several threads, get() returning null could not tell \"not there\" from");
+            System.out.println("   \"there, and null\".");
+        }
+        System.out.println();
+    }</code></pre>
+<!--@end-->
+
+  <figure class="concept-visual">
+    <img src="../assets/img/diagrams/s11_two_generations.svg" alt="A three-column table listing six classes shipped in 1995 beside what we use now, with status pills: Enumeration, Vector, Stack, Hashtable and Dictionary all marked replaced by Iterator, ArrayList, ArrayDeque, HashMap and Map, while Properties and BitSet are both marked still right and paired with themselves." loading="lazy">
+    <figcaption><strong>Figure 4.</strong> The six classes, their replacements, and the two that need no replacement. Five rows are marked <span class="text-faint">replaced</span>; <code>Properties</code> and <code>BitSet</code> are paired with themselves because they are still the right tool.</figcaption>
+  </figure>
+
+  <!--@output project="code/s11-data-structures" main="com.aptech.s11.E04_Dictionary"-->
+<div class="terminal-output">1. Dictionary is the abstract parent, and Hashtable is its only child
+   Dictionary is abstract? true
+   Its javadoc says it is obsolete and superseded by Map.
+
+   A Dictionary variable holding a Hashtable:
+   countries.get("NG") -&gt; Nigeria
+   countries.size()    -&gt; 3
+   countries.keys()    -&gt; an Enumeration, not an Iterator: [GH, KE, NG]
+
+   So bullet 1 and bullet 4 are the same design: the Dictionary family
+   hands out Enumerations. See E01 for what Iterator added.
+
+2. Hashtable refuses null - both values and keys
+   hashtable.put("XX", null)      -&gt; java.lang.NullPointerException
+   hashtable.put(null, "Nowhere") -&gt; java.lang.NullPointerException: Cannot invoke "Object.hashCode()" because "key" is null
+   hashMap.put("XX", null)        -&gt; accepted
+   hashMap.put(null, "Nowhere")   -&gt; accepted
+
+   A HashMap allows ONE null key and any number of null values. A Hashtable
+   allows neither, so "no value yet" is a state it cannot even represent.
+   That is the first bug in the lab.
+
+   ConcurrentHashMap (Session 5) also refuses nulls, and deliberately: with
+   several threads, get() returning null could not tell "not there" from
+   "there, and null".
+
+3. Properties - the member of this family that is still the right tool
+   loaded from app.properties:
+      app.name = Registry
+      app.version = 11.0
+      stock.currency = NGN
+      stock.lowThreshold = 5
+
+   getProperty("stock.currency")          -&gt; NGN
+   getProperty("stock.lowThreshold")      -&gt; 5   (a String, not a number)
+   getProperty("missing.key")             -&gt; null   (null when absent)
+   getProperty("missing.key", "fallback") -&gt; fallback
+   new Properties() instanceof Hashtable  -&gt; true
+
+   The last line explains the first: Properties IS a Hashtable, so it inherits
+   the same refusal of nulls and adds getProperty/setProperty on top. It
+   survived because configuration files never went away.
+
+4. ResourceBundle is Properties plus a naming rule (Session 9's mechanism)
+   labels.properties     -&gt; greeting=Hello, farewell=Goodbye
+   labels_fr.properties  -&gt; greeting=Bonjour, farewell=Au revoir
+
+   report.title exists in the base bundle only. Ask the French one for it:
+   french.getString("report.title") -&gt; Enrolment report
+
+   No MissingResourceException: a missing translation falls back UP to the
+   base bundle. That fallback is why labels_fr.properties has two lines and
+   labels.properties has three - and it is the same fallback Session 9
+   relied on when a locale was only half translated.
+
+   Underneath all of it sits a Properties object reading a .properties file.</div>
+<!--@end-->
+
+  <div class="callout callout--danger"><span class="callout__i">&#9940;</span>
+    <div class="callout__b"><b>Do not &mdash; <code>Hashtable</code> refuses <code>null</code>, and the two failures look different</b>
+      <code>hashtable.put("XX", null)</code> throws a bare <code>NullPointerException</code> with no
+      message at all, because <code>Hashtable</code> checks the value itself. <code>hashtable.put(null,
+      "Nowhere")</code> throws one <em>with</em> a message &mdash; <code>Cannot invoke
+      "Object.hashCode()" because "key" is null</code> &mdash; because nothing checked the key; the map
+      simply tried to hash it. Two <code>null</code>s, two different failures, and both mean the same
+      thing: <strong>"no value yet" is a state a <code>Hashtable</code> cannot represent.</strong> A
+      <code>HashMap</code> allows one <code>null</code> key and any number of <code>null</code> values.
+    </div>
+  </div>
+  <p>
+    Session 5 already explained why <code>ConcurrentHashMap</code> refuses <code>null</code> again, and
+    deliberately: with several threads, <code>get()</code> returning <code>null</code> could not tell
+    "not there" from "there, and <code>null</code>". That is the same decision the
+    <code>Hashtable</code> authors made in 1995 for the same reason, and it is worth noticing that the
+    modern class does not overrule it.
+  </p>
+
+  <!-- ===== 14. PART 8 — PROPERTIES ========================================= -->
+  <h2 id="part-8-properties"><span class="eyebrow">Part 8 of 9</span> Bullet 4: <code>Properties</code>, the Survivor</h2>
+  <p>
+    <code>Properties</code> is a <code>Hashtable</code> &mdash; <code>new Properties() instanceof
+    Hashtable</code> is <code>true</code> &mdash; so it inherits the same refusal of <code>null</code>
+    and adds <code>getProperty</code>/<code>setProperty</code> on top. It has been in the JDK since 1.0
+    and it is <strong>still the right way to read a configuration file today</strong>. Configuration
+    files never went away, so neither did the class that reads them.
+  </p>
+
+  <!--@code src="code/s11-data-structures/src/main/java/com/aptech/s11/E04_Dictionary.java" from="101" to="149" title="E04_Dictionary.java — a real .properties file, and the bundle built on top of it"-->
+<pre class="numbered" data-file="E04_Dictionary.java — a real .properties file, and the bundle built on top of it" style="counter-reset:line 100"><code class="lang-java">    private static void propertiesTheSurvivor() throws IOException {
+        System.out.println("3. Properties - the member of this family that is still the right tool");
+        Properties config = new Properties();
+        try (InputStream in = E04_Dictionary.class.getResourceAsStream("/app.properties")) {
+            if (in == null) {
+                throw new IOException("app.properties was not on the classpath");
+            }
+            config.load(in);
+        }
+
+        System.out.println("   loaded from app.properties:");
+        for (String key : new TreeSet&lt;&gt;(config.stringPropertyNames())) {
+            System.out.println("      " + key + " = " + config.getProperty(key));
+        }
+        System.out.println();
+        System.out.println("   getProperty(\"stock.currency\")          -&gt; " + config.getProperty("stock.currency"));
+        System.out.println("   getProperty(\"stock.lowThreshold\")      -&gt; " + config.getProperty("stock.lowThreshold")
+                + "   (a String, not a number)");
+        System.out.println("   getProperty(\"missing.key\")             -&gt; " + config.getProperty("missing.key")
+                + "   (null when absent)");
+        System.out.println("   getProperty(\"missing.key\", \"fallback\") -&gt; " + config.getProperty("missing.key", "fallback"));
+        System.out.println("   new Properties() instanceof Hashtable  -&gt; " + (new Properties() instanceof Hashtable));
+        System.out.println();
+        System.out.println("   The last line explains the first: Properties IS a Hashtable, so it inherits");
+        System.out.println("   the same refusal of nulls and adds getProperty/setProperty on top. It");
+        System.out.println("   survived because configuration files never went away.");
+        System.out.println();
+    }
+
+    private static void resourceBundleIsBuiltOnIt() {
+        System.out.println("4. ResourceBundle is Properties plus a naming rule (Session 9's mechanism)");
+        ResourceBundle english = ResourceBundle.getBundle("labels", Locale.ENGLISH);
+        ResourceBundle french = ResourceBundle.getBundle("labels", Locale.FRENCH);
+
+        System.out.println("   labels.properties     -&gt; greeting=" + english.getString("greeting")
+                + ", farewell=" + english.getString("farewell"));
+        System.out.println("   labels_fr.properties  -&gt; greeting=" + french.getString("greeting")
+                + ", farewell=" + french.getString("farewell"));
+        System.out.println();
+        System.out.println("   report.title exists in the base bundle only. Ask the French one for it:");
+        System.out.println("   french.getString(\"report.title\") -&gt; " + french.getString("report.title"));
+        System.out.println();
+        System.out.println("   No MissingResourceException: a missing translation falls back UP to the");
+        System.out.println("   base bundle. That fallback is why labels_fr.properties has two lines and");
+        System.out.println("   labels.properties has three - and it is the same fallback Session 9");
+        System.out.println("   relied on when a locale was only half translated.");
+        System.out.println();
+        System.out.println("   Underneath all of it sits a Properties object reading a .properties file.");
+    }</code></pre>
+<!--@end-->
+
+  <p>
+    The last section is the one that connects this session to Session 9.
+    <strong><code>ResourceBundle</code> is <code>Properties</code> plus a naming rule.</strong> The
+    <code>Messages.properties</code> and <code>Messages_fr.properties</code> files your registry
+    already uses are read by exactly this class, and the fallback behaviour Session 9 relied on is
+    visible here in miniature: <code>labels_fr.properties</code> deliberately has no
+    <code>report.title</code> key, and asking the French bundle for it returns the English text with
+    <em>no exception</em>, because a missing translation walks up to the base bundle.
+  </p>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Tip &mdash; the encoding trap, which is real</b>
+      <code>Properties.load(InputStream)</code> reads <strong>ISO-8859-1</strong> by specification, not
+      UTF-8. A file with an accented character saved as UTF-8 will load as mojibake, and if you are
+      writing a French or Yoruba translation you will meet this within the hour. The supported answers
+      are <code>\uXXXX</code> escapes in the file, or <code>load(Reader)</code> with an explicit
+      <code>InputStreamReader</code> naming UTF-8. Session 9's guide uses the escape route; either is
+      correct, silently assuming UTF-8 is not.
+    </div>
+  </div>
+
+  <!-- ===== 15. PART 9 — READING LEGACY CODE ================================ -->
+  <h2 id="part-9-reading"><span class="eyebrow">Part 9 of 9</span> Reading Legacy Code You Didn&rsquo;t Write</h2>
+  <p>
+    You now know all four bullet classes. The part nobody teaches is what to <em>do</em> when you meet
+    them on Monday. The instinct &mdash; rewrite the class &mdash; is usually wrong, and it is wrong for
+    a reason that has nothing to do with code quality: <strong>the code works, it is in production,
+    and its behaviour is not fully documented anywhere except itself.</strong> A rewrite that "keeps the
+    behaviour" is a claim about behaviour nobody has written down.
+  </p>
+  <p>
+    The technique that does work is <strong>to wrap, not rewrite</strong>. Put the legacy class behind
+    an interface that describes what you need, implement that interface twice &mdash; once delegating to
+    the old code, once using the modern classes &mdash; and then run <em>one set of checks</em> against
+    both. That is the pattern you have now met three times in this course, and it is what the Guided Lab
+    below does for real. The check suite becomes the specification the old code never had.
+  </p>
+
+  <h3>The decision, in one table</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>If the legacy code&hellip;</th><th>Then</th><th>Because</th></tr></thead>
+      <tbody>
+        <tr><td>is on a path nothing else touches, and you can test it</td><td><strong>Rewrite it</strong></td><td>The checks are your safety net, so the risk is bounded</td></tr>
+        <tr><td>is called from everywhere, and its edge cases are unknown</td><td><strong>Wrap it</strong></td><td>You cannot preserve behaviour you have not written down</td></tr>
+        <tr><td>uses <code>Vector</code> or <code>Hashtable</code> in single-threaded code</td><td><strong>Rewrite the declaration, keep the shape</strong></td><td>The replacements are drop-in; the surprise was only the <code>null</code> handling</td></tr>
+        <tr><td>is <code>Properties</code>, <code>BitSet</code> or a <code>ResourceBundle</code></td><td><strong>Leave it alone</strong></td><td>These are not obsolete. Changing them is pure risk</td></tr>
+        <tr><td>relies on <code>Stack.search()</code> or <code>Enumeration</code> order</td><td><strong>Wrap it, and write the checks first</strong></td><td>Both have behaviour people routinely guess wrong &mdash; including whoever wrote it</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      <strong>The check suite is the deliverable, not the rewrite.</strong> Sessions 9 and 10 built you
+      a seam and a suite; today you point them at code nobody on your team wrote. "It behaves exactly
+      as before" is not a feeling &mdash; it is a thing you can run, and the lab below is where you run
+      it.
+    </div>
+  </div>
+
+  <!-- ===== 16. GUIDED LAB ================================================== -->
+  <h2 id="lab-stock-ledger"><span class="eyebrow">Guided Lab</span> The Stock Ledger</h2>
+  <p>
+    A small shop's stock ledger, written in 1996: a <code>Vector</code> of codes, a
+    <code>Hashtable</code> of quantities, a <code>Hashtable</code> of prices, a <code>Stack</code> of
+    pending orders, an <code>Enumeration</code> to walk it, and a <code>Properties</code> file for
+    configuration. Every choice was the obvious one at the time, and the whole thing compiles on JDK 21
+    without a single warning.
+  </p>
+  <p>
+    It also has <strong>three defects</strong>, and here is the point of the lab: not one of them is a
+    careless line of code. Each one is caused by <em>which class was chosen</em>. You will reproduce
+    all three, explain each one in terms of the class choice, fix them, and prove the fix with a check
+    suite that runs against both the old ledger and a modern one.
+  </p>
+
+  <h3>Step 1 &mdash; the behaviour you must not change</h3>
+  <p>
+    The interface comes first, because it is the specification the 1996 code never had. Read it before
+    you look at either implementation: it says what a ledger <em>does</em>, with no mention of how.
+  </p>
+
+  <!--@code src="code/s11-data-structures/src/main/java/com/aptech/s11/lab/StockLedger.java" title="StockLedger.java — the contract, and the whole point of the lab"-->
+<pre class="numbered" data-file="StockLedger.java — the contract, and the whole point of the lab"><code class="lang-java">package com.aptech.s11.lab;
+
+/**
+ * The behaviour the lab has to keep.
+ *
+ * This interface is the whole point of the exercise: it describes WHAT a stock ledger does
+ * without saying which classes do it. The legacy ledger behind it uses Vector, Hashtable,
+ * Stack and Enumeration; the modern one uses ArrayList, HashMap and ArrayDeque. If both pass
+ * the same checks, the rewrite changed nothing that anybody can observe.
+ */
+public interface StockLedger {
+
+    /** Adds quantity to a code, creating it if needed. */
+    void record(String code, int quantity);
+
+    /** Sets the unit price. A null price means "not known yet" and must be accepted. */
+    void setPrice(String code, Integer price);
+
+    /** The unit price, or null when it has not been set. */
+    Integer price(String code);
+
+    /** Puts an order on the pending stack. The most recent order is on top. */
+    void pushOrder(String code);
+
+    /** How many pending orders were placed AFTER this one, or -1 when it is not pending. */
+    int ordersAfter(String code);
+
+    /** How many distinct codes the ledger knows about. */
+    int distinctCodes();
+
+    /** Total value of everything held: sum of quantity x price, ignoring codes with no price. */
+    int totalValue();
+
+    /** The currency symbol, read from configuration. */
+    String currency();
+}</code></pre>
+<!--@end-->
+
+  <h3>Step 2 &mdash; the 1996 ledger, and its three defects</h3>
+  <!--@code src="code/s11-data-structures/src/main/java/com/aptech/s11/lab/LegacyStockLedger.java" title="LegacyStockLedger.java — written the way it would have been written in 1996"-->
+<pre class="numbered" data-file="LegacyStockLedger.java — written the way it would have been written in 1996"><code class="lang-java">package com.aptech.s11.lab;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.Properties;
+import java.util.Stack;
+import java.util.Vector;
+
+/**
+ * A stock ledger written the way it would have been written in 1996.
+ *
+ * Every choice here was the obvious one at the time: Vector for a growable list, Hashtable for
+ * a lookup table, Stack for the pending orders, Enumeration to walk them, Properties for config.
+ * All five compile without a single warning on JDK 21.
+ *
+ * It also contains three defects, and each one is caused by which class was chosen rather than
+ * by a careless line of code. LabCheck shows all three; the lab is to fix them without changing
+ * the behaviour the interface promises.
+ */
+public class LegacyStockLedger implements StockLedger {
+
+    private final Vector&lt;String&gt; codes = new Vector&lt;&gt;();
+    private final Hashtable&lt;String, Integer&gt; quantities = new Hashtable&lt;&gt;();
+    private final Hashtable&lt;String, Integer&gt; prices = new Hashtable&lt;&gt;();
+    private final Stack&lt;String&gt; pending = new Stack&lt;&gt;();
+    private final Properties config = new Properties();
+
+    public LegacyStockLedger() {
+        try (InputStream in = LegacyStockLedger.class.getResourceAsStream("/app.properties")) {
+            if (in != null) {
+                config.load(in);
+            }
+        } catch (IOException ignored) {
+            // 1996 code did not fuss; the default below keeps the program running.
+        }
+    }
+
+    @Override
+    public void record(String code, int quantity) {
+        if (!codes.contains(code)) {
+            codes.addElement(code);
+        }
+        quantities.put(code, quantity);
+    }
+
+    @Override
+    public void setPrice(String code, Integer price) {
+        // DEFECT 1. Hashtable refuses a null value, so "no price yet" cannot be stored at all.
+        prices.put(code, price);
+    }
+
+    @Override
+    public Integer price(String code) {
+        return prices.get(code);
+    }
+
+    @Override
+    public void pushOrder(String code) {
+        pending.push(code);
+    }
+
+    @Override
+    public int ordersAfter(String code) {
+        // DEFECT 2. search() is 1-based and measured from the top, so the newest order - which
+        // has nothing after it - answers 1 instead of 0. The count is off by one, always.
+        return pending.search(code);
+    }
+
+    @Override
+    public int distinctCodes() {
+        return codes.size();
+    }
+
+    @Override
+    public int totalValue() {
+        int total = 0;
+        // DEFECT 3. Walking a Vector with an Enumeration while removing from it. An Enumeration
+        // is not fail-fast, so this does not throw - it silently skips an entry and returns a
+        // wrong number, which is worse.
+        Enumeration&lt;String&gt; walk = codes.elements();
+        while (walk.hasMoreElements()) {
+            String code = walk.nextElement();
+            Integer quantity = quantities.get(code);
+            if (quantity == null || quantity == 0) {
+                drop(code);
+                continue;
+            }
+            Integer unitPrice = prices.get(code);
+            if (unitPrice != null) {
+                total += quantity * unitPrice;
+            }
+        }
+        return total;
+    }
+
+    @Override
+    public String currency() {
+        return config.getProperty("stock.currency", "NGN");
+    }
+
+    private void drop(String code) {
+        codes.removeElement(code);
+        quantities.remove(code);
+        prices.remove(code);
+    }
+}</code></pre>
+<!--@end-->
+
+  <p>Before you run anything, find all three. Two of them are named in comments; the third is not, and it is the one that will cost you the most time in real code because it does not throw:</p>
+  <ol>
+    <li><strong><code>setPrice(code, null)</code> throws</strong> &mdash; and "price not known yet" is a state the ledger has to be able to store.</li>
+    <li><strong><code>ordersAfter(code)</code> is off by one</strong>, every time, and you can predict the wrong answer before running it.</li>
+    <li><strong><code>totalValue()</code> returns a number that is silently wrong</strong> &mdash; no exception, no warning, just a total that is missing an entry.</li>
+  </ol>
+
+  <h3>Step 3 &mdash; one suite, two implementations</h3>
+  <p>
+    The check suite knows nothing about <code>Vector</code> or <code>ArrayList</code>. It talks to the
+    interface, which is what makes it usable as evidence: it runs against the modern ledger and against
+    the legacy one, and the difference in results <em>is</em> the bug report.
+  </p>
+
+  <!--@code src="code/s11-data-structures/src/main/java/com/aptech/s11/lab/ModernStockLedger.java" title="ModernStockLedger.java — the same behaviour, from Session 1's classes"-->
+<pre class="numbered" data-file="ModernStockLedger.java — the same behaviour, from Session 1's classes"><code class="lang-java">package com.aptech.s11.lab;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+/**
+ * The same ledger, same interface, built from the classes Session 1 taught.
+ *
+ * Compare it with LegacyStockLedger line by line. Every defect there is gone, and the three
+ * fixes were all class names:
+ *
+ *   Vector        -&gt; ArrayList   (and the iteration bug goes with it)
+ *   Hashtable     -&gt; HashMap     (which accepts a null value, so "no price yet" exists)
+ *   Stack         -&gt; ArrayDeque  (which cannot be indexed, so a stack stays a stack)
+ *   Enumeration   -&gt; Iterator    (which fails fast, so the silent skip becomes a crash)
+ *
+ * Properties stays. It is the one class from the legacy family that is still the right tool.
+ */
+public class ModernStockLedger implements StockLedger {
+
+    private final List&lt;String&gt; codes = new ArrayList&lt;&gt;();
+    private final Map&lt;String, Integer&gt; quantities = new HashMap&lt;&gt;();
+    private final Map&lt;String, Integer&gt; prices = new HashMap&lt;&gt;();
+    private final Deque&lt;String&gt; pending = new ArrayDeque&lt;&gt;();
+    private final Properties config = new Properties();
+
+    public ModernStockLedger() {
+        try (InputStream in = ModernStockLedger.class.getResourceAsStream("/app.properties")) {
+            if (in != null) {
+                config.load(in);
+            }
+        } catch (IOException ignored) {
+            // The default below keeps the program running; a real app would log this.
+        }
+    }
+
+    @Override
+    public void record(String code, int quantity) {
+        if (!codes.contains(code)) {
+            codes.add(code);
+        }
+        quantities.put(code, quantity);
+    }
+
+    @Override
+    public void setPrice(String code, Integer price) {
+        // No check needed: HashMap accepts a null value, so "not known yet" is representable.
+        prices.put(code, price);
+    }
+
+    @Override
+    public Integer price(String code) {
+        return prices.get(code);
+    }
+
+    @Override
+    public void pushOrder(String code) {
+        pending.push(code);
+    }
+
+    @Override
+    public int ordersAfter(String code) {
+        // The deque iterates from the head, which push() made the newest order. Count the
+        // orders we pass on the way to this one: that is how many were placed after it.
+        int seen = 0;
+        for (String next : pending) {
+            if (next.equals(code)) {
+                return seen;
+            }
+            seen++;
+        }
+        return -1;
+    }
+
+    @Override
+    public int distinctCodes() {
+        return codes.size();
+    }
+
+    @Override
+    public int totalValue() {
+        int total = 0;
+        // Removing through the iterator is legal, which is exactly what the legacy version
+        // needed and did not have. The list never shifts underneath the loop.
+        for (Iterator&lt;String&gt; walk = codes.iterator(); walk.hasNext(); ) {
+            String code = walk.next();
+            Integer quantity = quantities.get(code);
+            if (quantity == null || quantity == 0) {
+                walk.remove();
+                quantities.remove(code);
+                prices.remove(code);
+                continue;
+            }
+            Integer unitPrice = prices.get(code);
+            if (unitPrice != null) {
+                total += quantity * unitPrice;
+            }
+        }
+        return total;
+    }
+
+    @Override
+    public String currency() {
+        return config.getProperty("stock.currency", "NGN");
+    }
+}</code></pre>
+<!--@end-->
+
+  <!--@code src="code/s11-data-structures/src/main/java/com/aptech/s11/lab/LabCheck.java" title="LabCheck.java — one set of checks, run against both"-->
+<pre class="numbered" data-file="LabCheck.java — one set of checks, run against both"><code class="lang-java">package com.aptech.s11.lab;
+
+import java.util.function.Supplier;
+
+/**
+ * One set of checks, run against both ledgers.
+ *
+ * This is the whole discipline of the lab. Nothing here knows whether it is talking to the
+ * legacy ledger or the modern one - it only knows the interface. When the checks come back
+ * green for both, the rewrite is finished, and that is the only evidence that counts.
+ *
+ * Run it before you change anything and read the failures carefully; each one names the legacy
+ * class that caused it.
+ */
+public class LabCheck {
+
+    private static int passed;
+    private static int failed;
+
+    /** A single check: returns true when the ledger behaved as promised. */
+    private interface Check {
+        boolean run();
+    }
+
+    public static void main(String[] args) {
+        System.out.println("One suite, two implementations.");
+        System.out.println("The checks below know only the StockLedger interface - not which");
+        System.out.println("classes are behind it. Run them against both and compare.");
+        System.out.println();
+
+        System.out.println("=== ModernStockLedger  (ArrayList, HashMap, ArrayDeque) ===");
+        suite(ModernStockLedger::new);
+
+        System.out.println();
+        System.out.println("=== LegacyStockLedger  (Vector, Hashtable, Stack, Enumeration) ===");
+        suite(LegacyStockLedger::new);
+
+        System.out.println();
+        System.out.println(passed + " passed, " + failed + " failed.");
+        System.out.println();
+        if (failed == 0) {
+            System.out.println("Both ledgers agree. The rewrite changed nothing observable.");
+        } else {
+            System.out.println("Every failure is a legacy class choice, not a careless line:");
+            System.out.println("  price/unknown       - Hashtable refuses a null VALUE");
+            System.out.println("  orders/after-newest - Stack.search() counts from 1, from the top");
+            System.out.println("  orders/after-oldest - same off-by-one, one deeper");
+            System.out.println("  total/skips-empty   - Enumeration is not fail-fast, so removing");
+            System.out.println("                        during the walk silently skips an entry");
+        }
+    }
+
+    private static void suite(Supplier&lt;StockLedger&gt; factory) {
+        check(factory, "record/counts", () -&gt; {
+            StockLedger ledger = factory.get();
+            ledger.record("BOLT", 10);
+            ledger.record("NUT", 4);
+            return ledger.distinctCodes() == 2;
+        });
+
+        check(factory, "price/round-trip", () -&gt; {
+            StockLedger ledger = factory.get();
+            ledger.record("BOLT", 10);
+            ledger.setPrice("BOLT", 250);
+            return Integer.valueOf(250).equals(ledger.price("BOLT"));
+        });
+
+        check(factory, "price/unknown-is-null", () -&gt; {
+            StockLedger ledger = factory.get();
+            ledger.record("NUT", 4);
+            ledger.setPrice("NUT", null);
+            return ledger.price("NUT") == null;
+        });
+
+        check(factory, "total/simple", () -&gt; {
+            StockLedger ledger = factory.get();
+            ledger.record("BOLT", 10);
+            ledger.setPrice("BOLT", 250);
+            ledger.record("NUT", 4);
+            ledger.setPrice("NUT", 50);
+            return ledger.totalValue() == 2700;
+        });
+
+        check(factory, "total/ignores-unpriced", () -&gt; {
+            StockLedger ledger = factory.get();
+            ledger.record("BOLT", 10);
+            ledger.setPrice("BOLT", 250);
+            ledger.record("NUT", 4);          // no price set at all
+            return ledger.totalValue() == 2500;
+        });
+
+        check(factory, "orders/after-newest-is-0", () -&gt; {
+            StockLedger ledger = factory.get();
+            ledger.pushOrder("A");
+            ledger.pushOrder("B");
+            return ledger.ordersAfter("B") == 0;
+        });
+
+        check(factory, "orders/after-oldest", () -&gt; {
+            StockLedger ledger = factory.get();
+            ledger.pushOrder("A");
+            ledger.pushOrder("B");
+            ledger.pushOrder("C");
+            return ledger.ordersAfter("A") == 2;
+        });
+
+        check(factory, "orders/unknown-is-minus-1", () -&gt; {
+            StockLedger ledger = factory.get();
+            ledger.pushOrder("A");
+            return ledger.ordersAfter("ZZ") == -1;
+        });
+
+        check(factory, "total/skips-empty-without-losing-others", () -&gt; {
+            StockLedger ledger = factory.get();
+            ledger.record("BOLT", 10);
+            ledger.setPrice("BOLT", 100);
+            ledger.record("NUT", 0);          // an empty line, priced but holding nothing
+            ledger.setPrice("NUT", 50);
+            ledger.record("WASHER", 5);
+            ledger.setPrice("WASHER", 10);
+            ledger.record("SCREW", 2);
+            ledger.setPrice("SCREW", 20);
+            // 10x100 + 0x50 + 5x10 + 2x20 = 1090
+            return ledger.totalValue() == 1090;
+        });
+
+        check(factory, "config/currency-from-properties", () -&gt; {
+            StockLedger ledger = factory.get();
+            return "NGN".equals(ledger.currency());
+        });
+    }
+
+    private static void check(Supplier&lt;StockLedger&gt; factory, String name, Check body) {
+        try {
+            if (body.run()) {
+                passed++;
+                System.out.printf("  PASS  %s%n", name);
+            } else {
+                failed++;
+                System.out.printf("  FAIL  %s   (wrong answer)%n", name);
+            }
+        } catch (RuntimeException ex) {
+            failed++;
+            System.out.printf("  FAIL  %s   (threw %s)%n", name, ex);
+        }
+    }
+}</code></pre>
+<!--@end-->
+
+  <p>Run it as it stands. The modern ledger should pass everything; the legacy one should not:</p>
+
+  <!--@output project="code/s11-data-structures" main="com.aptech.s11.lab.LabCheck"-->
+<div class="terminal-output">One suite, two implementations.
+The checks below know only the StockLedger interface - not which
+classes are behind it. Run them against both and compare.
+
+=== ModernStockLedger  (ArrayList, HashMap, ArrayDeque) ===
+  PASS  record/counts
+  PASS  price/round-trip
+  PASS  price/unknown-is-null
+  PASS  total/simple
+  PASS  total/ignores-unpriced
+  PASS  orders/after-newest-is-0
+  PASS  orders/after-oldest
+  PASS  orders/unknown-is-minus-1
+  PASS  total/skips-empty-without-losing-others
+  PASS  config/currency-from-properties
+
+=== LegacyStockLedger  (Vector, Hashtable, Stack, Enumeration) ===
+  PASS  record/counts
+  PASS  price/round-trip
+  FAIL  price/unknown-is-null   (threw java.lang.NullPointerException)
+  PASS  total/simple
+  PASS  total/ignores-unpriced
+  FAIL  orders/after-newest-is-0   (wrong answer)
+  FAIL  orders/after-oldest   (wrong answer)
+  PASS  orders/unknown-is-minus-1
+  FAIL  total/skips-empty-without-losing-others   (wrong answer)
+  PASS  config/currency-from-properties
+
+16 passed, 4 failed.
+
+Every failure is a legacy class choice, not a careless line:
+  price/unknown       - Hashtable refuses a null VALUE
+  orders/after-newest - Stack.search() counts from 1, from the top
+  orders/after-oldest - same off-by-one, one deeper
+  total/skips-empty   - Enumeration is not fail-fast, so removing
+                        during the walk silently skips an entry</div>
+<!--@end-->
+
+  <h3>Step 4 &mdash; fix them without touching the interface</h3>
+  <ol>
+    <li><strong>Defect 1</strong> &mdash; change the price table from <code>Hashtable</code> to <code>HashMap</code> and the method becomes correct as written, because a <code>HashMap</code> accepts a <code>null</code> value. If you must keep <code>Hashtable</code>, you need <code>containsKey</code> to tell "no price yet" from "not in the catalogue" &mdash; and now every reader has to know that rule.</li>
+    <li><strong>Defect 2</strong> &mdash; <code>search()</code> counts from 1 at the top, so the number of orders placed <em>after</em> one is <code>search() - 1</code>, and <code>-1</code> must stay <code>-1</code> when the code is not pending at all. The honest fix is not arithmetic on <code>search()</code>: it is to use a <code>Deque</code>, which cannot be searched by position and makes you count deliberately.</li>
+    <li><strong>Defect 3</strong> &mdash; an <code>Enumeration</code> is not fail-fast, so removing during the walk shifts the entries left and the loop steps straight over one. Either collect what you want to remove and drop it after the loop, or use an <code>Iterator</code> and its <code>remove()</code>. The second is shorter and turns a silent wrong answer into a crash if you ever get it wrong again.</li>
+  </ol>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point &mdash; what the lab is actually teaching</b>
+      All three fixes are <em>class substitutions</em>: <code>Hashtable</code> &rarr; <code>HashMap</code>,
+      <code>Stack</code> &rarr; <code>Deque</code>/<code>ArrayDeque</code>, <code>Enumeration</code> &rarr;
+      <code>Iterator</code>. Not one line of logic needed rewriting, and the interface never changed.
+      That is the honest version of "legacy code is dangerous": the danger is concentrated in four class
+      names, and knowing them is most of the job.
+    </div>
+  </div>
+
+  <!-- ===== 17. COMMON MISTAKES ============================================= -->
+  <h2>&#9888;&#65039; Common Mistakes</h2>
+  <p>
+    Every message below is the real one, copied from a run of the code on this page. If you see it,
+    you are in the right place.
+  </p>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>1. <code>Stack.search()</code> treated as 0-based</b>
+      <code>search()</code> returns the position counted <strong>from 1, from the top</strong>, or
+      <code>-1</code>. Writing <code>if (stack.search(x) == 0)</code> to mean "on top" is never true, and
+      using the result as "how many are after it" is off by one in every case. If you have to reason
+      about positions rather than just the top, you want a <code>Deque</code>, not a <code>Stack</code>.
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>2. Storing <code>null</code> in a <code>Hashtable</code></b>
+      <code>hashtable.put("XX", null)</code> throws <code>java.lang.NullPointerException</code> &mdash;
+      with no message, which makes it hard to find. <code>hashtable.put(null, "Nowhere")</code> throws
+      <code>java.lang.NullPointerException: Cannot invoke "Object.hashCode()" because "key" is
+      null</code>. Both are by design. If "no value yet" is a real state, the class is wrong, not the
+      call: use a <code>HashMap</code>.
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>3. Removing from a <code>Vector</code> while an <code>Enumeration</code> walks it</b>
+      No exception. No warning. <strong>A wrong answer.</strong> Removing an element shifts the ones
+      after it left by one, and the <code>Enumeration</code> keeps incrementing its index, so it skips
+      the next entry entirely. This is the lab's third defect, and it is the most dangerous shape in the
+      whole session precisely because it is silent.
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>4. Expecting <code>asIterator().remove()</code> to work</b>
+      It throws <code>java.lang.UnsupportedOperationException</code>, even on a mutable
+      <code>Vector</code>. The adapter is read-only because <code>Enumeration</code> has no removal
+      operation to forward. Copy into a <code>List</code> first, or call <code>iterator()</code>
+      instead.
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>5. Calling <code>remove(0)</code> on an empty <code>Vector</code></b>
+      The message is the old one: <code>java.lang.ArrayIndexOutOfBoundsException: Array index out of
+      range: 0</code> &mdash; <em>not</em> the modern "Index 0 out of bounds for length 0" you see from
+      an <code>ArrayList</code>. Old classes carry old messages, which is why searching the exact string
+      you saw matters. The deeper point: the check and the removal are two separate calls, and the gap
+      between them is where the bug lives.
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>6. Assuming a <code>.properties</code> file is UTF-8</b>
+      <code>Properties.load(InputStream)</code> reads <strong>ISO-8859-1</strong> by specification. An
+      accented character saved as UTF-8 loads as mojibake &mdash; no exception, just wrong text in a
+      user-facing message. Use <code>\uXXXX</code> escapes, or load with a <code>Reader</code> that
+      names UTF-8 explicitly.
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>7. Believing legacy means deprecated &mdash; and deleting on sight</b>
+      Nothing in this session is deprecated. Deleting a <code>Properties</code> class from a working
+      application because it "sounds old" breaks configuration loading; deleting a <code>BitSet</code>
+      because it is 1995 breaks whatever index it was holding. Run <code>E00</code> before you touch
+      either: <code>isAnnotationPresent(Deprecated.class)</code> is a one-line answer to a question
+      people argue about for an hour.
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>8. Confusing <code>BitSet.size()</code> with <code>cardinality()</code></b>
+      <code>cardinality()</code> is how many numbers are in the set. <code>length()</code> is one past
+      the highest. <code>size()</code> is the room the object has, always a multiple of 64. Iterating to
+      <code>size()</code> instead of <code>length()</code> means visiting up to 64 bits of nothing, and
+      using <code>size()</code> as "how many are in it" is simply wrong.
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>9. Reaching into a <code>Stack</code> at an index</b>
+      <code>stack.add(0, x)</code> and <code>stack.set(2, y)</code> compile, run, and are not stack
+      operations. They work because <code>Stack extends Vector</code>, and the compiler cannot help you.
+      This is the is-a-where-has-a-was-meant mistake from Session 9 in library form, and the fix is to
+      use <code>Deque</code>, which has no index to reach for.
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>10. Printing a <code>Hashtable</code> and reading the order as meaning</b>
+      A hash-backed collection has no order to print. Two runs, two JVMs or two key sets give different
+      sequences, so a test that asserts on the printed order of a <code>Hashtable</code> is a test that
+      passes on your machine. Collect the keys, sort them, then print &mdash; which is what every
+      example on this page does.
+    </div>
+  </div>
+
+  <!-- ===== 18. KNOWLEDGE CHECK ============================================= -->
+  <h2>&#129504; Knowledge Check</h2>
+  <p>
+    Ten questions on the whole session. Several have more than one defensible answer &mdash; if you
+    disagree with one, argue it, because that is exactly what happens in a code review when somebody
+    proposes deleting a legacy class.
+  </p>
+
+  <div class="quiz" id="s11-check">
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">1. Which of these carries <code>@Deprecated</code> on JDK 21?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>java.util.Stack</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>java.util.Hashtable</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>java.util.Date.getYear()</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>java.util.Vector</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> All three of the others print <code>deprecated? false</code> in <code>E00</code>. <code>Date.getYear()</code> and <code>Thread.stop()</code> are the controls: they really are deprecated, which is what proves the check is working rather than always answering false.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">2. A <code>Stack</code> holds <code>bottom, middle, top</code> (top pushed last). What is <code>search("top")</code>?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>0</code> &mdash; it is the first element</label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>1</code> &mdash; counted from 1, from the top</label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>3</code> &mdash; counted from the bottom</label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>-1</code> &mdash; <code>search</code> is not a <code>Stack</code> method</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> 1-based, from the top. So <code>"middle"</code> is <code>2</code> and <code>"bottom"</code> is <code>3</code>, and anything absent is <code>-1</code>. The lab's second defect is somebody treating this as an <code>ArrayList</code> index.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">3. What does <code>new Hashtable&lt;String, String&gt;().put("k", null)</code> do?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Stores <code>null</code>, like a <code>HashMap</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> Throws <code>NullPointerException</code>, with no message</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Silently ignores the call</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Stores the empty string instead</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> And a <code>null</code> <em>key</em> throws a different NPE, the one with <code>Cannot invoke "Object.hashCode()" because "key" is null</code>. That asymmetry &mdash; one checked value, one unchecked key &mdash; is worth remembering when you are hunting a bare NPE in old code.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="d">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">4. <code>Properties</code> is a subclass of which class?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>HashMap</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>Dictionary</code>, directly</label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>AbstractMap</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>Hashtable</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>D.</strong> So <code>new Properties() instanceof Hashtable</code> is <code>true</code>, and it inherits the null refusal. The chain is <code>Dictionary</code> &rarr; <code>Hashtable</code> &rarr; <code>Properties</code>: three generations, and the middle one is why the plural in the manual's bullet is right.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">5. Why does <code>vector.elements().asIterator().remove()</code> throw <code>UnsupportedOperationException</code>?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>Enumeration</code> has no removal operation for the adapter to forward.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Because the <code>Vector</code> is empty.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Because <code>Vector</code> is immutable.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Because <code>remove()</code> must be called before <code>next()</code>.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A.</strong> The <code>Vector</code> is perfectly mutable &mdash; <code>vector.iterator().remove()</code> works on the very same object. The adapter is read-only because the interface it wraps has two methods and neither of them removes.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">6. You need a stack and you are writing new code. Which type should the variable be?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>Stack&lt;String&gt;</code>, because the name says what it is</label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>Vector&lt;String&gt;</code>, because <code>Stack</code> is only a wrapper</label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>Deque&lt;String&gt;</code>, holding an <code>ArrayDeque</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>List&lt;String&gt;</code>, and use <code>add</code>/<code>remove</code> at the end</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> <code>Deque</code> gives you <code>push</code>, <code>pop</code> and <code>peek</code>, cannot be indexed, and lets you swap the implementation later. Session 1 said this; today you found out why.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">7. A <code>BitSet</code> has bits set for 2, 3 and 5. What does <code>size()</code> return?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>3</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>64</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>6</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>5</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> <code>size()</code> is the room the set has &mdash; always a multiple of 64. <code>cardinality() = 3</code> is how many are in it, and <code>length() = 6</code> is one past the highest.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="d">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">8. A loop removes even numbers from a <code>Vector</code> while walking it with an <code>Enumeration</code>. What happens?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>ConcurrentModificationException</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>UnsupportedOperationException</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> The loop finishes and the result is correct</label>
+      <label class="quiz__opt"><input type="radio" value="d"> The loop finishes and the result is wrong, with no exception</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>D.</strong> An <code>Enumeration</code> is not fail-fast. Removing shifts the following entries left, the index keeps advancing, and entries get skipped &mdash; so a sum that should be 9 comes back as 1. An <code>Iterator</code> in the same situation throws, which is why it replaced this.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">9. What kind of type is <code>Dictionary</code>?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> An abstract class, obsolete, superseded by <code>Map</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> An interface, like <code>Map</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> A final class you cannot extend</label>
+      <label class="quiz__opt"><input type="radio" value="d"> A deprecated annotation</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A.</strong> <code>Modifier.isAbstract(Dictionary.class.getModifiers())</code> is <code>true</code>, and its own javadoc says it is obsolete and that <code>Map</code> supersedes it. <code>Hashtable</code> is its only direct child &mdash; and it is not deprecated either.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">10. Two threads each run <code>if (!vector.isEmpty()) vector.remove(0);</code> on a one-element <code>Vector</code>. Every <code>Vector</code> method is <code>synchronized</code>. What happens?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Nothing &mdash; the locking prevents it</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Both get an element, and the <code>Vector</code> goes negative in size</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Both see <code>isEmpty() == false</code>, the first removes, the second fails</label>
+      <label class="quiz__opt"><input type="radio" value="d"> The second thread blocks inside <code>remove</code> until there is an element again</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> Each call is locked; the <em>sequence</em> is not. The gap between the check and the act is invisible to <code>synchronized</code> inside <code>Vector</code> &mdash; which is the whole reason per-method locking was never a thread-safety guarantee, and why the modern advice is to synchronise on the sequence yourself (Sessions 4 and 5).</div>
+    </div>
+
+    <div class="quiz__score" style="display:none"></div>
+  </div>
+
+  <!-- ===== 19. PRACTICE =================================================== -->
+  <h2>&#128170; Practice</h2>
+  <p>
+    Six programs, in rising order of difficulty, each in <code>code/s11-data-structures</code> under
+    <code>practice/</code>. The output below each one is what it actually printed. Try it before you
+    open the file: in every one of these, the interesting part is a claim in the title, and you should
+    want to check it rather than be told.
+  </p>
+
+  <details>
+    <summary><strong>&#127793; Easy 1: get data out of an <code>Enumeration</code></strong></summary>
+    <div>
+      <p>
+        You are handed a legacy source that offers nothing but an <code>Enumeration</code>. Get the data
+        out four ways: the 1996 <code>while</code> loop, the one-call replacement, a
+        <code>for</code> loop over <code>asIterator()</code>, and a filtered copy. Then find the one
+        thing an <code>Enumeration</code> cannot do.
+      </p>
+      <p>
+        The last section is the point of the exercise: <code>asIterator()</code> gives you an
+        <code>Iterator</code>, but it is a read-only one, and the reason is not a bug.
+      </p>
+      <details>
+        <summary>&#128161; Hint</summary>
+        <p>
+          Two methods in the JDK do all the work here: <code>Collections.list(enumeration)</code> drains
+          one into an <code>ArrayList</code>, and <code>Enumeration.asIterator()</code> adapts one to
+          the modern interface. For the filtered copy, remember that <code>List</code> has had
+          <code>removeIf</code> since Java 8 &mdash; you never need to write that loop by hand.
+        </p>
+      </details>
+      <details>
+        <summary>&#9989; Solution</summary>
+        <div>
+          <p>Run it: <code>java -cp target/classes com.aptech.s11.practice.P1_EnumeratingLegacy</code></p>
+
+          <!--@code src="code/s11-data-structures/src/main/java/com/aptech/s11/practice/P1_EnumeratingLegacy.java" title="P1_EnumeratingLegacy.java — four ways out of an Enumeration"-->
+<pre class="numbered" data-file="P1_EnumeratingLegacy.java — four ways out of an Enumeration"><code class="lang-java">package com.aptech.s11.practice;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Vector;
+
+/**
+ * P1 - Bullet 1, the Enumeration interface.
+ *
+ * You are handed a legacy source that offers nothing but an Enumeration. Get data out of it
+ * four ways, and find the one thing an Enumeration cannot do.
+ */
+public class P1_EnumeratingLegacy {
+
+    public static void main(String[] args) {
+        Vector&lt;String&gt; cohort = new Vector&lt;&gt;(List.of("Ada", "Ben", "Chidi", "Dara", "Eze"));
+
+        System.out.println("1. The 1996 loop: an Enumeration, walked by hand");
+        List&lt;String&gt; byHand = new ArrayList&lt;&gt;();
+        Enumeration&lt;String&gt; walk = cohort.elements();
+        while (walk.hasMoreElements()) {
+            byHand.add(walk.nextElement());
+        }
+        System.out.println("   " + byHand);
+        System.out.println();
+
+        System.out.println("2. The one-call replacement: Collections.list");
+        System.out.println("   " + Collections.list(cohort.elements()));
+        System.out.println();
+
+        System.out.println("3. An Enumeration is not an Iterable, so a for-each needs asIterator()");
+        int vowels = 0;
+        for (Iterator&lt;String&gt; it = cohort.elements().asIterator(); it.hasNext(); ) {
+            String name = it.next();
+            if ("AEIOU".indexOf(name.charAt(0)) &gt;= 0) {
+                vowels++;
+            }
+        }
+        System.out.println("   names starting with a vowel -&gt; " + vowels);
+        System.out.println();
+
+        System.out.println("4. What is missing: asIterator() has no remove()");
+        Iterator&lt;String&gt; readOnly = cohort.elements().asIterator();
+        readOnly.next();
+        try {
+            readOnly.remove();
+        } catch (UnsupportedOperationException ex) {
+            System.out.println("   remove() -&gt; " + ex);
+        }
+        System.out.println("   An Enumeration has no remove(), and asIterator() does not invent one.");
+        System.out.println("   To take things out, copy into a real List first:");
+        List&lt;String&gt; copy = new ArrayList&lt;&gt;(cohort);
+        copy.removeIf(name -&gt; name.startsWith("B"));
+        System.out.println("   " + copy);
+    }
+}</code></pre>
+<!--@end-->
+
+          <!--@output project="code/s11-data-structures" main="com.aptech.s11.practice.P1_EnumeratingLegacy"-->
+<div class="terminal-output">1. The 1996 loop: an Enumeration, walked by hand
+   [Ada, Ben, Chidi, Dara, Eze]
+
+2. The one-call replacement: Collections.list
+   [Ada, Ben, Chidi, Dara, Eze]
+
+3. An Enumeration is not an Iterable, so a for-each needs asIterator()
+   names starting with a vowel -&gt; 2
+
+4. What is missing: asIterator() has no remove()
+   remove() -&gt; java.lang.UnsupportedOperationException: remove
+   An Enumeration has no remove(), and asIterator() does not invent one.
+   To take things out, copy into a real List first:
+   [Ada, Chidi, Dara, Eze]</div>
+<!--@end-->
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details>
+    <summary><strong>&#127793; Easy 2: attendance with a <code>BitSet</code></strong></summary>
+    <div>
+      <p>
+        Twelve students, two days of attendance. Answer five questions: who came both days, who came
+        either day, who came only on day one, who missed both, and how many came each day. Then print
+        <code>size()</code> and <code>length()</code> beside <code>cardinality()</code> so the three
+        numbers can be compared.
+      </p>
+      <p>
+        The trap is that <code>and()</code>, <code>or()</code> and <code>andNot()</code> all
+        <strong>mutate the receiver</strong>. Mutating <code>day1</code> here would destroy the data the
+        next question needs, so every helper clones first.
+      </p>
+      <details>
+        <summary>&#128161; Hint</summary>
+        <p>
+          <code>day1.and(day2)</code> leaves the answer in <code>day1</code> and throws away the
+          original. Write four tiny helpers that each do <code>BitSet r = (BitSet) a.clone();</code>
+          then the operation, then <code>return r;</code> &mdash; four lines each, and the rest of the
+          program reads like set algebra. For "missed both", build a full set with
+          <code>set(1, 13)</code> &mdash; from-inclusive, to-exclusive &mdash; and
+          <code>andNot</code> the union.
+        </p>
+      </details>
+      <details>
+        <summary>&#9989; Solution</summary>
+        <div>
+          <p>Run it: <code>java -cp target/classes com.aptech.s11.practice.P2_BitSetAttendance</code></p>
+
+          <!--@code src="code/s11-data-structures/src/main/java/com/aptech/s11/practice/P2_BitSetAttendance.java" title="P2_BitSetAttendance.java — set questions, one line each"-->
+<pre class="numbered" data-file="P2_BitSetAttendance.java — set questions, one line each"><code class="lang-java">package com.aptech.s11.practice;
+
+import java.util.BitSet;
+
+/**
+ * P2 - Bullet 2, the BitSet class.
+ *
+ * A register of twelve students, two days of attendance. A BitSet answers set questions about
+ * them in one line each - which is what it is for.
+ */
+public class P2_BitSetAttendance {
+
+    public static void main(String[] args) {
+        BitSet day1 = new BitSet();
+        BitSet day2 = new BitSet();
+        for (int id : new int[] {1, 2, 4, 5, 7, 9, 10, 12}) {
+            day1.set(id);
+        }
+        for (int id : new int[] {2, 3, 4, 6, 7, 9, 11}) {
+            day2.set(id);
+        }
+
+        System.out.println("day1             " + day1);
+        System.out.println("day2             " + day2);
+        System.out.println();
+        System.out.println("present both     " + and(day1, day2));
+        System.out.println("present either   " + or(day1, day2));
+        System.out.println("day1 only        " + andNot(day1, day2));
+        System.out.println("missed both      " + missedBoth(day1, day2));
+        System.out.println();
+        System.out.println("came on day1     " + day1.cardinality() + " students");
+        System.out.println("came on day2     " + day2.cardinality() + " students");
+        System.out.println("first on day1    " + day1.nextSetBit(0));
+        System.out.println("after 7 on day1  " + day1.nextSetBit(8));
+        System.out.println();
+
+        System.out.println("One long holds 64 answers, so the space is round:");
+        System.out.println("size()           " + day1.size() + " bits, always a multiple of 64");
+        System.out.println("length()         " + day1.length() + " bits up to the highest student");
+        System.out.println();
+        System.out.println("A boolean[13] would spend 13 separate bytes on the same 12 answers,");
+        System.out.println("and would have no and(), or() or cardinality() to ask with.");
+    }
+
+    private static BitSet and(BitSet a, BitSet b) {
+        BitSet result = (BitSet) a.clone();
+        result.and(b);
+        return result;
+    }
+
+    private static BitSet or(BitSet a, BitSet b) {
+        BitSet result = (BitSet) a.clone();
+        result.or(b);
+        return result;
+    }
+
+    private static BitSet andNot(BitSet a, BitSet b) {
+        BitSet result = (BitSet) a.clone();
+        result.andNot(b);
+        return result;
+    }
+
+    /** Students 1..12 who are in neither day. */
+    private static BitSet missedBoth(BitSet day1, BitSet day2) {
+        BitSet all = new BitSet();
+        all.set(1, 13);
+        all.andNot(or(day1, day2));
+        return all;
+    }
+}</code></pre>
+<!--@end-->
+
+          <!--@output project="code/s11-data-structures" main="com.aptech.s11.practice.P2_BitSetAttendance"-->
+<div class="terminal-output">day1             {1, 2, 4, 5, 7, 9, 10, 12}
+day2             {2, 3, 4, 6, 7, 9, 11}
+
+present both     {2, 4, 7, 9}
+present either   {1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12}
+day1 only        {1, 5, 10, 12}
+missed both      {8}
+
+came on day1     8 students
+came on day2     7 students
+first on day1    1
+after 7 on day1  9
+
+One long holds 64 answers, so the space is round:
+size()           64 bits, always a multiple of 64
+length()         13 bits up to the highest student
+
+A boolean[13] would spend 13 separate bytes on the same 12 answers,
+and would have no and(), or() or cardinality() to ask with.</div>
+<!--@end-->
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details>
+    <summary><strong>&#128170; Medium 1: bracket matching with a <code>Stack</code></strong></summary>
+    <div>
+      <p>
+        Five samples, some balanced and some not, each with a different <em>kind</em> of failure: a
+        close with nothing open, a mismatched pair, and an opener that is never closed. Report which
+        kind each one is rather than a bare <code>true</code>/<code>false</code>.
+      </p>
+      <p>
+        Then the second half asks <code>search()</code> for each bracket in a three-deep stack, so you
+        can see 1-based-from-the-top with your own eyes instead of taking Part 5's word for it.
+      </p>
+      <details>
+        <summary>&#128161; Hint</summary>
+        <p>
+          Push every opener. On a closer, the only thing that matters is the <em>most recent</em>
+          opener &mdash; which is exactly what <code>pop()</code> gives you, and exactly why this problem
+          is the canonical stack exercise. The three failure messages come from three places: an empty
+          stack on a closer, a non-matching top after the pop, and a non-empty stack at the end.
+        </p>
+      </details>
+      <details>
+        <summary>&#9989; Solution</summary>
+        <div>
+          <p>Run it: <code>java -cp target/classes com.aptech.s11.practice.P3_StackBrackets</code></p>
+
+          <!--@code src="code/s11-data-structures/src/main/java/com/aptech/s11/practice/P3_StackBrackets.java" title="P3_StackBrackets.java — the problem a stack exists for"-->
+<pre class="numbered" data-file="P3_StackBrackets.java — the problem a stack exists for"><code class="lang-java">package com.aptech.s11.practice;
+
+import java.util.Stack;
+
+/**
+ * P3 - Bullet 3, the Stack classes.
+ *
+ * Bracket matching is the exercise a stack exists for: what you have to remember is what was
+ * opened last, and that is exactly what a stack hands back first.
+ */
+public class P3_StackBrackets {
+
+    public static void main(String[] args) {
+        String[] samples = {
+            "a(b[c]d)e",
+            "a(b[c)d]e",
+            "()",
+            "())",
+            "((",
+            "no brackets here",
+        };
+        for (String sample : samples) {
+            System.out.printf("%-18s -&gt; %s%n", sample, check(sample));
+        }
+
+        System.out.println();
+        System.out.println("The stack also answers WHERE something sits, counted from the top:");
+        Stack&lt;Character&gt; open = new Stack&lt;&gt;();
+        open.push('(');
+        open.push('[');
+        open.push('{');
+        System.out.println("   the stack          " + open + "   (printed bottom first)");
+        System.out.println("   open.search('{')   -&gt; " + open.search('{') + "   (on top)");
+        System.out.println("   open.search('[')   -&gt; " + open.search('['));
+        System.out.println("   open.search('(')   -&gt; " + open.search('(') + "   (deepest)");
+        System.out.println("   open.search(')')   -&gt; " + open.search(')') + "   (not there at all)");
+        System.out.println();
+        System.out.println("   Counted from 1, from the top - not from 0 at the bottom.");
+    }
+
+    private static String check(String text) {
+        Stack&lt;Character&gt; open = new Stack&lt;&gt;();
+        for (char c : text.toCharArray()) {
+            if (c == '(' || c == '[' || c == '{') {
+                open.push(c);
+            } else if (c == ')' || c == ']' || c == '}') {
+                if (open.isEmpty()) {
+                    return "closing '" + c + "' with nothing open";
+                }
+                char top = open.pop();
+                if (partnerOf(top) != c) {
+                    return "'" + top + "' was closed by '" + c + "'";
+                }
+            }
+        }
+        if (!open.isEmpty()) {
+            return "never closed: " + open;
+        }
+        return "balanced";
+    }
+
+    private static char partnerOf(char opener) {
+        return switch (opener) {
+            case '(' -&gt; ')';
+            case '[' -&gt; ']';
+            default -&gt; '}';
+        };
+    }
+}</code></pre>
+<!--@end-->
+
+          <!--@output project="code/s11-data-structures" main="com.aptech.s11.practice.P3_StackBrackets"-->
+<div class="terminal-output">a(b[c]d)e          -&gt; balanced
+a(b[c)d]e          -&gt; '[' was closed by ')'
+()                 -&gt; balanced
+())                -&gt; closing ')' with nothing open
+((                 -&gt; never closed: [(, (]
+no brackets here   -&gt; balanced
+
+The stack also answers WHERE something sits, counted from the top:
+   the stack          [(, [, {]   (printed bottom first)
+   open.search('{')   -&gt; 1   (on top)
+   open.search('[')   -&gt; 2
+   open.search('(')   -&gt; 3   (deepest)
+   open.search(')')   -&gt; -1   (not there at all)
+
+   Counted from 1, from the top - not from 0 at the bottom.</div>
+<!--@end-->
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details>
+    <summary><strong>&#128170; Medium 2: &ldquo;no price yet&rdquo; in a <code>Hashtable</code></strong></summary>
+    <div>
+      <p>
+        A product may exist with no price set yet. Store that state in a <code>Hashtable</code> &mdash;
+        and then in a <code>HashMap</code> &mdash; and compare what each costs you.
+      </p>
+      <p>
+        Two workarounds are shown for the <code>Hashtable</code>, because both are in real codebases and
+        you will meet them: a sentinel value, and presence-means-priced. Then the same requirement in a
+        <code>HashMap</code>, plus the one thing neither <code>get()</code> can tell you.
+      </p>
+      <details>
+        <summary>&#128161; Hint</summary>
+        <p>
+          <code>get()</code> returns <code>null</code> both when a key maps to <code>null</code> and
+          when the key is absent, so <code>get()</code> alone cannot distinguish "no price yet" from
+          "not in the catalogue" &mdash; on either class. <code>containsKey()</code> is what separates
+          them, and that is the honest reason the <code>HashMap</code> is better here: it lets you ask
+          both questions and get two different answers.
+        </p>
+      </details>
+      <details>
+        <summary>&#9989; Solution</summary>
+        <div>
+          <p>Run it: <code>java -cp target/classes com.aptech.s11.practice.P4_NoPriceYet</code></p>
+
+          <!--@code src="code/s11-data-structures/src/main/java/com/aptech/s11/practice/P4_NoPriceYet.java" title="P4_NoPriceYet.java — the same requirement in two classes"-->
+<pre class="numbered" data-file="P4_NoPriceYet.java — the same requirement in two classes"><code class="lang-java">package com.aptech.s11.practice;
+
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.Map;
+
+/**
+ * P4 - Bullet 4, the Dictionary classes.
+ *
+ * A product may exist with no price yet. That single requirement is where Hashtable cannot
+ * follow, and the workarounds people invented for it are worth seeing once.
+ */
+public class P4_NoPriceYet {
+
+    public static void main(String[] args) {
+        System.out.println("The requirement: a product may exist with no price set yet.");
+        System.out.println();
+
+        Hashtable&lt;String, Integer&gt; legacy = new Hashtable&lt;&gt;();
+        legacy.put("BOLT", 250);
+
+        System.out.println("1. Hashtable - store the unknown price directly");
+        try {
+            legacy.put("NUT", null);
+        } catch (NullPointerException ex) {
+            System.out.println("   legacy.put(\"NUT\", null) -&gt; " + ex);
+        }
+        System.out.println();
+
+        System.out.println("2. Workaround A: pick a number to mean \"no price\"");
+        legacy.put("NUT", -1);
+        System.out.println("   price(NUT) -&gt; " + legacy.get("NUT") + "   (is -1 a price, or a flag?)");
+        System.out.println("   Every reader now has to know the convention. One will forget.");
+        System.out.println();
+
+        System.out.println("3. Workaround B: presence in the table means priced");
+        legacy.remove("NUT");
+        String code = "NUT";
+        Integer price = legacy.containsKey(code) ? legacy.get(code) : null;
+        System.out.println("   price(NUT) -&gt; " + price + "   (correct, and two lookups)");
+        System.out.println();
+
+        System.out.println("4. HashMap - the unknown price is a value like any other");
+        Map&lt;String, Integer&gt; modern = new HashMap&lt;&gt;();
+        modern.put("BOLT", 250);
+        modern.put("NUT", null);
+        System.out.println("   price(NUT)     -&gt; " + modern.get("NUT"));
+        System.out.println("   containsKey    -&gt; " + modern.containsKey("NUT"));
+        System.out.println("   price(WASHER)  -&gt; " + modern.get("WASHER") + "   (a code never recorded)");
+        System.out.println("   containsKey    -&gt; " + modern.containsKey("WASHER"));
+        System.out.println();
+        System.out.println("   get() alone cannot tell \"no price yet\" from \"not in the catalogue\".");
+        System.out.println("   containsKey() is what separates them - and it works on either class.");
+    }
+}</code></pre>
+<!--@end-->
+
+          <!--@output project="code/s11-data-structures" main="com.aptech.s11.practice.P4_NoPriceYet"-->
+<div class="terminal-output">The requirement: a product may exist with no price set yet.
+
+1. Hashtable - store the unknown price directly
+   legacy.put("NUT", null) -&gt; java.lang.NullPointerException
+
+2. Workaround A: pick a number to mean "no price"
+   price(NUT) -&gt; -1   (is -1 a price, or a flag?)
+   Every reader now has to know the convention. One will forget.
+
+3. Workaround B: presence in the table means priced
+   price(NUT) -&gt; null   (correct, and two lookups)
+
+4. HashMap - the unknown price is a value like any other
+   price(NUT)     -&gt; null
+   containsKey    -&gt; true
+   price(WASHER)  -&gt; null   (a code never recorded)
+   containsKey    -&gt; false
+
+   get() alone cannot tell "no price yet" from "not in the catalogue".
+   containsKey() is what separates them - and it works on either class.</div>
+<!--@end-->
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details>
+    <summary><strong>&#128170; Medium 3: configuration with defaults</strong></summary>
+    <div>
+      <p>
+        Three settings with sensible defaults, overridden per site. Show that a <code>Properties</code>
+        object can carry its own <code>Properties</code> as a chain of defaults &mdash; and that
+        <code>size()</code> does not count them, while <code>stringPropertyNames()</code> still finds
+        them.
+      </p>
+      <p>
+        Then load the real <code>app.properties</code> off the classpath, read a value, and override it
+        in code so you can see that the file on disk is untouched.
+      </p>
+      <details>
+        <summary>&#128161; Hint</summary>
+        <p>
+          The constructor is <code>new Properties(defaults)</code> &mdash; one argument, and it is the
+          parent whose keys are consulted when a lookup misses. <code>getProperty(key, fallback)</code>
+          is the other half: it returns the fallback instead of <code>null</code>, so a missing key
+          cannot turn into a <code>NullPointerException</code> three lines later. Load the file with
+          <code>getResourceAsStream("/app.properties")</code> inside try-with-resources &mdash; the
+          leading slash means "from the root of the classpath", which is why the file lives in
+          <code>src/main/resources</code>.
+        </p>
+      </details>
+      <details>
+        <summary>&#9989; Solution</summary>
+        <div>
+          <p>Run it: <code>java -cp target/classes com.aptech.s11.practice.P5_ConfigWithDefaults</code></p>
+
+          <!--@code src="code/s11-data-structures/src/main/java/com/aptech/s11/practice/P5_ConfigWithDefaults.java" title="P5_ConfigWithDefaults.java — a chain of defaults, and a real file"-->
+<pre class="numbered" data-file="P5_ConfigWithDefaults.java — a chain of defaults, and a real file"><code class="lang-java">package com.aptech.s11.practice;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+import java.util.TreeSet;
+
+/**
+ * P5 - Bullet 4 continued: Properties, the member of the Dictionary family still in daily use.
+ *
+ * Two things make Properties more than a Hashtable&lt;String,String&gt;: a chain of defaults, and
+ * getProperty with a fallback that never throws and never returns null.
+ */
+public class P5_ConfigWithDefaults {
+
+    public static void main(String[] args) throws IOException {
+        Properties defaults = new Properties();
+        defaults.setProperty("host", "localhost");
+        defaults.setProperty("port", "5432");
+        defaults.setProperty("ssl", "false");
+
+        Properties site = new Properties(defaults);
+        site.setProperty("port", "6543");
+
+        System.out.println("1. A Properties can carry its own defaults");
+        System.out.println("   site.getProperty(\"port\") -&gt; " + site.getProperty("port") + "   (set on the site)");
+        System.out.println("   site.getProperty(\"host\") -&gt; " + site.getProperty("host") + "   (from defaults)");
+        System.out.println("   site.getProperty(\"ssl\")  -&gt; " + site.getProperty("ssl") + "   (from defaults)");
+        System.out.println("   site.size()               -&gt; " + site.size() + "   (defaults are not copied in)");
+        System.out.println("   but they are searched when walking:");
+        for (Object key : new TreeSet&lt;&gt;(site.stringPropertyNames())) {
+            System.out.println("      " + key + " = " + site.getProperty((String) key));
+        }
+        System.out.println();
+
+        System.out.println("2. Asking for something that is not there");
+        System.out.println("   getProperty(\"user\")           -&gt; " + site.getProperty("user"));
+        System.out.println("   getProperty(\"user\", \"guest\") -&gt; " + site.getProperty("user", "guest"));
+        System.out.println();
+
+        System.out.println("3. Loading the real file, then overriding one key in code");
+        Properties config = new Properties();
+        try (InputStream in = P5_ConfigWithDefaults.class.getResourceAsStream("/app.properties")) {
+            if (in == null) {
+                throw new IOException("app.properties was not on the classpath");
+            }
+            config.load(in);
+        }
+        System.out.println("   stock.lowThreshold from the file -&gt; " + config.getProperty("stock.lowThreshold"));
+        config.setProperty("stock.lowThreshold", "2");
+        System.out.println("   after overriding in code         -&gt; " + config.getProperty("stock.lowThreshold"));
+        System.out.println("   (the file is untouched; this is the in-memory copy)");
+    }
+}</code></pre>
+<!--@end-->
+
+          <!--@output project="code/s11-data-structures" main="com.aptech.s11.practice.P5_ConfigWithDefaults"-->
+<div class="terminal-output">1. A Properties can carry its own defaults
+   site.getProperty("port") -&gt; 6543   (set on the site)
+   site.getProperty("host") -&gt; localhost   (from defaults)
+   site.getProperty("ssl")  -&gt; false   (from defaults)
+   site.size()               -&gt; 1   (defaults are not copied in)
+   but they are searched when walking:
+      host = localhost
+      port = 6543
+      ssl = false
+
+2. Asking for something that is not there
+   getProperty("user")           -&gt; null
+   getProperty("user", "guest") -&gt; guest
+
+3. Loading the real file, then overriding one key in code
+   stock.lowThreshold from the file -&gt; 5
+   after overriding in code         -&gt; 2
+   (the file is untouched; this is the in-memory copy)</div>
+<!--@end-->
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details>
+    <summary><strong>&#128293; Challenge: three ways to modify a list while walking it</strong></summary>
+    <div>
+      <p>
+        Sum the odd numbers and remove the even ones, three times, with three different tools: an
+        <code>Enumeration</code> over a <code>Vector</code>, an <code>Iterator</code> with
+        <code>remove()</code>, and a <code>for</code>-each over an <code>ArrayList</code>.
+      </p>
+      <p>
+        Before you run it, write down what you think each one does. The correct sum is 9. Two of the
+        three are wrong, and <strong>only one of the wrong ones tells you</strong> &mdash; which of the
+        two is silent, and why, is the whole of Session 11 in one program.
+      </p>
+      <details>
+        <summary>&#128161; Hint</summary>
+        <p>
+          Trace it by hand with a six-element list and keep two counters: the position you are reading,
+          and the length of the list after each removal. The <code>Enumeration</code>'s index only ever
+          goes up; the elements move down when one is removed. Those two facts are the entire bug, and
+          they explain why 3 and 5 are never added.
+        </p>
+      </details>
+      <details>
+        <summary>&#9989; Solution</summary>
+        <div>
+          <p>Run it: <code>java -cp target/classes com.aptech.s11.practice.P6_ModifyWhileWalking</code></p>
+
+          <!--@code src="code/s11-data-structures/src/main/java/com/aptech/s11/practice/P6_ModifyWhileWalking.java" title="P6_ModifyWhileWalking.java — three loops, one intent, three outcomes"-->
+<pre class="numbered" data-file="P6_ModifyWhileWalking.java — three loops, one intent, three outcomes"><code class="lang-java">package com.aptech.s11.practice;
+
+import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Vector;
+
+/**
+ * P6 - challenge. Three ways to walk a list and take things out of it.
+ *
+ * Two of the three are wrong, and only one of the wrong ones tells you. Work out which is
+ * which before you run it.
+ */
+public class P6_ModifyWhileWalking {
+
+    public static void main(String[] args) {
+        System.out.println("Task: sum the odd numbers, and remove the even ones on the way.");
+        System.out.println("The correct sum is 1 + 3 + 5 = 9. Watch what each loop really does.");
+        System.out.println();
+
+        System.out.println("1. Enumeration, removing during the walk");
+        Vector&lt;Integer&gt; legacy = new Vector&lt;&gt;(List.of(1, 2, 3, 4, 5, 6));
+        int seen = 0;
+        Enumeration&lt;Integer&gt; walk = legacy.elements();
+        while (walk.hasMoreElements()) {
+            Integer n = walk.nextElement();
+            if (n % 2 == 0) {
+                legacy.remove(n);
+            } else {
+                seen += n;
+            }
+        }
+        System.out.println("   odd numbers summed -&gt; " + seen);
+        System.out.println("   list afterwards    -&gt; " + legacy);
+        System.out.println("   No exception. Also no 3 and no 5: removing shifted the entries left,");
+        System.out.println("   so the walk stepped straight over them. An Enumeration is not fail-fast.");
+        System.out.println();
+
+        System.out.println("2. Iterator, removing through the iterator");
+        List&lt;Integer&gt; modern = new ArrayList&lt;&gt;(List.of(1, 2, 3, 4, 5, 6));
+        int total = 0;
+        for (Iterator&lt;Integer&gt; it = modern.iterator(); it.hasNext(); ) {
+            Integer n = it.next();
+            if (n % 2 == 0) {
+                it.remove();
+            } else {
+                total += n;
+            }
+        }
+        System.out.println("   odd numbers summed -&gt; " + total);
+        System.out.println("   list afterwards    -&gt; " + modern);
+        System.out.println();
+
+        System.out.println("3. for-each, removing from the list itself");
+        try {
+            List&lt;Integer&gt; list = new ArrayList&lt;&gt;(List.of(1, 2, 3, 4, 5, 6));
+            for (Integer n : list) {
+                if (n % 2 == 0) {
+                    list.remove(n);
+                }
+            }
+            System.out.println("   no exception - unexpected, see the note below");
+        } catch (ConcurrentModificationException ex) {
+            System.out.println("   for-each + list.remove(n) -&gt; " + ex);
+        }
+        System.out.println("   Same mistake as loop 1, caught this time. ArrayList's iterator counts");
+        System.out.println("   its own changes and refuses to carry on.");
+        System.out.println();
+        System.out.println("   Three loops, one intent, three different outcomes. The class you chose");
+        System.out.println("   decided whether you got the right answer, a crash, or a silent lie.");
+    }
+}</code></pre>
+<!--@end-->
+
+          <!--@output project="code/s11-data-structures" main="com.aptech.s11.practice.P6_ModifyWhileWalking"-->
+<div class="terminal-output">Task: sum the odd numbers, and remove the even ones on the way.
+The correct sum is 1 + 3 + 5 = 9. Watch what each loop really does.
+
+1. Enumeration, removing during the walk
+   odd numbers summed -&gt; 1
+   list afterwards    -&gt; [1, 3, 5]
+   No exception. Also no 3 and no 5: removing shifted the entries left,
+   so the walk stepped straight over them. An Enumeration is not fail-fast.
+
+2. Iterator, removing through the iterator
+   odd numbers summed -&gt; 9
+   list afterwards    -&gt; [1, 3, 5]
+
+3. for-each, removing from the list itself
+   for-each + list.remove(n) -&gt; java.util.ConcurrentModificationException
+   Same mistake as loop 1, caught this time. ArrayList's iterator counts
+   its own changes and refuses to carry on.
+
+   Three loops, one intent, three different outcomes. The class you chose
+   decided whether you got the right answer, a crash, or a silent lie.</div>
+<!--@end-->
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <!-- ===== 20. FURTHER STUDY ============================================== -->
+  <h2>&#128250; Further Study</h2>
+
+  <h3>Read (official &amp; trusted)</h3>
+  <ul>
+    <li>
+      <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Enumeration.html" target="_blank" rel="noopener">Java 21 API &mdash; <code>Enumeration</code></a>
+      &mdash; two method signatures. Read the whole page in ninety seconds and note that <code>asIterator()</code> is documented as a default method added in Java 9.
+    </li>
+    <li>
+      <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/BitSet.html" target="_blank" rel="noopener">Java 21 API &mdash; <code>BitSet</code></a>
+      &mdash; the class list of this session's survivors. Compare <code>size()</code>, <code>length()</code> and <code>cardinality()</code> in the official wording.
+    </li>
+    <li>
+      <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Stack.html" target="_blank" rel="noopener">Java 21 API &mdash; <code>Stack</code></a>
+      &mdash; scroll to the top of the page. The first sentence of the class description says <em>"a more complete and consistent set of LIFO stack operations is provided by the <code>Deque</code> interface"</em>. That is the JDK telling you what Part 6 told you.
+    </li>
+    <li>
+      <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Dictionary.html" target="_blank" rel="noopener">Java 21 API &mdash; <code>Dictionary</code></a>
+      &mdash; note the word <em>obsolete</em> in the class description, and that this is the one place in the session where the JDK does the telling.
+    </li>
+    <li>
+      <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Properties.html" target="_blank" rel="noopener">Java 21 API &mdash; <code>Properties</code></a>
+      &mdash; read the <code>load(InputStream)</code> paragraph on <strong>ISO-8859-1</strong> and the <code>\uXXXX</code> escape rule. It is the single most surprising fact on this page.
+    </li>
+  </ul>
+
+  <h3>Watch</h3>
+  <p>Each video was checked to exist and match the topic.</p>
+  <div class="video-grid">
+    <div class="video-card" data-yt="P0f7CLUcbD8" data-title="Java Vector Class | How to use Vector class in Java">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java Vector Class | How to use Vector class in Java</div><div class="video-card__channel">Coding Simplified</div><div class="video-card__why">Part 6: the class underneath <code>Stack</code>, walked through method by method. Watch it with one question in mind &mdash; which of these methods has no business existing on a stack?</div></div>
+    </div>
+    <div class="video-card" data-yt="NP3FX9uM9gY" data-title="Java Stack Class">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java Stack Class</div><div class="video-card__channel">Java Code Geeks</div><div class="video-card__why">Parts 5 and 6: <code>push</code>, <code>pop</code>, <code>peek</code> and <code>search</code> demonstrated, including what <code>pop</code> on an empty stack throws. A second voice on the same four methods is worth ten minutes before the lab.</div></div>
+    </div>
+    <div class="video-card" data-yt="YoFBNMMQrRA" data-title="BitSet Data Structure in Java Programming Language | BitSet in Java">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">BitSet Data Structure in Java Programming Language | BitSet in Java</div><div class="video-card__channel">Comrevo</div><div class="video-card__why">Part 4: two <code>BitSet</code>s built by divisibility, then <code>and()</code>, <code>or()</code> and <code>xor()</code> printed side by side &mdash; the same set algebra as this page's Figure 2, from a different starting point.</div></div>
+    </div>
+    <div class="video-card" data-yt="jwzg5BcCExI" data-title="HashTable, Properties, Dictionary Data Structure in Java Programming Language">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">HashTable, Properties, Dictionary Data Structure in Java Programming Language</div><div class="video-card__channel">Comrevo</div><div class="video-card__why">Part 7: all three generations of the Dictionary family in one video, with the code for each. The best single companion to Figure 4 on this page.</div></div>
+    </div>
+    <div class="video-card" data-yt="8GU6d2560F4" data-title="Properties Class in Java Explained | Java properties tutorial | Java Tutorial">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Properties Class in Java Explained | Java properties tutorial | Java Tutorial</div><div class="video-card__channel">Ram N Java</div><div class="video-card__why">Part 8: short and to the point &mdash; <code>setProperty</code>, <code>getProperty</code> and the defaults chain. Watch after Practice 5, not before: you will follow it much faster having written one yourself.</div></div>
+    </div>
+  </div>
+
+  <!-- ===== 21. CHEAT SHEET ================================================= -->
+  <h2>&#128203; Cheat Sheet &mdash; the whole session in two screens</h2>
+
+  <div class="cheatsheet">
+      <h4>The four bullets, and the class behind each</h4>
+      <ul>
+        <li><strong>1. <code>Enumeration</code></strong> &mdash; <code>hasMoreElements()</code>, <code>nextElement()</code>. Two methods, no <code>remove()</code>, not fail-fast, not <code>Iterable</code>.</li>
+        <li><strong>2. <code>BitSet</code></strong> &mdash; bits packed into <code>long[]</code>; <code>set</code>, <code>get</code>, <code>flip</code>, <code>and</code>/<code>or</code>/<code>xor</code>/<code>andNot</code>, <code>cardinality</code>, <code>length</code>, <code>nextSetBit</code>.</li>
+        <li><strong>3. <code>Stack</code></strong> &mdash; <code>push</code>, <code>pop</code>, <code>peek</code>, <code>empty</code>, <code>search</code>. It <code>extends Vector</code>, which is the problem.</li>
+        <li><strong>4. <code>Dictionary</code></strong> &mdash; abstract and obsolete; <code>Hashtable</code> its only child; <code>Properties</code> the survivor below it.</li>
+      </ul>
+
+      <h4>The counting rules you must not guess</h4>
+      <ul>
+        <li><code>Stack.search(x)</code> &rarr; position from the <strong>top</strong>, starting at <strong>1</strong>; <code>-1</code> if absent.</li>
+        <li><code>ArrayList.indexOf(x)</code> &rarr; index from the <strong>bottom</strong>, starting at <strong>0</strong>; <code>-1</code> if absent.</li>
+        <li><code>BitSet.cardinality()</code> &rarr; how many are in it. <code>length()</code> &rarr; one past the highest. <code>size()</code> &rarr; room, a multiple of 64.</li>
+        <li><code>BitSet.set(from, to)</code> &rarr; <strong>from inclusive, to exclusive</strong>. Same rule as <code>subList</code> and <code>String.substring</code>.</li>
+      </ul>
+
+      <h4>The replacements, in one line each</h4>
+      <ul>
+        <li><code>Enumeration</code> &rarr; <code>Iterator</code>; to convert, <code>Collections.list(e)</code> or <code>e.asIterator()</code>.</li>
+        <li><code>Vector</code> &rarr; <code>ArrayList</code> (&rarr; <code>CopyOnWriteArrayList</code> when readers outnumber writers).</li>
+        <li><code>Stack</code> &rarr; <code>ArrayDeque</code> through <code>Deque</code>.</li>
+        <li><code>Hashtable</code> &rarr; <code>HashMap</code>; <code>ConcurrentHashMap</code> when threads share it.</li>
+        <li><code>Dictionary</code> &rarr; <code>Map</code>.</li>
+        <li><code>Properties</code> &rarr; <strong>nothing. It is still correct.</strong></li>
+        <li><code>BitSet</code> &rarr; <strong>nothing. It is still correct.</strong></li>
+      </ul>
+
+      <h4>What each legacy class refuses</h4>
+      <ul>
+        <li><code>Hashtable.put(k, null)</code> &rarr; <code>NullPointerException</code>, no message.</li>
+        <li><code>Hashtable.put(null, v)</code> &rarr; <code>NullPointerException: Cannot invoke "Object.hashCode()" because "key" is null</code>.</li>
+        <li><code>Enumeration</code> &rarr; no <code>remove()</code>. <code>asIterator().remove()</code> &rarr; <code>UnsupportedOperationException</code>.</li>
+        <li><code>Vector.remove(0)</code> when empty &rarr; <code>ArrayIndexOutOfBoundsException: Array index out of range: 0</code> (the old message).</li>
+        <li><code>Stack.pop()</code> when empty &rarr; <code>EmptyStackException</code>.</li>
+        <li><code>Dictionary</code> &rarr; cannot be instantiated; it is abstract.</li>
+      </ul>
+
+      <h4>Prove it instead of believing it</h4>
+      <ul>
+        <li><code>SomeClass.class.isAnnotationPresent(Deprecated.class)</code> &rarr; is it deprecated, asked directly?</li>
+        <li><code>Modifier.isAbstract(SomeClass.class.getModifiers())</code> &rarr; is it abstract?</li>
+        <li><code>x instanceof Vector</code> &rarr; is this "stack" really a list?</li>
+      </ul>
+
+      <h4>The lab, in four lines</h4>
+      <ul>
+        <li><code>Hashtable</code> &rarr; <code>HashMap</code>: "no price yet" becomes storable.</li>
+        <li><code>Stack.search()</code> &rarr; count with a <code>Deque</code>: the off-by-one disappears.</li>
+        <li><code>Enumeration</code> + remove &rarr; <code>Iterator.remove()</code>: the silent wrong total becomes a crash.</li>
+        <li>One suite, two implementations: the checks are the specification the old code never had.</li>
+      </ul>
+
+      <h4>Deciding what to do on Monday</h4>
+      <ul>
+        <li>Testable and barely used &rarr; rewrite.</li>
+        <li>Everywhere, unknown edges &rarr; wrap, and write the checks first.</li>
+        <li><code>Properties</code>, <code>BitSet</code>, <code>ResourceBundle</code> &rarr; leave it alone.</li>
+      </ul>
+  </div>
+
+  <!-- ===== 22. SESSION SUMMARY ============================================= -->
+  <h2>&#127891; Session Summary</h2>
+  <ol>
+    <li><strong>Legacy is not deprecated.</strong> All six classes print <code>deprecated? false</code> on JDK 21 and compile with no warning. They are superseded, not forbidden &mdash; and the difference is the difference between improving code and breaking it.</li>
+    <li><strong>Prove a fact about a class by asking the class.</strong> <code>isAnnotationPresent(Deprecated.class)</code> settles in one line what people argue about for an hour, and this course does not put a fact on a page that a program has not shown.</li>
+    <li><strong><code>Enumeration</code> is two methods and no removal.</strong> <code>hasMoreElements()</code> and <code>nextElement()</code> were enough in 1995 and are not enough now.</li>
+    <li><strong><code>Iterator</code> won because it fails loudly.</strong> <code>remove()</code>, <code>forEachRemaining()</code>, for-each support &mdash; and fail-fast detection, which turns a silent wrong answer into a crash you can act on.</li>
+    <li><strong>You will still meet <code>Enumeration</code>.</strong> <code>Vector.elements()</code>, <code>Hashtable.keys()</code>, <code>Properties.propertyNames()</code>, <code>ZipFile.entries()</code>. <code>Collections.list(e)</code> drains one; <code>e.asIterator()</code> adapts one, read-only, because there is no <code>remove</code> to forward.</li>
+    <li><strong><code>BitSet</code> is a survivor, not a relic.</strong> Sixty-four answers per <code>long</code>, with set algebra as machine instructions and <code>stream()</code> added in Java 8. Use it whenever the thing you are tracking is a small bounded integer.</li>
+    <li><strong><code>size()</code>, <code>length()</code> and <code>cardinality()</code> answer three different questions.</strong> Room, highest-plus-one, and how many. Confusing them is the most common <code>BitSet</code> bug there is.</li>
+    <li><strong><code>Stack.search()</code> counts from 1 at the top.</strong> Not 0, not from the bottom. If you need positions rather than the top, you want a <code>Deque</code>.</li>
+    <li><strong><code>Stack extends Vector</code>, and that is the design mistake.</strong> A stack has five operations that matter and inherited dozens that do not, so <code>add(0, x)</code> legally puts an element at the bottom. It is the course's best <em>is-a where has-a was meant</em> example, and it is in the JDK rather than in a student's submission.</li>
+    <li><strong>Per-method locking is not thread safety.</strong> <code>Vector</code> locks every call and still lets two callers both pass the same <code>isEmpty()</code> check. The bug lives in the gap between two locked calls, and no amount of <code>synchronized</code> inside the class can see it.</li>
+    <li><strong>The replacement is <code>ArrayDeque</code> through <code>Deque</code>.</strong> Not synchronised, and impossible to index &mdash; so the <code>add(0, x)</code> mistake is not a rule to remember, it is a compile error.</li>
+    <li><strong><code>Dictionary</code> is abstract and obsolete; its family is three generations.</strong> <code>Dictionary</code> &rarr; <code>Hashtable</code> &rarr; <code>Properties</code>, which is why the manual's plural, "the Dictionary classes", is the right word.</li>
+    <li><strong><code>Hashtable</code> refuses <code>null</code> keys and values</strong>, with two different <code>NullPointerException</code>s, so "no value yet" is a state it cannot represent. <code>HashMap</code> takes one <code>null</code> key and many <code>null</code> values; <code>ConcurrentHashMap</code> refuses again, deliberately, for the reason Session 5 gave.</li>
+    <li><strong><code>Properties</code> is the survivor of that family.</strong> <code>new Properties() instanceof Hashtable</code> is true, and it is still the correct way to read a configuration file in 2026. Configuration files never went away.</li>
+    <li><strong><code>ResourceBundle</code> is <code>Properties</code> plus a naming rule</strong> &mdash; which is what Session 9's <code>Messages_fr.properties</code> has been all along, including the fallback up to the base bundle when a key is missing.</li>
+    <li><strong><code>Properties.load()</code> is ISO-8859-1 by specification.</strong> Non-ASCII text needs <code>\uXXXX</code> escapes or a <code>Reader</code> that names UTF-8. Silently assuming UTF-8 produces mojibake, not an exception.</li>
+    <li><strong>All three lab defects were class choices, not logic errors.</strong> <code>Hashtable</code> &rarr; <code>HashMap</code>, <code>Stack</code> &rarr; <code>Deque</code>, <code>Enumeration</code> &rarr; <code>Iterator</code>: not one line of arithmetic needed rewriting.</li>
+    <li><strong>Wrap, don't rewrite &mdash; and let the checks decide.</strong> One suite against two implementations is how you prove a rewrite changed nothing observable, and it is the same pattern as Session 9's seam, Session 10's parameterised tests and A5's rubric.</li>
+  </ol>
+
+  <div class="newwords"><b>&#128218; All new words from this session</b>
+    <dl>
+      <dt>Legacy class</dt><dd>A class kept in the JDK for backwards compatibility, superseded by a newer one but never removed. Not the same as deprecated.</dd>
+      <dt>Deprecated</dt><dd>Carrying the <code>@Deprecated</code> annotation: the authors are telling you not to use it. Retained at run time, so a program can check for it.</dd>
+      <dt>Enumeration</dt><dd>The original traversal interface: <code>hasMoreElements()</code> and <code>nextElement()</code>. No removal, no fail-fast, not <code>Iterable</code>.</dd>
+      <dt>Fail-fast</dt><dd>An iterator that detects the collection changing underneath it and throws <code>ConcurrentModificationException</code> instead of returning a wrong answer.</dd>
+      <dt><code>asIterator()</code></dt><dd>A Java 9 default method on <code>Enumeration</code> that adapts it to <code>Iterator</code>. Read-only: <code>remove()</code> throws <code>UnsupportedOperationException</code>.</dd>
+      <dt><code>Collections.enumeration()</code></dt><dd>The other direction: wraps a modern <code>Collection</code> as an <code>Enumeration</code> for code that still expects one.</dd>
+      <dt><code>Collections.list()</code></dt><dd>Drains an <code>Enumeration</code> into an <code>ArrayList</code> &mdash; the shortest way out of a legacy traversal.</dd>
+      <dt>BitSet</dt><dd>A set of non-negative integers stored one bit per number in a <code>long[]</code>. Set algebra is bitwise, so <code>and</code>/<code>or</code>/<code>xor</code> operate 64 numbers at a time.</dd>
+      <dt>Cardinality</dt><dd>The number of elements in a set &mdash; for a <code>BitSet</code>, the count of bits set to 1.</dd>
+      <dt>Sieve of Eratosthenes</dt><dd>Finding primes by striking out multiples. With two <code>BitSets</code> it becomes three lines and no division.</dd>
+      <dt>LIFO</dt><dd>Last in, first out. The rule a stack enforces and a queue does not.</dd>
+      <dt><code>Stack.search()</code></dt><dd>Returns the 1-based position of an element counted from the top of the stack, or <code>-1</code>.</dd>
+      <dt><code>EmptyStackException</code></dt><dd>What <code>Stack.pop()</code> and <code>peek()</code> throw on an empty stack &mdash; a <code>RuntimeException</code>, not a checked one.</dd>
+      <dt>Is-a / has-a</dt><dd>Inheritance versus composition. <code>Stack</code> <em>is-a</em> <code>Vector</code>, which is the mistake; a stack should <em>have-a</em> list.</dd>
+      <dt>Check-then-act</dt><dd>Two separate calls where the second assumes the first is still true. Locking each call does not lock the pair.</dd>
+      <dt>Dictionary</dt><dd>An abstract, obsolete ancestor of <code>Map</code>. Its only direct child is <code>Hashtable</code>.</dd>
+      <dt>Hashtable</dt><dd>The 1995 hash table. Synchronised per method, and refuses <code>null</code> keys and values. Replaced by <code>HashMap</code>.</dd>
+      <dt>Properties</dt><dd>A <code>Hashtable</code> of strings for configuration files, with a defaults chain and <code>getProperty</code>. Still the right tool.</dd>
+      <dt>ISO-8859-1</dt><dd>The encoding <code>Properties.load(InputStream)</code> uses by specification. Non-ASCII characters need <code>\uXXXX</code> escapes.</dd>
+      <dt><code>ResourceBundle</code></dt><dd>The class that picks the right <code>.properties</code> file for a locale and walks up the parent chain when a key is missing &mdash; built on <code>Properties</code>.</dd>
+      <dt>Wrap, don't rewrite</dt><dd>Put legacy code behind an interface you own, implement it twice, and let one check suite define the behaviour the old code never documented.</dd>
+    </dl>
+  </div>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Next session: Session 11B &mdash; Data Structures, By Hand</b>
+      Today you learned what the four classes <em>do</em> and why they were replaced. Next time you find
+      out what the replacements are made of. You will write your own dynamic array and watch it grow by
+      doubling; your own hash map, with buckets, chains and a histogram you can see; and your own
+      ring-buffer deque, in which <code>head</code> and <code>tail</code> wrap around with one
+      <code>%</code>. Then the payoff Session 10 promised: <strong>give a class a bad
+      <code>hashCode()</code> and watch every key fall into a single bucket</strong>, so
+      <code>equals</code> and <code>hashCode</code> stop being a rule you memorised and become something
+      you have seen break in your own hands. One suite runs against your structures and the JDK's, so
+      &ldquo;mine behaves the same&rdquo; is a thing you can check.
+    </div>
+  </div>
+
+
+</main>
+
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/playgrounds.js"></script>
+
+</body>
+</html>

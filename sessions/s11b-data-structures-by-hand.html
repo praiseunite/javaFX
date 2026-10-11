@@ -1,0 +1,2707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session 11B — Data Structures, By Hand</title>
+  <meta name="description" content="Session 11B: build a dynamic array, a hash map with buckets and chaining, and a ring-buffer deque in your own code, count every operation instead of timing it, break the map with a bad hashCode() and watch it collapse, then run one shared check suite against your structures and the JDK's.">
+  <link rel="stylesheet" href="../assets/css/course.css">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "s11b";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== 1. HERO ========================================================= -->
+  <section class="hero">
+    <span class="tag">Week 3 &middot; Session 11B &middot; 2 hours in class</span>
+    <h1>Session 11B &mdash; Data Structures, By Hand</h1>
+    <p class="lede">
+      Session 11 showed you the classes Java shipped <em>first</em> and the ones that replaced them.
+      Today you find out what the replacements are <strong>made of</strong>. You will write a dynamic
+      array and watch it grow by doubling; a hash map with buckets and chains and a histogram you can
+      read; and a ring buffer in which <code>head</code> and <code>tail</code> wrap around with one
+      <code>%</code>. Then comes the payoff Session 10 promised: <strong>give a class a bad
+      <code>hashCode()</code> and watch every key fall into a single bucket</strong>. One check suite
+      runs against your structures and the JDK's, so &ldquo;mine behaves the same&rdquo; stops being an
+      opinion.
+    </p>
+    <div class="meta">
+      <span>&#128218; Learner's Guide: SG &middot; XP &middot; TG &mdash; Session 11B</span>
+      <span>&#9201; ~2 hours + practice at home</span>
+      <span>&#9989; Before this: Session 11</span>
+      <span>&#128188; Lab: build three structures (R1&ndash;R11)</span>
+    </div>
+  </section>
+
+  <!-- ===== 2. OBJECTIVES =================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this session you can&hellip;</b>
+    <ol>
+      <li><strong>Build</strong> a growable <code>int</code> array from an array, a size counter and one growth rule, and <strong>explain</strong> why the growth rule is doubling.</li>
+      <li><strong>Count</strong> the element copies a growth costs, and <strong>derive</strong> from that count why <code>add()</code> is called O(1) <em>amortised</em> rather than O(1).</li>
+      <li><strong>Measure</strong> the cost of <code>get</code> and of a scan by counting array reads, and <strong>say</strong> why a count is better evidence than a millisecond reading.</li>
+      <li><strong>Build</strong> a hash map: hash the key, mask it to a bucket, chain the collisions &mdash; and <strong>predict</strong> which bucket a given key lands in before running the program.</li>
+      <li><strong>Explain</strong> when a table doubles, and <strong>work out</strong> the key counts that trigger each rehash from the load factor alone.</li>
+      <li><strong>Break</strong> a map on purpose with a bad <code>hashCode()</code>, and with an <code>equals()</code>/<code>hashCode()</code> pair that disagree &mdash; then <strong>repair</strong> both.</li>
+      <li><strong>Build</strong> a ring-buffer deque, and <strong>say</strong> why <code>push</code>+<code>pop</code> is a stack, <code>push</code>+<code>poll</code> is a queue, and one class is both.</li>
+      <li><strong>Run</strong> one check suite against two implementations, and <strong>use</strong> the result as evidence that behaviour was preserved.</li>
+      <li><strong>State</strong> what a green suite does <em>not</em> prove, and <strong>give</strong> an example of two structures that pass the same checks and are not equally fast.</li>
+      <li><strong>Decide</strong> when to write a data structure yourself and when to use the JDK's &mdash; and <strong>justify</strong> writing one you will then delete.</li>
+    </ol>
+  </div>
+
+  <!-- ===== 3. TABLE OF CONTENTS ============================================ -->
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== 5. ROADMAP ====================================================== -->
+  <h2>Your Roadmap for Today</h2>
+  <div class="roadmap">
+    <a href="#part-1-why">Part 1: Why Build One When the JDK Ships One?</a>
+    <a href="#part-2-array">Part 2: Your Own Dynamic Array</a>
+    <a href="#part-3-measure">Part 3: Measuring It Without a Clock</a>
+    <a href="#part-4-buckets">Part 4: Your Own Hash Map</a>
+    <a href="#part-5-break">Part 5: Breaking It on Purpose</a>
+    <a href="#part-6-ring">Part 6: Your Own Deque &mdash; the Ring Buffer</a>
+    <a href="#part-7-suite">Part 7: One Suite, Two Implementations</a>
+    <a href="#part-8-jdk">Part 8: Why the JDK's Versions Won</a>
+    <a href="#part-9-delete">Part 9: Then Delete Yours</a>
+    <a href="#lab-build">Guided Lab: Build Three Structures</a>
+  </div>
+
+  <!-- ===== 6. WHY THIS MATTERS ============================================= -->
+  <h2>Why This Matters</h2>
+  <p>
+    For eleven sessions you have been given data structures and told what they cost.
+    <code>ArrayList.get(i)</code> is O(1). A <code>HashMap</code> lookup is O(1). A queue should be a
+    <code>Deque</code>, not a <code>Stack</code>. All true, all memorised, and none of it is knowledge
+    you can use under pressure &mdash; because when a lookup is mysteriously slow in your own code, the
+    sentence &ldquo;a hash map is O(1)&rdquo; gives you nothing to look at.
+  </p>
+  <p>
+    The difference between knowing a fact and being able to <em>use</em> it is having built the thing
+    once. After today, &ldquo;O(1)&rdquo; stops being a claim you accept and becomes a sentence about a
+    line of code you wrote: one array read, one addition, one mask. And when something is slow, you
+    will have the one question that actually finds the problem &mdash; <strong>what does this key's
+    <code>hashCode()</code> return in binary?</strong> &mdash; instead of a shrug.
+  </p>
+  <p>
+    There is a second reason, and it is the honest one. <strong>Everyone in this room will read far
+    more data-structure code than they write.</strong> You will be handed a cache somebody wrote by
+    hand, a queue with an off-by-one in its wrap arithmetic, a class whose <code>equals</code> and
+    <code>hashCode</code> disagree. Being able to read those in five minutes rather than five hours is
+    a professional skill, and it is not taught by using <code>ArrayList</code>.
+  </p>
+
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; driving, then opening the bonnet</b>
+      You have been driving for eleven weeks, and driving well: you know which pedal does what and you
+      can park. Today you open the bonnet. Nothing you learn will change how you drive &mdash; you will
+      still use <code>ArrayList</code> on Monday, exactly as you should. But the next time the car makes
+      a noise, you will know which part is making it, and you will not pay somebody to tell you it is
+      the exhaust when it is the brakes. <em>Using</em> a tool and <em>understanding</em> it are
+      different skills, and only one of them can be borrowed.
+    </div>
+  </div>
+
+  <!-- ===== 7. PART 1 — WHY ================================================= -->
+  <h2 id="part-1-why"><span class="eyebrow">Part 1 of 9</span> Why Build One When the JDK Ships One?</h2>
+  <p>
+    Fair question, and it deserves a straight answer before you write a line of code. The JDK's
+    structures are better than anything you will write today: they are faster, they have been tested by
+    millions of programs for thirty years, and one of them was written by people who have forgotten
+    more about hash tables than this course will ever teach you. <strong>You are not going to replace
+    them. Ever.</strong> Everything you build today gets deleted at the end of Part 9, and that is not a
+    joke &mdash; it is the lesson.
+  </p>
+  <p>
+    So why write them? Because there are three questions the JDK's classes cannot answer for you, and
+    all three of them come up in real work:
+  </p>
+  <ol>
+    <li>
+      <strong>&ldquo;Why is this slow?&rdquo;</strong> A <code>HashMap</code> that has stopped being a
+      map looks exactly like a <code>HashMap</code> that is working. It returns the right answers. The
+      only way to tell the difference is to know what is inside it &mdash; and the only way to know
+      that without taking somebody's word for it is to have built one.
+    </li>
+    <li>
+      <strong>&ldquo;What does this number mean?&rdquo;</strong> O(1), O(log n), &ldquo;amortised&rdquo;,
+      &ldquo;load factor 0.75&rdquo;. These are all descriptions of code you are about to write. A
+      definition you memorised decays; a measurement you made yourself does not.
+    </li>
+    <li>
+      <strong>&ldquo;What is this code doing?&rdquo;</strong> Which is the question you will actually be
+      paid to answer. Somebody's hand-rolled ring buffer, somebody's open-addressed table, somebody's
+      linked list with a bug in the middle &mdash; you will meet all three, and the shape of the code
+      will be familiar on sight if you have written one yourself.
+    </li>
+  </ol>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      <strong>You build the model, not the product.</strong> What you write today holds a few hundred
+      items and is not thread-safe, not generic, and not as fast as the JDK's. That is fine, because
+      nobody is going to use it. The thing you are building is <em>the explanation</em> &mdash; and an
+      explanation you can run, break and count is worth ten you can only recite.
+    </div>
+  </div>
+
+  <p>
+    The three structures are chosen because each one teaches one idea and nothing else:
+  </p>
+  <ul>
+    <li><strong>A dynamic array</strong> (<code>IntList</code>) &mdash; an array that cannot grow,
+    wrapped in a class that replaces it when it fills. One idea: <em>amortised</em> cost.</li>
+    <li><strong>A hash map</strong> (<code>SimpleMap</code>) &mdash; an array of short chains, with a
+    mask choosing the bucket. One idea: <em>spread</em>, and what happens when you do not have it.</li>
+    <li><strong>A ring-buffer deque</strong> (<code>RingBuffer</code>) &mdash; one array, two indexes,
+    one modulo. One idea: <em>the front of a queue is a position, not a place.</em></li>
+  </ul>
+  <p>
+    They are also the three the JDK's <code>ArrayList</code>, <code>HashMap</code> and
+    <code>ArrayDeque</code> are built on, which is where Part 8 lands: once you have your own, the
+    JDK's stop being magic and become <em>the same design with thirty years of polish</em>.
+  </p>
+
+  <!-- ===== 8. PART 2 — DYNAMIC ARRAY ======================================= -->
+  <h2 id="part-2-array"><span class="eyebrow">Part 2 of 9</span> Your Own Dynamic Array</h2>
+  <p>
+    Session 1 told you that <code>ArrayList</code> is backed by an array and that <code>get(i)</code> is
+    O(1). Both halves of that sentence matter, and the second one is easy to take on trust because it
+    sounds like good news. Here is the problem it hides: <strong>a Java array cannot get longer.</strong>
+    <code>new int[4]</code> is four slots, forever. So a list that appears to grow is not growing
+    anything &mdash; it is <em>throwing the array away and building a bigger one</em>, copying every
+    element across, every so often.
+  </p>
+  <p>
+    The whole of <code>IntList</code> is three fields and four short methods. Every line of it exists to
+    make one of these decisions:
+  </p>
+
+  <!--@code src="code/s11b-data-structures-by-hand/src/main/java/com/aptech/s11b/ds/IntList.java" title="IntList.java — an array, a size, and one growth rule"-->
+<pre class="numbered" data-file="IntList.java — an array, a size, and one growth rule"><code class="lang-java">package com.aptech.s11b.ds;
+
+/**
+ * A growable list of ints, built by hand.
+ *
+ * This is the whole of ArrayList's core idea and nothing else: an array that is usually bigger
+ * than the data, plus a count of how much of it is used. When the array fills up, a bigger one
+ * is allocated and everything is copied across. That copy is the only expensive operation, and
+ * doubling is what makes it rare.
+ *
+ * The point of writing it is that nothing here is magic. ArrayList.get(i) is O(1) because it is
+ * the line {@code return data[index];} below - one array read, whatever the size.
+ *
+ * {@code copies} counts the element copies performed by growth, so the cost of add() can be
+ * measured by counting rather than by timing. A count is deterministic; a millisecond reading
+ * is noise plus truth.
+ */
+public class IntList {
+
+    private int[] data;
+    private int size;
+    private int copies;
+    private long reads;
+
+    /** A list with room for four, which is where the doubling table on the page starts. */
+    public IntList() {
+        this(4);
+    }
+
+    public IntList(int initialCapacity) {
+        data = new int[Math.max(1, initialCapacity)];
+    }
+
+    /** How many elements are actually stored. */
+    public int size() {
+        return size;
+    }
+
+    /** How much room the backing array has. Always &gt;= size. */
+    public int capacity() {
+        return data.length;
+    }
+
+    /** Total element copies performed by every grow() so far. */
+    public int copies() {
+        return copies;
+    }
+
+    /** How many array reads get() has performed. E02 compares this with ArrayList's count. */
+    public long reads() {
+        return reads;
+    }
+
+    /** Appends a value, growing the array first if it is full. */
+    public void add(int value) {
+        if (size == data.length) {
+            grow();
+        }
+        data[size++] = value;
+    }
+
+    /** One array read. This is the line that makes get() O(1). */
+    public int get(int index) {
+        checkIndex(index);
+        reads++;
+        return data[index];
+    }
+
+    public void set(int index, int value) {
+        checkIndex(index);
+        data[index] = value;
+    }
+
+    /** Up to size reads: the worst case, and the reason contains() is O(n). */
+    public int indexOf(int value) {
+        for (int i = 0; i &lt; size; i++) {
+            if (data[i] == value) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public boolean contains(int value) {
+        return indexOf(value) &gt;= 0;
+    }
+
+    /** Removes one element and shifts the rest left, which is the O(n) part. */
+    public int removeAt(int index) {
+        checkIndex(index);
+        int removed = data[index];
+        System.arraycopy(data, index + 1, data, index, size - index - 1);
+        data[--size] = 0;
+        return removed;
+    }
+
+    /**
+     * The whole trick, in six lines: allocate twice the room, copy the live elements, throw the
+     * old array away. Every element is copied once per growth, so the total for n adds is about
+     * n + n/2 + n/4 + ... which is less than 2n - that is why add() is called O(1) on average.
+     */
+    private void grow() {
+        int[] bigger = new int[data.length * 2];
+        System.arraycopy(data, 0, bigger, 0, size);
+        copies += size;
+        data = bigger;
+    }
+
+    private void checkIndex(int index) {
+        if (index &lt; 0 || index &gt;= size) {
+            throw new IndexOutOfBoundsException("Index " + index + " out of bounds for size " + size);
+        }
+    }
+}</code></pre>
+<!--@end-->
+
+  <p>
+    Read <code>add()</code> once more, because it is the entire design in three lines: <em>if the array
+    is full, make room first; then store</em>. That is the trade. The list keeps an array that is
+    allowed to be partly empty, and pays for the wasted slots by never having to move an element except
+    when it grows.
+  </p>
+  <p>
+    Now watch it happen. The program below adds ten numbers and prints the capacity after each one, so
+    the growth is visible rather than described:
+  </p>
+
+  <!--@output project="code/s11b-data-structures-by-hand" main="com.aptech.s11b.E01_DynamicArrayGrowth"-->
+<div class="terminal-output">An array cannot get longer. So a list owns an array that is usually
+bigger than the data, and replaces it when it fills up.
+
+1. Ten adds, watching the capacity
+   add   size   capacity   copies so far
+   1     1      4          0       
+   2     2      4          0       
+   3     3      4          0       
+   4     4      4          0       
+   5     5      8          4          &lt;- full: new int[8], copied 4 elements
+   6     6      8          4       
+   7     7      8          4       
+   8     8      8          4       
+   9     9      16         12         &lt;- full: new int[16], copied 8 elements
+   10    10     16         12      
+
+   Ten adds, twelve element copies, and the caller saw none of them.
+   add(50) did not just append - it allocated an array twice the size,
+   copied four elements into it, and threw the old array away.
+
+2. The same count for bigger lists
+   adds     capacity   total copies   copies per add
+   10       16         12             1.20
+   100      128        124            1.24
+   1000     1024       1020           1.02
+   10000    16384      16380          1.64
+
+   However large the list, the copies per add stay between 1 and 2 -
+   and they bounce around inside that band, because how much of the
+   last array was in use when it filled depends on where n falls.
+   Growth copies n, then n/2, then n/4 and so on, and that sum is
+   always less than 2n. That is the entire content of the sentence
+   "add() is O(1)": not every add, the average one.
+
+3. Why doubling, and not growing by one slot
+   Growing by one slot per add means the i-th add copies i-1 elements,
+   so n adds copy 1 + 2 + ... + (n-1). Counted the same way as above:
+   adds     grow by one    grow by doubling
+   1        0               0
+   10       45              12
+   100      4950            124
+   1000     499500          1020
+   10000    49995000        16380
+
+   Ten thousand adds: forty-nine million copies against sixteen thousand.
+   Both lists hold the same thing. One of them is doing the work anyway.
+
+   ArrayList makes the same promise we just measured, but no more: its
+   javadoc calls adding an element O(1) *amortized*, and says the growth
+   policy itself is unspecified. Amortized is a promise about the average,
+   which is exactly what section 2 measured - so rely on the average and
+   never on the size of the next array.</div>
+<!--@end-->
+
+  <figure class="concept-visual">
+    <img src="../assets/img/diagrams/s11b_dynamic_array_growth.svg" alt="A dynamic array at two moments, above a table of costs. After four adds, the array holds 10, 20, 30 and 40 in slots 0 to 3, with size 4 and capacity 4 — full, and no room for add(50). After five adds, a new eight-slot array holds the same four elements plus 50 in slot 4, with size 5, capacity 8 and three slots still free. Below, the same cost counted rather than timed: the first to fourth adds go from capacity 4 to 4 and copy nothing; the fifth goes from 4 to 8 and copies 4, for 4 in total; and the ninth goes from 8 to 16 and copies 8, for 12 in total." loading="lazy">
+    <figcaption><strong>Figure 1.</strong> What &ldquo;the array grows&rdquo; actually means. The old array is not extended &mdash; a new one twice the size is allocated and the live elements are copied into it. Nine adds cost <strong>twelve</strong> element copies, and the caller sees none of them.</figcaption>
+  </figure>
+
+  <p>
+    Twelve copies for nine adds. That number is worth sitting with, because it is the answer to a
+    question people usually get wrong: <strong>is <code>add()</code> O(1) or is it O(n)?</strong> It is
+    genuinely both. Eight of the ten adds in that trace wrote one element and nothing else &mdash;
+    that is O(1). The fifth and the ninth allocated an array and copied everything &mdash; that is O(n).
+    The reason the JDK can call the method O(1) anyway is that the expensive ones get <em>rarer</em> as
+    the list gets longer, which is what the second half of <code>E01</code> measures:
+  </p>
+
+  <!--@code src="code/s11b-data-structures-by-hand/src/main/java/com/aptech/s11b/E01_DynamicArrayGrowth.java" from="44" to="62" title="E01_DynamicArrayGrowth.java — the same count for bigger lists"-->
+<pre class="numbered" data-file="E01_DynamicArrayGrowth.java — the same count for bigger lists" style="counter-reset:line 43"><code class="lang-java">        System.out.println("2. The same count for bigger lists");
+        System.out.println("   adds     capacity   total copies   copies per add");
+        int[] sizes = {10, 100, 1000, 10000};
+        for (int n : sizes) {
+            IntList big = new IntList();
+            for (int i = 0; i &lt; n; i++) {
+                big.add(i);
+            }
+            System.out.printf(Locale.ROOT, "   %-8d %-10d %-14d %.2f%n",
+                    n, big.capacity(), big.copies(), (double) big.copies() / n);
+        }
+
+        System.out.println();
+        System.out.println("   However large the list, the copies per add stay between 1 and 2 -");
+        System.out.println("   and they bounce around inside that band, because how much of the");
+        System.out.println("   last array was in use when it filled depends on where n falls.");
+        System.out.println("   Growth copies n, then n/2, then n/4 and so on, and that sum is");
+        System.out.println("   always less than 2n. That is the entire content of the sentence");
+        System.out.println("   \"add() is O(1)\": not every add, the average one.");</code></pre>
+<!--@end-->
+
+  <p>
+    Look at the last two columns. Whatever <em>n</em> is, doubling costs between one and two copies per
+    add &mdash; not because the growths are cheap, but because there are so few of them. Doubling from
+    4 to 1024 is eight growths for a thousand adds. That is the entire content of the phrase
+    <strong>&ldquo;O(1) amortised&rdquo;</strong>: not every add is constant-time, the <em>average</em>
+    one is.
+  </p>
+
+  <p>
+    And the rule could have been anything. The counter-example is a list that adds ten slots each time
+    instead of doubling, which is exactly as correct and about fifty times the work:
+  </p>
+
+  <!--@output project="code/s11b-data-structures-by-hand" main="com.aptech.s11b.practice.P1_GrowByDoublingOrByTen"-->
+<div class="terminal-output">The same job, twice: add the numbers 1 to 1000.
+
+   list             capacity   copies     copies per add
+   doubling         1024       1020       1.02
+   +10 each time    1004       49900      49.90
+
+Both lists hold the same thousand numbers, and both answers are right.
+One of them did about fifty times the work to get there.
+
+Why doubling wins, in one sentence: each growth copies everything that is
+already stored, so what matters is how many times you grow. Doubling makes
+the gaps between growths double too - after 4, 8, 16, 32 ... the array is
+replaced only about log2(n) times, so the copies add up to less than 2n.
+
+Growing by a fixed ten makes the gaps the same size forever, so you grow
+about n/10 times - a hundred growths here - and each of them copies
+everything stored so far. The last one alone copies nearly a thousand
+elements. That is the five-figure number in the table above. Both lists
+are correct. Only one is usable, and the difference is one line.
+
+Copies per add under doubling: 1.02. The number you will see quoted as "O(1) amortised" - 'amortised' is
+the word that is doing the work, and it means exactly this average.</div>
+<!--@end-->
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      <strong>Doubling is not a tuning detail &mdash; it is the algorithm.</strong> A growth copies
+      everything already stored, so what matters is <em>how many times you grow</em>. Doubling makes the
+      gaps between growths double too, so <em>n</em> adds grow about log&#8322;<em>n</em> times. Growing
+      by a fixed amount keeps the gaps the same size forever, so you grow about <em>n</em>/10 times
+      &mdash; and the difference between &ldquo;less than 2n copies&rdquo; and
+      &ldquo;499,900 copies&rdquo; is one line.
+    </div>
+  </div>
+
+  <!-- ===== 9. PART 3 — MEASURING ========================================= -->
+  <h2 id="part-3-measure"><span class="eyebrow">Part 3 of 9</span> Measuring It Without a Clock</h2>
+  <p>
+    Before the hash map, one detour &mdash; because you are about to make claims about cost, and the
+    obvious way to check a claim about cost is wrong. The obvious way is a stopwatch. It is also the
+    reason people argue about performance for a living. Run the same loop twice on the same machine and
+    you get two different numbers: the JIT has warmed up the second time, or a background update started
+    in between, or the laptop throttled. <strong>A millisecond reading is the truth plus noise.</strong>
+  </p>
+  <p>
+    There is a better instrument, and you have already used it twice on this page without noticing:
+    <strong>count the work instead of timing it.</strong> Every operation that matters here bottoms out
+    in the same physical act &mdash; <em>reading one slot of an array</em>. Count those and you get a
+    number that is identical on your laptop, on mine, and on the machine that runs this in three years'
+    time, because nothing about it depends on how fast the hardware is. What the count measures is the
+    <em>shape</em> of the work, which is what O(1) and O(n) have always been about.
+  </p>
+  <p>
+    The catch is that you can only count a structure that counts itself. So the program below does
+    something worth noticing before you read it: <strong>it subclasses <code>ArrayList</code> and
+    overrides <code>get()</code> purely to count</strong>. That is the only reason the JDK's list can be
+    put in the same table as ours &mdash; both sides are now counting the same thing.
+  </p>
+
+  <!--@code src="code/s11b-data-structures-by-hand/src/main/java/com/aptech/s11b/E02_MeasuringCost.java" from="22" to="78" title="E02_MeasuringCost.java — both structures count their own array reads"-->
+<pre class="numbered" data-file="E02_MeasuringCost.java — both structures count their own array reads" style="counter-reset:line 21"><code class="lang-java">    /** An ArrayList that counts its own get() calls, so both sides measure the same thing. */
+    @SuppressWarnings("serial")
+    static final class CountingList extends ArrayList&lt;Integer&gt; {
+        private long reads;
+
+        long reads() {
+            return reads;
+        }
+
+        @Override
+        public Integer get(int index) {
+            reads++;
+            return super.get(index);
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println("Two lists, one loop. We count array reads, never milliseconds.");
+        System.out.println();
+
+        System.out.println("1. Reading three known positions");
+        System.out.println("   size       IntList: 3 gets   ArrayList: 3 gets");
+        for (int n : new int[]{10, 1000, 100000}) {
+            IntList mine = fill(n);
+            CountingList jdk = fillJdk(n);
+            System.out.printf(Locale.ROOT, "   %-10d %-20d %d%n",
+                    n, threeGets(mine), threeGets(jdk));
+        }
+        System.out.println("   Three reads in each, and the size never enters into it. That is O(1):");
+        System.out.println("   the work does not grow when the list does. IntList gets it from one");
+        System.out.println("   line - return data[index]; - and ArrayList from the same line.");
+        System.out.println();
+
+        System.out.println("2. Scanning for a value - the same loop over each structure");
+        System.out.println("   size       IntList first   IntList last   IntList absent   ArrayList last");
+        for (int n : new int[]{10, 1000, 100000}) {
+            IntList mine = fill(n);
+            CountingList jdk = fillJdk(n);
+            System.out.printf(Locale.ROOT, "   %-10d %-16d %-15d %-17d %d%n",
+                    n, scanIntList(mine, 0), scanIntList(mine, n - 1),
+                    scanIntList(mine, -1), scanArrayList(jdk, n - 1));
+        }
+        System.out.println("   Finding the last element costs n reads; finding a value that is not");
+        System.out.println("   there costs n as well. The hand-written list and the JDK's agree to");
+        System.out.println("   the read, because the algorithm is the same. What would change the");
+        System.out.println("   cost is a different algorithm, not a different class.");
+        System.out.println();
+
+        System.out.println("3. Three numbers worth remembering");
+        System.out.println("   get(i)           1 read, whatever n is          O(1)");
+        System.out.println("   scan for x       up to n reads                    O(n)");
+        System.out.println("   add(x)           usually 1 write, occasionally");
+        System.out.println("                    a grow that copies everything      O(1) amortised");
+        System.out.println();
+        System.out.println("   The third line is E01. The interesting question is whether a LOOKUP can");
+        System.out.println("   ever beat a scan - and it can. That is E03.");
+    }</code></pre>
+<!--@end-->
+
+  <!--@output project="code/s11b-data-structures-by-hand" main="com.aptech.s11b.E02_MeasuringCost"-->
+<div class="terminal-output">Two lists, one loop. We count array reads, never milliseconds.
+
+1. Reading three known positions
+   size       IntList: 3 gets   ArrayList: 3 gets
+   10         3                    3
+   1000       3                    3
+   100000     3                    3
+   Three reads in each, and the size never enters into it. That is O(1):
+   the work does not grow when the list does. IntList gets it from one
+   line - return data[index]; - and ArrayList from the same line.
+
+2. Scanning for a value - the same loop over each structure
+   size       IntList first   IntList last   IntList absent   ArrayList last
+   10         1                10              10                10
+   1000       1                1000            1000              1000
+   100000     1                100000          100000            100000
+   Finding the last element costs n reads; finding a value that is not
+   there costs n as well. The hand-written list and the JDK's agree to
+   the read, because the algorithm is the same. What would change the
+   cost is a different algorithm, not a different class.
+
+3. Three numbers worth remembering
+   get(i)           1 read, whatever n is          O(1)
+   scan for x       up to n reads                    O(n)
+   add(x)           usually 1 write, occasionally
+                    a grow that copies everything      O(1) amortised
+
+   The third line is E01. The interesting question is whether a LOOKUP can
+   ever beat a scan - and it can. That is E03.</div>
+<!--@end-->
+
+  <p>
+    Three things in that output are worth keeping, and none of them needed a stopwatch.
+  </p>
+  <p>
+    <strong>Three gets cost three reads, at every size.</strong> Ten elements, a thousand, a hundred
+    thousand &mdash; the number in that column never moves. That is what O(1) <em>looks like</em> when
+    you stop describing it and start counting it: not &ldquo;fast&rdquo;, but <em>unchanging</em>.
+  </p>
+  <p>
+    <strong>Finding the last element costs <em>n</em> reads, and finding nothing costs <em>n</em> too.</strong>
+    That is the expensive half of a list, and it is the reason the next part exists: a scan is linear
+    because it has no idea where to look. A lookup that does know where to look can beat it &mdash; and
+    that is the entire promise of hashing.
+  </p>
+  <p>
+    <strong>Our list and the JDK's agree to the read.</strong> Not approximately &mdash; exactly, in
+    every column. <code>IntList</code> and <code>ArrayList</code> do the same work because they are the
+    same design, and now you have evidence rather than a claim. It also makes a subtler point: what
+    changes the cost of a search is <em>a different algorithm</em>, not a different class. Swapping
+    <code>IntList</code> for <code>ArrayList</code> buys you polish, not a faster scan.
+  </p>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      <strong>Count work; don't time it.</strong> A count is reproducible, and reproducibility is what
+      makes a claim checkable. &ldquo;It felt faster&rdquo; is not evidence, and neither is one
+      stopwatch reading. Every cost figure in this session &mdash; copies, comparisons, reads, element
+      moves &mdash; is a counter inside the class, printed by the program, identical on every run. If
+      you take one habit from today, take this one: <em>when a claim about performance matters, find
+      something to count.</em>
+    </div>
+  </div>
+
+  <!-- ===== 10. PART 4 — HASH MAP ========================================== -->
+  <h2 id="part-4-buckets"><span class="eyebrow">Part 4 of 9</span> Your Own Hash Map: Buckets and Chains</h2>
+  <p>
+    You have used <code>HashMap</code> since Session 1 and you already know the contract from Session 10:
+    override <code>hashCode</code> with <code>equals</code>, because a map uses the first to find the
+    bucket and the second to confirm the key. What you have never seen is the machine in between &mdash;
+    and it is smaller than you would expect. Three parts:
+  </p>
+  <ol>
+    <li><strong>A bucket array.</strong> Not an array of values &mdash; an array of <em>short lists</em>, because two different keys are allowed to want the same slot.</li>
+    <li><strong>A mask.</strong> <code>hash &amp; (buckets.length - 1)</code> turns any <code>int</code> into a legal bucket number, without a division and without a negative index.</li>
+    <li><strong>A chain per bucket.</strong> Colliding keys are stored one behind another; a lookup walks the chain comparing keys with <code>equals()</code>.</li>
+  </ol>
+  <p>
+    That is the whole structure. Everything else in a real hash map &mdash; resizing, treeifying,
+    concurrency &mdash; is a fix for a problem this design creates. Here is ours, and the two methods
+    that carry the idea:
+  </p>
+
+  <!--@code src="code/s11b-data-structures-by-hand/src/main/java/com/aptech/s11b/ds/SimpleMap.java" from="69" to="97" title="SimpleMap.java — put() and get(): mask, walk, compare"-->
+<pre class="numbered" data-file="SimpleMap.java — put() and get(): mask, walk, compare" style="counter-reset:line 68"><code class="lang-java">    public void put(Object key, int value) {
+        int hash = hashOf(key);
+        int index = hash &amp; (buckets.length - 1);
+        for (Node n = buckets[index]; n != null; n = n.next) {
+            probes++;
+            if (n.hash == hash &amp;&amp; n.key.equals(key)) {
+                n.value = value;
+                return;
+            }
+        }
+        buckets[index] = new Node(key, hash, value, buckets[index]);
+        size++;
+        if (size &gt; buckets.length * LOAD_FACTOR) {
+            rehash();
+        }
+    }
+
+    /** The value, or null when the key is not in the map. */
+    public Integer get(Object key) {
+        int hash = hashOf(key);
+        int index = hash &amp; (buckets.length - 1);
+        for (Node n = buckets[index]; n != null; n = n.next) {
+            probes++;
+            if (n.hash == hash &amp;&amp; n.key.equals(key)) {
+                return n.value;
+            }
+        }
+        return null;
+    }</code></pre>
+<!--@end-->
+
+  <p>
+    Two details in there are easy to skate past and both matter. First, the chain stores the
+    <strong>hash</strong> alongside the key, and compares <code>n.hash == hash</code> <em>before</em>
+    calling <code>n.key.equals(key)</code> &mdash; an <code>int</code> comparison is cheaper than a
+    method call, so it filters out almost every non-matching node for free. Second, the anchor of each
+    chain is <code>hashOf(key) = h ^ (h &gt;&gt;&gt; 16)</code>, which folds the top half of the hash
+    into the bottom half so the low bits &mdash; the only bits the mask reads &mdash; still carry
+    information.
+  </p>
+  <p>
+    That last sentence is the seed of Part 5. For now, watch it work. The keys below were chosen so you
+    can check every one of them with a remainder, on paper, before the program runs:
+  </p>
+
+  <!--@output project="code/s11b-data-structures-by-hand" main="com.aptech.s11b.E03_HashMapBuckets"-->
+<div class="terminal-output">Six keys, eight buckets. Every number below is arithmetic you can redo
+on paper, which is the difference between a hash map and magic.
+
+1. Where each key landed
+   bucket   chain            keys to compare
+   0        40               1
+   1        33 -&gt; 25         2
+   2        (empty)          0
+   3        19               1
+   4        4 -&gt; 12          2
+   5        (empty)          0
+   6        (empty)          0
+   7        (empty)          0
+
+   6 keys, 8 buckets, longest chain 2.
+   Bucket 1 holds two keys because 25 and 33 both leave remainder 1.
+   That is a collision, and a chain is how it is handled.
+
+2. What a lookup costs, counted in key comparisons
+   get(40  )  1 comparison
+   get(25  )  2 comparisons
+   get(33  )  1 comparison
+   get(19  )  1 comparison
+   get(12  )  2 comparisons
+   get(4   )  1 comparison
+   get(999 )  0 comparisons - a bucket with nothing in it
+
+   Even the worst key here costs two comparisons, not six. Add a
+   hundred keys and the chains stay short, so the cost stays flat:
+   that is the O(1), and it comes from the SPREAD, not from luck.
+
+3. A deliberately bad spread
+   keys 0, 8, 16, 24, 32, 40 -&gt; one bucket, chain of 6
+   get(40) -&gt; 1 comparison   (40 was added last, so it is at the front)
+   get(0)  -&gt; 6 comparisons  (0 was added first, so it is at the back)
+   Same class, same code, six times the work - because the keys chose
+   the bucket, and these keys all chose the same one.
+
+4. The load factor: when the table outgrows itself
+   keys stored      buckets
+   0                8
+   7                16   &lt;- rehash 1: every key moved
+   13               32   &lt;- rehash 2: every key moved
+   25               64   &lt;- rehash 3: every key moved
+
+   The table doubles when it is three-quarters full, because a map
+   that is mostly chains has stopped being a map. Rehashing is the
+   hash map's version of E01's growth: rare, and expensive when it comes.
+
+5. The JDK's HashMap does the same thing, with more of it
+   HashMap size()    -&gt; 6
+   HashMap get(33)   -&gt; 330
+   HashMap get(999)  -&gt; null   (null, and it does not throw)
+   HashMap's own javadoc says the rest out loud: using many keys with
+   the same hashCode() is a sure way to slow down any hash table, and
+   when the keys are Comparable this class may use their order to break
+   the tie. That tie-breaking is section 3's problem, and Java 8 added
+   the fix. Everything else is what you have just written.</div>
+<!--@end-->
+
+  <figure class="concept-visual">
+    <img src="../assets/img/diagrams/s11b_hashmap_buckets.svg" alt="Six integer keys placed into an eight-bucket hash table by remainder: 40 lands in bucket 0; 25 and 33 both land in bucket 1 and form a chain reading 33 then 25; 19 lands in bucket 3; 12 and 4 both land in bucket 4 and form a chain reading 4 then 12. Four buckets stay empty." loading="lazy">
+    <figcaption><strong>Figure 2.</strong> <code>40 % 8 = 0</code>, <code>25 % 8 = 1</code>, <code>33 % 8 = 1</code>, <code>19 % 8 = 3</code>, <code>12 % 8 = 4</code>, <code>4 % 8 = 4</code>. Two buckets took two keys each &mdash; that is a <em>collision</em>, and a chain is how it is handled. The keys were added in the order 40, 25, 33, 19, 12, 4 and each new one goes on the <strong>front</strong> of its chain, so a chain reads newest-first: <code>33 &rarr; 25</code> and <code>4 &rarr; 12</code>, exactly as the program prints them.</figcaption>
+  </figure>
+
+  <p>
+    Follow one lookup all the way down. <code>get(33)</code> hashes 33, masks it to bucket 1, finds a
+    chain of two there, compares the stored hash, calls <code>equals</code> on the first node and
+    returns &mdash; <strong>one comparison</strong>, because 33 was added after 25 and every new key goes
+    on the front of its chain. Its neighbour <code>get(25)</code> costs two, because 25 is behind it.
+    Both beat the six comparisons a scan of the whole map would need &mdash; and with a hundred keys in
+    the map they would still cost about the same, because there would be a hundred buckets and the
+    chains would stay short. <strong>That is the O(1): it comes from the spread, not from luck.</strong>
+  </p>
+  <p>
+    Which raises the question the whole structure rests on &mdash; and section 3 of the output answers
+    it. Six keys chosen as <code>0, 8, 16, 24, 32, 40</code> all leave the same remainder, so all six
+    land in bucket 0. The map is still <em>correct</em>: every key is found, nothing throws. But
+    <code>get(0)</code> now costs six comparisons, and the class did not change. <strong>The keys chose
+    the bucket.</strong>
+  </p>
+  <p>
+    Section 4 is the last piece of the machine, and it is the same idea as Part 2 wearing different
+    clothes. As keys accumulate, chains get longer and lookups drift back towards a scan. So the table
+    watches its own fullness and <strong>doubles before things get bad</strong> &mdash; when the count of
+    keys passes three-quarters of the bucket count. Every key has to be moved into the bigger table,
+    because the mask changed and the bucket a key wants is not the bucket it is in. That is
+    <em>rehashing</em>, and it is precisely the growth you counted in <code>E01</code>: rare, expensive
+    when it comes, and cheaper on average than the alternative.
+  </p>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      <strong>A hash map is an array of chains plus a rule for choosing a chain.</strong> The array gives
+      it the O(1); the chains give it correctness when two keys disagree about nothing except which slot
+      they want. Every property you care about &mdash; speed, memory, the behaviour when a lookup misses
+      &mdash; follows from those two pieces and how full the array is allowed to get. Nothing else is
+      hidden, and that is the point of building it once by hand.
+    </div>
+  </div>
+
+  <!-- ===== 11. PART 5 — BREAKING IT ======================================= -->
+  <h2 id="part-5-break"><span class="eyebrow">Part 5 of 9</span> Breaking It on Purpose</h2>
+  <p>
+    Session 10 gave you a rule: <em>if you override <code>equals</code>, override
+    <code>hashCode</code>, and compute it from the same fields.</em> You wrote it down, you used it in
+    <code>E04</code>, and the tests went green. That is a rule you followed. Now you are going to see
+    the bill for skipping it &mdash; and this is the part of the session where a rule becomes a
+    <em>reason</em>.
+  </p>
+  <p>
+    The two classes below are the same idea broken in the only two ways it can be broken. Read them
+    before you run anything and try to predict what each one does to a map. Be specific: not
+    &ldquo;it goes wrong&rdquo;, but <em>what will the number in <code>size()</code> be?</em>
+  </p>
+
+  <!--@code src="code/s11b-data-structures-by-hand/src/main/java/com/aptech/s11b/E04_BreakingHashCode.java" from="47" to="83" title="E04_BreakingHashCode.java — the two ways to break a map"-->
+<pre class="numbered" data-file="E04_BreakingHashCode.java — the two ways to break a map" style="counter-reset:line 46"><code class="lang-java">    /** The same person, except hashCode() answers 1 for everybody. equals() is unchanged. */
+    static final class CollidingPerson extends Person {
+        CollidingPerson(String name) {
+            super(name);
+        }
+
+        @Override
+        public int hashCode() {
+            return 1;
+        }
+    }
+
+    /** equals() compares the id. hashCode() uses a field that equals() never looks at. */
+    static final class Registration {
+        private final String id;
+        private final String nickname;
+
+        Registration(String id, String nickname) {
+            this.id = id;
+            this.nickname = nickname;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return other instanceof Registration r &amp;&amp; id.equals(r.id);
+        }
+
+        @Override
+        public int hashCode() {
+            return nickname.hashCode();     // WRONG: nickname is not part of equals()
+        }
+
+        @Override
+        public String toString() {
+            return id + " (" + nickname + ")";
+        }
+    }</code></pre>
+<!--@end-->
+
+  <p>
+    <code>CollidingPerson</code> is a <code>Person</code> in every way except one: its
+    <code>hashCode()</code> returns <code>1</code> for everybody. Its <code>equals()</code> is
+    perfectly correct. <code>Registration</code> is the subtler one &mdash; <code>equals()</code>
+    compares the <code>id</code>, but <code>hashCode()</code> is computed from the
+    <code>nickname</code>, a field <code>equals()</code> never looks at. Both compile. Neither warns.
+    Here is what happens:
+  </p>
+
+  <!--@output project="code/s11b-data-structures-by-hand" main="com.aptech.s11b.E04_BreakingHashCode"-->
+<div class="terminal-output">1. A hashCode that answers 1 for everybody
+   With Objects.hash(name)
+      buckets used   4 of 8
+      longest chain  3
+   With hashCode() returning 1
+      buckets used   1 of 8
+      longest chain  6
+      bucket 1       Femi -&gt; Eze -&gt; Dara -&gt; Chidi -&gt; Ben -&gt; Ada
+
+2. The same six lookups against each
+   Objects.hash(name)   9 comparisons
+   hashCode() = 1       21 comparisons
+
+   Six lookups, twenty-one comparisons for the broken one - 1 + 2 + 3 +
+   4 + 5 + 6, because every key is in one chain and the last key added
+   is found first while the first key added is found last. Nothing threw.
+   The map is still correct. It has simply stopped being a map.
+
+3. The other way to break it: equals() and hashCode() disagree
+   Two puts, both with id S1, differing only in a field equals() ignores:
+      size()        -&gt; 2   (one logical key, stored twice)
+      get(Ada)      -&gt; 10
+      get(Ade)      -&gt; 20
+   equals() says these are the same key; hashCode() sent them to different
+   buckets, so the map never got the chance to notice.
+
+4. The repair: hash what equals() compares
+      size()        -&gt; 1   (the second put updated, not added)
+      get(Ada)      -&gt; 20
+      get(Ade)      -&gt; 20
+   Both lookups find the same entry, which is what "same key" has to mean.
+
+5. This is the contract, not our implementation
+   The JDK's HashMap, same broken class -&gt; size() = 2
+   The JDK cannot repair a class whose two halves disagree either. It
+   does not even fail loudly - it just holds the key twice, as we did.
+
+   The rule, in one line: hashCode() must be computed from exactly the
+   fields equals() compares, and nothing else. Objects.hash(...) writes
+   it for you, so the two lists cannot drift apart later.</div>
+<!--@end-->
+
+  <figure class="concept-visual">
+    <img src="../assets/img/diagrams/s11b_one_bucket_collision.svg" alt="An eight-bucket table in which every key computed the same index, so bucket 1 holds a single chain reading newest first — Femi, Eze, Dara, Chidi, Ben, Ada — while every other bucket is empty, because every key's index is 1 &amp; 7 = 1. Beside it, the cost of that: with hashCode() returning 1 there is one bucket and six keys, so a lookup can take up to six equals() calls and get() has become a linear scan. A spread hashCode() puts the keys over the eight buckets at about one equals() call each. Below, the two halves of one promise — equals decides when two keys are the same key, hashCode decides which bucket to look in first — and the warning that when they disagree the map holds two keys where it should hold one." loading="lazy">
+    <figcaption><strong>Figure 3.</strong> One method changed, nothing else. In the program behind this page, the same six keys looked up once each cost <strong>9 comparisons</strong> with a good hash and <strong>21</strong> with <code>hashCode() { return 1; }</code>. Nothing threw, nothing warned, and every lookup still returns the right answer &mdash; the map has simply stopped being a map.</figcaption>
+  </figure>
+
+  <p>
+    Read section 2's number carefully, because it is the exact figure arithmetic predicts and not an
+    approximation: <strong>21 = 1 + 2 + 3 + 4 + 5 + 6</strong>. Six keys in one chain, and each lookup
+    walks the chain until it finds its key. The key added last sits at the front and costs one
+    comparison; the key added first sits at the back and costs six. Add a hundred keys and the same
+    lookup costs up to a hundred &mdash; the map has quietly become a list, while still answering
+    correctly.
+  </p>
+  <p>
+    Section 3 is the more dangerous failure, because it does not cost time &mdash; it costs
+    <strong>correctness</strong>. Two <code>Registration</code> objects with the same <code>id</code>
+    <em>are</em> the same key by <code>equals()</code>. But their <code>hashCode()</code> values differ,
+    so the mask sends them to different buckets, and the map never gets the chance to compare them.
+    <code>size()</code> returns <strong>2</strong> for one logical key. Section 4 shows the repair
+    &mdash; hash the field <code>equals()</code> compares &mdash; and the second put updates instead
+    of adding:
+  </p>
+
+  <!--@code src="code/s11b-data-structures-by-hand/src/main/java/com/aptech/s11b/E04_BreakingHashCode.java" from="85" to="103" title="E04_BreakingHashCode.java — the repair: one field, the right one"-->
+<pre class="numbered" data-file="E04_BreakingHashCode.java — the repair: one field, the right one" style="counter-reset:line 84"><code class="lang-java">    /** The repair: hash the field that equals() compares, and let Objects.hash write it. */
+    static final class FixedRegistration {
+        private final String id;
+        private final String nickname;
+
+        FixedRegistration(String id, String nickname) {
+            this.id = id;
+            this.nickname = nickname;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return other instanceof FixedRegistration r &amp;&amp; id.equals(r.id);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(id);
+        }</code></pre>
+<!--@end-->
+
+  <p>
+    And section 5 is the part that settles the argument for good. Feed the <em>same broken class</em>
+    to the JDK's own <code>HashMap</code> and it fails identically: <code>size()</code> is 2. The JDK's
+    map is not being beaten by our implementation, and our implementation is not being cleverer than
+    the JDK's. <strong>Both are obeying the same contract, and the class is violating it.</strong> No
+    library can repair a pair of methods that disagree, because the library never sees both of them at
+    once &mdash; it sees a hash and picks a bucket, and the decision is already made.
+  </p>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>The failure mode with no symptom</b>
+      Every hash-based structure in Java &mdash; <code>HashMap</code>, <code>HashSet</code>,
+      <code>LinkedHashMap</code>, <code>ConcurrentHashMap</code>, <code>Hashtable</code> &mdash; will
+      accept a class with a broken <code>hashCode</code> and give you wrong or slow answers without
+      ever throwing. There is no exception to catch and no test that fails unless you wrote it. This is
+      why the rule from Session 10 is worth more than memorising: <strong>it is the only defence you
+      have against a bug that never announces itself.</strong> If you take one habit from this part:
+      when you write <code>equals</code>, write <code>hashCode</code> in the same breath, from the same
+      fields, using <code>Objects.hash(&hellip;)</code> so the two lists cannot drift apart later.
+    </div>
+  </div>
+
+  <!-- ===== 12. PART 6 — RING BUFFER ======================================= -->
+  <h2 id="part-6-ring"><span class="eyebrow">Part 6 of 9</span> Your Own Deque &mdash; the Ring Buffer</h2>
+  <p>
+    One more structure, and this one exists to fix an annoyance you may have already felt. Take a list
+    and treat it as a queue: <code>add()</code> to the back, <code>remove(0)</code> from the front. It
+    works, and it is a trap. Removing the first element of a list means <strong>moving every other
+    element down one slot</strong> &mdash; one removal, <em>n</em> moves. Ten thousand jobs through a
+    thousand-element queue is ten million element moves to accomplish nothing at all.
+  </p>
+  <p>
+    The ring buffer's answer is to stop moving things. Keep one array, and instead of shifting elements
+    towards the front, <strong>move the front</strong>. <code>head</code> is the slot the next element
+    comes out of; <code>tail</code> is the slot the next element goes into; and when either reaches the
+    end of the array it wraps to the start with one <code>%</code>. The slots the queue has already
+    passed are free and get reused. Nothing is ever copied, ever.
+  </p>
+
+  <!--@code src="code/s11b-data-structures-by-hand/src/main/java/com/aptech/s11b/ds/RingBuffer.java" from="57" to="85" title="RingBuffer.java — push, pop, poll: three methods, three modulos"-->
+<pre class="numbered" data-file="RingBuffer.java — push, pop, poll: three methods, three modulos" style="counter-reset:line 56"><code class="lang-java">    /** Adds to the back. The one line that makes it a ring is the tail arithmetic. */
+    public void push(String value) {
+        if (isFull()) {
+            throw new IllegalStateException("ring buffer is full: " + capacity() + " slots");
+        }
+        data[tail] = value;
+        tail = (tail + 1) % data.length;
+        size++;
+    }
+
+    /** Removes from the back - the newest. Use with push() and this is a stack. */
+    public String pop() {
+        checkNotEmpty();
+        tail = (tail - 1 + data.length) % data.length;
+        String value = data[tail];
+        data[tail] = null;
+        size--;
+        return value;
+    }
+
+    /** Removes from the front - the oldest. Use with push() and this is a queue. */
+    public String poll() {
+        checkNotEmpty();
+        String value = data[head];
+        data[head] = null;
+        head = (head + 1) % data.length;
+        size--;
+        return value;
+    }</code></pre>
+<!--@end-->
+
+  <p>
+    Look at how little there is. <code>push</code> writes at <code>tail</code> and advances it;
+    <code>poll</code> reads at <code>head</code> and advances it; <code>pop</code> steps
+    <code>tail</code> <em>back</em>wards and reads. Every one of them is a read or a write plus one
+    addition &mdash; no loop, no shift, no matter how many elements are stored. And notice that
+    <strong>the same class is a stack and a queue</strong> depending only on which end you take from.
+    That is <code>ArrayDeque</code>: one class, both jobs, because the ring genuinely does not care.
+  </p>
+  <p>
+    The one thing that needs care is telling <em>full</em> apart from <em>empty</em>. With
+    <code>head</code> and <code>tail</code> alone, both states look identical &mdash; the two indexes
+    are equal &mdash; which is the classic ring-buffer bug. That is what the <code>size</code> field is
+    for, and it is why <code>isFull()</code> is <code>size == data.length</code> rather than an index
+    comparison.
+  </p>
+
+  <!--@output project="code/s11b-data-structures-by-hand" main="com.aptech.s11b.E05_RingBufferDeque"-->
+<div class="terminal-output">One array, no shifting, no copying. Two indexes move, and wrap.
+
+1. Setting the stage
+   push(p), push(q)   -&gt; slot 0=p, slot 1=q
+                          head=0  tail=2  size=2
+   poll(), poll()     -&gt; empty
+                          head=2  tail=2  size=0
+   head and tail have both moved to slot 2. The two slots they passed
+   are free again, and nothing was copied to free them.
+
+2. Three pushes, and the ring is in use
+   push(a), push(b), push(c)
+      slot 2=a, slot 3=b, slot 4=c
+      head=2  tail=5  size=3
+      reading oldest first: [a, b, c]
+
+3. Four more, and tail runs off the end and comes back
+   push(d), push(e), push(f), push(g)
+      slot 2=a, slot 3=b, slot 4=c, slot 5=d, slot 6=e, slot 7=f, slot 0=g
+      head=2  tail=1  size=7
+      reading oldest first: [a, b, c, d, e, f, g]
+
+   g went into slot 0 - the front of the array - and it is the NEWEST
+   element. Slot order and queue order have nothing to do with each other.
+   tail became (7 + 1) % 8 = 0, and that one line is the whole ring.
+
+4. The same object, used two ways
+   as a queue: push x3, then poll()  -&gt; first
+               (the oldest, which is what a queue gives you)
+   as a stack: push x3, then pop()   -&gt; third
+               (the newest, which is what a stack gives you)
+
+   push()/poll() is a queue. push()/pop() is a stack. One class, because
+   the ring does not care which end you take from.
+
+5. A thousand turns, and the array never grows
+   1000 pushes and 1000 polls later:
+      capacity 8, size 0, head 0, tail 0
+   Capacity 8 throughout. Compare that with IntList, which replaces its
+   array over and over. Neither is better - they are built for different
+   jobs, and a queue is this one's job.
+
+6. ArrayDeque is this, with the edges filed off
+   as a stack: push, push -&gt; [top, bottom] ; pop -&gt; top
+   as a queue: addLast x3 -&gt; [first, second, third] ; pollFirst -&gt; first
+
+   ArrayDeque is a ring buffer that grows by doubling when it fills, is
+   not synchronized, and refuses nulls. Session 11 offered it as the
+   replacement for Stack; now you know what is inside it.</div>
+<!--@end-->
+
+  <figure class="concept-visual">
+    <img src="../assets/img/diagrams/s11b_ring_buffer.svg" alt="A ring buffer of eight slots, slots 0 to 7, shown at two moments. After push(a), push(b) and push(c), those three elements sit in slots 2, 3 and 4, with head at 2 and tail at 5. After four more pushes, g has wrapped into slot 0, the seven elements occupy slots 2, 3, 4, 5, 6, 7 and 0, head is still 2, tail is now 1, and slot 1 is the single free slot. Below the slots is the one line that makes it a ring — tail = (tail + 1) % data.length — and the note that after slot 7 the tail becomes (7 + 1) % 8 = 0, back to the front with no copying." loading="lazy">
+    <figcaption><strong>Figure 4.</strong> Read the output of <code>E05</code> against these four states, slot for slot. The moment to notice is the last one: <code>g</code> is sitting in <em>slot 0</em>, the front of the array, and it is the <strong>newest</strong> element in the queue. Slot order and queue order have nothing to do with each other.</figcaption>
+  </figure>
+
+  <p>
+    Section 3 of the output is the wrap, and it is worth following the arithmetic by hand:
+    <code>g</code> goes into slot 7, and then <code>tail = (7 + 1) % 8 = 0</code>. The next element
+    would land at the front of the array. That single line is the entire difference between a ring
+    buffer and a list &mdash; and the reason the same eight slots can serve a queue that runs all day.
+  </p>
+  <p>
+    Section 5 is the payoff, and it is the honest comparison Part 2 set up. A thousand pushes and a
+    thousand polls through a ring of capacity 8: <strong>capacity 8 at the end, exactly as at the
+    start, and the array was never replaced.</strong> An <code>IntList</code> doing the same job would
+    have grown to over a thousand slots and copied thousands of elements to get there. Neither
+    structure is better &mdash; a growable array is wrong for a queue, and a fixed ring is wrong for a
+    growing list. <strong>They are built for different jobs, and a queue is this one's job.</strong>
+  </p>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Why Session 11 told you to stop using <code>Stack</code></b>
+      The <code>Stack</code> you met in Session 11 extends <code>Vector</code>, which locks every method
+      &mdash; and a ring buffer needs no lock at all, because it is not shared unless you choose to
+      share it. <code>ArrayDeque</code> is <em>this</em>, with the edges filed off: it grows by doubling
+      when it fills (Part 2 again), it refuses <code>null</code>, and it is not synchronized. Now that
+      you have written the eight methods yourself, the recommendation stops being something your
+      teacher said and becomes something you can check.
+    </div>
+  </div>
+
+  <!-- ===== 13. PART 7 — ONE SUITE ========================================= -->
+  <h2 id="part-7-suite"><span class="eyebrow">Part 7 of 9</span> One Suite, Two Implementations</h2>
+  <p>
+    You now have three structures that work &mdash; you watched them work. But &ldquo;I watched it
+    work&rdquo; is not evidence, and this course has made you prove things three times already: the seam
+    in Session 9, the parameterised tests in Session 10, and the rubric in A5. This is the same idea a
+    fourth time, and it is the sharpest version of it, because the two things being compared were
+    written <strong>thirty years apart by people who have never met</strong>.
+  </p>
+  <p>
+    The trick is a word you have been using since Session 6: <strong>an interface</strong>. The suite
+    below never names <code>IntList</code>. It names three shapes &mdash; a growable list of
+    <code>int</code>, a map from <code>String</code> to <code>int</code>, a buffer you can take from
+    either end &mdash; and then asks a factory to supply something that fits.
+  </p>
+
+  <!--@code src="code/s11b-data-structures-by-hand/src/main/java/com/aptech/s11b/lab/Checks.java" from="39" to="80" title="Checks.java — three interfaces. Nothing about how."-->
+<pre class="numbered" data-file="Checks.java — three interfaces. Nothing about how." style="counter-reset:line 38"><code class="lang-java">    /** What a growable list of ints must do. Nothing about how. */
+    public interface IntBag {
+        void add(int value);
+
+        int get(int index);
+
+        int size();
+
+        boolean contains(int value);
+
+        int removeAt(int index);
+    }
+
+    /** What a map from String to int must do. */
+    public interface StringIntMap {
+        void put(String key, int value);
+
+        Integer get(String key);
+
+        boolean containsKey(String key);
+
+        int size();
+    }
+
+    /** What a buffer you can take from either end must do. */
+    public interface StringDeque {
+        void push(String value);
+
+        /** Removes the newest - the stack end. */
+        String pop();
+
+        /** Removes the oldest - the queue end. */
+        String poll();
+
+        String peekFront();
+
+        String peekBack();
+
+        int size();
+
+        boolean isEmpty();
+    }</code></pre>
+<!--@end-->
+
+  <p>
+    Those three interfaces are the whole of the suite's knowledge. It is worth noticing what is
+    <em>not</em> in them: no mention of an array, a bucket, a chain, a head or a tail. A suite that knew
+    about chains could only test chain-based maps. This one can test anything that can behave like a
+    map, which is exactly why the next step is possible.
+  </p>
+  <p>
+    The only place in the entire file where a real class is named is the six factories &mdash; and there
+    are two of each shape, one per side:
+  </p>
+
+  <!--@code src="code/s11b-data-structures-by-hand/src/main/java/com/aptech/s11b/lab/Checks.java" from="92" to="114" title="Checks.java — the six factories, and the only class names in the file"-->
+<pre class="numbered" data-file="Checks.java — the six factories, and the only class names in the file" style="counter-reset:line 91"><code class="lang-java">    public static IntBag handList() {
+        return new HandList();
+    }
+
+    public static IntBag jdkList() {
+        return new JdkList();
+    }
+
+    public static StringIntMap handMap() {
+        return new HandMap();
+    }
+
+    public static StringIntMap jdkMap() {
+        return new JdkMap();
+    }
+
+    public static StringDeque handDeque() {
+        return new HandDeque();
+    }
+
+    public static StringDeque jdkDeque() {
+        return new JdkDeque();
+    }</code></pre>
+<!--@end-->
+
+  <p>
+    Look at how each interface is implemented on the JDK side for a moment, because it is not a
+    formality. <code>JdkList</code> wraps an <code>ArrayList&lt;Integer&gt;</code> and unboxes on
+    <code>get</code>. <code>JdkMap</code> wraps a <code>HashMap&lt;String, Integer&gt;</code> and has to
+    decide what <code>get</code> returns for a key that is not there. <code>JdkDeque</code> wraps an
+    <code>ArrayDeque</code> and maps <code>push</code> to <code>addLast</code>, <code>pop</code> to
+    <code>pollLast</code>, <code>poll</code> to <code>pollFirst</code> &mdash; same ends, different
+    names. Writing an adapter like that is a normal day's work, and doing it here is what makes the
+    comparison like-for-like rather than approximate.
+  </p>
+  <p>
+    Here is one of the three suites in full. Read it as a specification rather than as test code: every
+    line is a sentence about what a list <em>means</em>, and none of them mentions an implementation.
+  </p>
+
+  <!--@code src="code/s11b-data-structures-by-hand/src/main/java/com/aptech/s11b/lab/Checks.java" from="417" to="468" title="Checks.java — the list contract, written once"-->
+<pre class="numbered" data-file="Checks.java — the list contract, written once" style="counter-reset:line 416"><code class="lang-java">    public void listSuite(Supplier&lt;IntBag&gt; factory) {
+        startSuite();
+        IntBag list = factory.get();
+        check("a new list is empty", list.size() == 0);
+
+        list = factory.get();
+        list.add(42);
+        checkEquals("add then get returns what was added", 42, list.get(0));
+        checkEquals("and the size followed", 1, list.size());
+
+        list = factory.get();
+        for (int i = 1; i &lt;= 3; i++) {
+            list.add(i);
+        }
+        checkEquals("order is the order you added", "1,2,3", join(list));
+
+        list = factory.get();
+        for (int i = 0; i &lt; 100; i++) {
+            list.add(i);
+        }
+        checkEquals("a hundred adds, size 100", 100, list.size());
+        checkEquals("the first is still first", 0, list.get(0));
+        checkEquals("the last is still last", 99, list.get(99));
+        checkEquals("and every element survived the growth", 4950, sum(list));
+
+        list = factory.get();
+        for (int i = 1; i &lt;= 3; i++) {
+            list.add(i);
+        }
+        checkEquals("removeAt returns the element it removed", 1, list.removeAt(0));
+        checkEquals("removeAt shifts the rest left", "2,3", join(list));
+        checkEquals("removeAt shrinks the size", 2, list.size());
+
+        list = factory.get();
+        for (int i = 1; i &lt;= 3; i++) {
+            list.add(i);
+        }
+        check("contains finds a stored element", list.contains(2));
+        check("contains does not find an absent one", !list.contains(99));
+
+        IntBag empty = factory.get();
+        checkThrows("get(0) on an empty list throws IndexOutOfBoundsException",
+                IndexOutOfBoundsException.class, () -&gt; empty.get(0));
+        IntBag three = factory.get();
+        for (int i = 1; i &lt;= 3; i++) {
+            three.add(i);
+        }
+        checkThrows("get(-1) throws IndexOutOfBoundsException",
+                IndexOutOfBoundsException.class, () -&gt; three.get(-1));
+        checkThrows("get(3) on a list of three throws IndexOutOfBoundsException",
+                IndexOutOfBoundsException.class, () -&gt; three.get(3));
+    }</code></pre>
+<!--@end-->
+
+  <p>
+    Two checks in there are doing more work than they look like. <em>&ldquo;Every element survived the
+    growth&rdquo;</em> adds up all hundred elements and expects 4950 &mdash; a wrong growth that dropped
+    or duplicated an element during a copy would still leave <code>size()</code> at 100, so the sum is
+    the check that actually catches it. And the three <code>checkThrows</code> at the end are about the
+    <em>edges</em>: an empty list, an index past the end, a negative index. Edges are where
+    hand-written structures break, and a suite that only tests the middle would pass a list that
+    crashes the moment anyone makes a mistake.
+  </p>
+  <p>
+    Now the program. Watch the second half especially &mdash; that is the part that matters:
+  </p>
+
+  <!--@code src="code/s11b-data-structures-by-hand/src/main/java/com/aptech/s11b/E06_OneSuiteTwoImplementations.java" from="31" to="79" title="E06_OneSuiteTwoImplementations.java — the same suite, handed two different worlds"-->
+<pre class="numbered" data-file="E06_OneSuiteTwoImplementations.java — the same suite, handed two different worlds" style="counter-reset:line 30"><code class="lang-java">    public static void main(String[] args) {
+        System.out.println("One suite, two implementations.");
+        System.out.println("Nothing below knows whether it is talking to the structures written this");
+        System.out.println("morning or to the ones the JDK has shipped for thirty years. It knows");
+        System.out.println("three interfaces, and that is the whole of the trick.");
+        System.out.println();
+
+        Checks checks = new Checks();
+
+        checks.heading("The list contract - IntList, in full");
+        checks.listSuite(Checks::handList);
+        System.out.println("  " + checks.suiteTally());
+
+        checks.heading("The map contract - SimpleMap, in full");
+        checks.mapSuite(Checks::handMap);
+        System.out.println("  " + checks.suiteTally());
+
+        checks.heading("The deque contract - RingBuffer, in full");
+        checks.dequeSuite(Checks::handDeque);
+        System.out.println("  " + checks.suiteTally());
+
+        System.out.println();
+        System.out.println("Every check above was written against an interface, never against a class.");
+        System.out.println("Now the same three suites, unchanged, against the JDK's own structures.");
+        System.out.println("Passing checks are not reprinted - only failures are, and there are none.");
+
+        checks.quietPasses();
+
+        checks.heading("ArrayList instead of IntList");
+        checks.listSuite(Checks::jdkList);
+        System.out.println("  " + checks.suiteTally());
+
+        checks.heading("HashMap instead of SimpleMap");
+        checks.mapSuite(Checks::jdkMap);
+        System.out.println("  " + checks.suiteTally());
+
+        checks.heading("ArrayDeque instead of RingBuffer");
+        checks.dequeSuite(Checks::jdkDeque);
+        System.out.println("  " + checks.suiteTally());
+
+        System.out.println();
+        System.out.println("Totalled: " + checks.tally() + ".");
+        System.out.println("Both sides are correct by exactly the same standard, which is the only");
+        System.out.println("standard a suite can offer. It says nothing about which is faster, and");
+        System.out.println("it cannot - speed is measured, and measurement is not reproducible enough");
+        System.out.println("to print. Everything countable was counted instead.");
+
+        differences();
+    }</code></pre>
+<!--@end-->
+
+  <!--@output project="code/s11b-data-structures-by-hand" main="com.aptech.s11b.E06_OneSuiteTwoImplementations"-->
+<div class="terminal-output">One suite, two implementations.
+Nothing below knows whether it is talking to the structures written this
+morning or to the ones the JDK has shipped for thirty years. It knows
+three interfaces, and that is the whole of the trick.
+
+
+=== The list contract - IntList, in full ===
+  PASS  a new list is empty
+  PASS  add then get returns what was added
+  PASS  and the size followed
+  PASS  order is the order you added
+  PASS  a hundred adds, size 100
+  PASS  the first is still first
+  PASS  the last is still last
+  PASS  and every element survived the growth
+  PASS  removeAt returns the element it removed
+  PASS  removeAt shifts the rest left
+  PASS  removeAt shrinks the size
+  PASS  contains finds a stored element
+  PASS  contains does not find an absent one
+  PASS  get(0) on an empty list throws IndexOutOfBoundsException   (threw IndexOutOfBoundsException)
+  PASS  get(-1) throws IndexOutOfBoundsException   (threw IndexOutOfBoundsException)
+  PASS  get(3) on a list of three throws IndexOutOfBoundsException   (threw IndexOutOfBoundsException)
+  16 checks, 16 passed, 0 failed
+
+=== The map contract - SimpleMap, in full ===
+  PASS  a new map is empty
+  PASS  put then get returns the value
+  PASS  an absent key reads as null
+  PASS  containsKey is true for a key that is there
+  PASS  containsKey is false for one that is not
+  PASS  putting the same key twice replaces the value
+  PASS  and does not store it twice
+  PASS  two hundred keys, size 200
+  PASS  the first one is still reachable
+  PASS  so is the last
+  PASS  and all two hundred read back correctly
+  PASS  a key that is equal but not the same object is found
+  12 checks, 12 passed, 0 failed
+
+=== The deque contract - RingBuffer, in full ===
+  PASS  a new buffer is empty
+  PASS  push then pop gives it straight back
+  PASS  and that leaves it empty
+  PASS  pop takes the newest - a stack
+  PASS  then the next newest
+  PASS  and size counts down
+  PASS  poll takes the oldest - a queue
+  PASS  then the next oldest
+  PASS  peekFront shows the oldest
+  PASS  peekBack shows the newest
+  PASS  and peeking removed nothing
+  PASS  fifty push/poll turns each come back in order
+  PASS  and the buffer is empty afterwards
+  PASS  it fills to its capacity
+  PASS  eight more, read back in order after the indexes wrapped
+  15 checks, 15 passed, 0 failed
+
+Every check above was written against an interface, never against a class.
+Now the same three suites, unchanged, against the JDK's own structures.
+Passing checks are not reprinted - only failures are, and there are none.
+
+=== ArrayList instead of IntList ===
+  16 checks, 16 passed, 0 failed
+
+=== HashMap instead of SimpleMap ===
+  12 checks, 12 passed, 0 failed
+
+=== ArrayDeque instead of RingBuffer ===
+  15 checks, 15 passed, 0 failed
+
+Totalled: 86 checks, 86 passed, 0 failed.
+Both sides are correct by exactly the same standard, which is the only
+standard a suite can offer. It says nothing about which is faster, and
+it cannot - speed is measured, and measurement is not reproducible enough
+to print. Everything countable was counted instead.
+
+Where the two sides honestly differ
+Nothing here is a bug - both sides passed every check. These are the edges
+each side drew, and you should know which side you are standing on.
+
+1. A null key
+     HashMap    put(null, 1) -&gt; accepted, size 1
+     SimpleMap  put(null, 1) -&gt; NullPointerException
+
+2. A null value
+     HashMap    put("BOLT", null) -&gt; accepted; containsKey true, get null
+     SimpleMap  cannot be asked - its values are int, so "no value yet"
+                is not a state it can be in. That is a design choice, and it
+                is the same choice Session 11's Hashtable made for you.
+
+3. Taking from an empty buffer
+     ArrayDeque pop()       on empty -&gt; NoSuchElementException, and pollFirst() -&gt; null
+     RingBuffer pop()       on empty -&gt; IllegalStateException: ring buffer is empty
+     RingBuffer poll()      on empty -&gt; IllegalStateException: ring buffer is empty
+     Both refuse. One refuses by name, the other by returning null, and
+     null is exactly how a bug hides: NPE three lines later, not here.
+
+4. A fixed size, or a growing one
+     RingBuffer  5th push into 4 slots -&gt; ring buffer is full: 4 slots
+     ArrayDeque  1000 pushes asked of 4  -&gt; size 1000, it doubled as it went
+     Yours refuses, which is honest and cheap. The JDK's hides the growth,
+     which is convenient and is the same doubling E01 measured.
+
+5. A boxed list has two removes, and the compiler picks by type
+     values.remove(1)                  -&gt; takes index 1, returns the element: 20, leaving [10, 30]
+     values.remove(Integer.valueOf(20)) -&gt; takes the element 20, returns whether it was there: true, leaving [10, 30]
+     Same list at the end, for two different reasons. IntList has one
+     remove and it takes an index, so this trap cannot be written into it.
+
+6. The message when you walk off the end
+     IntList   -&gt; IndexOutOfBoundsException: Index 3 out of bounds for size 3
+     ArrayList -&gt; IndexOutOfBoundsException: Index 3 out of bounds for length 3
+     Same exception, different sentence. Never match on the message.
+
+7. Changing a list while walking it
+     remove("B") from [A, B, C] inside a for-each:
+        visited AB, threw no complaint at all, list is now [A, C]
+        C was never visited, and nothing said so. The removal happened
+        to end the walk, so the check that would have caught it was
+        never reached. The list is quietly wrong.
+
+     remove("A") from [A, B, C] instead:
+        visited A, threw ConcurrentModificationException
+
+     One mistake, two outcomes - which is why fail-fast is a best effort
+     and not a guarantee. Iterator replaced Session 11's Enumeration
+     because it tries to catch this; the cure is still to remove through
+     the iterator's own remove(). IntList has no iterator at all, so both
+     versions of this mistake pass there without a word.
+
+The suite is the answer to "is my structure right?". The list above is
+the answer to "is it the same as theirs?" - and the answer is no, and
+it should not be. Write the structure to understand it; then delete it
+and use theirs.</div>
+<!--@end-->
+
+  <p>
+    Read the shape of that output rather than any single line. The same three suites run against
+    <code>IntList</code> and then, unchanged, against <code>ArrayList</code>. The ones that passed the
+    second time are not reprinted &mdash; the program sets <code>checks.quietPasses()</code> before the
+    JDK half, so the silence you see is the result, not a missing run. And every suite ends green
+    against both: <strong>your structures and the JDK's are correct by exactly the same standard.</strong>
+  </p>
+  <p>
+    That sentence is worth being precise about, because it is easy to overclaim. A green suite means the
+    two agree about <em>behaviour</em> &mdash; the things a caller can observe. It says nothing about
+    speed, memory, thread safety, or what happens at ten million elements. It cannot: the suite is a
+    list of observations, not a proof. <strong>Green means &ldquo;no difference I thought to
+    look for&rdquo;</strong>, and the person who wrote the suite decides how much that is worth.
+  </p>
+  <p>
+    Which is why the honest part of the program comes last. <code>differences()</code> prints the edges
+    where the two genuinely disagree, all of them produced by running the thing it describes:
+  </p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Edge</th><th>Ours</th><th>The JDK's</th></tr></thead>
+      <tbody>
+        <tr><td>A <code>null</code> key</td><td><code>SimpleMap</code> throws <code>NullPointerException</code></td><td><code>HashMap</code> accepts it, and stores it</td></tr>
+        <tr><td>A <code>null</code> value</td><td>Impossible &mdash; values are <code>int</code>, so &ldquo;no value yet&rdquo; is not a state</td><td>Accepted, but then <code>get</code> returns <code>null</code> for both &ldquo;absent&rdquo; and &ldquo;present, storing null&rdquo;</td></tr>
+        <tr><td>Taking from an empty buffer</td><td><code>IllegalStateException</code></td><td><code>ArrayDeque</code> throws <code>NoSuchElementException</code></td></tr>
+        <tr><td>Capacity</td><td>Fixed at construction &mdash; a full ring refuses</td><td><code>ArrayDeque</code> grows by doubling</td></tr>
+        <tr><td>Storing an <code>int</code></td><td>An <code>int[]</code> &mdash; no boxing</td><td><code>ArrayList&lt;Integer&gt;</code> boxes every element</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point</b>
+      <strong>Green means &ldquo;no difference I thought to look for.&rdquo;</strong> The suite proves the
+      two sides agree on everything anybody wrote down. Every line of that table is a difference the
+      suite did <em>not</em> catch, because a check only exists once a person thinks to write it. This is
+      why &ldquo;the tests pass&rdquo; is a statement about the tests as much as about the code &mdash;
+      and why the person who wrote them is the one who decides how much the green is worth.
+    </div>
+  </div>
+
+  <!-- ===== 14. PART 8 — WHY THE JDK'S WON ================================= -->
+  <h2 id="part-8-jdk"><span class="eyebrow">Part 8 of 9</span> Why the JDK's Versions Won</h2>
+  <p>
+    Both sides passed. So why does every Java program on earth use <code>ArrayList</code> and not
+    something a student wrote this morning? Not because of anything the suite could see. The suite
+    compares behaviour, and the differences that matter here are not behavioural &mdash; they are
+    engineering. Six of them, and you are now equipped to understand every one:
+  </p>
+  <ol>
+    <li>
+      <strong>It is generic, so it holds anything.</strong> Our <code>IntList</code> holds
+      <code>int</code> and our <code>SimpleMap</code> goes from <code>String</code> to
+      <code>int</code>. Writing a second list for <code>String</code> would mean copying the whole file
+      and changing one type. Generics &mdash; Session 6 &mdash; exist to make that one file.
+    </li>
+    <li>
+      <strong>It iterates, safely and fast.</strong> There is no way to walk our structures with a
+      <code>for</code>-each, because they do not implement <code>Iterable</code>. Inside, a
+      hand-written structure is also a <em>layout</em>: ours keeps values in a plain array, and the JDK's
+      keeps <code>Integer</code> references, so every element of an <code>ArrayList&lt;Integer&gt;</code>
+      is a boxed object on the heap. That is the boxing trade in the table above, and it is real: an
+      <code>int[]</code> of a million numbers is four megabytes; an
+      <code>ArrayList&lt;Integer&gt;</code> of the same million is the array plus a million objects.
+    </li>
+    <li>
+      <strong>Its growth policy is tuned and documented as unspecified.</strong> This is the honest one.
+      <code>ArrayList</code> grows by roughly 1.5&times;, not 2&times;, and its javadoc says the growth
+      policy is <em>unspecified</em> &mdash; which is a promise that you must not depend on the exact
+      capacity, only on the amortised cost. That is a deliberate boundary drawn around an implementation
+      detail, and it is a habit worth copying.
+    </li>
+    <li>
+      <strong>Its map handles the bad case you are not allowed to ignore.</strong> Java 8 added
+      <em>treeified bins</em>: when one bucket's chain grows past eight entries, that chain is converted
+      into a balanced tree, and a lookup in it costs O(log n) instead of O(n). That is Part 5's disaster
+      &mdash; twenty-one comparisons and rising &mdash; turned into a case that is merely worse, not
+      catastrophic. The JDK's own javadoc says using many keys with the same <code>hashCode()</code> is a
+      sure way to slow down any hash table; the treeification is the fix, and when the keys are
+      <code>Comparable</code> the tree can also use their natural order to break ties.
+    </li>
+    <li>
+      <strong>It knows it is being modified while you look at it.</strong> Remember Session 11's
+      <code>Enumeration</code>, which notices nothing? A modern collection's iterator is
+      <em>fail-fast</em>: modify the collection while a loop is walking it and the next
+      <code>next()</code> throws <code>ConcurrentModificationException</code> rather than quietly
+      skipping an element. Our structures have no iterators at all, so they cannot notice &mdash; which
+      means the bug would surface later, somewhere else, as a wrong number.
+    </li>
+    <li>
+      <strong>It has been wrong and been fixed, in public, for thirty years.</strong> Every one of those
+      features is a bug somebody found in production. That is the part you cannot write this morning.
+    </li>
+  </ol>
+
+  <div class="callout callout--note"><span class="callout__i">&#128221;</span>
+    <div class="callout__b"><b>The framing that matters</b>
+      Your structures are not a worse <code>ArrayList</code>. They are a <strong>teaching model</strong>
+      &mdash; the smallest thing that behaves like one, so that the behaviour can be seen. A model is
+      <em>supposed</em> to leave things out; that is what makes it a model. What has changed today is
+      that the list of what the JDK's version adds is no longer a list of adjectives you have to accept.
+      You know what amortised growth is because you counted it. You know what a bad hash does because you
+      caused it. You know what a rehash is because you wrote one. <strong>Nothing inside is magic any
+      more</strong> &mdash; and that is worth more than the code you are about to delete.
+    </div>
+  </div>
+
+  <!-- ===== 15. PART 9 — THEN DELETE YOURS ================================= -->
+  <h2 id="part-9-delete"><span class="eyebrow">Part 9 of 9</span> Then Delete Yours</h2>
+  <p>
+    This is the last part, and it is short. On Monday, use <code>ArrayList</code>. Use
+    <code>HashMap</code>. Use <code>ArrayDeque</code>. Do not write your own, and if you find yourself
+    reaching for the code in <code>ds/</code> to solve a real problem, stop &mdash; the JDK's versions
+    are better than yours in six specific ways you have just read, and being able to write one does not
+    make it a good idea to.
+  </p>
+  <p>
+    But a strange thing happens once you have built one. Read this sentence again with fresh eyes:
+  </p>
+  <blockquote>
+    <p>
+      &ldquo;Retrieval is <strong>O(1)</strong> on average, assuming the hash function disperses the
+      elements properly among the buckets.&rdquo;
+    </p>
+  </blockquote>
+  <p>
+    Before today, that was a promise you had to take on trust, with a condition attached that you had no
+    way to check. <em>Assuming the hash function disperses the elements properly</em> &mdash; that is
+    Part 5. You wrote the class that returns <code>1</code> for everybody and watched the chain grow and
+    the comparisons multiply. <em>O(1) on average</em> &mdash; that is Part 2 and Part 4, the doubling
+    and the rehash, both counted. Nothing in that sentence is mysterious now, and more importantly:
+    <strong>you know which half of it is your responsibility.</strong> The JDK guarantees the buckets.
+    You guarantee the dispersion.
+  </p>
+  <p>
+    That is what you keep. The three files in <code>ds/</code> were never the point &mdash; they were
+    the instrument. You can delete them without losing anything.
+  </p>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point &mdash; the decision rule, in one place</b>
+      <strong>Use the JDK's structures for everything, always.</strong> Write your own only when you are
+      <em>learning</em> how one works, <em>reading</em> somebody else's, or when a measurement has shown
+      that the JDK's choice is wrong for your case &mdash; and that third one is rare enough that you
+      should be able to produce the measurement before you are allowed to say it. The value of today was
+      never the code. It was the ability to read <code>O(1) on average, assuming&hellip;</code> and know
+      exactly which half is yours.
+    </div>
+  </div>
+
+  <!-- ===== 16. GUIDED LAB ================================================= -->
+  <h2 id="lab-build">Guided Lab: Build Three Structures</h2>
+  <p>
+    Everything on this page so far was <em>read</em>. This is the part where you write. The folder
+    <code>code/l11b-structures-starter</code> holds a working project with three skeleton classes and
+    <strong>eleven requirements</strong> to satisfy. The fields are given, the constructors are given,
+    the javadoc on every method tells you exactly what it must do, and one class &mdash;
+    <code>SelfCheck</code> &mdash; is your feedback loop.
+  </p>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>How to run it</b>
+      <p>From the folder <code>code/l11b-structures-starter</code>:</p>
+      <pre><code class="lang-bash">javac -d out src/main/java/com/aptech/l11b/*.java
+java -cp out com.aptech.l11b.SelfCheck</code></pre>
+      <p>
+        Run <code>SelfCheck</code> <em>before you change anything</em>. It prints eleven lines and ends
+        with <strong>0 passed, 11 failed</strong> &mdash; nothing crashes, each check simply reports what
+        is still missing. That is your starting position and your map.
+      </p>
+    </div>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>File</th><th>Requirement</th><th>What the check proves</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="4"><code>IntList</code><br><em>first</em></td><td><strong>R1</strong> <code>add()</code></td><td>It appends, and it grows the array before storing into a full one</td></tr>
+        <tr><td><strong>R2</strong> <code>get()</code></td><td>It returns element <em>i</em>, and throws for <code>-1</code> or past the end</td></tr>
+        <tr><td><strong>R3</strong> <code>removeAt()</code></td><td>It removes, returns what it removed, and closes the gap behind it</td></tr>
+        <tr><td><strong>R4</strong> <code>grow()</code></td><td>The array doubles <em>and</em> <code>copies()</code> counts what it copied</td></tr>
+        <tr><td rowspan="4"><code>SimpleMap</code><br><em>second</em></td><td><strong>R5</strong> <code>put()</code>/<code>get()</code></td><td>Storing, replacing, and <code>null</code> for a key that was never there</td></tr>
+        <tr><td><strong>R6</strong> <code>size()</code></td><td>It counts <em>keys</em> &mdash; the same key twice is still one key</td></tr>
+        <tr><td><strong>R7</strong> the load factor</td><td>Six keys in eight buckets is not past 0.75; the seventh doubles the table</td></tr>
+        <tr><td><strong>R8</strong> the spread</td><td>Six keys sharing a remainder form one chain of six, and you can see it</td></tr>
+        <tr><td rowspan="3"><code>RingBuffer</code><br><em>third</em></td><td><strong>R9</strong> two ends</td><td><code>pop()</code> gives the newest, <code>poll()</code> gives the oldest</td></tr>
+        <tr><td><strong>R10</strong> the wrap</td><td>After a full turn the indexes are back where they started and the <em>order survived</em></td></tr>
+        <tr><td><strong>R11</strong> the edges</td><td>Empty refuses, full refuses &mdash; it never returns the wrong thing or overwrites</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Step 1 &mdash; <code>IntList</code>: the four methods that make an array grow</h3>
+  <p>
+    Start here, because everything else is easier once this one works. Read the javadoc on each method
+    before writing it &mdash; the whole design is stated there, including the two traps: the legal index
+    range is the <strong>size</strong>, not the capacity, and <code>grow()</code> must count the copies
+    it performs, because that count is what the lesson is built on.
+  </p>
+
+  <!--@code src="code/l11b-structures-starter/src/main/java/com/aptech/l11b/IntList.java" from="47" to="83" title="IntList.java — the four methods you complete (R1–R4)"-->
+<pre class="numbered" data-file="IntList.java — the four methods you complete (R1–R4)" style="counter-reset:line 46"><code class="lang-java">    /**
+     * R1 — Appends one value.
+     * If the array is already full, call grow() FIRST, then store. Do not forget to advance size.
+     */
+    public void add(int value) {
+        // TODO R1
+    }
+
+    /**
+     * R2 — Returns the element at that index.
+     * Throw IndexOutOfBoundsException when the index is below 0 or at/past size.
+     * Note that the legal range is the SIZE, not the capacity - the empty slots at the end are
+     * not part of the list.
+     */
+    public int get(int index) {
+        // TODO R2
+        return 0;
+    }
+
+    /**
+     * R3 — Removes the element at that index and returns it, keeping the order of the rest.
+     * The elements after the gap each move down one slot: System.arraycopy is the one line that
+     * does it. Also throw IndexOutOfBoundsException for a bad index, and shrink size.
+     */
+    public int removeAt(int index) {
+        // TODO R3
+        return 0;
+    }
+
+    /**
+     * R4 — Make room: a new array twice as long, everything copied across, the old array dropped.
+     * Add to `copies` the number of elements you copied - it is the measurement the lesson is
+     * built on, and SelfCheck reads it.
+     */
+    private void grow() {
+        // TODO R4
+    }</code></pre>
+<!--@end-->
+
+  <h3>Step 2 &mdash; <code>SimpleMap</code>: three steps, then the load factor</h3>
+  <p>
+    Now the map. The class javadoc already gives you the three steps of <code>put()</code> in order,
+    which is the same three steps you read in <code>E03</code>. The one line to get right is the early
+    <code>return</code>: a match means this key is already stored, so change its value and leave
+    &mdash; add a second node and <code>R6</code> goes red.
+  </p>
+
+  <!--@code src="code/l11b-structures-starter/src/main/java/com/aptech/l11b/SimpleMap.java" from="53" to="97" title="SimpleMap.java — the five methods you complete (R5–R8)"-->
+<pre class="numbered" data-file="SimpleMap.java — the five methods you complete (R5–R8)" style="counter-reset:line 52"><code class="lang-java">    /**
+     * R5 — Stores the value under the key, or replaces the value already stored under it.
+     *
+     * The three steps, in order:
+     *   1. hash  = hashOf(key)
+     *   2. index = hash &amp;amp; (buckets.length - 1)      // the mask, because the length is a power of two
+     *   3. walk buckets[index] comparing  n.hash == hash &amp;&amp; n.key.equals(key)
+     * A match means this key is already here: change its value and RETURN - do not add a second.
+     * No match means a new key: push a new Node onto the FRONT of the chain, then size++, then
+     * check the load factor (R7).
+     */
+    public void put(Object key, int value) {
+        // TODO R5 + R7
+    }
+
+    /** R5 — The value stored under the key, or null when it is not there. */
+    public Integer get(Object key) {
+        // TODO R5
+        return null;
+    }
+
+    /**
+     * R8 — How many keys sit in each bucket, in bucket order.
+     * With a good hashCode these are all 0s and 1s; with a bad one, a single bucket holds
+     * everything. That is the whole point of being able to ask.
+     */
+    public int[] chainLengths() {
+        // TODO R8
+        return new int[buckets.length];
+    }
+
+    /** R8 — The longest chain, which is the worst case one lookup can meet. */
+    public int longestChain() {
+        // TODO R8
+        return 0;
+    }
+
+    /**
+     * R7 — A new array twice as long, and every node moved into the bucket it now belongs to.
+     * The index changes because the MASK changes, not because the hash does: each node keeps
+     * the hash it was stored with, so no key has to be hashed again.
+     */
+    private void rehash() {
+        // TODO R7
+    }</code></pre>
+<!--@end-->
+
+  <h3>Step 3 &mdash; <code>RingBuffer</code>: two indexes and a modulo</h3>
+  <p>
+    The last one is the shortest and the one most people get wrong in the same way. <code>push</code>
+    and <code>poll</code> advance forwards; <code>pop</code> has to step <em>backwards</em>, and
+    <code>(tail - 1) % data.length</code> is <strong>negative</strong> when <code>tail</code> is
+    <code>0</code>. The javadoc warns you; the fix is to add the length before the modulo.
+  </p>
+
+  <!--@code src="code/l11b-structures-starter/src/main/java/com/aptech/l11b/RingBuffer.java" from="50" to="105" title="RingBuffer.java — the six methods you complete (R9–R11)"-->
+<pre class="numbered" data-file="RingBuffer.java — the six methods you complete (R9–R11)" style="counter-reset:line 49"><code class="lang-java">    /** R11 — True when nothing is stored. */
+    public boolean isEmpty() {
+        // TODO R11
+        return true;
+    }
+
+    /** R11 — True when every slot is taken. Note: NOT the same as head == tail. */
+    public boolean isFull() {
+        // TODO R11
+        return false;
+    }
+
+    /**
+     * R9 + R10 — Stores the value at tail, then moves tail on by one slot, wrapping.
+     *
+     * The wrap is the whole idea:  tail = (tail + 1) % data.length;
+     * R11 first: if the buffer is full, throw IllegalStateException rather than overwrite a
+     * value that nobody has read yet.
+     */
+    public void push(String value) {
+        // TODO R9 + R10 + R11
+    }
+
+    /**
+     * R9 — Removes the NEWEST element and returns it. Use with push() and this is a stack.
+     * Move tail back by one slot first (wrapping backwards), then read - and do not forget that
+     * tail may be at slot 0 when you start, so subtracting one must wrap to the end.
+     * R11: throw IllegalStateException when empty.
+     */
+    public String pop() {
+        // TODO R9 + R11
+        return null;
+    }
+
+    /**
+     * R9 — Removes the OLDEST element and returns it. Use with push() and this is a queue.
+     * Read at head, then move head on by one slot (wrapping forwards).
+     * R11: throw IllegalStateException when empty.
+     */
+    public String poll() {
+        // TODO R9 + R11
+        return null;
+    }
+
+    /**
+     * The contents from the oldest to the newest, whatever slots they currently occupy, in the
+     * form  [a, b, c]  - oldest first, separated by a comma and a space, empty buffer "[]".
+     *
+     * The element i slots along from head is at  (head + i) % data.length, which is the line
+     * that makes the slot order and the queue order two different things.
+     */
+    @Override
+    public String toString() {
+        // TODO
+        return "[]";
+    }</code></pre>
+<!--@end-->
+
+  <h3>Step 4 &mdash; green, then run <code>Main</code></h3>
+  <p>
+    Keep running <code>SelfCheck</code> and fixing exactly one red line at a time. The target is
+    <strong>11 passed, 0 failed</strong>. When you get there, run the second class:
+  </p>
+  <pre><code class="lang-bash">java -cp out com.aptech.l11b.Main</code></pre>
+  <p>
+    <code>Main</code> is given complete and uses all three of your structures together. Three numbers in
+    its output are the ones this page predicted, so they are how you know your code agrees with the
+    lesson rather than merely passing:
+  </p>
+  <ul>
+    <li><strong>Twenty adds into an <code>IntList</code></strong> should leave <code>size 20</code>,
+      <code>capacity 32</code> and <code>copies 28</code> &mdash; three growths (4&rarr;8&rarr;16&rarr;32),
+      and 4 + 8 + 16 = 28 elements copied. If your <code>copies</code> reads <strong>3</strong>, you
+      counted the growths; if it reads <strong>56</strong>, you counted the new capacities
+      (8 + 16 + 32). The counter is the elements that physically moved.</li>
+    <li><strong>Six keys &mdash; 40, 25, 33, 19, 12, 4 &mdash; into eight buckets</strong> should use four
+      buckets: bucket 0 holds one, bucket 1 holds two, bucket 3 holds one, bucket 4 holds two. That is
+      Figure 2, produced by your own code.</li>
+    <li><strong>A ring buffer of four slots, pushed to and read past the wrap</strong>, should end with
+      <code>head 1</code>, <code>tail 1</code> and contents <code>[a, b, c, d]</code> &mdash; both indexes
+      back where they began, and the <em>order</em> intact even though the slots are scrambled.</li>
+  </ul>
+
+
+  <!-- ===== 17. COMMON MISTAKES ============================================ -->
+  <h2>Common Mistakes</h2>
+  <p>
+    Every one of these is something <code>SelfCheck</code> is designed to catch, so the safest way to
+    read this section is as a translation table. The symptom is real output; the cause is what the code
+    is doing; the fix is one line.
+  </p>
+
+  <ol>
+    <li>
+      <strong>Copying into an array of the same size.</strong> <code>grow()</code> writes
+      <code>data = new int[size]</code> instead of <code>new int[size * 2]</code>, or reuses the old
+      array. <code>add()</code> calls <code>grow()</code>, comes back, and stores at
+      <code>data[size]</code> &mdash; one slot past the end of an array that is still full.
+      <em>Symptom:</em> <code>capacity should have doubled from 4 to 8, it was 4</code> on the way in, and
+      an <code>ArrayIndexOutOfBoundsException</code> if the check did not stop you first.
+      <em>Fix:</em> the new array is <code>data.length * 2</code>, and the old one is dropped.
+    </li>
+    <li>
+      <strong>Counting the wrong thing in <code>copies</code>.</strong> The counter is the number of
+      <em>elements moved</em>, not the new capacity and not the number of growths.
+      <em>Symptom:</em> <code>one growth of a full four-element array copies 4 elements, copies() said 0</code>
+      (forgotten) or <code>&hellip; said 8</code> (counting the new length).
+      <em>Fix:</em> <code>copies += size;</code> after the copy &mdash; it is the live element count
+      before the growth, which is exactly the old capacity at that moment.
+    </li>
+    <li>
+      <strong>Bounds-checking against capacity instead of size.</strong> <code>get()</code> written as
+      <code>if (index &gt;= data.length)</code> accepts an index into an unused slot and returns the
+      <code>0</code> sitting there &mdash; a value that was never added, delivered as if it were.
+      <em>Symptom:</em> <code>get(3) on a list of three must throw IndexOutOfBoundsException</code>.
+      <em>Fix:</em> the legal range is <code>0 .. size - 1</code>. The capacity is how much room there is,
+      not how much list there is.
+    </li>
+    <li>
+      <strong>Putting a second node instead of replacing the first.</strong> <code>put()</code> walks
+      the chain, finds a match, and adds the new node anyway instead of updating and returning.
+      <em>Symptom:</em> <code>putting the same key twice must replace, not add</code>, and
+      <code>one key put twice is still one key, size said 2</code>.
+      <em>Fix:</em> a match means <em>change and leave</em>. That early <code>return</code> is the whole
+      difference between a map and a list of pairs.
+    </li>
+    <li>
+      <strong>Rehashing one key too late.</strong> The rule is <code>size &gt; buckets.length * 0.75</code>,
+      checked <em>after</em> the new key is stored, and the boundary is strict &mdash; six keys in eight
+      buckets is exactly three-quarters and therefore <em>not</em> past it.
+      <em>Symptom:</em> <code>6 keys in 8 buckets is exactly three-quarters full - not past it - so no rehash yet</code>,
+      or the mirror image, <code>the 7th key takes it past 0.75, so the table must double to 16</code>.
+      <em>Fix:</em> <code>&gt;</code>, not <code>&gt;=</code>, and check after the increment.
+    </li>
+    <li>
+      <strong>A mask that is not a mask.</strong> Writing <code>hash % buckets.length</code> works, so
+      this one hides &mdash; until a hash is negative, when <code>%</code> returns a negative index and
+      the array access throws. <code>hash &amp; (buckets.length - 1)</code> is correct for every
+      <code>int</code> precisely because the length is a power of two.
+      <em>Symptom:</em> an <code>ArrayIndexOutOfBoundsException</code> naming a negative index, usually
+      only for a particular key.
+      <em>Fix:</em> use the mask, and keep the bucket count a power of two so the mask keeps working.
+    </li>
+    <li>
+      <strong>Walking the array in slot order in <code>toString()</code>.</strong> The one that catches
+      almost everybody. After a wrap, slot order and queue order are different lists, so a loop from
+      <code>0</code> to <code>data.length</code> prints the elements in the wrong order &mdash; or prints
+      <code>null</code> for the free slots as well.
+      <em>Symptom:</em> <code>the contents must still read oldest-first, they printed as [null, a, null, null]</code>.
+      <em>Fix:</em> walk the queue, not the array: <code>data[(head + i) % data.length]</code> for
+      <code>i</code> from <code>0</code> to <code>size - 1</code>.
+    </li>
+    <li>
+      <strong>Stepping <code>tail</code> backwards with a plain modulo.</strong>
+      <code>tail = (tail - 1) % data.length</code> gives <code>-1</code> when <code>tail</code> is
+      <code>0</code> &mdash; Java's <code>%</code> keeps the sign of the left operand, so the result is
+      negative, not wrapped.
+      <em>Symptom:</em> the first <code>pop()</code> after a wrap throws with a negative index.
+      <em>Fix:</em> add the length before taking the modulo:
+      <code>(tail - 1 + data.length) % data.length</code>. Shifting the value into the positive range
+      first is the same trick every circular calculation needs.
+    </li>
+    <li>
+      <strong>Returning <code>null</code> from an empty buffer instead of refusing.</strong> It compiles,
+      it never throws, and it hands the caller a value that looks like data.
+      <em>Symptom:</em> <code>poll() on an empty buffer must throw IllegalStateException</code>.
+      <em>Fix:</em> check the size first and throw. <code>E06</code> prints the alternative the JDK chose
+      (<code>NoSuchElementException</code>) &mdash; either is honest; silence is not.
+    </li>
+    <li>
+      <strong>Confusing <code>size == 0</code> with <code>head == tail</code>.</strong> The classic
+      ring-buffer bug, and it is invisible until the buffer is exactly full.
+      <em>Symptom:</em> <code>two elements in two slots must be full</code>.
+      <em>Fix:</em> that is what the <code>size</code> field is for. <code>isEmpty()</code> is
+      <code>size == 0</code>; <code>isFull()</code> is <code>size == data.length</code>. With the two
+      indexes alone, full and empty are the same state, and no amount of cleverness fixes that.
+    </li>
+  </ol>
+
+  <!-- ===== 18. KNOWLEDGE CHECK ============================================ -->
+  <h2>Knowledge Check</h2>
+  <p>Ten questions. Answer before you look &mdash; the explanation is under each one.</p>
+
+  <div class="quiz" id="s11b-check">
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">An <code>IntList</code> starts with room for four. You add ten elements. How many element copies did the growths perform?</div>
+      <label class="quiz__opt"><input type="radio" name="q1" value="a"> Ten &mdash; one per added element</label>
+      <label class="quiz__opt"><input type="radio" name="q1" value="b"> Twelve &mdash; 4 + 8, from growing at the fifth and ninth adds</label>
+      <label class="quiz__opt"><input type="radio" name="q1" value="c"> Twenty-eight &mdash; the final capacity plus what was in it</label>
+      <label class="quiz__opt"><input type="radio" name="q1" value="d"> Zero &mdash; a Java array grows in place</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> The fifth add finds a full array and copies four elements into a new eight-slot one; the ninth finds it full again and copies eight into a sixteen-slot one. 4 + 8 = 12, and the caller saw none of it. The fourth option is the misconception this whole part exists to remove: <strong>a Java array cannot get longer.</strong></div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">Why does the course count array reads instead of timing the operations?</div>
+      <label class="quiz__opt"><input type="radio" name="q2" value="a"> Because counting is faster to program</label>
+      <label class="quiz__opt"><input type="radio" name="q2" value="b"> Because Java cannot measure time accurately</label>
+      <label class="quiz__opt"><input type="radio" name="q2" value="c"> Because a millisecond reading includes the JIT, the machine and everything else running, so it is not reproducible</label>
+      <label class="quiz__opt"><input type="radio" name="q2" value="d"> Because timing requires a profiler, which is not installed</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> A count of array reads is identical on every machine and every run, and it shows how the work <em>grows</em> &mdash; which is what O(1) and O(n) describe. A stopwatch measures how fast your laptop is today, plus the truth.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">A new <code>SimpleMap</code> has eight buckets. Which bucket does the key <code>33</code> go into, and why?</div>
+      <label class="quiz__opt"><input type="radio" name="q3" value="a"> Bucket 1 &mdash; <code>33 &amp; 7</code> is 1, and 33 % 8 is also 1</label>
+      <label class="quiz__opt"><input type="radio" name="q3" value="b"> Bucket 33 &mdash; the hash is the key</label>
+      <label class="quiz__opt"><input type="radio" name="q3" value="c"> Bucket 7 &mdash; the mask takes the high bits</label>
+      <label class="quiz__opt"><input type="radio" name="q3" value="d"> Whichever bucket is emptiest, to keep the chains short</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A.</strong> <code>hash &amp; (buckets.length - 1)</code> is <code>33 &amp; 7 = 1</code>. Because the length is a power of two, the mask and the remainder agree for positive values &mdash; which is why you can check a hash map's behaviour on paper. Nothing in a hash map looks for an empty bucket: that would cost a scan, which is the thing hashing exists to avoid.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="d">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">Six keys all have <code>hashCode()</code> returning <code>1</code>. Their <code>equals()</code> is correct. What happens?</div>
+      <label class="quiz__opt"><input type="radio" name="q4" value="a"> <code>put()</code> throws immediately</label>
+      <label class="quiz__opt"><input type="radio" name="q4" value="b"> The map refuses the duplicate keys and keeps one</label>
+      <label class="quiz__opt"><input type="radio" name="q4" value="c"> Nothing at all &mdash; the map rehashes and spreads them out</label>
+      <label class="quiz__opt"><input type="radio" name="q4" value="d"> All six land in one chain; the map stays correct but six lookups cost 21 comparisons instead of 9</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>D.</strong> 1 + 2 + 3 + 4 + 5 + 6 = 21, because each lookup walks the chain to its own key. Nothing throws, nothing warns, and every lookup returns the right value &mdash; the map has simply stopped being a map. A rehash does not help: the keys would all land together again, because the hash is what chose the bucket.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem"><code>equals()</code> compares a <code>Registration</code>'s <code>id</code>. <code>hashCode()</code> returns <code>nickname.hashCode()</code>. Two registrations share an id but have different nicknames. What does a <code>HashMap</code> do?</div>
+      <label class="quiz__opt"><input type="radio" name="q5" value="a"> Stores one entry &mdash; <code>equals</code> is what identifies a key</label>
+      <label class="quiz__opt"><input type="radio" name="q5" value="b"> Stores two entries, because the hash sent them to different buckets and the map never got to compare them</label>
+      <label class="quiz__opt"><input type="radio" name="q5" value="c"> Throws <code>IllegalArgumentException</code> about the contract</label>
+      <label class="quiz__opt"><input type="radio" name="q5" value="d"> Stores one entry and logs a warning</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> This is the dangerous half of the rule, because it costs correctness rather than speed: <code>size()</code> returns 2 for one logical key, and both lookups succeed, so nothing looks wrong. <code>E04</code> shows the JDK's own <code>HashMap</code> failing identically. The order in which a map uses the two methods is: <strong><code>hashCode</code> to find the bucket, <code>equals</code> to confirm the key</strong> &mdash; and if the first is broken, the second never runs.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">After a ring buffer's <code>tail</code> reaches slot 7, what does <code>tail = (tail + 1) % 8</code> set it to?</div>
+      <label class="quiz__opt"><input type="radio" name="q6" value="a"> 8, and the next push throws</label>
+      <label class="quiz__opt"><input type="radio" name="q6" value="b"> −1, so the next push goes to the end</label>
+      <label class="quiz__opt"><input type="radio" name="q6" value="c"> 0 &mdash; the next element goes into the front of the array, and it is the newest</label>
+      <label class="quiz__opt"><input type="radio" name="q6" value="d"> 7 &mdash; the slot is reused until the buffer is drained</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> <code>(7 + 1) % 8 = 0</code>, and that one line is the whole ring. Note what it means: the element in slot 0 is the <em>newest</em> in the queue, so <strong>slot order and queue order have nothing to do with each other</strong> &mdash; which is why <code>toString()</code> must walk from <code>head</code>, not from slot 0.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">Why does a ring buffer beat a list for a queue?</div>
+      <label class="quiz__opt"><input type="radio" name="q7" value="a"> Removing from the front of a list moves every remaining element down one slot; a ring buffer moves an index instead</label>
+      <label class="quiz__opt"><input type="radio" name="q7" value="b"> A ring buffer stores elements in sorted order, so lookups are faster</label>
+      <label class="quiz__opt"><input type="radio" name="q7" value="c"> A ring buffer uses less memory per element</label>
+      <label class="quiz__opt"><input type="radio" name="q7" value="d"> A list cannot be used as a queue at all</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A.</strong> <code>remove(0)</code> on a list is O(n) work for one removal &mdash; ten thousand jobs through a thousand-element queue is millions of pointless element moves. The ring's answer is to stop moving elements and move the <em>front</em>: <code>P5</code> counts <strong>0 element moves</strong> for the ring against 14,775 for the list, on the same thousand jobs. Option D is wrong: a list <em>works</em> as a queue. It is just the wrong tool.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="d">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">The same check suite runs against your <code>IntList</code> and against <code>ArrayList</code>. Both come back green. What have you proved?</div>
+      <label class="quiz__opt"><input type="radio" name="q8" value="a"> The two are interchangeable in every program</label>
+      <label class="quiz__opt"><input type="radio" name="q8" value="b"> Yours is as fast as the JDK's</label>
+      <label class="quiz__opt"><input type="radio" name="q8" value="c"> Yours is correct and the JDK's is correct, independently</label>
+      <label class="quiz__opt"><input type="radio" name="q8" value="d"> They agree on every behaviour somebody thought to write a check for &mdash; and nothing beyond that</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>D.</strong> A green suite is a list of observations, and the person who wrote it decides how much it is worth. It says nothing about speed, memory, thread safety, or <code>null</code> keys &mdash; every one of those is listed in <code>E06</code>'s <code>differences()</code>, and the suite caught none of them because no check existed. <code>P6</code> makes the point from the other side: a <code>LinkedList</code>-backed list the suite has never seen passes every check, and its <code>get(i)</code> is far slower.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">A <code>SimpleMap</code> holds six keys in eight buckets. You add a seventh. What happens, and when?</div>
+      <label class="quiz__opt"><input type="radio" name="q9" value="a"> Nothing &mdash; eight buckets can hold eight keys</label>
+      <label class="quiz__opt"><input type="radio" name="q9" value="b"> The table doubles to 16 buckets, because <code>7 &gt; 8 &times; 0.75</code>, and every existing key is moved</label>
+      <label class="quiz__opt"><input type="radio" name="q9" value="c"> The table doubles when the ninth key arrives</label>
+      <label class="quiz__opt"><input type="radio" name="q9" value="d"> The longest chain is converted into a tree</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> Eight times 0.75 is 6, so six keys is exactly at the limit and the seventh is past it &mdash; the boundary is <code>&gt;</code>, not <code>&ge;</code>. Every key moves because <strong>the mask changed</strong>, not the hashes: a key that wanted bucket 5 of 8 may want bucket 5 or 13 of 16. Option D describes treeified bins, which is a fix the JDK's <code>HashMap</code> applies to a single long chain &mdash; ours has no such thing, which is one of the six reasons in Part 8.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">You have working implementations of a list, a map and a deque. What should you do with them?</div>
+      <label class="quiz__opt"><input type="radio" name="q10" value="a"> Use them &mdash; you understand this code and nobody understands the JDK's</label>
+      <label class="quiz__opt"><input type="radio" name="q10" value="b"> Publish them, since they pass the same checks the JDK's do</label>
+      <label class="quiz__opt"><input type="radio" name="q10" value="c"> Use the JDK's, and keep what you learned: you can now read <code>O(1) on average, assuming&hellip;</code> and know which half is your responsibility</label>
+      <label class="quiz__opt"><input type="radio" name="q10" value="d"> Rewrite them with generics and use those instead</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> Part 8 lists six specific things the JDK's versions have that yours do not &mdash; generics, safe iteration, a documented growth policy, treeified bins, fail-fast iterators, and thirty years of bugs found in production. Being able to write one is not a reason to ship one. What you keep is the ability to look at the JDK's javadoc sentence and know <em>exactly</em> which half of it you are responsible for: the buckets are the JDK's, the dispersion is yours.</div>
+    </div>
+
+    <div class="quiz__score" style="display:none"></div>
+
+  </div>
+
+  <!-- ===== 19. PRACTICE =================================================== -->
+  <h2>Practice</h2>
+  <p>
+    Six programs, in the folder <code>code/s11b-data-structures-by-hand</code>. They build in order:
+    the first three are single ideas from Parts 2, 4 and 5; the next two are the same ideas carried to a
+    hundred keys and a thousand jobs; the last one puts the whole session back on the table.
+    <strong>Write your prediction down before you run each one.</strong> A prediction you got wrong
+    teaches you something; an output you nodded at teaches you nothing.
+  </p>
+
+  <details><summary><strong>&#127793; Easy 1: Doubling, or ten at a time</strong><div>
+    <p>
+      Give two lists the same job &mdash; add the numbers 1 to 1000 &mdash; and count the element copies
+      each one performs. One doubles when it fills. The other adds ten slots and hopes for the best.
+      Then explain the difference with a number rather than an adjective.
+    </p>
+    <p>
+      Predict first: <em>which list will have the bigger capacity at the end?</em> The answer surprises
+      most people, and it is the reason the copies column looks the way it does.
+    </p>
+    <details><summary>&#128161; Hint</summary><p>Both lists hold the same thousand numbers, so both are <em>correct</em>. Neither has a bug. Only one of them is usable, and the difference between them is one line inside <code>add()</code>. Work out how many times each one grows before you run anything: doubling grows about log&#8322;(n) times, and adding ten grows about n/10 times.</p></details>
+    <details><summary>&#9989; Solution</summary><div><p>Run it: <code>java -cp target/classes com.aptech.s11b.practice.P1_GrowByDoublingOrByTen</code></p>
+<!--@code src="code/s11b-data-structures-by-hand/src/main/java/com/aptech/s11b/practice/P1_GrowByDoublingOrByTen.java" from="27" to="56" title="P1 — the same job given to two growth rules"-->
+<pre class="numbered" data-file="P1 — the same job given to two growth rules" style="counter-reset:line 26"><code class="lang-java">        IntList doubling = new IntList();
+        for (int i = 1; i &lt;= ADDS; i++) {
+            doubling.add(i);
+        }
+        report("doubling", doubling.capacity(), doubling.copies());
+
+        GrowByTen byTen = new GrowByTen();
+        for (int i = 1; i &lt;= ADDS; i++) {
+            byTen.add(i);
+        }
+        report("+10 each time", byTen.capacity(), byTen.copies());
+
+        System.out.println();
+        System.out.println("Both lists hold the same thousand numbers, and both answers are right.");
+        System.out.println("One of them did about fifty times the work to get there.");
+        System.out.println();
+        System.out.println("Why doubling wins, in one sentence: each growth copies everything that is");
+        System.out.println("already stored, so what matters is how many times you grow. Doubling makes");
+        System.out.println("the gaps between growths double too - after 4, 8, 16, 32 ... the array is");
+        System.out.println("replaced only about log2(n) times, so the copies add up to less than 2n.");
+        System.out.println();
+        System.out.println("Growing by a fixed ten makes the gaps the same size forever, so you grow");
+        System.out.println("about n/10 times - a hundred growths here - and each of them copies");
+        System.out.println("everything stored so far. The last one alone copies nearly a thousand");
+        System.out.println("elements. That is the five-figure number in the table above. Both lists");
+        System.out.println("are correct. Only one is usable, and the difference is one line.");
+        System.out.println();
+        System.out.println("Copies per add under doubling: " + copiesPerAdd(doubling.copies())
+                + ". The number you will see quoted as \"O(1) amortised\" - 'amortised' is");
+        System.out.println("the word that is doing the work, and it means exactly this average.");</code></pre>
+<!--@end-->
+<!--@output project="code/s11b-data-structures-by-hand" main="com.aptech.s11b.practice.P1_GrowByDoublingOrByTen"-->
+<div class="terminal-output">The same job, twice: add the numbers 1 to 1000.
+
+   list             capacity   copies     copies per add
+   doubling         1024       1020       1.02
+   +10 each time    1004       49900      49.90
+
+Both lists hold the same thousand numbers, and both answers are right.
+One of them did about fifty times the work to get there.
+
+Why doubling wins, in one sentence: each growth copies everything that is
+already stored, so what matters is how many times you grow. Doubling makes
+the gaps between growths double too - after 4, 8, 16, 32 ... the array is
+replaced only about log2(n) times, so the copies add up to less than 2n.
+
+Growing by a fixed ten makes the gaps the same size forever, so you grow
+about n/10 times - a hundred growths here - and each of them copies
+everything stored so far. The last one alone copies nearly a thousand
+elements. That is the five-figure number in the table above. Both lists
+are correct. Only one is usable, and the difference is one line.
+
+Copies per add under doubling: 1.02. The number you will see quoted as "O(1) amortised" - 'amortised' is
+the word that is doing the work, and it means exactly this average.</div>
+<!--@end-->
+<p>Doubling ends at capacity 1024 for 1020 copies &mdash; <strong>1.02 copies per add</strong>. Adding ten ends at capacity <strong>1004</strong>, which is <em>smaller</em>, and paid <strong>49,900 copies</strong> to get there: about fifty times the work for a list that holds exactly the same thing. The second list grows a hundred times and each growth copies everything already stored; doubling grows ten times, and the gaps between them double as well. That is the whole argument, and it is a number.</p>
+</div></details></div></details>
+
+  <details><summary><strong>&#127793; Easy 2: Bucket arithmetic on paper, then on screen</strong><div>
+    <p>
+      A new <code>SimpleMap</code> has eight buckets. Before you run anything, work out <em>on paper</em>
+      which bucket each of these keys lands in, and how many comparisons <code>get(20)</code> will need:
+    </p>
+    <p><code>20, 21, 22, 23, 28, 36</code></p>
+    <p>
+      Do the arithmetic first, then run it and check. The habit this builds is the one that matters in
+      real work: a hash map is not magic, it is a remainder, and if you can do the remainder in your head
+      you can debug a hash map.
+    </p>
+    <details><summary>&#128161; Hint</summary><p>For a small positive <code>int</code>, <code>hashOf</code> changes nothing and the mask behaves exactly like <code>% 8</code>. So the question is just &ldquo;what is each key's remainder mod 8?&rdquo; &mdash; and then <em>where in the chain</em> each key sits, which depends on the order they were added.</p></details>
+    <details><summary>&#9989; Solution</summary><div><p>Run it: <code>java -cp target/classes com.aptech.s11b.practice.P2_BucketArithmetic</code></p>
+<!--@code src="code/s11b-data-structures-by-hand/src/main/java/com/aptech/s11b/practice/P2_BucketArithmetic.java" from="30" to="51" title="P2 — the same six keys, from the code this time"-->
+<pre class="numbered" data-file="P2 — the same six keys, from the code this time" style="counter-reset:line 29"><code class="lang-java">        SimpleMap map = new SimpleMap();
+        int[] keys = {20, 21, 22, 23, 28, 36};
+        for (int key : keys) {
+            map.put(key, key * 10);
+        }
+
+        System.out.println("Now the same thing from the code:");
+        System.out.println();
+        System.out.printf(Locale.ROOT, "   %-8s %-18s %s%n", "bucket", "chain", "keys to compare");
+        int[] lengths = map.chainLengths();
+        for (int bucket = 0; bucket &lt; map.bucketCount(); bucket++) {
+            String chain = lengths[bucket] == 0 ? "(empty)" : map.chainIn(bucket);
+            System.out.printf(Locale.ROOT, "   %-8d %-18s %d%n", bucket, chain, lengths[bucket]);
+        }
+        System.out.println();
+
+        System.out.println("And what a lookup costs:");
+        for (int key : keys) {
+            long probes = probesFor(map, key);
+            System.out.printf(Locale.ROOT, "   get(%-3d) -&gt; %d comparison%s%n",
+                    key, probes, probes == 1 ? "" : "s");
+        }</code></pre>
+<!--@end-->
+<!--@output project="code/s11b-data-structures-by-hand" main="com.aptech.s11b.practice.P2_BucketArithmetic"-->
+<div class="terminal-output">The working, on paper, before any code runs:
+
+   20 % 8 = 4      21 % 8 = 5      22 % 8 = 6
+   23 % 8 = 7      28 % 8 = 4      36 % 8 = 4
+
+So four buckets are used, and bucket 4 takes three of the six keys.
+
+Now the same thing from the code:
+
+   bucket   chain              keys to compare
+   0        (empty)            0
+   1        (empty)            0
+   2        (empty)            0
+   3        (empty)            0
+   4        36 -&gt; 28 -&gt; 20     3
+   5        21                 1
+   6        22                 1
+   7        23                 1
+
+And what a lookup costs:
+   get(20 ) -&gt; 3 comparisons
+   get(21 ) -&gt; 1 comparison
+   get(22 ) -&gt; 1 comparison
+   get(23 ) -&gt; 1 comparison
+   get(28 ) -&gt; 2 comparisons
+   get(36 ) -&gt; 1 comparison
+
+Three of those keys differ by 8, so they share a bucket - and 20, the
+one added first, is now at the BACK of the chain, because every new key
+is pushed onto the front. That is why get(36) is cheap and get(20) is not,
+and why "the map is O(1)" is an average, never a promise.
+
+The habit worth keeping: when a lookup costs more than you expected, look
+at what the key's hashCode() returns in binary. The mask only reads the
+low bits, so two keys whose hashes agree down there end up in the same
+bucket however different they look on paper. The class is innocent.
+
+One more, on paper: the map above has 8 buckets and 6 keys. Add a seventh
+key - any key - and the table doubles to 16 before your key is even stored.
+That is P4's job, and the rule is 8 x 0.75 = 6.</div>
+<!--@end-->
+<p>Bucket 4 takes three of the six keys, because 20, 28 and 36 all leave remainder 4. And <code>get(36)</code> costs one comparison while <code>get(20)</code> costs three &mdash; not because 20 is a worse key, but because it was added <em>first</em> and every new key is pushed onto the front of its chain. That is why &ldquo;the map is O(1)&rdquo; is an average and never a promise.</p>
+</div></details></div></details>
+
+  <details><summary><strong>&#128200; Medium 1: A hash that is bad in a subtler way</strong><div>
+    <p>
+      <code>return 1;</code> is obvious the moment you read it. This one is not. A colleague writes
+      <code>hashCode()</code> as <code>id % 8</code>, on the reasonable-sounding grounds that
+      &ldquo;it always fits the table&rdquo;. Store twelve students whose ids are all multiples of eight,
+      count the comparisons, then fix the hash and count again.
+    </p>
+    <p>
+      Then answer this, with the output in front of you: <em>the table doubled from 8 buckets to 16 part
+      way through. Why did that not help?</em>
+    </p>
+    <details><summary>&#128161; Hint</summary><p><code>id % 8</code> can only ever produce eight different answers: 0 to 7. So of a sixteen-bucket table, at most eight buckets can be reached no matter what keys arrive &mdash; the other eight are decoration. And these twelve ids are <em>all</em> multiples of eight, so every one of them produces the same answer, zero.</p></details>
+    <details><summary>&#9989; Solution</summary><div><p>Run it: <code>java -cp target/classes com.aptech.s11b.practice.P3_WhereDidMyKeysGo</code></p>
+<!--@code src="code/s11b-data-structures-by-hand/src/main/java/com/aptech/s11b/practice/P3_WhereDidMyKeysGo.java" from="22" to="45" title="P3 — equals() is correct. Only the hash is wrong."-->
+<pre class="numbered" data-file="P3 — equals() is correct. Only the hash is wrong." style="counter-reset:line 21"><code class="lang-java">    static final class CappedHashStudent {
+        private final int id;
+        private final String name;
+
+        CappedHashStudent(int id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return other instanceof CappedHashStudent s &amp;&amp; id == s.id;
+        }
+
+        @Override
+        public int hashCode() {
+            return id % 8;          // WRONG: everything above the low three bits is discarded
+        }
+
+        @Override
+        public String toString() {
+            return name + "#" + id;
+        }
+    }</code></pre>
+<!--@end-->
+<!--@output project="code/s11b-data-structures-by-hand" main="com.aptech.s11b.practice.P3_WhereDidMyKeysGo"-->
+<div class="terminal-output">Twelve students, ids 8, 16, 24 ... 96. Every id is a multiple of 8.
+
+1. With hashCode() written as id % 8
+   buckets          16   (it doubled from 8 when the seventh key arrived)
+   buckets used     1 of 16
+   longest chain    12
+   twelve lookups   78 comparisons
+      get(8)   added first, but the rehash reversed the chain -&gt; 6 comparisons
+      get(96)  added last, so it is at the front              -&gt; 1 comparison
+      Twelve keys, one chain of twelve - and get(8) costs six, not twelve,
+      because a rehash walks the old chain and pushes each node onto the
+      new one, reversing it. Never depend on where in a chain a key sits.
+
+2. The same twelve with hashCode() written as Objects.hash(id)
+   buckets          16
+   buckets used     2 of 16
+   longest chain    6
+   twelve lookups   42 comparisons
+
+3. The one-line change cost 36 comparisons and changed the shape of
+   the table. id % 8 can only ever produce eight different answers, so of a
+   sixteen-bucket table at most eight buckets are reachable - the other eight
+   are decoration whatever keys arrive. These twelve ids are all multiples of
+   eight, so every one of them produced the same answer, 0: the chain grew to
+   twelve while fifteen buckets stood empty.
+
+4. The lesson, stated plainly
+   equals() was correct the whole time. Nothing about the class was "mostly
+   right" - and that is what makes this bug dangerous. Every one of those
+   twelve lookups returns the correct value, so any test that checks answers
+   passes. A hash that collides is not a smaller hash, it is a linear search
+   wearing a map's clothes, and only a count can tell you.</div>
+<!--@end-->
+<p>Twelve keys, one chain of twelve, fifteen buckets empty. <strong>Every lookup still returns the correct value</strong>, so any test that checks answers passes &mdash; a hash that collides is not a smaller hash, it is a linear search wearing a map's clothes. And the one detail worth pausing on: <code>get(8)</code>, the key added <em>first</em>, costs six comparisons rather than twelve, because a rehash walks the old chain and pushes each node onto the new one, <em>reversing</em> it. Nothing about where a key sits in a chain is a promise.</p>
+</div></details></div></details>
+
+  <details><summary><strong>&#128200; Medium 2: The load factor, traced</strong><div>
+    <p>
+      Store the numbers 1 to 100 in a map and print every rehash &mdash; the key count that triggered it
+      and the bucket count it went to. Then answer two questions with numbers: how many rehashes does the
+      hundredth key cost, and how much total work did all of them add up to?
+    </p>
+    <p>
+      Before you run it, work out the first four trigger points from the rule alone. The rule is
+      <code>size &gt; buckets.length * 0.75</code>, and the bucket count doubles each time.
+    </p>
+    <details><summary>&#128161; Hint</summary><p>The first table has 8 buckets, so 8 &times; 0.75 = 6, and the seventh key is the first one past it. Then the table has 16 buckets: 16 &times; 0.75 = 12, so the thirteenth key. Then 32 &times; 0.75 = 24, then 64 &times; 0.75 = 48. Look at the four numbers you have written down: 7, 13, 25, 49.</p></details>
+    <details><summary>&#9989; Solution</summary><div><p>Run it: <code>java -cp target/classes com.aptech.s11b.practice.P4_RehashTrace</code></p>
+<!--@code src="code/s11b-data-structures-by-hand/src/main/java/com/aptech/s11b/practice/P4_RehashTrace.java" from="21" to="43" title="P4 — every rehash, and what it moved"-->
+<pre class="numbered" data-file="P4 — every rehash, and what it moved" style="counter-reset:line 20"><code class="lang-java">    public static void main(String[] args) {
+        System.out.println("Storing the numbers 1 to " + KEYS + ", and writing down every rehash.");
+        System.out.println();
+        System.out.printf(Locale.ROOT, "   %-8s %-9s %s%n", "keys", "buckets", "what happened");
+
+        SimpleMap map = new SimpleMap();
+        int previous = map.bucketCount();
+        System.out.printf(Locale.ROOT, "   %-8s %-9d %s%n", "none yet", previous, "the starting table");
+
+        long moved = 0;
+        for (int i = 1; i &lt;= KEYS; i++) {
+            map.put(i, i);
+            if (map.bucketCount() != previous) {
+                moved += i;
+                System.out.printf(Locale.ROOT, "   %-8d %-9d rehash %d - every key so far moved%n",
+                        i, map.bucketCount(), map.rehashes());
+                previous = map.bucketCount();
+            }
+        }
+
+        System.out.println();
+        System.out.println("   " + KEYS + " keys, " + map.bucketCount() + " buckets, "
+                + map.rehashes() + " rehashes, longest chain " + map.longestChain() + ".");</code></pre>
+<!--@end-->
+<!--@output project="code/s11b-data-structures-by-hand" main="com.aptech.s11b.practice.P4_RehashTrace"-->
+<div class="terminal-output">Storing the numbers 1 to 100, and writing down every rehash.
+
+   keys     buckets   what happened
+   none yet 8         the starting table
+   7        16        rehash 1 - every key so far moved
+   13       32        rehash 2 - every key so far moved
+   25       64        rehash 3 - every key so far moved
+   49       128       rehash 4 - every key so far moved
+   97       256       rehash 5 - every key so far moved
+
+   100 keys, 256 buckets, 5 rehashes, longest chain 1.
+
+Read the trigger column against the rule: 8 x 0.75 = 6, so the seventh key
+finds a table that is three-quarters full and doubles it. Then 16 x 0.75 =
+12, so the thirteenth key doubles it again. The numbers 7, 13, 25, 49 and
+97 are not arbitrary: each one is double the one before it, minus one,
+because the table it triggers is double the one before it too.
+
+Total keys moved by all the rehashes: 191, for 100 keys stored.
+That is the same bargain E01 measured in a growing array, made again: the
+expensive operation happens rarely enough that the average stays small.
+Below 2 moves per key, every time, whatever n is - and that is what
+"amortised O(1)" has meant both times.
+
+One habit to take away: a load factor of 0.75 is a compromise, not a law.
+Higher and the table stays small but the chains grow; lower and lookups
+stay cheap but you pay for the rehashing and waste memory. The JDK's
+HashMap picked 0.75 too, for the same reason, and documented it.</div>
+<!--@end-->
+<p>The triggers are 7, 13, 25, 49 and 97 &mdash; each one double the one before it, minus one, because the table it triggers is double the one before it too. And the total moved is <strong>191 keys for 100 stored</strong>, which is under two per key however large the map gets. That is the same bargain <code>E01</code> measured in a growing array, made a second time in a completely different structure: the expensive operation happens rarely enough that the average stays small.</p>
+</div></details></div></details>
+
+  <details><summary><strong>&#128200; Medium 3: Why a queue is not a list</strong><div>
+    <p>
+      Process a thousand jobs, keeping at most sixteen waiting at a time, and every job must come out in
+      the order it went in. One container is a ring buffer; the other is a list that takes its oldest item
+      from the front the obvious way, by shifting everything else down.
+    </p>
+    <p>
+      Both will produce exactly the same answers. Predict the size of the gap before you run it &mdash;
+      in <em>element moves</em>, not seconds.
+    </p>
+    <details><summary>&#128161; Hint</summary><p>The window holds at most sixteen, so a removal from the list moves at most fifteen elements. There are 985 removals. That multiplication is the entire answer, and it is exactly why the ring's number is zero: <code>head = (head + 1) % capacity</code> is one addition, and it does not matter how many elements are waiting.</p></details>
+    <details><summary>&#9989; Solution</summary><div><p>Run it: <code>java -cp target/classes com.aptech.s11b.practice.P5_QueueWithNoShifting</code></p>
+<!--@code src="code/s11b-data-structures-by-hand/src/main/java/com/aptech/s11b/practice/P5_QueueWithNoShifting.java" from="95" to="105" title="P5 — the list's removal, and the counter that exposes it"-->
+<pre class="numbered" data-file="P5 — the list's removal, and the counter that exposes it" style="counter-reset:line 94"><code class="lang-java">        /** Takes the oldest away, and moves everything else down to close the gap. */
+        String removeFirst() {
+            if (size == 0) {
+                throw new IllegalStateException("nothing to remove");
+            }
+            String value = data[0];
+            System.arraycopy(data, 1, data, 0, size - 1);
+            moves += size - 1;
+            data[--size] = null;
+            return value;
+        }</code></pre>
+<!--@end-->
+<!--@output project="code/s11b-data-structures-by-hand" main="com.aptech.s11b.practice.P5_QueueWithNoShifting"-->
+<div class="terminal-output">A thousand jobs arrive. At most 16 are ever waiting at once,
+and every job must come out in the order it went in. Then how much
+shuffling did the container do to make that true?
+
+   jobs processed     ring 985, list 985
+   same order out     true
+   capacity           ring 16, list 16
+   element moves      ring 0, list 14775
+
+   (985 of the thousand came out. The last fifteen never filled the window,
+   so both containers are still holding them - and both held the same ones.)
+
+   The list moved 14775 elements to hand back 985 jobs.
+   The ring moved none - and RingBuffer has no moves() method to print,
+   because there is nothing in it to count. Taking the oldest item out is
+   one read and one addition: head = (head + 1) % capacity. Nothing was shifted
+   because nothing needed to be - the front of a ring is a position, not
+   a place where data lives.
+
+   Sizes again, because the ratio is the lesson and not the number:
+   the list did work proportional to how much it was holding, for every
+   single removal. Double the window and it doubles. The ring does not
+   notice. That is the difference between O(n) and O(1) in one measurement.
+
+   And this is the whole of what ArrayDeque is. Session 11 told you to
+   replace Stack with it; now you have written one and know why.</div>
+<!--@end-->
+<p><strong>14,775 element moves to hand back 985 jobs.</strong> The ring moved none &mdash; and <code>RingBuffer</code> has no <code>moves()</code> method to print, because there is nothing in it to count. The ratio is the lesson rather than the number: the list did work proportional to how much it was holding, on every single removal, so doubling the window doubles it. The ring does not notice. That is O(n) against O(1) in one measurement, and it is the whole of what <code>ArrayDeque</code> is.</p>
+</div></details></div></details>
+
+  <details><summary><strong>&#127942; Challenge: A third implementation, and not one new check</strong><div>
+    <p>
+      Write a class that satisfies the list contract in a completely different way &mdash; back it with a
+      <code>LinkedList</code> instead of an array &mdash; and then run the lesson's suite against it
+      <strong>without changing, adding or weakening a single check</strong>.
+    </p>
+    <p>
+      This is the test of whether a suite is worth anything. If your checks were really written against
+      behaviour, a structure they have never seen should walk straight through them. If they were written
+      against the two implementations you happened to have, this will fail &mdash; and that is the more
+      useful outcome of the two. Read the last paragraph of the output when you get there.
+    </p>
+    <details><summary>&#128161; Hint</summary><p>You do not need to touch <code>Checks.java</code>. It already takes a factory: <code>listSuite(Supplier&lt;IntBag&gt;)</code>. Implement <code>Checks.IntBag</code> in your new class and pass <code>LinkedBag::new</code>. Note that <code>get(i)</code> on a <code>LinkedList</code> walks the nodes to reach position <em>i</em> &mdash; which is the point of the last paragraph.</p></details>
+    <details><summary>&#9989; Solution</summary><div><p>Run it: <code>java -cp target/classes com.aptech.s11b.practice.P6_OneMoreImplementation</code></p>
+<!--@code src="code/s11b-data-structures-by-hand/src/main/java/com/aptech/s11b/practice/P6_OneMoreImplementation.java" from="28" to="64" title="P6 — the same promise, kept by a linked list"-->
+<pre class="numbered" data-file="P6 — the same promise, kept by a linked list" style="counter-reset:line 27"><code class="lang-java">    static final class LinkedBag implements Checks.IntBag {
+
+        private final LinkedList&lt;Integer&gt; inner = new LinkedList&lt;&gt;();
+
+        @Override
+        public void add(int value) {
+            inner.addLast(value);
+        }
+
+        @Override
+        public int get(int index) {
+            if (index &lt; 0 || index &gt;= inner.size()) {
+                throw new IndexOutOfBoundsException(
+                        "Index " + index + " out of bounds for size " + inner.size());
+            }
+            return inner.get(index);
+        }
+
+        @Override
+        public int size() {
+            return inner.size();
+        }
+
+        @Override
+        public boolean contains(int value) {
+            return inner.contains(value);
+        }
+
+        @Override
+        public int removeAt(int index) {
+            if (index &lt; 0 || index &gt;= inner.size()) {
+                throw new IndexOutOfBoundsException(
+                        "Index " + index + " out of bounds for size " + inner.size());
+            }
+            return inner.remove(index);
+        }
+    }</code></pre>
+<!--@end-->
+<!--@output project="code/s11b-data-structures-by-hand" main="com.aptech.s11b.practice.P6_OneMoreImplementation"-->
+<div class="terminal-output">The list contract, run against three implementations. The two below
+have been tested all lesson; the first one was written five minutes ago
+and has never been near a check until now.
+
+
+=== LinkedBag - the one just written, backed by a LinkedList ===
+  PASS  a new list is empty
+  PASS  add then get returns what was added
+  PASS  and the size followed
+  PASS  order is the order you added
+  PASS  a hundred adds, size 100
+  PASS  the first is still first
+  PASS  the last is still last
+  PASS  and every element survived the growth
+  PASS  removeAt returns the element it removed
+  PASS  removeAt shifts the rest left
+  PASS  removeAt shrinks the size
+  PASS  contains finds a stored element
+  PASS  contains does not find an absent one
+  PASS  get(0) on an empty list throws IndexOutOfBoundsException   (threw IndexOutOfBoundsException)
+  PASS  get(-1) throws IndexOutOfBoundsException   (threw IndexOutOfBoundsException)
+  PASS  get(3) on a list of three throws IndexOutOfBoundsException   (threw IndexOutOfBoundsException)
+  16 checks, 16 passed, 0 failed
+
+=== IntList - the one written in the lesson ===
+  16 checks, 16 passed, 0 failed
+
+=== ArrayList - the JDK's ===
+  16 checks, 16 passed, 0 failed
+
+Totalled: 48 checks, 48 passed, 0 failed.
+
+A structure the suite had never seen passed every check without a
+single new assertion being written. That is the evidence that the
+checks describe the promise and not the implementations - and it is
+the same evidence s09's rewrite and s10's tests were built on.
+
+And now the honest part, which is the reason this exercise exists.
+
+LinkedBag passed every check, and it is the slow one. Its get(i) walks
+the list of nodes to reach position i; IntList's get(i) reads one array
+slot. The suite cannot tell them apart, and it is not being lazy - at
+the sizes the checks use, and from the outside, they behave identically.
+
+This is exactly the trap Session 10 warned you about from the other
+side: a green suite proves the behaviour you thought to check, and
+nothing else. Correct and fast are two different claims, and only one of
+them can be proved by a program. The other one you have to reason about -
+which is what the counts in E01 to E05 were for.</div>
+<!--@end-->
+<p>A structure the suite had never seen passed every check with no new assertion written. That is the evidence that the checks describe the <em>promise</em> and not the implementations &mdash; the same evidence Session 9's rewrite and Session 10's parameterised tests were built on. And then the honest part: <strong><code>LinkedBag</code> passed everything, and it is the slow one.</strong> Its <code>get(i)</code> walks the nodes; <code>IntList</code>'s reads one array slot. The suite cannot tell them apart, and it is not being lazy &mdash; at the sizes the checks use, and from the outside, they behave identically. Correct and fast are two different claims, and only one of them can be proved by a program.</p>
+</div></details></div></details>
+
+  <!-- ===== 20. FURTHER STUDY ============================================== -->
+  <h2>Further Study</h2>
+
+  <h3>Read</h3>
+  <ul>
+    <li>
+      <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/ArrayList.html">java.util.ArrayList</a>
+      &mdash; read the class javadoc looking for one word: <em>amortized</em>. Then look for what it says
+      about the growth policy, and notice how carefully it says nothing.
+    </li>
+    <li>
+      <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/HashMap.html">java.util.HashMap</a>
+      &mdash; the two paragraphs on <em>Performance</em> are the contract Part 4 and Part 5 were built on:
+      the load factor, the doubling, and the sentence about many keys sharing a <code>hashCode()</code>.
+      This is the one javadoc page worth reading twice.
+    </li>
+    <li>
+      <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html#hashCode()">Object.hashCode()</a>
+      and <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object)">Object.equals(Object)</a>
+      &mdash; the general contract, in the JDK's own words. It is six bullet points, and every bug in
+      Part 5 is a violation of one of them.
+    </li>
+    <li>
+      <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/ArrayDeque.html">java.util.ArrayDeque</a>
+      &mdash; you have written this class. Read its javadoc as a description of your own code and see
+      which details it adds: growth by doubling, no <code>null</code>, not thread-safe.
+    </li>
+    <li>
+      <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Objects.html#hash(java.lang.Object...)">Objects.hash(Object&hellip;)</a>
+      &mdash; the one method that removes the whole class of bug Part 5 is about. Write your
+      <code>hashCode</code> with it and the two field lists cannot drift apart later.
+    </li>
+  </ul>
+
+  <h3>Watch</h3>
+  <p>Each video was checked to exist and match the topic.</p>
+  <div class="video-grid">
+    <div class="video-card" data-yt="gDl7PS_zwAs" data-title="Dynamic Array in Java | ArrayList Internal working">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Dynamic Array in Java | ArrayList Internal working</div><div class="video-card__channel">Coding Env</div><div class="video-card__why">Part 2: the question <code>IntList.add</code> has to answer &mdash; what happens on the add that finds the array full? Watch for the moment the new array is allocated and the old one is copied, and count those copies against your own trace from <code>E01</code>.</div></div>
+    </div>
+    <div class="video-card" data-yt="MTl8djZFWE0" data-title="What is Amortized Time Complexity? - Dynamic Array">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">What is Amortized Time Complexity? - Dynamic Array</div><div class="video-card__channel">Gaurav Sen</div><div class="video-card__why">Parts 3 and 8: why doubling is the whole trick. This is the argument behind <code>P1</code>'s table &mdash; the expensive adds are rare enough that the <em>average</em> cost of an add stays flat as the array grows, even though one add in a thousand copies everything.</div></div>
+    </div>
+    <div class="video-card" data-yt="c3RVW3KGIIE" data-title="How HashMap works in Java? With Animation!! whats new in java8 tutorial">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">How HashMap works in Java? With Animation!! whats new in java8 tutorial</div><div class="video-card__channel">Ranjith ramachandran</div><div class="video-card__why">Part 4, animated: keys landing in buckets, collisions becoming chains &mdash; Figure 3 moving. It also covers the Java 8 change Part 8 names: past eight entries in one bucket the chain becomes a tree, which is what keeps the bad-<code>hashCode()</code> case in <code>E04</code> from being quite as bad as it looks.</div></div>
+    </div>
+    <div class="video-card" data-yt="4X5Kgi2VltI" data-title="Equals and Hashcode Contract in Java [Important Java Interview Question] | Code Decode">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Equals and Hashcode Contract in Java [Important Java Interview Question] | Code Decode</div><div class="video-card__channel">Code Decode</div><div class="video-card__why">Part 5, from the other end: the contract your <code>Registration</code> class broke, stated as rules. The inherited <code>equals</code> compares identity, not fields, so two registrations describing the same student are two keys &mdash; which is exactly how <code>size() -&gt; 2</code> happened.</div></div>
+    </div>
+    <div class="video-card" data-yt="8sjFA-IX-Ww" data-title="Circular Queue Implementation - Array">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Circular Queue Implementation - Array</div><div class="video-card__channel">Blue Tree Code</div><div class="video-card__why">Part 6: <code>head</code>, <code>tail</code> and the wraparound, with enqueue, dequeue, <code>isFull</code> and the resize case &mdash; the same eight operations your <code>RingBuffer</code> has. Not Java, and none the worse for it: hearing the ring described in different words is the point.</div></div>
+    </div>
+  </div>
+
+  <!-- ===== 21. CHEAT SHEET ================================================ -->
+  <h2>&#128203; Cheat Sheet</h2>
+
+  <div class="cheatsheet">
+    <h4>The dynamic array</h4>
+    <ul>
+      <li><code>get(i)</code> &rarr; <code>return data[i];</code> &mdash; <strong>1 array read</strong>, O(1) at every size.</li>
+      <li><code>add(x)</code> &rarr; store, or grow first if full &mdash; <strong>O(1) amortised</strong>.</li>
+      <li><code>grow()</code> &rarr; <code>data = new int[data.length * 2];</code> then copy &mdash; O(n), about log&#8322;n times.</li>
+      <li>Scan for <code>x</code> &rarr; up to <em>n</em> reads. O(n).</li>
+      <li><code>removeAt(0)</code> &rarr; shifts everything &mdash; O(n). <strong>This is why a list is a bad queue.</strong></li>
+      <li><strong>The rule:</strong> double, never a fixed step. What matters is how <em>often</em> you grow.</li>
+    </ul>
+
+    <h4>The hash map: six steps</h4>
+    <ul>
+      <li><strong>1. Spread</strong> &rarr; <code>h ^ (h &gt;&gt;&gt; 16)</code>. The mask reads only the low bits, so fold the high ones down.</li>
+      <li><strong>2. Bucket</strong> &rarr; <code>hash &amp; (buckets.length - 1)</code>. A mask, not a remainder: no division, no negative index.</li>
+      <li><strong>3. Walk</strong> &rarr; <code>n.hash == hash &amp;&amp; n.key.equals(key)</code>. Compare the <code>int</code> first &mdash; it is cheaper.</li>
+      <li><strong>4. Match</strong> &rarr; change the value and <strong>return</strong>. Same key means replace, not add.</li>
+      <li><strong>5. No match</strong> &rarr; new node at the <strong>front</strong> of the chain, <code>size++</code>.</li>
+      <li><strong>6. Then</strong> &rarr; <code>if (size &gt; buckets.length * 0.75) rehash();</code> Strictly <code>&gt;</code>, and <em>after</em> the increment.</li>
+      <li><strong>The contract:</strong> <code>hashCode</code> picks the bucket, <code>equals</code> confirms the key. Use <code>Objects.hash(&hellip;)</code> on exactly the fields <code>equals</code> compares.</li>
+    </ul>
+
+    <h4>The ring buffer: four lines</h4>
+<pre><code class="lang-text">push(v)    data[tail] = v;  tail = (tail + 1) % data.length;  size++;
+poll()     v = data[head];  head = (head + 1) % data.length;  size--;
+pop()      tail = (tail - 1 + data.length) % data.length;  v = data[tail];  size--;
+element i  data[(head + i) % data.length]     // never data[i]
+empty      size == 0        full  size == data.length   // never head == tail</code></pre>
+    <ul>
+      <li><strong>The trap:</strong> Java's <code>%</code> keeps the sign of the left operand, so <code>(0 - 1) % 8</code> is <code>-1</code>. Add the length <em>before</em> the modulo.</li>
+      <li><strong>The other trap:</strong> after a wrap, slot order and queue order are different lists. Walk the queue, never the array.</li>
+    </ul>
+
+    <h4>Numbers worth remembering</h4>
+    <ul>
+      <li>Ten adds into a list of four &rarr; <strong>12 element copies</strong>, 4 then 8.</li>
+      <li>Ten thousand adds, doubling &rarr; <strong>16,380 copies</strong>. Growing by ten &rarr; <strong>49,900 for a thousand</strong>.</li>
+      <li>A hundred keys &rarr; rehashes at <strong>7, 13, 25, 49, 97</strong>; <strong>191 keys moved</strong> in total.</li>
+      <li><code>hashCode() = 1</code>, six keys &rarr; <strong>21 comparisons</strong> instead of 9. That is 1+2+3+4+5+6.</li>
+      <li>Nine hundred and eighty-five jobs through a sixteen-slot window &rarr; ring <strong>0</strong> moves, list <strong>14,775</strong>.</li>
+    </ul>
+
+    <h4>When to build your own</h4>
+    <p>Use the JDK's for everything, always. Build one when you are <strong>learning</strong> how it works, <strong>reading</strong> somebody else's, or when a <strong>measurement</strong> shows the JDK's choice is wrong for your case &mdash; and be ready to produce the measurement.</p>
+  </div>
+
+  <!-- ===== 22. SESSION SUMMARY ============================================ -->
+  <h2>&#127891; Session Summary</h2>
+  <ol>
+    <li><strong>You build the model, not the product.</strong> Nothing written today belongs in a real program &mdash; and that was never the point. The point is that <code>O(1)</code>, <code>amortised</code> and <code>assuming the hash function disperses the elements properly</code> stopped being sentences you accept.</li>
+    <li><strong>A Java array cannot get longer.</strong> A list that appears to grow is throwing an array away and building a bigger one, copying every live element across. That single fact is where every cost in Part 2 comes from.</li>
+    <li><strong>Doubling is the algorithm, not a tuning detail.</strong> Nine adds cost twelve copies; ten thousand adds cost sixteen thousand copies &mdash; under two per add at every size. Growing by a fixed step instead costs 49,900 copies for a thousand adds, and ends with a <em>smaller</em> array.</li>
+    <li><strong>Count work; don't time it.</strong> A count of array reads is identical on every machine and every run. <code>E02</code> had to subclass <code>ArrayList</code> and override <code>get()</code> purely to count, which is what makes the comparison with our own list like-for-like. Our list and the JDK's agreed to the read.</li>
+    <li><strong>A hash map is an array of chains plus a rule for choosing a chain.</strong> Spread the hash, mask it to a bucket, walk that chain comparing the <code>int</code> hash first and <code>equals</code> second. Every property you care about follows from those two pieces.</li>
+    <li><strong>The O(1) comes from the spread, not from luck.</strong> Six keys with remainders <code>0, 1, 1, 3, 4, 4</code> cost two comparisons at worst. Six keys that all leave remainder 0 cost six &mdash; same class, same code. <strong>The keys chose the bucket.</strong></li>
+    <li><strong>The table doubles when it is three-quarters full, and every key moves.</strong> The trigger counts are 7, 13, 25, 49, 97 &mdash; each double the one before, minus one &mdash; and a hundred keys move 191 times in total. That is <code>E01</code>'s bargain made a second time in a different structure.</li>
+    <li><strong><code>hashCode() { return 1; }</code> makes six lookups cost 21 comparisons instead of 9.</strong> And the 21 is not a round number &mdash; it is exactly 1 + 2 + 3 + 4 + 5 + 6, because each lookup walks the chain to its own key. <strong>Nothing throws and every lookup is correct.</strong> The map has silently stopped being a map.</li>
+    <li><strong><code>equals</code> and <code>hashCode</code> that disagree cost correctness, not speed.</strong> Two puts with the same id landed in different buckets, so <code>size()</code> returned 2 for one logical key. The JDK's own <code>HashMap</code> failed identically &mdash; this is the contract, not our implementation.</li>
+    <li><strong>The hash finds the bucket; <code>equals</code> confirms the key.</strong> That order is why a broken hash is unfixable downstream: if the first step is wrong, the second one never runs. Write <code>hashCode</code> in the same breath as <code>equals</code>, from the same fields, with <code>Objects.hash(&hellip;)</code>.</li>
+    <li><strong>A ring buffer moves an index instead of moving elements.</strong> <code>tail = (tail + 1) % data.length</code> is the whole idea. A thousand pushes and a thousand polls through a sixteen-slot window left the capacity at 16 and replaced nothing; the list doing the same job moved <strong>14,775 elements</strong> to hand back 985 jobs.</li>
+    <li><strong>Slot order and queue order are different lists.</strong> After a wrap, the newest element sits in slot 0. Walk the queue (<code>data[(head + i) % data.length]</code>), never the array &mdash; and tell full from empty with a <code>size</code> counter, because <code>head == tail</code> is true in both states.</li>
+    <li><strong>One suite, two implementations &mdash; and a third it had never seen.</strong> Because the checks were written against interfaces, a <code>LinkedList</code>-backed list written five minutes beforehand walked straight through them with no new assertion. That is what makes a suite worth something.</li>
+    <li><strong>But green means &ldquo;no difference I thought to look for.&rdquo;</strong> <code>E06</code> prints five real differences the suite did not catch, and <code>P6</code> shows a passing implementation that is far slower. Correct and fast are two different claims, and only one of them can be proved by a program.</li>
+    <li><strong>The JDK's versions won for six specific reasons</strong> &mdash; generics, safe iteration, a tuned and deliberately unexplained growth policy, treeified bins, fail-fast iterators, and thirty years of bugs found in production.</li>
+    <li><strong>Then delete yours.</strong> Use <code>ArrayList</code>, <code>HashMap</code> and <code>ArrayDeque</code> on Monday. What you keep is the ability to read <code>O(1) on average, assuming the hash function disperses the elements properly</code> and know exactly which half of that sentence is your responsibility: <strong>the JDK guarantees the buckets; you guarantee the dispersion.</strong></li>
+  </ol>
+
+  <div class="newwords"><b>&#128218; All new words from this session</b>
+    <dl>
+      <dt>Dynamic array</dt><dd>An array that cannot grow, wrapped in a class that replaces it with a bigger one when it fills. What <code>ArrayList</code> is.</dd>
+      <dt>Amortised</dt><dd>The average cost per operation over a long run, when a few operations are much more expensive. <code>add()</code> is O(1) amortised because the growths get rarer.</dd>
+      <dt>Capacity</dt><dd>How much room the backing array has. Always at least <code>size</code>, usually more, and never a promise about the future.</dd>
+      <dt>Load factor</dt><dd>The fraction of buckets allowed to be occupied before the table doubles. <code>0.75</code> in our map and in the JDK's.</dd>
+      <dt>Rehash</dt><dd>Building a bigger bucket array and moving every key into the bucket it now belongs to. The index changes because the <em>mask</em> changed, not the hash.</dd>
+      <dt>Bucket</dt><dd>One slot of a hash table's array. Holds the head of a chain, or nothing.</dd>
+      <dt>Collision</dt><dd>Two different keys wanting the same bucket. Normal, not a bug &mdash; a chain is how it is handled.</dd>
+      <dt>Chain</dt><dd>The short list of nodes sharing one bucket. A lookup walks it comparing keys.</dd>
+      <dt>Spread</dt><dd>How evenly a hash function distributes keys across buckets. The whole of a hash map's performance lives here.</dd>
+      <dt>Mask</dt><dd><code>hash &amp; (length - 1)</code>. Turns any <code>int</code> into a legal bucket number with no division and no negative index &mdash; which is why the bucket count must be a power of two.</dd>
+      <dt>Treeified bin</dt><dd>Java 8's fix for a long chain: past eight entries, the chain becomes a balanced tree, so a lookup in it is O(log n) instead of O(n).</dd>
+      <dt>Ring buffer</dt><dd>One fixed array with a <code>head</code> and a <code>tail</code> that wrap with a modulo. Nothing is ever shifted. What <code>ArrayDeque</code> is.</dd>
+      <dt>Head / tail</dt><dd>The slot the next element comes out of, and the slot the next element goes into.</dd>
+      <dt>Deque</dt><dd>&ldquo;Double-ended queue&rdquo;: a structure you can take from either end. <code>push</code>+<code>pop</code> makes it a stack; <code>push</code>+<code>poll</code> makes it a queue.</dd>
+      <dt>Fail-fast</dt><dd>An iterator that detects the collection changing underneath it and throws <code>ConcurrentModificationException</code> instead of returning a wrong answer. Our structures have no iterators, so they cannot notice.</dd>
+      <dt>Boxing</dt><dd>Wrapping a primitive in an object &mdash; <code>int</code> into <code>Integer</code>. The reason <code>ArrayList&lt;Integer&gt;</code> uses far more memory than an <code>int[]</code>.</dd>
+      <dt>Adapter</dt><dd>A class that makes one interface look like another. <code>JdkDeque</code> maps <code>push</code> to <code>addLast</code> and <code>poll</code> to <code>pollFirst</code>.</dd>
+      <dt>Contract test</dt><dd>One suite run against two or more implementations, written only against the interface. Green means they agree on everything anybody wrote down.</dd>
+    </dl>
+  </div>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Next session: Session 12 &mdash; Try It Yourself: Sessions 6&ndash;10</b>
+      No new material &mdash; a review clinic. Bring the A5 suite and the three structures you built today,
+      because both are fair game. The things to have working before you arrive: <code>SelfCheck</code> at
+      <strong>11 passed, 0 failed</strong>, and one sentence you can say out loud explaining why
+      <code>hashCode() { return 1; }</code> makes a map slower while leaving it correct. If you can say
+      that sentence, you understood today.
+    </div>
+  </div>
+
+
+</main>
+
+<script src="../assets/js/course.js"></script>
+<script src="../assets/js/playgrounds.js"></script>
+
+</body>
+</html>

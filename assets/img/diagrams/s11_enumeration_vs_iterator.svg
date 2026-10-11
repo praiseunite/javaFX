@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" width="100%" height="100%">
+  <defs>
+    <filter id="evShadow" x="-8%" y="-8%" width="116%" height="125%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub   { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .card  { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; font-weight: 800; }
+    .tag   { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 800; fill: #64748b; letter-spacing: .05em; }
+    .m     { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+    .d     { font-family: system-ui, -apple-system, sans-serif; font-size: 10.5px; fill: #64748b; }
+    .verdict { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; font-weight: 700; }
+    .note  { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; fill: #334155; }
+    .row   { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; fill: #334155; }
+  </style>
+
+  <rect width="900" height="470" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">Enumeration and Iterator, method for method</text>
+  <text x="30" y="54" class="sub">Same job: walk a collection one element at a time. The right-hand column is what Iterator added &#8212; and why it won.</text>
+
+  <!-- Enumeration card -->
+  <g filter="url(#evShadow)">
+    <rect x="24" y="76" width="400" height="176" rx="11" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+  </g>
+  <text x="46" y="104" class="card" fill="#b45309">Enumeration&lt;E&gt;</text>
+  <text x="46" y="122" class="tag">INTERFACE &#183; SINCE JAVA 1.0</text>
+  <text x="46" y="150" class="m" fill="#78350f">boolean hasMoreElements()</text>
+  <text x="46" y="172" class="m" fill="#78350f">E       nextElement()</text>
+  <text x="46" y="200" class="d">Two methods. That is the entire interface.</text>
+  <text x="46" y="218" class="d">no remove() &#183; no for-each (not Iterable)</text>
+  <text x="46" y="236" class="d">not fail-fast &#8212; it will not warn you</text>
+
+  <!-- Iterator card -->
+  <g filter="url(#evShadow)">
+    <rect x="476" y="76" width="400" height="176" rx="11" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  </g>
+  <text x="498" y="104" class="card" fill="#1d4ed8">Iterator&lt;E&gt;</text>
+  <text x="498" y="122" class="tag">INTERFACE &#183; SINCE JAVA 1.2</text>
+  <text x="498" y="150" class="m" fill="#1e3a8a">boolean hasNext()</text>
+  <text x="498" y="172" class="m" fill="#1e3a8a">E       next()</text>
+  <text x="498" y="194" class="m" fill="#1e3a8a">void    remove()</text>
+  <text x="498" y="216" class="m" fill="#1e3a8a">void    forEachRemaining(Consumer)</text>
+  <text x="498" y="240" class="d">shorter names, and it powers the for-each loop</text>
+
+  <!-- middle arrow -->
+  <path d="M 428 164 L 470 164" stroke="#94a3b8" stroke-width="2"/>
+  <path d="M 462 158 L 472 164 L 462 170 z" fill="#94a3b8"/>
+  <text x="424" y="150" class="tag" text-anchor="middle">REPLACED BY</text>
+
+  <!-- comparison table -->
+  <text x="24" y="288" class="tag">THE DIFFERENCES THAT MATTER IN PRACTICE</text>
+
+  <rect x="24" y="298" width="852" height="34" rx="8" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="44"  y="320" class="tag">QUESTION</text>
+  <text x="420" y="320" class="tag">ENUMERATION</text>
+  <text x="680" y="320" class="tag">ITERATOR</text>
+
+  <text x="44"  y="356" class="row">Can you remove while walking?</text>
+  <text x="420" y="356" class="row" fill="#b91c1c">no &#8212; there is no method for it</text>
+  <text x="680" y="356" class="row" fill="#047857">yes &#8212; remove()</text>
+  <line x1="24" y1="368" x2="876" y2="368" stroke="#eef2f7"/>
+
+  <text x="44"  y="388" class="row">Does a for-each loop accept it?</text>
+  <text x="420" y="388" class="row" fill="#b91c1c">no &#8212; it is not Iterable</text>
+  <text x="680" y="388" class="row" fill="#047857">yes</text>
+  <line x1="24" y1="400" x2="876" y2="400" stroke="#eef2f7"/>
+
+  <text x="44"  y="420" class="row">What if the collection changes underneath?</text>
+  <text x="420" y="420" class="row" fill="#b91c1c">silently skips an element</text>
+  <text x="680" y="420" class="row" fill="#047857">ConcurrentModificationException</text>
+
+  <rect x="24" y="434" width="852" height="26" rx="8" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="44" y="452" class="note"><tspan font-weight="bold" fill="#047857">A crash you can see beats a wrong number you cannot.</tspan> That sentence is why Iterator replaced Enumeration.</text>
+</svg>

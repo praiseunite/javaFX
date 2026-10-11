@@ -5,6 +5,9 @@ solutions/
 code/*/sandbox/
 code/*/data/
 code/*/selfcheck-tmp/
+# Throwaway experiments. A "scratch" folder next to a starter project is one edit away from
+# being a solution key, and publish.js ships anything untracked and not ignored.
+code/*/scratch/
 # H2 writes its database beside db/schema.sql if a run is pointed there
 code/*/db/*.mv.db
 code/*/db/*.trace.db

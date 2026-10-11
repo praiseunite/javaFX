@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 500" width="100%" height="100%">
+  <defs>
+    <filter id="hbShadow" x="-8%" y="-8%" width="116%" height="125%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .sub   { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .head  { font-family: system-ui, -apple-system, sans-serif; font-size: 10px; font-weight: 800; fill: #94a3b8; letter-spacing: .06em; }
+    .bkt   { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; font-weight: 700; fill: #64748b; }
+    .key   { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; font-weight: 700; fill: #1d4ed8; }
+    .code  { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; fill: #334155; }
+    .note  { font-family: system-ui, -apple-system, sans-serif; font-size: 11.5px; fill: #334155; }
+    .d     { font-family: system-ui, -apple-system, sans-serif; font-size: 10.5px; fill: #64748b; }
+    .n     { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; fill: #047857; font-weight: 700; }
+  </style>
+
+  <rect width="900" height="500" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="30" y="34" class="title">A hash map is an array of short lists</text>
+  <text x="30" y="53" class="sub">Eight buckets. A key goes to bucket <tspan font-family="ui-monospace, monospace">key % 8</tspan>, and everything already in that bucket is walked to check for a repeat.</text>
+  <text x="30" y="70" class="sub">Keys were added in the order 40, 25, 33, 19, 12, 4, and each new key is pushed onto the <tspan font-weight="bold">front</tspan> of its chain &#8212; so a chain reads newest first.</text>
+
+  <text x="24" y="86" class="head">THE EIGHT BUCKETS</text>
+  <text x="404" y="86" class="head">CHAIN IN THIS BUCKET</text>
+  <text x="700" y="86" class="head">HOW MANY TO CHECK</text>
+
+  <!-- eight bucket rows -->
+  <g>
+    <rect x="24" y="96" width="360" height="34" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <rect x="24" y="136" width="360" height="34" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+    <rect x="24" y="176" width="360" height="34" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <rect x="24" y="216" width="360" height="34" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+    <rect x="24" y="256" width="360" height="34" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+    <rect x="24" y="296" width="360" height="34" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <rect x="24" y="336" width="360" height="34" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+    <rect x="24" y="376" width="360" height="34" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  </g>
+  <g class="bkt">
+    <text x="40" y="118">bucket 0</text>
+    <text x="40" y="158">bucket 1</text>
+    <text x="40" y="198">bucket 2</text>
+    <text x="40" y="238">bucket 3</text>
+    <text x="40" y="278">bucket 4</text>
+    <text x="40" y="318">bucket 5</text>
+    <text x="40" y="358">bucket 6</text>
+    <text x="40" y="398">bucket 7</text>
+  </g>
+
+  <!-- chains -->
+  <text x="404" y="118" class="key">40</text>
+  <text x="404" y="158" class="key">33 &#8594; 25</text>
+  <text x="404" y="198" class="d">(empty)</text>
+  <text x="404" y="238" class="key">19</text>
+  <text x="404" y="278" class="key">4 &#8594; 12</text>
+  <text x="404" y="318" class="d">(empty)</text>
+  <text x="404" y="358" class="d">(empty)</text>
+  <text x="404" y="398" class="d">(empty)</text>
+
+  <g class="n">
+    <text x="700" y="118">1</text>
+    <text x="700" y="158">2</text>
+    <text x="700" y="198">0</text>
+    <text x="700" y="238">1</text>
+    <text x="700" y="278">2</text>
+    <text x="700" y="318">0</text>
+    <text x="700" y="358">0</text>
+    <text x="700" y="398">0</text>
+  </g>
+
+  <!-- the arithmetic -->
+  <text x="24" y="436" class="head">WHY THOSE NUMBERS SIT THERE</text>
+  <text x="24" y="456" class="code">40 % 8 = 0</text>
+  <text x="150" y="456" class="code">25 % 8 = 1</text>
+  <text x="276" y="456" class="code">33 % 8 = 1</text>
+  <text x="402" y="456" class="code">19 % 8 = 3</text>
+  <text x="528" y="456" class="code">12 % 8 = 4</text>
+  <text x="654" y="456" class="code">4 % 8 = 4</text>
+
+  <rect x="24" y="468" width="852" height="24" rx="7" fill="#fffbeb" stroke="#fcd34d"/>
+  <text x="40" y="485" class="note"><tspan font-weight="bold">Two keys landed in bucket 4 by arithmetic, not by accident.</tspan> With a good hash that spread is the normal case; the next diagram shows what one bad hashCode() does to it.</text>
+</svg>
