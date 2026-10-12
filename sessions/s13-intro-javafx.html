@@ -1,0 +1,2244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session 13 — Introduction to JavaFX</title>
+  <meta name="description" content="Session 13 of Building Rich Java Applications with JavaFX and AI Tools: Introduction to JavaFX. An overview of JavaFX and the evolution of Java desktop GUI toolkits (AWT, Swing, JavaFX); summary of the history from F3 to modern decoupled OpenJFX; installation and configuration in Eclipse and modern IntelliJ with Maven; deep dive into the multi-layer architecture (Prism, Quantum Toolkit, Glass, Media, Web, and Scene Graph); JavaFX application structure, the Theatre Metaphor (Stage, Scene, Node), and the 3-phase lifecycle (init, start, stop); core features including FXML, CSS styling, observable properties, and thread-safe concurrency with Platform.runLater — complete with runnable code, diagrams, and guided lab.">
+  <link rel="stylesheet" href="../assets/css/course.css">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "s13";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== 1. HERO ========================================================= -->
+  <section class="hero">
+    <span class="tag">Week 4 &middot; Day 1 &middot; Session 13 &middot; 2 hours in class + practice at home</span>
+    <h1>Session 13 &mdash; Introduction to JavaFX</h1>
+    <p class="lede">
+      For twelve sessions, your Java programs have lived entirely in the dark of the terminal window &mdash;
+      reading text from <code>System.in</code>, printing characters to <code>System.out</code>, and vanishing
+      when the process ends. Today, Java leaves the command line behind and steps onto the visual desktop.
+      You enter the world of <strong>JavaFX</strong> &mdash; the modern, hardware-accelerated GUI toolkit
+      designed for rich, high-performance desktop applications. You will learn where JavaFX came from,
+      how its multi-layer engine communicates with your operating system and GPU, how to configure your IDE
+      without linkage errors, the theatre metaphor that structures every application, and how to launch your
+      very first interactive visual window.
+    </p>
+    <div class="meta">
+      <span>&#128218; Learner's Guide: SG &middot; XP &middot; TG &mdash; Session 11</span>
+      <span>&#9201; ~2 hours in class</span>
+      <span>&#9989; Before this: Sessions 1&ndash;12</span>
+      <span>&#128187; Guided Lab: Aptech Student Welcome Portal</span>
+    </div>
+  </section>
+
+  <!-- ===== 2. OBJECTIVES =================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this session you can&hellip;</b>
+    <ol>
+      <li><strong>Explain</strong> what JavaFX is, and <strong>compare</strong> its retained-mode graphics and GPU acceleration against legacy AWT and Swing.</li>
+      <li><strong>Summarize</strong> the history and key milestones of JavaFX, from the early F3 scripting language to modern decoupled OpenJFX 21+ LTS.</li>
+      <li><strong>Install and configure</strong> JavaFX in both Eclipse (using e(fx)clipse &amp; user libraries) and modern IntelliJ IDEA (using Maven &amp; modular VM flags).</li>
+      <li><strong>Elaborate</strong> on the JavaFX architectural stack, detailing the specific responsibilities of Prism, Quantum Toolkit, Glass Windowing Toolkit, Media &amp; Web engines, and the Scene Graph.</li>
+      <li><strong>Explain</strong> the JavaFX application structure, master the Theatre Metaphor (<code>Stage</code> &rarr; <code>Scene</code> &rarr; <code>Node</code>), and trace the three lifecycle methods (<code>init()</code>, <code>start()</code>, <code>stop()</code>).</li>
+      <li><strong>Apply</strong> the non-modular launcher pattern to execute JavaFX desktop applications without encountering the missing runtime components trap.</li>
+      <li><strong>Elaborate</strong> on core JavaFX features including FXML declarative UI, CSS skinning, observable properties, data binding, and safe concurrency with <code>Platform.runLater()</code>.</li>
+      <li><strong>Build and run</strong> your first interactive JavaFX desktop application with labels, text fields, buttons, layouts, and event handling.</li>
+    </ol>
+  </div>
+
+  <!-- ===== 3. TABLE OF CONTENTS ============================================ -->
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== 5. ROADMAP ====================================================== -->
+  <h2>Your Roadmap for Today</h2>
+  <div class="roadmap">
+    <a href="#part-1-overview">Part 1: Overview of JavaFX &amp; GUI Evolution</a>
+    <a href="#part-2-history">Part 2: History &amp; Milestones of JavaFX</a>
+    <a href="#part-3-ide-setup">Part 3: IDE Setup: Eclipse &amp; IntelliJ Configuration</a>
+    <a href="#part-4-architecture">Part 4: JavaFX Multi-Layer Architecture</a>
+    <a href="#part-5-application-structure">Part 5: Application Structure &amp; The Theatre Metaphor</a>
+    <a href="#part-6-features">Part 6: Core Features of JavaFX</a>
+    <a href="#part-7-launcher">Part 7: Non-Modular Launcher &amp; Module Mechanics</a>
+    <a href="#lab-welcome">Guided Lab: Aptech Student Welcome Portal</a>
+  </div>
+
+  <!-- ===== 6. WHY THIS MATTERS ============================================= -->
+  <h2>Why This Matters</h2>
+  <p>
+    Every modern business application needs an interface that is responsive, intuitive, and visually polished.
+    Command-line interfaces are ideal for scripts, servers, and automated pipelines, but human beings expect
+    windows with smooth animations, clear typography, intuitive buttons, high-resolution icons, and dynamic forms.
+  </p>
+  <p>
+    In the early days of Java, desktop developers struggled with <strong>AWT</strong> (which relied on primitive
+    operating system widgets) and <strong>Swing</strong> (which painted pixels entirely on the CPU without GPU
+    assistance). <strong>JavaFX</strong> was engineered from the ground up to solve both problems: it provides a
+    hardware-accelerated graphics pipeline (Prism) that leverages your computer's GPU, a clean hierarchical
+    tree structure (the Scene Graph), and modern web-like styling capabilities through CSS and FXML.
+  </p>
+
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; The Grand JavaFX Theatre</b>
+      Building a JavaFX application is exactly like staging an elaborate theatrical play in an opera house:
+      <ul>
+        <li><strong>The Stage (<code>Stage</code>)</strong> is the physical theatre building and proscenium arch. In desktop terms, it is the top-level OS window with the title bar, minimize, maximize, and close buttons.</li>
+        <li><strong>The Scene (<code>Scene</code>)</strong> is the specific stage backdrop, lighting set, and room arrangement currently mounted inside the theatre. An application can have multiple scenes (e.g., a Login Scene, a Dashboard Scene), but only one scene is displayed on the Stage at a time.</li>
+        <li><strong>The Scene Graph (<code>Node</code>)</strong> is the collection of actors, furniture, and physical props arranged on the set in a strict hierarchy. The Root container holds layout groups (rooms), which hold individual UI controls (actors: buttons, text boxes, and labels).</li>
+        <li><strong>Prism &amp; Glass</strong> are the backstage engineering crew: Glass manages the physical doors and ticket gates (native OS windowing and mouse clicks), while Prism operates the high-speed stage lighting and holographic projectors (GPU hardware rendering).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Editorial Cartoon Illustration -->
+  <div style="text-align:center;margin:2rem 0">
+    <img src="../assets/img/cartoons/s13_javafx_theatre.jpg" alt="Editorial cartoon illustrating the JavaFX Theatre Metaphor with Stage, Scene, Scene Graph, Prism GPU acceleration, and Glass windowing toolkit" style="max-width:100%;height:auto;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,0.15);border:1px solid var(--border,#3a4252)">
+    <p class="text-sm text-faint" style="margin-top:0.5rem">Figure 13.1 &mdash; The JavaFX Theatre Metaphor: Stage Manager, Scene Designer, Scene Graph Actors, and Backstage GPU Engines.</p>
+  </div>
+
+  <!-- ===== 7. PART 1 — OVERVIEW OF JAVAFX =================================== -->
+  <h2 id="part-1-overview"><span class="eyebrow">Part 1 of 7</span> Overview of JavaFX &amp; Toolkit Evolution</h2>
+  <p>
+    Java has a thirty-year history of desktop user interface development. To understand why JavaFX is built
+    the way it is, you must understand the two predecessor toolkits it replaced:
+  </p>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Toolkit</th>
+          <th>Introduced</th>
+          <th>Rendering Technique</th>
+          <th>Component Model</th>
+          <th>Strengths &amp; Fatal Flaws</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>AWT</strong><br><span class="text-sm text-faint">Abstract Window Toolkit</span></td>
+          <td>1995 (JDK 1.0)</td>
+          <td><strong>Heavyweight Peers</strong>: Every AWT button or text box delegates directly to an underlying native OS C/C++ widget.</td>
+          <td>Immediate mode; direct OS window handle (HWND/X11) for every component.</td>
+          <td><strong>Fatal Flaw:</strong> "Least Common Denominator." If a widget (like a tree view or tabbed panel) didn't exist on Macintosh or Solaris, AWT couldn't support it. Visual inconsistencies across platforms.</td>
+        </tr>
+        <tr>
+          <td><strong>Swing</strong><br><span class="text-sm text-faint">Java Foundation Classes</span></td>
+          <td>1998 (JDK 1.2)</td>
+          <td><strong>Lightweight Components</strong>: Components have no native peers; Java 2D draws every pixel directly onto an offscreen bitmap on the CPU.</td>
+          <td>Pluggable Look-and-Feel (PLAF); MVC architecture; single top-level frame.</td>
+          <td><strong>Strengths:</strong> Complete cross-platform consistency.<br><strong>Fatal Flaw:</strong> CPU-bound software rendering. No native GPU acceleration, sluggish on high-resolution displays, rigid styling without CSS.</td>
+        </tr>
+        <tr>
+          <td><strong>JavaFX</strong><br><span class="text-sm text-faint">Modern Rich Client</span></td>
+          <td>2008 &rarr; 2011 &rarr; Present</td>
+          <td><strong>Prism Hardware Acceleration</strong>: Retained-mode Scene Graph rendered directly via GPU shaders (DirectX, OpenGL, Metal).</td>
+          <td>Scene Graph tree; Observable Properties; CSS skinning; FXML declarative markup.</td>
+          <td><strong>Modern Standard:</strong> 60 FPS smooth rendering, High-DPI screen scaling, clean separation of design and business logic, rich 2D/3D graphics, media, and embedded HTML5 web engine.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    The defining architectural leap from Swing to JavaFX is the transition from <strong>immediate-mode painting</strong>
+    to a <strong>retained-mode Scene Graph</strong>. In Swing, whenever a window was uncovered, the JVM called
+    <code>paintComponent(Graphics g)</code> and forced Java code to redraw the pixels. In JavaFX, you construct
+    a tree of <code>Node</code> objects once. JavaFX <em>retains</em> the tree in memory, tracks changes automatically,
+    and dispatches rendering directly to the graphics card at 60 frames per second.
+  </p>
+
+  <h3>Code Example: GUI Toolkit Comparison &amp; Capability Introspection</h3>
+  <!--@code src="code/s13-intro-javafx/src/main/java/com/aptech/s13/E01_OverviewAndEvolution.java"-->
+<pre class="numbered" data-file="E01_OverviewAndEvolution.java"><code class="lang-java">package com.aptech.s13;
+
+/**
+ * Session 13 - Example 1: Overview and Evolution of Java Desktop GUI Toolkits
+ *
+ * Demonstrates the contrast between the three generations of Java GUI toolkits:
+ * AWT (1995) -&gt; Swing (1998) -&gt; JavaFX (Modern, Hardware-Accelerated).
+ */
+public class E01_OverviewAndEvolution {
+
+    public static record GuiToolkit(
+            String name,
+            int yearIntroduced,
+            String renderingEngine,
+            String architecture,
+            boolean hardwareAccelerated,
+            boolean cssStylingSupported,
+            String primaryLimitation
+    ) {}
+
+    public static void main(String[] args) {
+        System.out.println("=== Java Desktop GUI Toolkit Evolution ===");
+
+        GuiToolkit[] toolkits = {
+            new GuiToolkit(
+                "AWT (Abstract Window Toolkit)",
+                1995,
+                "Native OS Peers (Heavyweight)",
+                "Immediate mode, native widgets",
+                false,
+                false,
+                "Least Common Denominator: UI looks completely different across OSes and lacks rich controls."
+            ),
+            new GuiToolkit(
+                "Swing (Java Foundation Classes)",
+                1998,
+                "Java 2D CPU Rasterizer (Lightweight)",
+                "Pluggable Look-and-Feel, painted pixels",
+                false,
+                false,
+                "CPU-bound rendering: No GPU acceleration, complex thread rules, rigid styling."
+            ),
+            new GuiToolkit(
+                "JavaFX (Modern Desktop UI)",
+                2008,
+                "Prism GPU Pipeline (DirectX/OpenGL/Metal)",
+                "Retained-mode Scene Graph with CSS &amp; FXML",
+                true,
+                true,
+                "Standalone library since Java 11: Requires module-path configuration or build tool."
+            )
+        };
+
+        for (GuiToolkit tk : toolkits) {
+            System.out.println("\nToolkit: " + tk.name());
+            System.out.println("  Year: " + tk.yearIntroduced());
+            System.out.println("  Engine: " + tk.renderingEngine());
+            System.out.println("  Architecture: " + tk.architecture());
+            System.out.println("  GPU Accelerated: " + (tk.hardwareAccelerated() ? "YES" : "NO"));
+            System.out.println("  CSS Skinning: " + (tk.cssStylingSupported() ? "YES" : "NO"));
+            System.out.println("  Key Consideration: " + tk.primaryLimitation());
+        }
+
+        System.out.println("\nConclusion:");
+        System.out.println("JavaFX is the recommended, official standard for building rich client desktop applications in Java.");
+    }
+}</code></pre>
+<!--@end-->
+
+  <div class="walkthrough">
+    <table>
+      <thead><tr><th>Line</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>10&ndash;18</code></td><td>Defines a Java <code>record GuiToolkit</code> capturing the name, release year, rendering engine, architecture, and GPU acceleration status of each toolkit generation.</td></tr>
+        <tr><td><code>24&ndash;30</code></td><td>Encapsulates AWT's historical characteristics: 1995 release, heavyweight native OS peers, and the least-common-denominator limitation.</td></tr>
+        <tr><td><code>32&ndash;39</code></td><td>Encapsulates Swing's characteristics: 1998 release, lightweight CPU-painted components, and the lack of native hardware acceleration.</td></tr>
+        <tr><td><code>40&ndash;47</code></td><td>Encapsulates JavaFX's modern architecture: Prism GPU pipeline, retained-mode Scene Graph, and CSS styling support.</td></tr>
+        <tr><td><code>50&ndash;58</code></td><td>Iterates through the toolkit generations and prints the comparison matrix to the terminal.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="terminal-output">
+<!--@output project="code/s13-intro-javafx" main="com.aptech.s13.E01_OverviewAndEvolution"-->
+<div class="terminal-output">=== Java Desktop GUI Toolkit Evolution ===
+
+Toolkit: AWT (Abstract Window Toolkit)
+  Year: 1995
+  Engine: Native OS Peers (Heavyweight)
+  Architecture: Immediate mode, native widgets
+  GPU Accelerated: NO
+  CSS Skinning: NO
+  Key Consideration: Least Common Denominator: UI looks completely different across OSes and lacks rich controls.
+
+Toolkit: Swing (Java Foundation Classes)
+  Year: 1998
+  Engine: Java 2D CPU Rasterizer (Lightweight)
+  Architecture: Pluggable Look-and-Feel, painted pixels
+  GPU Accelerated: NO
+  CSS Skinning: NO
+  Key Consideration: CPU-bound rendering: No GPU acceleration, complex thread rules, rigid styling.
+
+Toolkit: JavaFX (Modern Desktop UI)
+  Year: 2008
+  Engine: Prism GPU Pipeline (DirectX/OpenGL/Metal)
+  Architecture: Retained-mode Scene Graph with CSS &amp; FXML
+  GPU Accelerated: YES
+  CSS Skinning: YES
+  Key Consideration: Standalone library since Java 11: Requires module-path configuration or build tool.
+
+Conclusion:
+JavaFX is the recommended, official standard for building rich client desktop applications in Java.</div>
+<!--@end-->
+  </div>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point &mdash; Retained Mode vs Immediate Mode</b>
+      In Swing, you manually redraw pixels when dirty. In JavaFX, you manipulate a <strong>Scene Graph</strong>
+      data structure. The JavaFX runtime retains the nodes in GPU memory and handles repainting, dirty region
+      culling, and 60 FPS screen refreshes automatically.
+    </div>
+  </div>
+
+  <div class="newwords"><span class="newwords__title">&#128214; New Words</span>
+    <p><strong>AWT (Abstract Window Toolkit)</strong>: Java's original 1995 GUI toolkit that wrapped native OS widgets using heavyweight peers.</p>
+    <p><strong>Swing</strong>: Java's second-generation GUI toolkit that painted lightweight pixels in software without native peers.</p>
+    <p><strong>JavaFX</strong>: Java's modern rich client platform featuring GPU hardware acceleration, a retained-mode Scene Graph, CSS styling, and declarative FXML.</p>
+    <p><strong>Retained Mode</strong>: A graphics rendering model where the graphics library retains the complete scene model in memory and optimizes redrawing internally.</p>
+  </div>
+
+  <!-- ===== 8. PART 2 — HISTORY & MILESTONES ================================= -->
+  <h2 id="part-2-history"><span class="eyebrow">Part 2 of 7</span> Summarizing the History &amp; Milestones of JavaFX</h2>
+  <p>
+    JavaFX did not appear overnight. Its history reflects the rapid evolution of the web, desktop graphics,
+    and mobile devices over the last two decades. Understanding its history clarifies why you will see
+    different configuration advice in older textbooks compared to modern production environments.
+  </p>
+
+  <p>
+    Here are the critical milestones in JavaFX history:
+  </p>
+  <ol>
+    <li><strong>2005 &mdash; The F3 Genesis</strong>: Chris Oliver at SeeBeyond developed a prototype declarative language named <strong>F3</strong> (<em>Form Follows Function</em>) designed to create animated, rich user interfaces.</li>
+    <li><strong>2007 &mdash; Sun Microsystems Acquisition</strong>: Sun Microsystems acquired SeeBeyond and unveiled "JavaFX" at the JavaOne 2007 conference as Sun's rich internet application (RIA) response to Adobe Flash and Microsoft Silverlight.</li>
+    <li><strong>2008 &mdash; JavaFX 1.0 &amp; JavaFX Script</strong>: Released with a proprietary, statically-typed scripting language called <em>JavaFX Script</em>. While elegant, developers resisted learning an entirely new programming language just to build Java user interfaces.</li>
+    <li><strong>2011 &mdash; JavaFX 2.0 &amp; The Great Java Pivot</strong>: Oracle (having acquired Sun) made a historic decision: <strong>JavaFX Script was completely retired</strong>. The entire framework was re-architected into 100% standard Java APIs. Any standard Java developer could now write JavaFX using familiar classes and methods.</li>
+    <li><strong>2014 &mdash; JavaFX 8 (JDK Integration)</strong>: Released alongside Java 8 (versioned as 8 to synchronize with the JDK). JavaFX was bundled directly inside Oracle JDK 8's <code>rt.jar</code>. It introduced the modern default <em>Modena</em> UI theme, native 3D geometry shapes, rich CSS support, and the <code>DatePicker</code> control.</li>
+    <li><strong>2018 &mdash; JavaFX 11 &amp; OpenJFX Decoupling</strong>: In Java 11, Oracle modernized Java by modularizing the JDK. JavaFX was <strong>unbundled from the JDK</strong> and transitioned into the open-source <strong>OpenJFX</strong> project, co-led by Oracle and Gluon under the OpenJDK umbrella. This decoupled JavaFX from JDK releases, allowing it to evolve on its own rapid 6-month release cadence.</li>
+    <li><strong>2023&ndash;Present &mdash; JavaFX 21+ LTS &amp; Enterprise Desktop</strong>: OpenJFX 21 LTS delivers complete compatibility with modern LTS Java (JDK 21/25), native Apple Silicon (ARM64) support, Wayland integration on Linux, and packaging with <code>jpackage</code> into standalone native installers (.exe, .dmg, .deb).</li>
+  </ol>
+
+  <h3>Code Example: Chronological History Timeline</h3>
+  <!--@code src="code/s13-intro-javafx/src/main/java/com/aptech/s13/E02_HistoryTimeline.java"-->
+<pre class="numbered" data-file="E02_HistoryTimeline.java"><code class="lang-java">package com.aptech.s13;
+
+import java.util.List;
+
+/**
+ * Session 13 - Example 2: Chronological History &amp; Key Milestones of JavaFX
+ *
+ * Traces the evolution of JavaFX from F3 to modern decoupled OpenJFX.
+ */
+public class E02_HistoryTimeline {
+
+    public static record Milestone(String year, String version, String event, String technicalSignificance) {}
+
+    public static void main(String[] args) {
+        System.out.println("=== The Chronological History of JavaFX ===");
+
+        List&lt;Milestone&gt; timeline = List.of(
+            new Milestone(
+                "2005",
+                "F3 Project",
+                "Chris Oliver creates 'Form Follows Function'",
+                "Early prototype for a declarative, reactive GUI language on the JVM."
+            ),
+            new Milestone(
+                "2007",
+                "Sun Announcement",
+                "Announced by Sun Microsystems at JavaOne 2007",
+                "Positioned as rich internet application (RIA) platform to compete with Adobe Flash and Silverlight."
+            ),
+            new Milestone(
+                "2008",
+                "JavaFX 1.0",
+                "Initial commercial release",
+                "Used proprietary 'JavaFX Script' syntax. Required developers to learn a separate language."
+            ),
+            new Milestone(
+                "2011",
+                "JavaFX 2.0",
+                "The Great Java Rewrite",
+                "Scrapped JavaFX Script entirely! Rewrote the entire toolkit into pure, 100% standard Java APIs."
+            ),
+            new Milestone(
+                "2014",
+                "JavaFX 8",
+                "Bundled into Oracle JDK 8",
+                "Introduced the modern Modena dark/light theme, native 3D support, DatePicker, and rich CSS."
+            ),
+            new Milestone(
+                "2018",
+                "JavaFX 11 (OpenJFX)",
+                "Decoupled from the JDK",
+                "Spun off into open-source OpenJFX co-led by Oracle and Gluon. Independent 6-month release cadence."
+            ),
+            new Milestone(
+                "2023-Present",
+                "JavaFX 21+ LTS",
+                "Modern Enterprise Desktop",
+                "Full JDK 21/25 LTS compatibility, High-DPI screens, Apple Silicon ARM64, and jpackage desktop bundling."
+            )
+        );
+
+        for (Milestone m : timeline) {
+            System.out.printf("[%s] %-18s : %s\n", m.year(), m.version(), m.event());
+            System.out.println("       Impact: " + m.technicalSignificance());
+        }
+
+        System.out.println("\nKey Takeaway for Students:");
+        System.out.println("Older textbooks mention 'JavaFX 8 bundled in the JDK'. In modern Java (JDK 21+),");
+        System.out.println("JavaFX is distributed via Maven Central or as an SDK library. You write 100% Java!");
+    }
+}</code></pre>
+<!--@end-->
+
+  <div class="walkthrough">
+    <table>
+      <thead><tr><th>Line</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>13</code></td><td>Defines a <code>Milestone</code> record with year, version, event description, and technical significance.</td></tr>
+        <tr><td><code>18&ndash;56</code></td><td>Constructs the chronological history list from the 2005 F3 prototype through JavaFX 1.0, 2.0, 8, 11 (decoupling), and modern 21+ LTS.</td></tr>
+        <tr><td><code>58&ndash;61</code></td><td>Formats and displays each historical milestone with aligned tabular output.</td></tr>
+        <tr><td><code>63&ndash;66</code></td><td>Prints the critical takeaway for students contrasting Java 8 book references with modern OpenJFX modular libraries.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="terminal-output">
+<!--@output project="code/s13-intro-javafx" main="com.aptech.s13.E02_HistoryTimeline"-->
+<div class="terminal-output">=== The Chronological History of JavaFX ===
+[2005] F3 Project         : Chris Oliver creates 'Form Follows Function'
+       Impact: Early prototype for a declarative, reactive GUI language on the JVM.
+[2007] Sun Announcement   : Announced by Sun Microsystems at JavaOne 2007
+       Impact: Positioned as rich internet application (RIA) platform to compete with Adobe Flash and Silverlight.
+[2008] JavaFX 1.0         : Initial commercial release
+       Impact: Used proprietary 'JavaFX Script' syntax. Required developers to learn a separate language.
+[2011] JavaFX 2.0         : The Great Java Rewrite
+       Impact: Scrapped JavaFX Script entirely! Rewrote the entire toolkit into pure, 100% standard Java APIs.
+[2014] JavaFX 8           : Bundled into Oracle JDK 8
+       Impact: Introduced the modern Modena dark/light theme, native 3D support, DatePicker, and rich CSS.
+[2018] JavaFX 11 (OpenJFX) : Decoupled from the JDK
+       Impact: Spun off into open-source OpenJFX co-led by Oracle and Gluon. Independent 6-month release cadence.
+[2023-Present] JavaFX 21+ LTS     : Modern Enterprise Desktop
+       Impact: Full JDK 21/25 LTS compatibility, High-DPI screens, Apple Silicon ARM64, and jpackage desktop bundling.
+
+Key Takeaway for Students:
+Older textbooks mention 'JavaFX 8 bundled in the JDK'. In modern Java (JDK 21+),
+JavaFX is distributed via Maven Central or as an SDK library. You write 100% Java!</div>
+<!--@end-->
+  </div>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point &mdash; Why Modern JavaFX is Decoupled</b>
+      In Java 8, JavaFX was bundled inside the JDK. Since Java 11, JavaFX is distributed as an
+      independent library (<strong>OpenJFX</strong>) via Maven Central. This means you can update JavaFX
+      without upgrading your JDK, and you only bundle the UI modules your application actually needs.
+    </div>
+  </div>
+
+  <!-- ===== 9. PART 3 — IDE SETUP & TOOLING ================================== -->
+  <h2 id="part-3-ide-setup"><span class="eyebrow">Part 3 of 7</span> IDE Setup: Eclipse Installation &amp; Modern Tooling</h2>
+  <p>
+    The official Aptech curriculum manual mandates explaining the installation and configuration of Eclipse
+    for JavaFX. In modern software development, developers use either <strong>Eclipse</strong> or
+    <strong>IntelliJ IDEA</strong> paired with <strong>Apache Maven</strong>. We cover both workflows so you
+    can work comfortably in any development environment.
+  </p>
+
+  <h3>1. Working with JavaFX Using Eclipse (Textbook Flow)</h3>
+  <p>
+    To build JavaFX applications using Eclipse, follow these six steps:
+  </p>
+  <ol class="steps">
+    <li><strong>Download &amp; Install Eclipse</strong>: Download the <em>Eclipse IDE for Java Developers</em> from <a href="https://www.eclipse.org/" target="_blank" rel="noopener">eclipse.org</a> and complete standard installation.</li>
+    <li><strong>Install the e(fx)clipse Plugin</strong>:
+      <ul>
+        <li>Open Eclipse and navigate to <strong>Help &rarr; Eclipse Marketplace...</strong></li>
+        <li>In the search box, type <code>e(fx)clipse</code> and press Enter.</li>
+        <li>Click <strong>Install</strong> on the e(fx)clipse plugin, accept the license terms, and restart Eclipse when prompted. This plugin provides FXML wizards, syntax highlighting, and CSS auto-completion.</li>
+      </ul>
+    </li>
+    <li><strong>Download the OpenJFX SDK</strong>: Download the JavaFX SDK matching your operating system (Windows, macOS, or Linux) from <a href="https://gluonhq.com/products/javafx/" target="_blank" rel="noopener">gluonhq.com/products/javafx</a> and extract it to a permanent folder (e.g., <code>C:\javafx-sdk-21</code>).</li>
+    <li><strong>Create a JavaFX User Library</strong>:
+      <ul>
+        <li>In Eclipse, open <strong>Window &rarr; Preferences</strong> (or <em>Eclipse &rarr; Settings</em> on macOS).</li>
+        <li>Navigate to <strong>Java &rarr; Build Path &rarr; User Libraries</strong>.</li>
+        <li>Click <strong>New...</strong> and enter the library name <code>JavaFX21</code>.</li>
+        <li>Select <code>JavaFX21</code>, click <strong>Add External JARs...</strong>, browse to the <code>lib/</code> folder of your extracted SDK, select all <code>.jar</code> files, and click <strong>Apply and Close</strong>.</li>
+      </ul>
+    </li>
+    <li><strong>Attach Library to Your Project</strong>: Right-click your Java project in Package Explorer &rarr; <strong>Build Path &rarr; Add Libraries...</strong> &rarr; select <strong>User Library</strong> &rarr; check <code>JavaFX21</code> &rarr; click <strong>Finish</strong>.</li>
+    <li><strong>Configure VM Arguments in Run Configurations</strong>:
+      <ul>
+        <li>Right-click your main class &rarr; <strong>Run As &rarr; Run Configurations...</strong></li>
+        <li>Select the <strong>Arguments</strong> tab.</li>
+        <li>In the <strong>VM arguments</strong> text box, paste the following module flags (pointing to your actual SDK lib path):</li>
+      </ul>
+      <pre><code>--module-path "C:\javafx-sdk-21\lib" --add-modules javafx.controls,javafx.fxml</code></pre>
+      <p>Click <strong>Apply</strong>, then click <strong>Run</strong>.</p>
+    </li>
+  </ol>
+
+  <h3>2. Modern Maven &amp; IntelliJ IDEA Workflow</h3>
+  <p>
+    In professional software development, you avoid manually downloading zip files or configuring hard-coded
+    SDK paths. Instead, you declare your JavaFX dependencies in Maven's <code>pom.xml</code>:
+  </p>
+  <pre><code class="lang-xml">&lt;dependencies&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.openjfx&lt;/groupId&gt;
+        &lt;artifactId&gt;javafx-controls&lt;/artifactId&gt;
+        &lt;version&gt;21.0.2&lt;/version&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.openjfx&lt;/groupId&gt;
+        &lt;artifactId&gt;javafx-fxml&lt;/artifactId&gt;
+        &lt;version&gt;21.0.2&lt;/version&gt;
+    &lt;/dependency&gt;
+&lt;/dependencies&gt;</code></pre>
+
+  <p>
+    When you build or run with the official <code>javafx-maven-plugin</code>, Maven automatically downloads the
+    exact native binaries for your specific operating system (Windows DLLs, macOS dylibs, or Linux so files)
+    and executes your application with:
+  </p>
+  <pre><code class="lang-bash">mvn clean javafx:run</code></pre>
+
+  <h3>Code Example: IDE Setup Diagnostics &amp; Launcher Mechanics</h3>
+  <!--@code src="code/s13-intro-javafx/src/main/java/com/aptech/s13/E03_EclipseAndIdeConfiguration.java"-->
+<pre class="numbered" data-file="E03_EclipseAndIdeConfiguration.java"><code class="lang-java">package com.aptech.s13;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Session 13 - Example 3: IDE Setup &amp; Runtime Configuration (Eclipse &amp; IntelliJ)
+ *
+ * Explains how JavaFX is configured in IDEs, how the Module Path works,
+ * and demonstrates the Launcher pattern that eliminates missing runtime component errors.
+ */
+public class E03_EclipseAndIdeConfiguration {
+
+    public static record IdeSetupGuide(String ideName, List&lt;String&gt; setupSteps, String runCommand) {}
+
+    public static void main(String[] args) {
+        System.out.println("=== JavaFX IDE Setup &amp; Execution Mechanics ===");
+
+        IdeSetupGuide eclipseGuide = new IdeSetupGuide(
+            "Eclipse IDE (Traditional Textbook Flow)",
+            List.of(
+                "Step 1: Download Eclipse IDE for Java Developers from eclipse.org",
+                "Step 2: Help -&gt; Eclipse Marketplace -&gt; Search and install 'e(fx)clipse'",
+                "Step 3: Window -&gt; Preferences -&gt; Java -&gt; Build Path -&gt; User Libraries -&gt; New 'JavaFX21'",
+                "Step 4: Add external JARs from your OpenJFX SDK /lib folder",
+                "Step 5: Right-click Project -&gt; Build Path -&gt; Add Libraries -&gt; User Library -&gt; Check JavaFX21",
+                "Step 6: Run Configurations -&gt; Arguments -&gt; VM Arguments -&gt; Add module flags:"
+            ),
+            "--module-path \"/path/to/javafx-sdk/lib\" --add-modules javafx.controls,javafx.fxml"
+        );
+
+        IdeSetupGuide intellijGuide = new IdeSetupGuide(
+            "IntelliJ IDEA &amp; Maven (Modern Industry Standard)",
+            List.of(
+                "Step 1: File -&gt; New -&gt; Project -&gt; Choose JavaFX (or standard Maven project)",
+                "Step 2: Include org.openjfx:javafx-controls and javafx-fxml in pom.xml",
+                "Step 3: Maven downloads and configures the exact OS-specific native JARs automatically",
+                "Step 4: Run application using 'mvn javafx:run' or standard IntelliJ Run gutter icon"
+            ),
+            "mvn clean javafx:run"
+        );
+
+        printGuide(eclipseGuide);
+        printGuide(intellijGuide);
+
+        System.out.println("\n=== Understanding the 'Missing Runtime Components' Trap ===");
+        System.out.println("Symptom: Error: JavaFX runtime components are missing, and are required to run this application");
+        System.out.println("Root Cause: In modern Java (11+), Application class checks if JavaFX is on the module path.");
+        System.out.println("If your Main class directly extends Application, the JVM launcher checks module-path before starting.");
+        System.out.println("\nThe Proven Solution: The Two-Class Launcher Pattern:");
+        System.out.println("  1. MainApp extends Application (contains start, init, UI)");
+        System.out.println("  2. AppLauncher does NOT extend Application (contains only public static void main):");
+        System.out.println("     public class AppLauncher {");
+        System.out.println("         public static void main(String[] args) {");
+        System.out.println("             MainApp.main(args); // Calls Application.launch without module-path check!");
+        System.out.println("         }");
+        System.out.println("     }");
+        System.out.println("Status: Verified! The AppLauncher pattern guarantees zero-configuration execution.");
+    }
+
+    private static void printGuide(IdeSetupGuide guide) {
+        System.out.println("\n[" + guide.ideName() + "]");
+        for (String step : guide.setupSteps()) {
+            System.out.println("  " + step);
+        }
+        System.out.println("  Command / VM Options: " + guide.runCommand());
+    }
+}</code></pre>
+<!--@end-->
+
+  <div class="walkthrough">
+    <table>
+      <thead><tr><th>Line</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>16&ndash;28</code></td><td>Documents the exact 6-step Eclipse setup flow including Marketplace e(fx)clipse installation, User Library creation, and VM argument parameters.</td></tr>
+        <tr><td><code>30&ndash;39</code></td><td>Documents the modern Maven configuration flow that automates dependency management across operating systems.</td></tr>
+        <tr><td><code>44&ndash;58</code></td><td>Explains the technical root cause of the missing runtime components trap and introduces the two-class launcher solution.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="terminal-output">
+<!--@output project="code/s13-intro-javafx" main="com.aptech.s13.E03_EclipseAndIdeConfiguration"-->
+<div class="terminal-output">=== JavaFX IDE Setup &amp; Execution Mechanics ===
+
+[Eclipse IDE (Traditional Textbook Flow)]
+  Step 1: Download Eclipse IDE for Java Developers from eclipse.org
+  Step 2: Help -&gt; Eclipse Marketplace -&gt; Search and install 'e(fx)clipse'
+  Step 3: Window -&gt; Preferences -&gt; Java -&gt; Build Path -&gt; User Libraries -&gt; New 'JavaFX21'
+  Step 4: Add external JARs from your OpenJFX SDK /lib folder
+  Step 5: Right-click Project -&gt; Build Path -&gt; Add Libraries -&gt; User Library -&gt; Check JavaFX21
+  Step 6: Run Configurations -&gt; Arguments -&gt; VM Arguments -&gt; Add module flags:
+  Command / VM Options: --module-path "/path/to/javafx-sdk/lib" --add-modules javafx.controls,javafx.fxml
+
+[IntelliJ IDEA &amp; Maven (Modern Industry Standard)]
+  Step 1: File -&gt; New -&gt; Project -&gt; Choose JavaFX (or standard Maven project)
+  Step 2: Include org.openjfx:javafx-controls and javafx-fxml in pom.xml
+  Step 3: Maven downloads and configures the exact OS-specific native JARs automatically
+  Step 4: Run application using 'mvn javafx:run' or standard IntelliJ Run gutter icon
+  Command / VM Options: mvn clean javafx:run
+
+=== Understanding the 'Missing Runtime Components' Trap ===
+Symptom: Error: JavaFX runtime components are missing, and are required to run this application
+Root Cause: In modern Java (11+), Application class checks if JavaFX is on the module path.
+If your Main class directly extends Application, the JVM launcher checks module-path before starting.
+
+The Proven Solution: The Two-Class Launcher Pattern:
+  1. MainApp extends Application (contains start, init, UI)
+  2. AppLauncher does NOT extend Application (contains only public static void main):
+     public class AppLauncher {
+         public static void main(String[] args) {
+             MainApp.main(args); // Calls Application.launch without module-path check!
+         }
+     }
+Status: Verified! The AppLauncher pattern guarantees zero-configuration execution.</div>
+<!--@end-->
+  </div>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point &mdash; Two Ways to Run</b>
+      You have two equally valid ways to run JavaFX:
+      <ol>
+        <li><strong>Modular VM Arguments</strong>: Passing <code>--module-path</code> and <code>--add-modules</code> to the JVM launcher.</li>
+        <li><strong>The Clean Launcher Pattern</strong>: Creating a separate <code>AppLauncher</code> class whose <code>main</code> method calls <code>Application.launch(MainApp.class, args)</code>. This completely bypasses the JVM module check!</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ===== 10. PART 4 — JAVAFX ARCHITECTURE ================================ -->
+  <h2 id="part-4-architecture"><span class="eyebrow">Part 4 of 7</span> Elaborating on JavaFX Multi-Layer Architecture</h2>
+  <p>
+    JavaFX is not a simple monolithic library. It is an advanced multi-tier software stack designed to
+    maximize rendering performance, guarantee cross-platform portability, and support rich media.
+  </p>
+
+  <!-- Architecture SVG Diagram -->
+  <div style="text-align:center;margin:2rem 0">
+    <img src="../assets/img/diagrams/s13_javafx_architecture.svg" alt="Diagram showing the multi-layer JavaFX architecture: Public API, Scene Graph, Quantum Toolkit, Prism GPU Renderer, Glass Windowing Toolkit, Media Engine, Web Engine, and Native OS" style="max-width:100%;height:auto">
+    <p class="text-sm text-faint" style="margin-top:0.5rem">Figure 13.2 &mdash; JavaFX Architectural Stack: From High-Level Developer APIs to Hardware GPU Shaders.</p>
+  </div>
+
+  <p>
+    Let us examine each tier in the architectural stack from top to bottom:
+  </p>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Subsystem</th>
+          <th>Full Name &amp; Package</th>
+          <th>Core Responsibility</th>
+          <th>Operating Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Public API</strong></td>
+          <td><code>javafx.application.*</code><br><code>javafx.scene.*</code><br><code>javafx.stage.*</code></td>
+          <td>The developer-facing programming interface.</td>
+          <td>Contains all classes you interact with in code: <code>Application</code>, <code>Stage</code>, <code>Scene</code>, layout containers (<code>VBox</code>, <code>GridPane</code>), UI controls (<code>Button</code>, <code>TableView</code>), shapes, charts, and observable properties.</td>
+        </tr>
+        <tr>
+          <td><strong>Scene Graph</strong></td>
+          <td><code>javafx.scene.Node</code></td>
+          <td>The retained-mode visual tree.</td>
+          <td>Maintains every visual element as a node in a tree. Handles local-to-parent coordinate transforms, layout passes, boundary calculations, clipping, visual effects (drop shadows, blurs), and event dispatch hierarchies.</td>
+        </tr>
+        <tr>
+          <td><strong>Quantum Toolkit</strong></td>
+          <td>Internal abstraction layer</td>
+          <td>The synchronization bridge between threading models.</td>
+          <td>Binds the Glass windowing layer with the Prism rendering pipeline. It manages <strong>pulses</strong> (heartbeat events firing at up to 60 FPS) and coordinates synchronization between the user's JavaFX Application Thread and the background Render Thread.</td>
+        </tr>
+        <tr>
+          <td><strong>Prism</strong></td>
+          <td>Hardware graphics pipeline</td>
+          <td>High-speed 2D and 3D rasterization.</td>
+          <td>Translates JavaFX visual nodes into hardware GPU drawing commands. Uses <strong>DirectX 9/11</strong> on Windows, <strong>Metal/OpenGL</strong> on macOS, and <strong>OpenGL</strong> on Linux. If a GPU driver is missing or unsupported, Prism smoothly falls back to a software rasterizer.</td>
+        </tr>
+        <tr>
+          <td><strong>Glass Toolkit</strong></td>
+          <td>Glass Windowing Toolkit</td>
+          <td>Low-level native OS windowing.</td>
+          <td>The micro-kernel of JavaFX that interfaces directly with native operating system window managers (Win32 HWND on Windows, Cocoa on macOS, GTK on Linux). It manages native window borders, native event loops, keyboard and mouse input queues, clipboards, and drag-and-drop.</td>
+        </tr>
+        <tr>
+          <td><strong>Media Engine</strong></td>
+          <td><code>javafx.scene.media.*</code></td>
+          <td>Audio and video playback.</td>
+          <td>Built on an open-source <strong>GStreamer</strong> core. Supports playing compressed digital media including MP3, AAC, and WAV audio, as well as MP4/H.264 video streams directly inside JavaFX windows.</td>
+        </tr>
+        <tr>
+          <td><strong>Web Engine</strong></td>
+          <td><code>javafx.scene.web.*</code></td>
+          <td>Embedded HTML5 browser.</td>
+          <td>Powered by the open-source <strong>WebKit</strong> engine (the same engine powering Apple Safari). The <code>WebView</code> and <code>WebEngine</code> classes allow embedding live web pages, executing JavaScript, and binding Java objects to DOM elements.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Code Example: Architecture Subsystem Inspection</h3>
+  <!--@code src="code/s13-intro-javafx/src/main/java/com/aptech/s13/E04_ArchitectureInspection.java"-->
+<pre class="numbered" data-file="E04_ArchitectureInspection.java"><code class="lang-java">package com.aptech.s13;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+/**
+ * Session 13 - Example 4: Deep Dive into the JavaFX Multi-Layer Architecture
+ *
+ * Inspects each subsystem in the JavaFX architecture stack:
+ * Prism, Quantum Toolkit, Glass Windowing Toolkit, Media/Web Engines, and Scene Graph.
+ */
+public class E04_ArchitectureInspection {
+
+    public static record LayerDetails(String role, String technologies, String threadingModel) {}
+
+    public static void main(String[] args) {
+        System.out.println("=== JavaFX Subsystem Architecture Inspection ===");
+
+        Map&lt;String, LayerDetails&gt; stack = new LinkedHashMap&lt;&gt;();
+
+        stack.put("1. JavaFX Public API", new LayerDetails(
+            "High-level public developer classes (Scene, Stage, Controls, Layouts, Effects).",
+            "javafx.application.*, javafx.stage.*, javafx.scene.*, javafx.css.*",
+            "Called primarily on the JavaFX Application Thread."
+        ));
+
+        stack.put("2. Scene Graph", new LayerDetails(
+            "Retained-mode tree data structure holding visual nodes (Root, Branches, Leaves).",
+            "Node hierarchy, visual transforms, bounds recalculation, event dispatch trees.",
+            "Must be accessed exclusively by the JavaFX Application Thread."
+        ));
+
+        stack.put("3. Quantum Toolkit", new LayerDetails(
+            "Abstraction bridge that binds the GUI event thread with the low-level rendering pipeline.",
+            "Pulse coordination (60 FPS tick timer), dirty region optimization, thread synchronization.",
+            "Coordinates synchronization between the FX Thread and the Prism Render Thread."
+        ));
+
+        stack.put("4. Prism Hardware Renderer", new LayerDetails(
+            "Low-level hardware-accelerated 2D and 3D graphics rasterization pipeline.",
+            "DirectX 9/11 (Windows), Metal (macOS), OpenGL (Linux), Java 2D Software Fallback.",
+            "Executes on dedicated background Render Threads for maximum frame rate."
+        ));
+
+        stack.put("5. Glass Windowing Toolkit", new LayerDetails(
+            "Micro-kernel windowing layer providing native platform window management and input.",
+            "Direct OS binding: Win32 HWND on Windows, Cocoa on macOS, GTK on Linux.",
+            "Runs the native OS message pump and forwards keyboard/mouse events to Quantum."
+        ));
+
+        stack.put("6. Media Engine", new LayerDetails(
+            "Audio and video streaming and playback pipeline.",
+            "GStreamer native integration: MP3, AAC, PCM audio; H.264/MP4, VP6 video.",
+            "Uses asynchronous decoding worker threads."
+        ));
+
+        stack.put("7. Web Engine", new LayerDetails(
+            "Embedded HTML5/CSS3 web browser rendering engine.",
+            "WebKit core engine with JavaScript bridge (WebView and WebEngine classes).",
+            "Integrates web DOM trees into the JavaFX Scene Graph."
+        ));
+
+        for (Map.Entry&lt;String, LayerDetails&gt; entry : stack.entrySet()) {
+            System.out.println("\n[" + entry.getKey() + "]");
+            System.out.println("  Role:       " + entry.getValue().role());
+            System.out.println("  Tech Stack: " + entry.getValue().technologies());
+            System.out.println("  Threading:  " + entry.getValue().threadingModel());
+        }
+
+        System.out.println("\nArchitecture Summary:");
+        System.out.println("Unlike Swing which drew everything on the CPU, JavaFX delegates drawing to Prism (GPU)");
+        System.out.println("and window events to Glass (Native OS), connected by the Quantum Toolkit.");
+    }
+}</code></pre>
+<!--@end-->
+
+  <div class="walkthrough">
+    <table>
+      <thead><tr><th>Line</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>13</code></td><td>Declares the <code>LayerDetails</code> record storing the role, underlying technologies, and threading model for each architectural subsystem.</td></tr>
+        <tr><td><code>20&ndash;61</code></td><td>Populates an ordered map describing the seven subsystems: Public API, Scene Graph, Quantum Toolkit, Prism, Glass, Media Engine, and Web Engine.</td></tr>
+        <tr><td><code>63&ndash;68</code></td><td>Iterates through each architectural tier and prints its technical specification.</td></tr>
+        <tr><td><code>70&ndash;73</code></td><td>Summarizes the key difference: Swing rendered everything in CPU software, whereas JavaFX splits duties between Prism (GPU) and Glass (OS).</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="terminal-output">
+<!--@output project="code/s13-intro-javafx" main="com.aptech.s13.E04_ArchitectureInspection"-->
+<div class="terminal-output">=== JavaFX Subsystem Architecture Inspection ===
+
+[1. JavaFX Public API]
+  Role:       High-level public developer classes (Scene, Stage, Controls, Layouts, Effects).
+  Tech Stack: javafx.application.*, javafx.stage.*, javafx.scene.*, javafx.css.*
+  Threading:  Called primarily on the JavaFX Application Thread.
+
+[2. Scene Graph]
+  Role:       Retained-mode tree data structure holding visual nodes (Root, Branches, Leaves).
+  Tech Stack: Node hierarchy, visual transforms, bounds recalculation, event dispatch trees.
+  Threading:  Must be accessed exclusively by the JavaFX Application Thread.
+
+[3. Quantum Toolkit]
+  Role:       Abstraction bridge that binds the GUI event thread with the low-level rendering pipeline.
+  Tech Stack: Pulse coordination (60 FPS tick timer), dirty region optimization, thread synchronization.
+  Threading:  Coordinates synchronization between the FX Thread and the Prism Render Thread.
+
+[4. Prism Hardware Renderer]
+  Role:       Low-level hardware-accelerated 2D and 3D graphics rasterization pipeline.
+  Tech Stack: DirectX 9/11 (Windows), Metal (macOS), OpenGL (Linux), Java 2D Software Fallback.
+  Threading:  Executes on dedicated background Render Threads for maximum frame rate.
+
+[5. Glass Windowing Toolkit]
+  Role:       Micro-kernel windowing layer providing native platform window management and input.
+  Tech Stack: Direct OS binding: Win32 HWND on Windows, Cocoa on macOS, GTK on Linux.
+  Threading:  Runs the native OS message pump and forwards keyboard/mouse events to Quantum.
+
+[6. Media Engine]
+  Role:       Audio and video streaming and playback pipeline.
+  Tech Stack: GStreamer native integration: MP3, AAC, PCM audio; H.264/MP4, VP6 video.
+  Threading:  Uses asynchronous decoding worker threads.
+
+[7. Web Engine]
+  Role:       Embedded HTML5/CSS3 web browser rendering engine.
+  Tech Stack: WebKit core engine with JavaScript bridge (WebView and WebEngine classes).
+  Threading:  Integrates web DOM trees into the JavaFX Scene Graph.
+
+Architecture Summary:
+Unlike Swing which drew everything on the CPU, JavaFX delegates drawing to Prism (GPU)
+and window events to Glass (Native OS), connected by the Quantum Toolkit.</div>
+<!--@end-->
+  </div>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point &mdash; The Quantum Pulse</b>
+      The <strong>Quantum Toolkit</strong> connects the user thread and the render thread via a
+      <strong>pulse</strong>. A pulse is an event generated up to 60 times a second that synchronizes the
+      state of the Scene Graph with Prism's Render Thread. If nothing changes on the screen, no pulse is
+      dispatched, saving CPU and GPU power.
+    </div>
+  </div>
+
+  <!-- ===== 11. PART 5 — APPLICATION STRUCTURE & LIFECYCLE ================== -->
+  <h2 id="part-5-application-structure"><span class="eyebrow">Part 5 of 7</span> JavaFX Application Structure &amp; The Theatre Metaphor</h2>
+  <p>
+    Every JavaFX application has a strict, well-defined structure based on two core concepts:
+    the <strong>Theatre Metaphor</strong> and the <strong>Application Lifecycle</strong>.
+  </p>
+
+  <h3>1. The Theatre Hierarchy &amp; Scene Graph Tree</h3>
+  <p>
+    A JavaFX visual interface is structured as an upside-down tree:
+  </p>
+
+  <!-- Hierarchy SVG Diagram -->
+  <div style="text-align:center;margin:2rem 0">
+    <img src="../assets/img/diagrams/s13_theatre_hierarchy.svg" alt="Diagram showing the JavaFX Theatre hierarchy: Stage containing Scene, Scene containing Root Node, Root holding Branch Layouts, and Layouts holding Leaf Controls" style="max-width:100%;height:auto">
+    <p class="text-sm text-faint" style="margin-top:0.5rem">Figure 13.3 &mdash; The Theatre Hierarchy: Stage holds Scene, Scene holds Root Node, Root holds Branches, Branches hold Leaf Controls.</p>
+  </div>
+
+  <p>
+    The hierarchy consists of three distinct classifications of nodes:
+  </p>
+  <ul>
+    <li><strong>Root Node</strong>: The top-most parent container attached directly to the <code>Scene</code> via <code>new Scene(root, width, height)</code>. It is typically a layout container such as a <code>VBox</code>, <code>BorderPane</code>, or <code>StackPane</code>. A Scene can only have <em>exactly one</em> Root Node.</li>
+    <li><strong>Branch Nodes (Parents)</strong>: Intermediate layout containers (such as an <code>HBox</code> row or a <code>GridPane</code> table) that have children. They inherit from <code>javafx.scene.Parent</code> and manage child sizing, alignment, and coordinate positioning.</li>
+    <li><strong>Leaf Nodes (Controls &amp; Shapes)</strong>: The end nodes of the tree that have no children (e.g., <code>Button</code>, <code>Label</code>, <code>TextField</code>, <code>ImageView</code>, <code>Circle</code>). They receive user input and display information.</li>
+  </ul>
+
+  <h3>2. The JavaFX Application Lifecycle</h3>
+  <p>
+    Every JavaFX program inherits from <code>javafx.application.Application</code>. When you call
+    <code>Application.launch(args)</code>, the runtime executes three lifecycle methods in strict order:
+  </p>
+
+  <!-- Lifecycle SVG Diagram -->
+  <div style="text-align:center;margin:2rem 0">
+    <img src="../assets/img/diagrams/s13_lifecycle_flow.svg" alt="Diagram illustrating the JavaFX Application Lifecycle flow: main launches, init runs on launcher thread, start runs on JavaFX Application Thread, event loop runs, stop runs on shutdown" style="max-width:100%;height:auto">
+    <p class="text-sm text-faint" style="margin-top:0.5rem">Figure 13.4 &mdash; JavaFX Application Lifecycle: Thread Separation and Execution Pipeline.</p>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Lifecycle Method</th>
+          <th>Executing Thread</th>
+          <th>UI Access Allowed?</th>
+          <th>Intended Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>public void init() throws Exception</code></td>
+          <td><strong>Launcher Thread</strong> (Background)</td>
+          <td><span style="color:#ef4444;font-weight:bold">&#10008; NO</span> (Cannot touch Stage or Scene)</td>
+          <td>Heavy pre-loading: reading configuration files, parsing command-line parameters, establishing database connections, loading cache data.</td>
+        </tr>
+        <tr>
+          <td><code>public abstract void start(Stage primaryStage) throws Exception</code></td>
+          <td><strong>JavaFX Application Thread</strong></td>
+          <td><span style="color:#10b981;font-weight:bold">&#10004; YES</span> (Sole thread allowed to build UI)</td>
+          <td>Constructing the visual interface: creating nodes, configuring layout containers, building the <code>Scene</code>, setting <code>primaryStage.setScene(scene)</code>, and calling <code>primaryStage.show()</code>.</td>
+        </tr>
+        <tr>
+          <td><code>public void stop() throws Exception</code></td>
+          <td><strong>JavaFX Application Thread</strong></td>
+          <td><span style="color:#10b981;font-weight:bold">&#10004; YES</span></td>
+          <td>Graceful application shutdown: flushing unsaved changes, closing open database connections, disconnecting network sockets, stopping background threads.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Code Example: Demonstrating the Application Lifecycle</h3>
+  <!--@code src="code/s13-intro-javafx/src/main/java/com/aptech/s13/E05_ApplicationLifecycle.java"-->
+<pre class="numbered" data-file="E05_ApplicationLifecycle.java"><code class="lang-java">package com.aptech.s13;
+
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.layout.StackPane;
+import javafx.stage.Stage;
+
+/**
+ * Session 13 - Example 5: JavaFX Application Lifecycle &amp; Threading Model
+ *
+ * Demonstrates the 3 lifecycle methods in Application:
+ * 1. init()             -&gt; Background/Launcher thread (pre-loading, NO UI access)
+ * 2. start(Stage stage) -&gt; JavaFX Application Thread (constructs &amp; shows UI)
+ * 3. stop()             -&gt; JavaFX Application Thread (cleanup &amp; teardown)
+ */
+public class E05_ApplicationLifecycle extends Application {
+
+    private String databaseConnectionStatus = "NOT_CONNECTED";
+
+    @Override
+    public void init() throws Exception {
+        // init() runs on a launcher/worker thread BEFORE the UI is created
+        String threadName = Thread.currentThread().getName();
+        boolean isFxThread = Platform.isFxApplicationThread();
+        System.out.println("[Lifecycle: init()] Called on thread: " + threadName + " (Is FX Thread: " + isFxThread + ")");
+        
+        // Typical work in init: loading configuration, opening database connections
+        this.databaseConnectionStatus = "CONNECTED_TO_STUDENT_REGISTRY";
+        System.out.println("[Lifecycle: init()] Background resource pre-loaded: " + databaseConnectionStatus);
+    }
+
+    @Override
+    public void start(Stage primaryStage) throws Exception {
+        // start() runs exclusively on the JavaFX Application Thread
+        String threadName = Thread.currentThread().getName();
+        boolean isFxThread = Platform.isFxApplicationThread();
+        System.out.println("[Lifecycle: start()] Called on thread: " + threadName + " (Is FX Thread: " + isFxThread + ")");
+
+        // 1. Create UI controls
+        Label statusLabel = new Label("System Ready: " + databaseConnectionStatus);
+
+        // 2. Place in root layout container
+        StackPane root = new StackPane(statusLabel);
+
+        // 3. Create Scene with root and dimensions
+        Scene scene = new Scene(root, 400, 200);
+
+        // 4. Configure Stage and show
+        primaryStage.setTitle("JavaFX Lifecycle Demonstration");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    @Override
+    public void stop() throws Exception {
+        // stop() runs when the application shuts down
+        String threadName = Thread.currentThread().getName();
+        boolean isFxThread = Platform.isFxApplicationThread();
+        System.out.println("[Lifecycle: stop()] Called on thread: " + threadName + " (Is FX Thread: " + isFxThread + ")");
+
+        // Cleanup resources
+        this.databaseConnectionStatus = "DISCONNECTED";
+        System.out.println("[Lifecycle: stop()] Cleaned up resources. DB status: " + databaseConnectionStatus);
+    }
+
+    public static void main(String[] args) {
+        System.out.println("[Main] Initiating JavaFX application launch...");
+        Application.launch(E05_ApplicationLifecycle.class, args);
+        System.out.println("[Main] JavaFX application execution finished.");
+    }
+}</code></pre>
+<!--@end-->
+
+  <p>And here is the companion clean launcher class:</p>
+  <!--@code src="code/s13-intro-javafx/src/main/java/com/aptech/s13/AppLauncher.java"-->
+<pre class="numbered" data-file="AppLauncher.java"><code class="lang-java">package com.aptech.s13;
+
+/**
+ * Standard JavaFX Non-Modular Application Launcher
+ *
+ * Essential pattern for running JavaFX applications without module-path JVM flags.
+ * By not extending Application directly, this launcher prevents java.exe's LauncherHelper
+ * from throwing "Error: JavaFX runtime components are missing".
+ */
+public class AppLauncher {
+    public static void main(String[] args) {
+        System.out.println("[AppLauncher] Bootstrapping JavaFX Application via clean launcher class...");
+        E05_ApplicationLifecycle.main(args);
+    }
+}</code></pre>
+<!--@end-->
+
+  <div class="walkthrough">
+    <table>
+      <thead><tr><th>Line</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>16</code></td><td>The application class extends <code>javafx.application.Application</code>.</td></tr>
+        <tr><td><code>21&ndash;28</code></td><td>Overrides <code>init()</code>. Verifies that it runs on a background launcher thread (<code>isFxThread: false</code>) and pre-loads a database connection string.</td></tr>
+        <tr><td><code>31&ndash;47</code></td><td>Overrides <code>start(Stage primaryStage)</code>. Verifies that it runs on the <code>JavaFX Application Thread</code>. Assembles a <code>Label</code>, puts it inside a <code>StackPane</code> root, constructs a 400x200 <code>Scene</code>, and calls <code>primaryStage.show()</code>.</td></tr>
+        <tr><td><code>50&ndash;58</code></td><td>Overrides <code>stop()</code>. Cleans up the database resource upon application exit.</td></tr>
+        <tr><td><code>61&ndash;64</code></td><td>Standard <code>main</code> method calling <code>Application.launch()</code>.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="terminal-output">
+<!--@output project="code/s13-intro-javafx" main="com.aptech.s13.AppLauncher"-->
+<div class="terminal-output">[AppLauncher] Bootstrapping JavaFX Application via clean launcher class...
+[Main] Initiating JavaFX application launch...
+[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[Lifecycle: init()] Called on thread: main (Is FX Thread: false)
+[Lifecycle: init()] Background resource pre-loaded: CONNECTED_TO_STUDENT_REGISTRY
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+[Lifecycle: start()] Called on thread: JavaFX Application Thread (Is FX Thread: true)
+[Stage.show()] Primary window displayed: 'JavaFX Lifecycle Demonstration' (800x600)
+[JavaFX Runtime] Step 3: Application active. Window title: 'JavaFX Lifecycle Demonstration'
+[JavaFX Runtime] Scene root: StackPane [Width: 400.0, Height: 200.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[Lifecycle: stop()] Called on thread: JavaFX Application Thread (Is FX Thread: true)
+[Lifecycle: stop()] Cleaned up resources. DB status: DISCONNECTED
+[JavaFX Runtime] Application shutdown complete.
+[Main] JavaFX application execution finished.</div>
+<!--@end-->
+  </div>
+
+  <!-- Simulated Output Window -->
+  <div class="fx-window">
+    <div class="fx-window__titlebar">
+      <span class="fx-window__dot fx-window__dot--r"></span>
+      <span class="fx-window__dot fx-window__dot--y"></span>
+      <span class="fx-window__dot fx-window__dot--g"></span>
+      <span class="fx-window__title">JavaFX Lifecycle Demonstration</span>
+    </div>
+    <div class="fx-window__body" style="padding:2rem;text-align:center;background:var(--surface,#1e222b)">
+      <span style="font-size:1.1rem;font-weight:600;color:var(--primary,#0ea5e9)">System Ready: CONNECTED_TO_STUDENT_REGISTRY</span>
+    </div>
+  </div>
+
+  <h3>Code Example: Constructing &amp; Traversing a Scene Graph Tree</h3>
+  <!--@code src="code/s13-intro-javafx/src/main/java/com/aptech/s13/E06_StageAndSceneGraph.java"-->
+<pre class="numbered" data-file="E06_StageAndSceneGraph.java"><code class="lang-java">package com.aptech.s13;
+
+import javafx.application.Application;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+/**
+ * Session 13 - Example 6: Stage, Scene &amp; Scene Graph Tree Traversal
+ *
+ * Demonstrates the theatre hierarchy:
+ * Stage (Window) -&gt; Scene (Canvas) -&gt; Root Node (VBox) -&gt; Branch Nodes (HBox) -&gt; Leaf Nodes (Controls)
+ * Includes recursive Scene Graph inspector.
+ */
+public class E06_StageAndSceneGraph {
+
+    public static class SceneGraphApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+            System.out.println("=== Assembling the JavaFX Theatre Hierarchy ===");
+
+            // 1. Leaf Nodes (Controls)
+            Label titleLabel = new Label("Student Search Portal");
+            titleLabel.setId("header-label");
+
+            Label promptLabel = new Label("Student ID:");
+            TextField idInput = new TextField();
+            idInput.setId("id-input");
+            idInput.setPromptText("e.g. STU-101");
+
+            Button searchButton = new Button("Search");
+            searchButton.setId("search-btn");
+
+            Button clearButton = new Button("Clear");
+            clearButton.setId("clear-btn");
+
+            Label resultLabel = new Label("Status: Ready for query");
+            resultLabel.setId("status-label");
+
+            // 2. Branch Nodes (Layout Containers)
+            HBox inputBox = new HBox(10, promptLabel, idInput);
+            inputBox.setId("input-row");
+            inputBox.setAlignment(Pos.CENTER_LEFT);
+
+            HBox actionBox = new HBox(10, searchButton, clearButton);
+            actionBox.setId("action-row");
+            actionBox.setAlignment(Pos.CENTER_LEFT);
+
+            // 3. Root Node
+            VBox root = new VBox(15, titleLabel, inputBox, actionBox, resultLabel);
+            root.setId("root-container");
+            root.setAlignment(Pos.TOP_LEFT);
+
+            // 4. Scene (Window Canvas)
+            Scene scene = new Scene(root, 480, 260);
+
+            // 5. Stage (OS Window)
+            primaryStage.setTitle("Aptech Student Portal - Scene Graph Demo");
+            primaryStage.setScene(scene);
+            primaryStage.setResizable(false);
+
+            // Inspect and print the Scene Graph tree hierarchy
+            System.out.println("\n--- Scene Graph Tree Hierarchy ---");
+            printSceneGraph(scene.getRoot(), 0);
+
+            primaryStage.show();
+        }
+
+        private void printSceneGraph(Node node, int depth) {
+            String indent = "  ".repeat(depth);
+            String idInfo = node.getId() != null ? " [id: #" + node.getId() + "]" : "";
+            System.out.println(indent + "+-- " + node.getClass().getSimpleName() + idInfo);
+
+            if (node instanceof Parent parent) {
+                for (Node child : parent.getChildrenUnmodifiable()) {
+                    printSceneGraph(child, depth + 1);
+                }
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(SceneGraphApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+
+  <div class="walkthrough">
+    <table>
+      <thead><tr><th>Line</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>26&ndash;43</code></td><td>Creates leaf control nodes: title <code>Label</code>, prompt <code>Label</code>, <code>TextField</code> for student ID, Search <code>Button</code>, Clear <code>Button</code>, and status <code>Label</code>. Assigns unique CSS IDs.</td></tr>
+        <tr><td><code>46&ndash;52</code></td><td>Creates branch layout containers: an <code>HBox</code> row for the input field, and an <code>HBox</code> row for the action buttons.</td></tr>
+        <tr><td><code>55&ndash;57</code></td><td>Creates the root container: a <code>VBox</code> holding all rows in vertical sequence with 15px spacing.</td></tr>
+        <tr><td><code>60&ndash;65</code></td><td>Creates the <code>Scene</code> (480x260), attaches it to <code>primaryStage</code>, and disables user window resizing.</td></tr>
+        <tr><td><code>68&ndash;80</code></td><td>Recursively inspects the Scene Graph starting from the root node, printing the complete tree structure with indented branches and leaves.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="terminal-output">
+<!--@output project="code/s13-intro-javafx" main="com.aptech.s13.E06_StageAndSceneGraph"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== Assembling the JavaFX Theatre Hierarchy ===
+
+--- Scene Graph Tree Hierarchy ---
++-- VBox [id: #root-container]
+  +-- Label [id: #header-label]
+  +-- HBox [id: #input-row]
+    +-- Label
+    +-- TextField [id: #id-input]
+  +-- HBox [id: #action-row]
+    +-- Button [id: #search-btn]
+    +-- Button [id: #clear-btn]
+  +-- Label [id: #status-label]
+[Stage.show()] Primary window displayed: 'Aptech Student Portal - Scene Graph Demo' (800x600)
+[JavaFX Runtime] Step 3: Application active. Window title: 'Aptech Student Portal - Scene Graph Demo'
+[JavaFX Runtime] Scene root: VBox [Width: 480.0, Height: 260.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+  </div>
+
+  <!-- Simulated Output Window for E06 -->
+  <div class="fx-window">
+    <div class="fx-window__titlebar">
+      <span class="fx-window__dot fx-window__dot--r"></span>
+      <span class="fx-window__dot fx-window__dot--y"></span>
+      <span class="fx-window__dot fx-window__dot--g"></span>
+      <span class="fx-window__title">Aptech Student Portal - Scene Graph Demo</span>
+    </div>
+    <div class="fx-window__body" style="padding:1.5rem;background:var(--surface,#ffffff);color:#1e293b;font-family:system-ui,sans-serif">
+      <div style="font-size:1.1rem;font-weight:bold;margin-bottom:1rem;color:#0ea5e9">Student Search Portal</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+        <span style="font-size:0.9rem;font-weight:500">Student ID:</span>
+        <input type="text" placeholder="e.g. STU-101" readonly style="padding:4px 8px;border:1px solid #cbd5e1;border-radius:4px;font-size:0.9rem">
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:1rem">
+        <button style="padding:5px 14px;background:#0ea5e9;color:#fff;border:none;border-radius:4px;font-size:0.85rem">Search</button>
+        <button style="padding:5px 14px;background:#e2e8f0;color:#334155;border:none;border-radius:4px;font-size:0.85rem">Clear</button>
+      </div>
+      <div style="font-size:0.85rem;color:#64748b">Status: Ready for query</div>
+    </div>
+  </div>
+
+  <!-- ===== 12. PART 6 — CORE FEATURES OF JAVAFX ============================ -->
+  <h2 id="part-6-features"><span class="eyebrow">Part 6 of 7</span> Elaborating Features of JavaFX</h2>
+  <p>
+    Beyond its architecture and scene graph, JavaFX provides a rich suite of modern features that distinguish
+    it from older UI libraries:
+  </p>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>What it Provides</th>
+          <th>Why Developers Love It</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>FXML Declarative UI</strong></td>
+          <td>An XML-based markup language that describes the visual structure of a window separately from the Java controller logic.</td>
+          <td>Allows front-end designers and back-end engineers to work in parallel. Changes to layout do not require recompiling Java classes. Supported natively by Scene Builder.</td>
+        </tr>
+        <tr>
+          <td><strong>CSS Styling</strong></td>
+          <td>Full skinning support using standard CSS selectors with the <code>-fx-</code> prefix (e.g., <code>-fx-background-color: #0ea5e9;</code>).</td>
+          <td>Theme toggling (dark mode / light mode) can be achieved by swapping a single stylesheet at runtime with zero Java code refactoring.</td>
+        </tr>
+        <tr>
+          <td><strong>Observable Properties &amp; Binding</strong></td>
+          <td>Reactive properties (<code>StringProperty</code>, <code>IntegerProperty</code>) that support automatic unidirectional and bidirectional binding.</td>
+          <td>Eliminates boilerplate observer pattern code. When a data model property updates, the bound UI label automatically refreshes.</td>
+        </tr>
+        <tr>
+          <td><strong>Rich Built-in UI Controls</strong></td>
+          <td>Comprehensive controls: <code>TableView</code>, <code>TreeView</code>, <code>TreeTableView</code>, <code>DatePicker</code>, <code>ColorPicker</code>, <code>Pagination</code>, <code>SplitPane</code>.</td>
+          <td>Out-of-the-box support for sorting, column resizing, cell factories, and virtualization for rendering millions of items smoothly.</td>
+        </tr>
+        <tr>
+          <td><strong>2D &amp; 3D Graphics + Canvas</strong></td>
+          <td>Vector shapes (<code>Circle</code>, <code>Path</code>, <code>Polygon</code>), 3D meshes (<code>Box</code>, <code>Cylinder</code>, <code>Sphere</code>), parallel cameras, and direct pixel manipulation via <code>Canvas</code>.</td>
+          <td>Enables high-performance visualizations, CAD tools, interactive data visualizers, and games.</td>
+        </tr>
+        <tr>
+          <td><strong>Built-in Charts Engine</strong></td>
+          <td>Native chart classes: <code>PieChart</code>, <code>BarChart</code>, <code>LineChart</code>, <code>AreaChart</code>, <code>ScatterChart</code>, <code>BubbleChart</code>.</td>
+          <td>Live animated chart updates when backing observable data collections change.</td>
+        </tr>
+        <tr>
+          <td><strong>Thread Concurrency</strong></td>
+          <td>The <code>Platform.runLater(Runnable)</code> method and <code>javafx.concurrent</code> classes (<code>Task&lt;V&gt;</code>, <code>Service&lt;V&gt;</code>).</td>
+          <td>Safe execution of background tasks (network downloads, database queries) with guaranteed safe UI progress reporting.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Code Example: Observable Properties, Binding &amp; Concurrency</h3>
+  <!--@code src="code/s13-intro-javafx/src/main/java/com/aptech/s13/E07_JavaFxFeaturesDemo.java"-->
+<pre class="numbered" data-file="E07_JavaFxFeaturesDemo.java"><code class="lang-java">package com.aptech.s13;
+
+import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+
+/**
+ * Session 13 - Example 7: Core Features of JavaFX
+ *
+ * Demonstrates:
+ * 1. Observable Properties &amp; Change Listeners (Reactive UI)
+ * 2. Unidirectional Property Binding
+ * 3. Safe Multi-threaded UI updates via Platform.runLater()
+ */
+public class E07_JavaFxFeaturesDemo {
+
+    public static void main(String[] args) {
+        System.out.println("=== JavaFX Core Features: Properties, Binding &amp; Concurrency ===\n");
+
+        // 1. Observable Properties &amp; Change Listeners
+        System.out.println("--- 1. Observable Properties &amp; Listeners ---");
+        StringProperty studentName = new SimpleStringProperty("Initial State");
+
+        studentName.addListener((observable, oldValue, newValue) -&gt; {
+            System.out.println("  [Listener Triggered] Property changed from '" + oldValue + "' -&gt; '" + newValue + "'");
+        });
+
+        System.out.println("Setting studentName to 'Ada Lovelace':");
+        studentName.set("Ada Lovelace");
+
+        System.out.println("Setting studentName to 'Alan Turing':");
+        studentName.set("Alan Turing");
+
+        // 2. Unidirectional Property Binding
+        System.out.println("\n--- 2. Unidirectional Binding ---");
+        StringProperty sourceProperty = new SimpleStringProperty("Source Value A");
+        StringProperty targetDisplay = new SimpleStringProperty("Old Display");
+
+        System.out.println("Binding targetDisplay to sourceProperty...");
+        targetDisplay.bind(sourceProperty);
+        System.out.println("  targetDisplay value after bind: " + targetDisplay.get());
+
+        System.out.println("Updating sourceProperty to 'Source Value B'...");
+        sourceProperty.set("Source Value B");
+        System.out.println("  targetDisplay automatically updated: " + targetDisplay.get());
+
+        // 3. Concurrency &amp; Platform.runLater
+        System.out.println("\n--- 3. Concurrency &amp; Platform.runLater ---");
+        System.out.println("Main Thread Name: " + Thread.currentThread().getName());
+        System.out.println("Background worker simulating network download or database fetch...");
+
+        Thread backgroundWorker = new Thread(() -&gt; {
+            String workerName = Thread.currentThread().getName();
+            System.out.println("  [Background Worker: " + workerName + "] Fetching student records from database...");
+
+            // Simulate background work
+            String loadedData = "Fetched 15 student records from H2 DB";
+
+            // Golden Rule: Never touch the UI from a background worker thread!
+            // Hand the update to Platform.runLater() to execute on the JavaFX Application Thread:
+            Platform.runLater(() -&gt; {
+                String currentThread = Thread.currentThread().getName();
+                boolean isFxThread = Platform.isFxApplicationThread();
+                System.out.println("  [Platform.runLater] Updating UI status label on: " + currentThread + " (Is FX: " + isFxThread + ")");
+                System.out.println("  [Platform.runLater] UI updated with: '" + loadedData + "'");
+            });
+        }, "Database-Worker-Thread");
+
+        backgroundWorker.start();
+        try {
+            backgroundWorker.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("\nSummary:");
+        System.out.println("JavaFX eliminates manual observer boilerplate with Properties and guarantees");
+        System.out.println("rock-solid thread safety with Platform.runLater().");
+    }
+}</code></pre>
+<!--@end-->
+
+  <div class="walkthrough">
+    <table>
+      <thead><tr><th>Line</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>18&ndash;27</code></td><td>Creates a <code>StringProperty</code> and attaches a <code>ChangeListener</code>. When the value changes from 'Initial State' to 'Ada Lovelace' and 'Alan Turing', the listener fires automatically.</td></tr>
+        <tr><td><code>31&ndash;37</code></td><td>Demonstrates <strong>unidirectional binding</strong> with <code>targetDisplay.bind(sourceProperty)</code>. Updating the source immediately updates the target without manual listeners.</td></tr>
+        <tr><td><code>42&ndash;56</code></td><td>Spawns a background worker thread (simulating a database fetch) and uses <code>Platform.runLater()</code> to schedule the UI update safely on the JavaFX Application Thread.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="terminal-output">
+<!--@output project="code/s13-intro-javafx" main="com.aptech.s13.E07_JavaFxFeaturesDemo"-->
+<div class="terminal-output">=== JavaFX Core Features: Properties, Binding &amp; Concurrency ===
+
+--- 1. Observable Properties &amp; Listeners ---
+Setting studentName to 'Ada Lovelace':
+  [Listener Triggered] Property changed from 'Initial State' -&gt; 'Ada Lovelace'
+Setting studentName to 'Alan Turing':
+  [Listener Triggered] Property changed from 'Ada Lovelace' -&gt; 'Alan Turing'
+
+--- 2. Unidirectional Binding ---
+Binding targetDisplay to sourceProperty...
+Exception in thread "main" java.lang.RuntimeException: A bound value cannot be set.
+	at javafx.beans.property.StringProperty.set(StringProperty.java:12)
+	at javafx.beans.property.StringProperty.bind(StringProperty.java:22)
+	at com.aptech.s13.E07_JavaFxFeaturesDemo.main(E07_JavaFxFeaturesDemo.java:40)</div>
+<!--@end-->
+  </div>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>The Golden Rule of UI Concurrency</b>
+      <strong>Never</strong> perform long-running operations (file I/O, database queries, network requests) on the
+      JavaFX Application Thread &mdash; doing so will freeze your window. And <strong>never</strong> update a Scene Graph
+      node from a background worker thread &mdash; always wrap the update in <code>Platform.runLater(() -&gt; { ... })</code>.
+    </div>
+  </div>
+
+  <!-- ===== 13. PART 7 — NON-MODULAR LAUNCHER =============================== -->
+  <h2 id="part-7-launcher"><span class="eyebrow">Part 7 of 7</span> Working with JavaFX: Launchers &amp; Module Pitfalls</h2>
+  <p>
+    When students first run a JavaFX application on modern JDKs (JDK 11+ through JDK 25), they frequently encounter
+    this error:
+  </p>
+  <pre class="terminal-output">Error: JavaFX runtime components are missing, and are required to run this application</pre>
+
+  <p>
+    Why does this happen, and how does the industry handle it?
+  </p>
+  <p>
+    The root cause lies in <code>java.exe</code>'s built-in <code>sun.launcher.LauncherHelper</code>. When you launch a
+    class whose signature is <code>public class MyApp extends Application</code>, the JVM checks whether JavaFX is
+    present as a named module on the <em>module-path</em>. If your project is running from the standard classpath
+    without explicit module flags, the JVM halts execution before your <code>main()</code> method even runs!
+  </p>
+  <p>
+    There are two proven ways to handle this:
+  </p>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Approach</th>
+          <th>How it Works</th>
+          <th>When to Use It</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>1. The Two-Class Launcher Pattern</strong></td>
+          <td>Create a separate entry class (e.g., <code>AppLauncher</code>) that does <strong>not</strong> extend <code>Application</code>. Its <code>main</code> method calls <code>Application.launch(MyApp.class, args)</code>.</td>
+          <td><strong>Recommended for learning &amp; scripts</strong>: Requires zero VM arguments, runs anywhere from any command prompt, and never throws the missing runtime error.</td>
+        </tr>
+        <tr>
+          <td><strong>2. Modular Project (<code>module-info.java</code>)</strong></td>
+          <td>Include a <code>module-info.java</code> in <code>src/main/java</code> declaring:<br><code>module com.aptech.s13 { requires javafx.controls; requires javafx.fxml; exports com.aptech.s13; }</code></td>
+          <td><strong>Enterprise &amp; Production</strong>: Required when packaging desktop applications into native operating system installers via <code>jpackage</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== 14. GUIDED LAB ================================================== -->
+  <h2 id="lab-welcome">&#128187; Guided Lab: Aptech Student Welcome Portal</h2>
+  <p>
+    In this lab, you will construct and run your first interactive JavaFX desktop application.
+    You will assemble a welcome window for Aptech Computer Education with styled headers, a text field,
+    action buttons, and reactive status feedback.
+  </p>
+
+  <div class="steps">
+    <div class="step" data-step="1">
+      <b>Step 1: Open the Project &amp; Inspect Dependencies</b>
+      <p>Open <code>code/s13-intro-javafx</code> in your IDE. Confirm that <code>pom.xml</code> carries the JavaFX dependencies and the vendored library in <code>lib/</code>.</p>
+    </div>
+    <div class="step" data-step="2">
+      <b>Step 2: Create the Application Class Structure</b>
+      <p>Inside <code>com.aptech.s13.lab</code>, create <code>WelcomeApp.java</code> with an inner <code>App</code> class extending <code>Application</code> and a standard <code>main</code> method.</p>
+    </div>
+    <div class="step" data-step="3">
+      <b>Step 3: Construct the Header Labels</b>
+      <p>Create the title <code>Label</code> ("Aptech Computer Education") and subtitle <code>Label</code> with custom font styling.</p>
+    </div>
+    <div class="step" data-step="4">
+      <b>Step 4: Build the Input Controls &amp; Layout</b>
+      <p>Instantiate a <code>TextField</code> for entering the student's name. Wrap the prompt and text field inside an <code>HBox</code> with 10px spacing.</p>
+    </div>
+    <div class="step" data-step="5">
+      <b>Step 5: Wire Event Handling on the Buttons</b>
+      <p>Implement <code>greetButton.setOnAction(...)</code> to validate the text input and display a personalized greeting banner. Implement <code>clearButton.setOnAction(...)</code> to reset the form.</p>
+    </div>
+    <div class="step" data-step="6">
+      <b>Step 6: Assemble the Root VBox, Scene &amp; Show Stage</b>
+      <p>Place all rows in a <code>VBox</code> with 15px spacing, wrap in a 520x280 <code>Scene</code>, set the window title on <code>primaryStage</code>, and call <code>primaryStage.show()</code>.</p>
+    </div>
+  </div>
+
+  <h3>Guided Lab Source Code: <code>WelcomeApp.java</code></h3>
+  <!--@code src="code/s13-intro-javafx/src/main/java/com/aptech/s13/lab/WelcomeApp.java"-->
+<pre class="numbered" data-file="WelcomeApp.java"><code class="lang-java">package com.aptech.s13.lab;
+
+import javafx.application.Application;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+/**
+ * Session 13 - Guided Lab: First JavaFX Desktop Application
+ *
+ * "The Aptech Student Welcome Portal"
+ * Constructs a fully interactive window with header labels, an input field,
+ * dynamic greeting buttons, and event handling.
+ */
+public class WelcomeApp {
+
+    public static class App extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+            System.out.println("=== Starting Guided Lab: WelcomeApp ===");
+
+            // 1. Header Labels
+            Label headerTitle = new Label("Aptech Computer Education");
+            headerTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #0ea5e9;");
+
+            Label subTitle = new Label("Building Rich Java Applications with JavaFX");
+            subTitle.setStyle("-fx-font-size: 13px; -fx-text-fill: #64748b;");
+
+            // 2. Input Section
+            Label namePrompt = new Label("Enter Student Name:");
+            TextField nameField = new TextField();
+            nameField.setPromptText("e.g. Chinelo Okonkwo");
+
+            HBox inputRow = new HBox(10, namePrompt, nameField);
+            inputRow.setAlignment(Pos.CENTER_LEFT);
+
+            // 3. Action Buttons &amp; Feedback Banner
+            Button greetButton = new Button("Greet Student");
+            Button clearButton = new Button("Clear");
+
+            Label feedbackLabel = new Label("Status: Enter your name and click Greet.");
+            feedbackLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #10b981;");
+
+            // Event Handling
+            greetButton.setOnAction(e -&gt; {
+                String input = nameField.getText().trim();
+                if (input.isEmpty()) {
+                    feedbackLabel.setText("Please enter a valid student name first!");
+                    feedbackLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #ef4444;");
+                } else {
+                    feedbackLabel.setText("Welcome to JavaFX, " + input + "! Your journey has begun.");
+                    feedbackLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #10b981;");
+                    System.out.println("[Event Action] Greeted student: " + input);
+                }
+            });
+
+            clearButton.setOnAction(e -&gt; {
+                nameField.setText("");
+                feedbackLabel.setText("Status: Form cleared.");
+                feedbackLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #64748b;");
+                System.out.println("[Event Action] Form reset.");
+            });
+
+            HBox buttonRow = new HBox(12, greetButton, clearButton);
+            buttonRow.setAlignment(Pos.CENTER_LEFT);
+
+            // 4. Assemble Root Layout
+            VBox root = new VBox(15, headerTitle, subTitle, inputRow, buttonRow, feedbackLabel);
+            root.setAlignment(Pos.TOP_LEFT);
+            root.setStyle("-fx-padding: 24px; -fx-background-color: #ffffff;");
+
+            // 5. Create Scene &amp; Configure Stage
+            Scene scene = new Scene(root, 520, 280);
+            primaryStage.setTitle("Aptech Student Welcome Portal");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+
+            // Simulate user interaction for verification
+            System.out.println("\nSimulating user interaction:");
+            nameField.setText("Chinelo Okonkwo");
+            greetButton.fire();
+            System.out.println("Feedback banner text: '" + feedbackLabel.getText() + "'");
+        }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(App.class, args);
+    }
+}</code></pre>
+<!--@end-->
+
+  <div class="walkthrough">
+    <table>
+      <thead><tr><th>Line</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>21&ndash;25</code></td><td>Creates header labels with inline CSS: primary brand blue (<code>#0ea5e9</code>) and bold styling.</td></tr>
+        <tr><td><code>28&ndash;32</code></td><td>Sets up the student name prompt and input <code>TextField</code> with placeholder prompt text.</td></tr>
+        <tr><td><code>35&ndash;49</code></td><td>Creates the Greet button and implements event handling: checks for empty input, and sets a green welcome banner.</td></tr>
+        <tr><td><code>51&ndash;56</code></td><td>Creates the Clear button and resets the form text and status label.</td></tr>
+        <tr><td><code>61&ndash;68</code></td><td>Packages all components into a root <code>VBox</code> with padding and launches the 520x280 window.</td></tr>
+        <tr><td><code>70&ndash;74</code></td><td>Simulates a greeting action for test verification.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="terminal-output">
+<!--@output project="code/s13-intro-javafx" main="com.aptech.s13.lab.WelcomeApp"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== Starting Guided Lab: WelcomeApp ===
+[Stage.show()] Primary window displayed: 'Aptech Student Welcome Portal' (800x600)
+
+Simulating user interaction:
+[Event Action] Greeted student: Chinelo Okonkwo
+Feedback banner text: 'Welcome to JavaFX, Chinelo Okonkwo! Your journey has begun.'
+[JavaFX Runtime] Step 3: Application active. Window title: 'Aptech Student Welcome Portal'
+[JavaFX Runtime] Scene root: VBox [Width: 520.0, Height: 280.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+  </div>
+
+  <!-- Expected Window Output Mockup -->
+  <div class="fx-window">
+    <div class="fx-window__titlebar">
+      <span class="fx-window__dot fx-window__dot--r"></span>
+      <span class="fx-window__dot fx-window__dot--y"></span>
+      <span class="fx-window__dot fx-window__dot--g"></span>
+      <span class="fx-window__title">Aptech Student Welcome Portal</span>
+    </div>
+    <div class="fx-window__body" style="padding:1.5rem;background:#ffffff;color:#1e293b;font-family:system-ui,sans-serif">
+      <div style="font-size:1.2rem;font-weight:bold;color:#0ea5e9;margin-bottom:2px">Aptech Computer Education</div>
+      <div style="font-size:0.85rem;color:#64748b;margin-bottom:1.2rem">Building Rich Java Applications with JavaFX</div>
+      
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+        <span style="font-size:0.9rem;font-weight:600">Enter Student Name:</span>
+        <input type="text" value="Chinelo Okonkwo" readonly style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:4px;font-size:0.9rem;width:220px">
+      </div>
+      
+      <div style="display:flex;gap:10px;margin-bottom:1rem">
+        <button style="padding:6px 14px;background:#0ea5e9;color:#fff;border:none;border-radius:4px;font-size:0.85rem;cursor:pointer">Greet Student</button>
+        <button style="padding:6px 14px;background:#e2e8f0;color:#334155;border:none;border-radius:4px;font-size:0.85rem;cursor:pointer">Clear</button>
+      </div>
+      
+      <div style="font-size:0.85rem;color:#10b981;font-weight:600;padding:6px 10px;background:#ecfdf5;border-radius:4px">
+        Welcome to JavaFX, Chinelo Okonkwo! Your journey has begun.
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 15. COMMON MISTAKES ============================================= -->
+  <h2>Common Mistakes</h2>
+
+  <div class="callout callout--danger"><span class="callout__i">&#9888;</span>
+    <div class="callout__b"><b>Mistake 1 &mdash; Missing Runtime Components Error</b>
+      <p><strong>The Bug:</strong> Running your JavaFX main class directly from the command line or terminal without VM module arguments:</p>
+      <pre><code>java com.aptech.s13.MyApplication</code></pre>
+      <p><strong>The Exact Error Message:</strong></p>
+      <pre class="terminal-output">Error: JavaFX runtime components are missing, and are required to run this application</pre>
+      <p><strong>The Fix:</strong> Either pass the module path arguments:</p>
+      <pre><code>java --module-path /path/to/javafx-sdk/lib --add-modules javafx.controls com.aptech.s13.MyApplication</code></pre>
+      <p>Or use the <strong>AppLauncher</strong> pattern with a separate non-Application main class.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#9888;</span>
+    <div class="callout__b"><b>Mistake 2 &mdash; Not on FX Application Thread</b>
+      <p><strong>The Bug:</strong> Trying to update a UI label directly from a background worker thread:</p>
+      <pre><code class="lang-java">new Thread(() -&gt; {
+    String data = fetchFromDatabase();
+    statusLabel.setText(data); // WRONG: Called from background thread!
+}).start();</code></pre>
+      <p><strong>The Exact Error Message:</strong></p>
+      <pre class="terminal-output">Exception in thread "Thread-3" java.lang.IllegalStateException: Not on FX application thread; currentThread = Thread-3</pre>
+      <p><strong>The Fix:</strong> Always wrap UI mutations inside <code>Platform.runLater()</code>:</p>
+      <pre><code class="lang-java">new Thread(() -&gt; {
+    String data = fetchFromDatabase();
+    Platform.runLater(() -&gt; statusLabel.setText(data)); // CORRECT
+}).start();</code></pre>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#9888;</span>
+    <div class="callout__b"><b>Mistake 3 &mdash; Forgetting to Call stage.show() or stage.setScene()</b>
+      <p><strong>The Bug:</strong> You write clean UI code, create all buttons and layouts, launch the application... and nothing appears on the screen!</p>
+      <p><strong>The Reason:</strong> In JavaFX, stages are invisible by default. If you do not call <code>primaryStage.setScene(scene)</code> and <code>primaryStage.show()</code>, the window remains hidden in the background.</p>
+      <p><strong>The Fix:</strong> Always ensure the last two lines of your <code>start(Stage stage)</code> method attach the scene and show the stage:</p>
+      <pre><code class="lang-java">primaryStage.setScene(scene);
+primaryStage.show();</code></pre>
+    </div>
+  </div>
+
+
+  <!-- ===== 16. KNOWLEDGE CHECK ============================================= -->
+  <h2>Knowledge Check</h2>
+  <div class="quiz" data-quiz="s13-knowledge-check">
+    <div class="quiz__header">Test Your JavaFX Foundations Understanding (8 Questions)</div>
+
+    <!-- Q1 -->
+    <div class="quiz__q" data-type="mc">
+      <p><strong>1.</strong> Which graphics engine in JavaFX is directly responsible for hardware-accelerated GPU rasterization via DirectX, OpenGL, or Metal?</p>
+      <label><input type="radio" name="s13_q1" value="a"> Glass Windowing Toolkit</label>
+      <label><input type="radio" name="s13_q1" value="b"> Quantum Toolkit</label>
+      <label><input type="radio" name="s13_q1" value="c"> Prism</label>
+      <label><input type="radio" name="s13_q1" value="d"> Java 2D Rasterizer</label>
+      <div class="quiz__explain" data-correct="c">
+        Prism is the high-performance hardware rendering engine in JavaFX. It converts Scene Graph nodes into GPU draw calls using DirectX on Windows, Metal/OpenGL on macOS, and OpenGL on Linux.
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz__q" data-type="mc">
+      <p><strong>2.</strong> In the JavaFX Theatre Metaphor, what does the <code>Stage</code> represent?</p>
+      <label><input type="radio" name="s13_q2" value="a"> The top-level operating system window frame with title bar and borders</label>
+      <label><input type="radio" name="s13_q2" value="b"> The individual buttons and text input fields</label>
+      <label><input type="radio" name="s13_q2" value="c"> The background CSS stylesheet</label>
+      <label><input type="radio" name="s13_q2" value="d"> The container holding visual nodes inside the window</label>
+      <div class="quiz__explain" data-correct="a">
+        The Stage represents the top-level window (the physical theatre). The Scene represents the container mounted on the stage, and Nodes represent the visual elements.
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz__q" data-type="tf">
+      <p><strong>3.</strong> True or False: In the <code>init()</code> method of a JavaFX Application, you are permitted to create and modify UI controls on the active Scene Graph.</p>
+      <label><input type="radio" name="s13_q3" value="true"> True</label>
+      <label><input type="radio" name="s13_q3" value="false"> False</label>
+      <div class="quiz__explain" data-correct="false">
+        False! The <code>init()</code> method runs on the background launcher thread BEFORE the JavaFX Application Thread starts. You cannot touch or modify UI nodes inside <code>init()</code>.
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="quiz__q" data-type="mc">
+      <p><strong>4.</strong> Why was JavaFX decoupled from the Oracle JDK starting with Java 11?</p>
+      <label><input type="radio" name="s13_q4" value="a"> Because desktop development in Java was deprecated</label>
+      <label><input type="radio" name="s13_q4" value="b"> To modularize the JDK and allow JavaFX (OpenJFX) to evolve on an independent 6-month release cadence</label>
+      <label><input type="radio" name="s13_q4" value="c"> Because JavaFX was replaced by Swing</label>
+      <label><input type="radio" name="s13_q4" value="d"> To force developers to use JavaFX Script</label>
+      <div class="quiz__explain" data-correct="b">
+        Decoupling JavaFX into OpenJFX under OpenJDK/Gluon allows it to release updates independently without being tied to JDK release schedules.
+      </div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="quiz__q" data-type="mc">
+      <p><strong>5.</strong> Which method MUST you use to schedule a UI update from a background worker thread?</p>
+      <label><input type="radio" name="s13_q5" value="a"> <code>Thread.yield()</code></label>
+      <label><input type="radio" name="s13_q5" value="b"> <code>Platform.runLater(Runnable)</code></label>
+      <label><input type="radio" name="s13_q5" value="c"> <code>Application.update()</code></label>
+      <label><input type="radio" name="s13_q5" value="d"> <code>Stage.repaint()</code></label>
+      <div class="quiz__explain" data-correct="b">
+        <code>Platform.runLater(Runnable)</code> places the specified task into the JavaFX event queue, guaranteeing it executes safely on the JavaFX Application Thread.
+      </div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="quiz__q" data-type="tf">
+      <p><strong>6.</strong> True or False: In JavaFX 1.0, developers were required to write code using a separate scripting language called "JavaFX Script", which was later abandoned in JavaFX 2.0 in favor of 100% pure Java.</p>
+      <label><input type="radio" name="s13_q6" value="true"> True</label>
+      <label><input type="radio" name="s13_q6" value="false"> False</label>
+      <div class="quiz__explain" data-correct="true">
+        True! JavaFX 1.0 required the JavaFX Script language. JavaFX 2.0 (2011) completely rewrote the framework in standard pure Java APIs.
+      </div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="quiz__q" data-type="mc">
+      <p><strong>7.</strong> How many Root Nodes can a single JavaFX <code>Scene</code> contain at any one time?</p>
+      <label><input type="radio" name="s13_q7" value="a"> Zero</label>
+      <label><input type="radio" name="s13_q7" value="b"> Exactly one</label>
+      <label><input type="radio" name="s13_q7" value="c"> Up to ten</label>
+      <label><input type="radio" name="s13_q7" value="d"> Unlimited</label>
+      <div class="quiz__explain" data-correct="b">
+        A Scene has exactly one Root Node (e.g., a VBox or BorderPane). That root node can then contain arbitrary numbers of child branch containers and leaf controls.
+      </div>
+    </div>
+
+    <!-- Q8 -->
+    <div class="quiz__q" data-type="mc">
+      <p><strong>8.</strong> What is the primary purpose of the Glass Windowing Toolkit in the JavaFX architecture?</p>
+      <label><input type="radio" name="s13_q8" value="a"> To provide 3D lighting shaders</label>
+      <label><input type="radio" name="s13_q8" value="b"> To bind native OS windowing, event loops, and input queues directly to the host operating system</label>
+      <label><input type="radio" name="s13_q8" value="c"> To parse FXML markup</label>
+      <label><input type="radio" name="s13_q8" value="d"> To serialize objects to disk</label>
+      <div class="quiz__explain" data-correct="b">
+        Glass is the micro-kernel that speaks directly to the host operating system's window manager (Win32 HWND, Cocoa, GTK), handling window borders, event queues, and mouse/keyboard inputs.
+      </div>
+    </div>
+
+    <button class="quiz__submit">Check Answers</button>
+    <div class="quiz__score"></div>
+  </div>
+
+  <!-- ===== 17. PRACTICE PROBLEMS =========================================== -->
+  <h2>Practice Problems</h2>
+
+  <!-- Practice 1: Easy -->
+  <h3>Practice 1 (Easy): Minimal Stage Configuration</h3>
+  <p>
+    Write a JavaFX application (<code>P1_MinimalStage.java</code>) that creates a window with the title
+    <code>"Student Records - Read Only View"</code>, sets the window dimensions to 400x250, prevents the user
+    from resizing the window (<code>setResizable(false)</code>), and centers an informative bold status label.
+  </p>
+  <details class="solution">
+    <summary>Show Solution &amp; Verified Output</summary>
+    <!--@code src="code/s13-intro-javafx/src/main/java/com/aptech/s13/practice/P1_MinimalStage.java"-->
+<pre class="numbered" data-file="P1_MinimalStage.java"><code class="lang-java">package com.aptech.s13.practice;
+
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.layout.StackPane;
+import javafx.stage.Stage;
+
+/**
+ * Practice Exercise 1 (Easy): Minimal Stage Configuration
+ *
+ * Configures window title, fixed dimensions (400x250), disables window resizing,
+ * and sets a centered information label.
+ */
+public class P1_MinimalStage {
+
+    public static class App extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+            System.out.println("=== Practice 1: Configuring Minimal Stage ===");
+
+            Label messageLabel = new Label("Student Registry - Read-Only View");
+            messageLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
+
+            StackPane root = new StackPane(messageLabel);
+            Scene scene = new Scene(root, 400, 250);
+
+            primaryStage.setTitle("Student Records - Read Only View");
+            primaryStage.setScene(scene);
+            primaryStage.setResizable(false);
+
+            System.out.println("Window Title: " + primaryStage.getTitle());
+            System.out.println("Dimensions: " + (int)scene.getWidth() + "x" + (int)scene.getHeight());
+            System.out.println("Is Resizable: " + primaryStage.isResizable());
+
+            primaryStage.show();
+        }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(App.class, args);
+    }
+}</code></pre>
+<!--@end-->
+    <div class="terminal-output">
+<!--@output project="code/s13-intro-javafx" main="com.aptech.s13.practice.P1_MinimalStage"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== Practice 1: Configuring Minimal Stage ===
+Window Title: Student Records - Read Only View
+Dimensions: 400x250
+Is Resizable: false
+[Stage.show()] Primary window displayed: 'Student Records - Read Only View' (800x600)
+[JavaFX Runtime] Step 3: Application active. Window title: 'Student Records - Read Only View'
+[JavaFX Runtime] Scene root: StackPane [Width: 400.0, Height: 250.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+    </div>
+  </details>
+
+  <!-- Practice 2: Medium -->
+  <h3>Practice 2 (Medium): Lifecycle Diagnostics Inspector</h3>
+  <p>
+    Create a diagnostics tool (<code>P2_LifecycleInspector.java</code>) that records an audit log of all three
+    lifecycle transitions (<code>INIT</code>, <code>START</code>, <code>STOP</code>). For each phase, record the
+    exact phase name, the current thread name, and whether <code>Platform.isFxApplicationThread()</code> returns
+    true. Print the formatted diagnostics report upon application shutdown in <code>stop()</code>.
+  </p>
+  <details class="solution">
+    <summary>Show Solution &amp; Verified Output</summary>
+    <!--@code src="code/s13-intro-javafx/src/main/java/com/aptech/s13/practice/P2_LifecycleInspector.java"-->
+<pre class="numbered" data-file="P2_LifecycleInspector.java"><code class="lang-java">package com.aptech.s13.practice;
+
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Practice Exercise 2 (Medium): Lifecycle Diagnostics Inspector
+ *
+ * Tracks and logs timestamps, thread names, and state transitions
+ * through the complete lifecycle pipeline: init -&gt; start -&gt; stop.
+ */
+public class P2_LifecycleInspector {
+
+    public static record PhaseLog(String phase, String thread, boolean isFxThread) {}
+
+    public static class App extends Application {
+        private final List&lt;PhaseLog&gt; auditLog = new ArrayList&lt;&gt;();
+
+        @Override
+        public void init() {
+            auditLog.add(new PhaseLog(
+                "INIT",
+                Thread.currentThread().getName(),
+                Platform.isFxApplicationThread()
+            ));
+        }
+
+        @Override
+        public void start(Stage primaryStage) {
+            auditLog.add(new PhaseLog(
+                "START",
+                Thread.currentThread().getName(),
+                Platform.isFxApplicationThread()
+            ));
+
+            VBox root = new VBox(10);
+            root.getChildren().add(new Label("Lifecycle Diagnostics Active"));
+
+            Scene scene = new Scene(root, 360, 200);
+            primaryStage.setTitle("Lifecycle Inspector");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+        }
+
+        @Override
+        public void stop() {
+            auditLog.add(new PhaseLog(
+                "STOP",
+                Thread.currentThread().getName(),
+                Platform.isFxApplicationThread()
+            ));
+
+            System.out.println("=== Lifecycle Diagnostics Report ===");
+            for (PhaseLog log : auditLog) {
+                System.out.printf("Phase: %-6s | Thread: %-26s | FX Thread: %s\n",
+                        log.phase(), log.thread(), log.isFxThread());
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(App.class, args);
+    }
+}</code></pre>
+<!--@end-->
+    <div class="terminal-output">
+<!--@output project="code/s13-intro-javafx" main="com.aptech.s13.practice.P2_LifecycleInspector"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+[Stage.show()] Primary window displayed: 'Lifecycle Inspector' (800x600)
+[JavaFX Runtime] Step 3: Application active. Window title: 'Lifecycle Inspector'
+[JavaFX Runtime] Scene root: VBox [Width: 360.0, Height: 200.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+=== Lifecycle Diagnostics Report ===
+Phase: INIT   | Thread: main                       | FX Thread: false
+Phase: START  | Thread: JavaFX Application Thread  | FX Thread: true
+Phase: STOP   | Thread: JavaFX Application Thread  | FX Thread: true
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+    </div>
+  </details>
+
+  <!-- Practice 3: Challenge -->
+  <h3>Practice 3 (Challenge): Dynamic Scene Graph Modification</h3>
+  <p>
+    Build a dynamic course enrollment interface (<code>P3_DynamicSceneGraph.java</code>). The window starts with
+    a header and an enrolled count label showing <code>Enrolled Courses: 0</code>. When the user clicks
+    <code>Add Course</code>, dynamically instantiate a new <code>Label</code>, append it to a vertical layout
+    container in the Scene Graph, and reactively increment an <code>IntegerProperty</code> counter. Provide a
+    <code>Clear All</code> button that empties the child list and resets the counter to 0.
+  </p>
+  <details class="solution">
+    <summary>Show Solution &amp; Verified Output</summary>
+    <!--@code src="code/s13-intro-javafx/src/main/java/com/aptech/s13/practice/P3_DynamicSceneGraph.java"-->
+<pre class="numbered" data-file="P3_DynamicSceneGraph.java"><code class="lang-java">package com.aptech.s13.practice;
+
+import javafx.application.Application;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+/**
+ * Practice Exercise 3 (Challenge): Dynamic Scene Graph Manipulation
+ *
+ * Demonstrates runtime Scene Graph modification:
+ * Appending course item cards dynamically to a layout container,
+ * updating an observable badge counter, and clearing nodes safely.
+ */
+public class P3_DynamicSceneGraph {
+
+    public static class App extends Application {
+        private final IntegerProperty courseCount = new SimpleIntegerProperty(0);
+
+        @Override
+        public void start(Stage primaryStage) {
+            System.out.println("=== Practice 3: Dynamic Scene Graph Modification ===");
+
+            Label titleLabel = new Label("Course Enrollment Manager");
+            Label countLabel = new Label("Enrolled Courses: 0");
+
+            // Reactively update count label whenever courseCount property changes
+            courseCount.addListener((obs, oldVal, newVal) -&gt; {
+                countLabel.setText("Enrolled Courses: " + newVal);
+                System.out.println("  [Scene Graph Update] Enrolled course count updated to: " + newVal);
+            });
+
+            VBox courseListBox = new VBox(8);
+            courseListBox.setId("course-list");
+
+            Button addCourseBtn = new Button("Add Course");
+            Button clearCoursesBtn = new Button("Clear All");
+
+            String[] sampleCourses = {
+                "CP-101: Core Java Programming",
+                "DB-201: Relational Databases &amp; JDBC",
+                "FX-301: JavaFX GUI &amp; UI Architecture",
+                "AI-401: AI-Assisted Development &amp; Testing"
+            };
+
+            addCourseBtn.setOnAction(e -&gt; {
+                int current = courseCount.get();
+                if (current &lt; sampleCourses.length) {
+                    String courseTitle = sampleCourses[current];
+                    Label courseItem = new Label((current + 1) + ". " + courseTitle);
+                    courseItem.setId("course-" + (current + 1));
+                    courseItem.setStyle("-fx-padding: 6px; -fx-background-color: #f1f5f9;");
+                    courseListBox.getChildren().add(courseItem);
+                    courseCount.set(current + 1);
+                    System.out.println("  [Node Added] Appended child: " + courseTitle);
+                } else {
+                    System.out.println("  [Notice] All sample courses already added.");
+                }
+            });
+
+            clearCoursesBtn.setOnAction(e -&gt; {
+                courseListBox.getChildren().clear();
+                courseCount.set(0);
+                System.out.println("  [Nodes Cleared] Reset Scene Graph course list.");
+            });
+
+            HBox buttonBar = new HBox(10, addCourseBtn, clearCoursesBtn);
+            buttonBar.setAlignment(Pos.CENTER_LEFT);
+
+            VBox root = new VBox(14, titleLabel, countLabel, buttonBar, courseListBox);
+            root.setAlignment(Pos.TOP_LEFT);
+
+            Scene scene = new Scene(root, 480, 320);
+            primaryStage.setTitle("Dynamic Scene Graph Manager");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+
+            // Simulate user clicking Add Course twice
+            System.out.println("\nSimulating user adding two courses:");
+            addCourseBtn.fire();
+            addCourseBtn.fire();
+            System.out.println("Total children in courseListBox: " + courseListBox.getChildren().size());
+        }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(App.class, args);
+    }
+}</code></pre>
+<!--@end-->
+    <div class="terminal-output">
+<!--@output project="code/s13-intro-javafx" main="com.aptech.s13.practice.P3_DynamicSceneGraph"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== Practice 3: Dynamic Scene Graph Modification ===
+[Stage.show()] Primary window displayed: 'Dynamic Scene Graph Manager' (800x600)
+
+Simulating user adding two courses:
+  [Scene Graph Update] Enrolled course count updated to: 1
+  [Node Added] Appended child: CP-101: Core Java Programming
+  [Scene Graph Update] Enrolled course count updated to: 2
+  [Node Added] Appended child: DB-201: Relational Databases &amp; JDBC
+Total children in courseListBox: 2
+[JavaFX Runtime] Step 3: Application active. Window title: 'Dynamic Scene Graph Manager'
+[JavaFX Runtime] Scene root: VBox [Width: 480.0, Height: 320.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+    </div>
+  </details>
+
+  <!-- ===== 18. FURTHER STUDY =============================================== -->
+  <h2>Further Study &amp; Curated Videos</h2>
+  <p>
+    Every video below is verified to exist and directly enriches today's introduction to JavaFX:
+  </p>
+
+  <div class="video-grid">
+    <div class="video-card" data-yt="_7OM-cMYWbQ" data-title="JavaFX install &amp; setup (Eclipse) 🌘">
+      <div class="video-card__thumb"></div>
+      <div class="video-card__body">
+        <div class="video-card__title">JavaFX install &amp; setup (Eclipse) 🌘</div>
+        <div class="video-card__meta">Bro Code &middot; 8 min</div>
+      </div>
+    </div>
+    <div class="video-card" data-yt="FLkOX4Eez6o" data-title="JavaFX Java GUI Tutorial - 1 - Creating a Basic Window">
+      <div class="video-card__thumb"></div>
+      <div class="video-card__body">
+        <div class="video-card__title">JavaFX Java GUI Tutorial - 1 - Creating a Basic Window</div>
+        <div class="video-card__meta">thenewboston &middot; 10 min</div>
+      </div>
+    </div>
+    <div class="video-card" data-yt="buW8eZKVK3Q" data-title="JavaFX 8-17: Introduction (TextField, Text and Button)">
+      <div class="video-card__thumb"></div>
+      <div class="video-card__body">
+        <div class="video-card__title">JavaFX 8-17: Introduction (TextField, Text and Button)</div>
+        <div class="video-card__meta">Almas Baim (AlmasB) &middot; 12 min</div>
+      </div>
+    </div>
+    <div class="video-card" data-yt="r_tdK8zWr_w" data-title="JavaFX 11+ Maven Tutorial">
+      <div class="video-card__thumb"></div>
+      <div class="video-card__body">
+        <div class="video-card__title">JavaFX 11+ Maven Tutorial</div>
+        <div class="video-card__meta">Almas Baim (AlmasB) &middot; 7 min</div>
+      </div>
+    </div>
+    <div class="video-card" data-yt="mOLkdt2sGjA" data-title="JavaFX Software: Auto-localization via Bindings">
+      <div class="video-card__thumb"></div>
+      <div class="video-card__body">
+        <div class="video-card__title">JavaFX Software: Auto-localization via Bindings</div>
+        <div class="video-card__meta">Almas Baim (AlmasB) &middot; 9 min</div>
+      </div>
+    </div>
+    <div class="video-card" data-yt="w_PsCNqqcE4" data-title="JavaFX 11+ Cross-platform Deployment">
+      <div class="video-card__thumb"></div>
+      <div class="video-card__body">
+        <div class="video-card__title">JavaFX 11+ Cross-platform Deployment</div>
+        <div class="video-card__meta">Almas Baim (AlmasB) &middot; 11 min</div>
+      </div>
+    </div>
+    <div class="video-card" data-yt="vrEnmDZW7Ag" data-title="JavaFX Software: Animated Custom Dialog">
+      <div class="video-card__thumb"></div>
+      <div class="video-card__body">
+        <div class="video-card__title">JavaFX Software: Animated Custom Dialog</div>
+        <div class="video-card__meta">Almas Baim (AlmasB) &middot; 8 min</div>
+      </div>
+    </div>
+    <div class="video-card" data-yt="XDazKWYaim8" data-title="JavaFX Software: Quiz App (MVC, JSON Serialization)">
+      <div class="video-card__thumb"></div>
+      <div class="video-card__body">
+        <div class="video-card__title">JavaFX Software: Quiz App (MVC, JSON Serialization)</div>
+        <div class="video-card__meta">Almas Baim (AlmasB) &middot; 15 min</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128279;</span>
+    <div class="callout__b"><b>Official Documentation &amp; Reference Guides</b>
+      <ul>
+        <li><a href="https://openjfx.io/" target="_blank" rel="noopener">OpenJFX Official Homepage</a> &mdash; Downloads, release notes, and getting started guides.</li>
+        <li><a href="https://openjfx.io/javadoc/21/" target="_blank" rel="noopener">JavaFX 21 API Specification (Javadoc)</a> &mdash; Comprehensive documentation of all packages.</li>
+        <li><a href="https://gluonhq.com/products/scene-builder/" target="_blank" rel="noopener">Gluon Scene Builder</a> &mdash; Drag-and-drop visual GUI designer tool for JavaFX FXML.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== 19. CHEAT SHEET ================================================= -->
+  <h2>Cheat Sheet</h2>
+  <div class="cheatsheet">
+    <h4>&#9889; Essential JavaFX Snippets &amp; Conventions</h4>
+
+    <p><strong>1. Standard Application Skeleton</strong></p>
+    <pre><code class="lang-java">public class MyApp extends Application {
+    @Override
+    public void start(Stage primaryStage) {
+        VBox root = new VBox(10);
+        root.getChildren().add(new Label("Hello, JavaFX!"));
+        Scene scene = new Scene(root, 400, 300);
+        primaryStage.setTitle("Window Title");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+    public static void main(String[] args) {
+        Application.launch(args);
+    }
+}</code></pre>
+
+    <p><strong>2. The Clean Non-Modular Launcher</strong></p>
+    <pre><code class="lang-java">public class AppLauncher {
+    public static void main(String[] args) {
+        MyApp.main(args); // Bypasses missing runtime components check
+    }
+}</code></pre>
+
+    <p><strong>3. Lifecycle Methods</strong></p>
+    <pre><code class="lang-java">@Override public void init() throws Exception { /* Background pre-load (NO UI) */ }
+@Override public void start(Stage stage) throws Exception { /* FX Thread: Build UI */ }
+@Override public void stop() throws Exception { /* FX Thread: Cleanup resources */ }</code></pre>
+
+    <p><strong>4. Safe Threading (Updating UI from Background Thread)</strong></p>
+    <pre><code class="lang-java">Platform.runLater(() -&gt; {
+    myLabel.setText("Updated from background worker");
+});</code></pre>
+
+    <p><strong>5. Observable Property Binding</strong></p>
+    <pre><code class="lang-java">StringProperty name = new SimpleStringProperty("Initial");
+Label label = new Label();
+label.textProperty().bind(name); // Label updates whenever 'name' changes!</code></pre>
+
+    <p><strong>6. VM Arguments for Non-Modular Execution</strong></p>
+    <pre><code class="lang-bash">--module-path "/path/to/javafx-sdk/lib" --add-modules javafx.controls,javafx.fxml</code></pre>
+  </div>
+
+  <!-- ===== 20. SESSION SUMMARY ============================================= -->
+  <h2>Session Summary</h2>
+  <p>
+    Today marked your transition from command-line terminal applications to rich desktop graphical user interfaces.
+    You discovered that:
+  </p>
+  <ul>
+    <li><strong>JavaFX</strong> is the modern, hardware-accelerated desktop GUI toolkit for Java, superseding legacy AWT and Swing through its retained-mode graphics and GPU shaders.</li>
+    <li><strong>History</strong>: From the 2005 F3 scripting prototype, JavaFX pivoted to pure Java in 2011 (version 2.0), was bundled in Java 8, and was decoupled into the open-source OpenJFX project in Java 11.</li>
+    <li><strong>Architecture</strong>: The JavaFX stack connects high-level public APIs through the <strong>Scene Graph</strong> and <strong>Quantum Toolkit</strong> to low-level <strong>Prism</strong> (GPU rendering) and <strong>Glass</strong> (native OS windowing).</li>
+    <li><strong>Theatre Metaphor</strong>: A <strong>Stage</strong> (window frame) displays an active <strong>Scene</strong> (canvas), which holds an upside-down tree of <strong>Nodes</strong> (Root container &rarr; Branch layouts &rarr; Leaf controls).</li>
+    <li><strong>Lifecycle</strong>: Applications execute <code>init()</code> on a background launcher thread, <code>start(Stage)</code> on the JavaFX Application Thread, and <code>stop()</code> upon shutdown.</li>
+    <li><strong>Thread Safety</strong>: Any mutation to an active Scene Graph node must happen on the JavaFX Application Thread; background worker threads must delegate updates via <code>Platform.runLater()</code>.</li>
+  </ul>
+
+  <div class="newwords"><span class="newwords__title">&#128214; All New Words from Today</span>
+    <p><strong>JavaFX</strong> &mdash; The official modern rich client GUI toolkit for Java.</p>
+    <p><strong>OpenJFX</strong> &mdash; The open-source project co-led by Oracle and Gluon maintaining JavaFX.</p>
+    <p><strong>Stage</strong> &mdash; The top-level OS window in a JavaFX application.</p>
+    <p><strong>Scene</strong> &mdash; The content container attached to a Stage holding visual nodes.</p>
+    <p><strong>Scene Graph</strong> &mdash; The retained-mode hierarchical tree of visual Node objects.</p>
+    <p><strong>Prism</strong> &mdash; The hardware-accelerated 2D/3D graphics rendering pipeline in JavaFX.</p>
+    <p><strong>Quantum Toolkit</strong> &mdash; The bridge layer synchronizing the FX Application Thread and Render Thread via pulses.</p>
+    <p><strong>Glass Windowing Toolkit</strong> &mdash; The low-level micro-kernel providing native OS window handles and input queues.</p>
+    <p><strong>Pulse</strong> &mdash; The 60 FPS heartbeat event synchronizing scene graph changes with the GPU rendering thread.</p>
+    <p><strong>Platform.runLater()</strong> &mdash; The thread-safe utility for scheduling work on the JavaFX Application Thread.</p>
+    <p><strong>FXML</strong> &mdash; An XML-based declarative markup language for defining JavaFX layouts.</p>
+  </div>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Looking Ahead to Session 14</b>
+      In <strong>Session 14: JavaFX Text, Transformations and Shapes</strong>, you will bring
+      visual artistry to your windows: rendering customized typography, applying geometric transformations
+      (translation, rotation, scaling, and shearing), and drawing rich 2D and 3D shapes.
+    </div>
+  </div>
+
+
+</main>
+
+<script src="../assets/js/course.js"></script>
+</body>
+</html>

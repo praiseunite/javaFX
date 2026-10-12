@@ -13,7 +13,7 @@
 
 <main class="page">
   <section class="hero">
-    <span class="tag">Reference &middot; 187 terms</span>
+    <span class="tag">Reference &middot; 229 terms</span>
     <h1>Glossary A&ndash;Z</h1>
     <p class="lede">
       Every word the course introduces in one place. Each entry is the definition as the session
@@ -21,7 +21,7 @@
       class, you can find it again here in seconds. Nothing on this page needs the internet.
     </p>
     <div class="meta">
-      <span>&#128218; 187 terms</span>
+      <span>&#128218; 229 terms</span>
       <span>&#128203; Bridge B1&ndash;B7 &middot; Sessions 1&ndash;8</span>
       <span>&#128269; Filter as you type</span>
     </div>
@@ -52,14 +52,38 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Adapter</dt>
+      <dd>A class that makes one interface look like another. <code>JdkDeque</code> maps <code>push</code> to <code>addLast</code> and <code>poll</code> to <code>pollFirst</code>. <span class="text-faint">&mdash; Session 11B</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Amortised</dt>
+      <dd>The average cost per operation over a long run, when a few operations are much more expensive. <code>add()</code> is O(1) amortised because the growths get rarer. <span class="text-faint">&mdash; Session 11B</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>API</dt>
       <dd>Ready-made classes and methods you can use. <span class="text-faint">&mdash; Session 1</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Architectural Seam</dt>
+      <dd>A clean interface boundary that decouples business logic and presentation controllers from underlying database drivers. <span class="text-faint">&mdash; Session 12</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt><code>Arguments</code></dt>
       <dd>One row of inputs for a parameterized test. The values must match the test&rsquo;s parameters in number, order and type. <span class="text-faint">&mdash; Session 10</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>asIterator()</code></dt>
+      <dd>A Java 9 default method on <code>Enumeration</code> that adapts it to <code>Iterator</code>. Read-only: <code>remove()</code> throws <code>UnsupportedOperationException</code>. <span class="text-faint">&mdash; Session 11</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -101,7 +125,7 @@
   <div class="glossary-item">
     <dl>
       <dt>Atomicity</dt>
-      <dd>The property that a half-finished transaction can never be observed. <span class="text-faint">&mdash; Session 8</span></dd>
+      <dd>The ACID property guaranteeing that all steps of a transaction succeed together or all are rolled back, leaving no partial state. <span class="text-faint">&mdash; Session 8 · Session 12</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -150,8 +174,32 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>BitSet</dt>
+      <dd>A set of non-negative integers stored one bit per number in a <code>long[]</code>. Set algebra is bitwise, so <code>and</code>/<code>or</code>/<code>xor</code> operate 64 numbers at a time. <span class="text-faint">&mdash; Session 11</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>BitSet Cardinality</dt>
+      <dd>The count of bits currently set to <code>true</code> in a <code>BitSet</code>, as opposed to its allocated memory word size. <span class="text-faint">&mdash; Session 12</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Bounded type</dt>
       <dd><code>&lt;T extends X&gt;</code>: T must be X or a subtype of X. <span class="text-faint">&mdash; Session 2</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Boxing</dt>
+      <dd>Wrapping a primitive in an object &mdash; <code>int</code> into <code>Integer</code>. The reason <code>ArrayList&lt;Integer&gt;</code> uses far more memory than an <code>int[]</code>. <span class="text-faint">&mdash; Session 11B</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Bucket</dt>
+      <dd>One slot of a hash table's array. Holds the head of a chain, or nothing. <span class="text-faint">&mdash; Session 11B</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -194,6 +242,24 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Capacity</dt>
+      <dd>How much room the backing array has. Always at least <code>size</code>, usually more, and never a promise about the future. <span class="text-faint">&mdash; Session 11B</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Cardinality</dt>
+      <dd>The number of elements in a set &mdash; for a <code>BitSet</code>, the count of bits set to 1. <span class="text-faint">&mdash; Session 11</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Chain</dt>
+      <dd>The short list of nodes sharing one bucket. A lookup walks it comparing keys. <span class="text-faint">&mdash; Session 11B</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Channel</dt>
       <dd>A <code>java.nio</code> connection that reads and writes bytes, usually into or out of a <code>ByteBuffer</code>. <span class="text-faint">&mdash; Session 9</span></dd>
     </dl>
@@ -208,6 +274,12 @@
     <dl>
       <dt>Charset</dt>
       <dd>The mapping between characters and bytes. Name it explicitly; never rely on the machine's default. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Check-then-act</dt>
+      <dd>Two separate calls where the second assumes the first is still true. Locking each call does not lock the pair. <span class="text-faint">&mdash; Session 11</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -232,6 +304,24 @@
     <dl>
       <dt>Collection, element</dt>
       <dd>A container object / one item inside it. <span class="text-faint">&mdash; Session 1</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>Collections.enumeration()</code></dt>
+      <dd>The other direction: wraps a modern <code>Collection</code> as an <code>Enumeration</code> for code that still expects one. <span class="text-faint">&mdash; Session 11</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>Collections.list()</code></dt>
+      <dd>Drains an <code>Enumeration</code> into an <code>ArrayList</code> &mdash; the shortest way out of a legacy traversal. <span class="text-faint">&mdash; Session 11</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Collision</dt>
+      <dd>Two different keys wanting the same bucket. Normal, not a bug &mdash; a chain is how it is handled. <span class="text-faint">&mdash; Session 11B</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -308,6 +398,12 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Contract test</dt>
+      <dd>One suite run against two or more implementations, written only against the interface. Green means they agree on everything anybody wrote down. <span class="text-faint">&mdash; Session 11B</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>CREATE ALIAS</dt>
       <dd>H2&rsquo;s way of exposing a Java method as a database routine &mdash; its substitute for PL/SQL. <span class="text-faint">&mdash; Session 8</span></dd>
     </dl>
@@ -352,6 +448,18 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Deprecated</dt>
+      <dd>Carrying the <code>@Deprecated</code> annotation: the authors are telling you not to use it. Retained at run time, so a program can check for it. <span class="text-faint">&mdash; Session 11</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Deque</dt>
+      <dd>&ldquo;Double-ended queue&rdquo;: a structure you can take from either end. <code>push</code>+<code>pop</code> makes it a stack; <code>push</code>+<code>poll</code> makes it a queue. <span class="text-faint">&mdash; Session 11B</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Design pattern</dt>
       <dd>A named, reusable solution to a recurring design problem &mdash; and, more usefully, a name for a change that has already been paid for. <span class="text-faint">&mdash; Session 9</span></dd>
     </dl>
@@ -364,8 +472,14 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Dictionary</dt>
+      <dd>An abstract, obsolete ancestor of <code>Map</code>. Its only direct child is <code>Hashtable</code>. <span class="text-faint">&mdash; Session 11</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Dirty read</dt>
-      <dd>Reading a row another transaction changed but has not committed. <span class="text-faint">&mdash; Session 8</span></dd>
+      <dd>Reading uncommitted data from another concurrent transaction that might later be rolled back. <span class="text-faint">&mdash; Session 8 · Session 12</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -398,12 +512,30 @@
       <dd>The class that reads a JDBC URL and hands back a <code>Connection</code> from the matching driver. <span class="text-faint">&mdash; Session 7</span></dd>
     </dl>
   </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Dynamic array</dt>
+      <dd>An array that cannot grow, wrapped in a class that replaces it with a bigger one when it fills. What <code>ArrayList</code> is. <span class="text-faint">&mdash; Session 11B</span></dd>
+    </dl>
+  </div>
 
   <h3 id="letter-e">E</h3>
   <div class="glossary-item">
     <dl>
       <dt>Embedded database</dt>
       <dd>A database engine that runs inside your program, as a library, with no separate server process. H2 is one. <span class="text-faint">&mdash; Session 7 · Guide</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>EmptyStackException</code></dt>
+      <dd>What <code>Stack.pop()</code> and <code>peek()</code> throw on an empty stack &mdash; a <code>RuntimeException</code>, not a checked one. <span class="text-faint">&mdash; Session 11</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Enumeration</dt>
+      <dd>The original traversal interface: <code>hasMoreElements()</code> and <code>nextElement()</code>. No removal, no fail-fast, not <code>Iterable</code>. <span class="text-faint">&mdash; Session 11</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -416,6 +548,12 @@
     <dl>
       <dt><code>ExecutorService</code></dt>
       <dd>An object that runs submitted tasks on threads for you (more in Session 5). <span class="text-faint">&mdash; Session 4</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Exhaustive Switch</dt>
+      <dd>A switch expression over an enum covering all possible constants without a <code>default</code> branch, enforced at compile time. <span class="text-faint">&mdash; Session 12</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -440,6 +578,12 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Fail-fast</dt>
+      <dd>An iterator that detects the collection changing underneath it and throws <code>ConcurrentModificationException</code> instead of returning a wrong answer. Our structures have no iterators, so they cannot notice. <span class="text-faint">&mdash; Session 11 · Session 11B</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Failure report</dt>
       <dd>The message a check or a compiler prints: the type, the method, the line, and what it expected. <span class="text-faint">&mdash; Session 6</span></dd>
     </dl>
@@ -448,6 +592,12 @@
     <dl>
       <dt>Fallback chain / candidate locales</dt>
       <dd>The ordered list of bundles tried for a locale: <code>fr_CA</code> &rarr; <code>fr</code> &rarr; the root file. <span class="text-faint">&mdash; Session 9</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>False Positive Test</dt>
+      <dd>A test that reports green even when the code under test is defective (e.g. by swallowing an expected exception). <span class="text-faint">&mdash; Session 12</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -546,6 +696,18 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Hashtable</dt>
+      <dd>The 1995 hash table. Synchronised per method, and refuses <code>null</code> keys and values. Replaced by <code>HashMap</code>. <span class="text-faint">&mdash; Session 11</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Head / tail</dt>
+      <dd>The slot the next element comes out of, and the slot the next element goes into. <span class="text-faint">&mdash; Session 11B</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Heap</dt>
       <dd>The internal shape of a PriorityQueue: the smallest is always on top. <span class="text-faint">&mdash; Session 1</span></dd>
     </dl>
@@ -586,6 +748,18 @@
     <dl>
       <dt>Intrinsic lock / monitor</dt>
       <dd>The built-in lock every Java object carries; what <code>synchronized</code> uses. <span class="text-faint">&mdash; Session 5</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Is-a / has-a</dt>
+      <dd>Inheritance versus composition. <code>Stack</code> <em>is-a</em> <code>Vector</code>, which is the mistake; a stack should <em>have-a</em> list. <span class="text-faint">&mdash; Session 11</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>ISO-8859-1</dt>
+      <dd>The encoding <code>Properties.load(InputStream)</code> uses by specification. Non-ASCII characters need <code>\uXXXX</code> escapes. <span class="text-faint">&mdash; Session 11</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -674,6 +848,24 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Legacy class</dt>
+      <dd>A class kept in the JDK for backwards compatibility, superseded by a newer one but never removed. Not the same as deprecated. <span class="text-faint">&mdash; Session 11</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>LIFO</dt>
+      <dd>Last in, first out. The rule a stack enforces and a queue does not. <span class="text-faint">&mdash; Session 11</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Load factor</dt>
+      <dd>The fraction of buckets allowed to be occupied before the table doubles. <code>0.75</code> in our map and in the JDK's. <span class="text-faint">&mdash; Session 11B</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Locale</dt>
       <dd>A language, optionally with a region and a variant &mdash; <code>fr</code>, <code>fr_CA</code>. It is data your program carries, not a global setting. <span class="text-faint">&mdash; Session 9</span></dd>
     </dl>
@@ -702,6 +894,12 @@
     <dl>
       <dt>Marker interface, <code>serialVersionUID</code>, <code>transient</code></dt>
       <dd>An interface with no methods (<code>Serializable</code>) / a class's version number / "don't save this field". <span class="text-faint">&mdash; Session 3</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Mask</dt>
+      <dd><code>hash &amp; (length - 1)</code>. Turns any <code>int</code> into a legal bucket number with no division and no negative index &mdash; which is why the bucket count must be a power of two. <span class="text-faint">&mdash; Session 11B</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -839,13 +1037,19 @@
   <div class="glossary-item">
     <dl>
       <dt>PreparedStatement</dt>
-      <dd>A statement with <code>?</code> placeholders; values are bound separately and can never become SQL. <span class="text-faint">&mdash; Session 7</span></dd>
+      <dd>A pre-compiled database statement where input parameters are passed as literal values via parameter markers (<code>?</code>). <span class="text-faint">&mdash; Session 7 · Session 12</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
     <dl>
       <dt>Priority</dt>
       <dd>A 1&ndash;10 hint to the scheduler, never a guarantee. <span class="text-faint">&mdash; Session 4</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Properties</dt>
+      <dd>A <code>Hashtable</code> of strings for configuration files, with a defaults chain and <code>getProperty</code>. Still the right tool. <span class="text-faint">&mdash; Session 11</span></dd>
     </dl>
   </div>
 
@@ -882,6 +1086,12 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Rehash</dt>
+      <dd>Building a bigger bucket array and moving every key into the bucket it now belongs to. The index changes because the <em>mask</em> changed, not the hash. <span class="text-faint">&mdash; Session 11B</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Repository</dt>
       <dd>An object that presents your data as a domain collection and hides where it comes from. Here: <code>StudentRepository</code>. <span class="text-faint">&mdash; Session 9</span></dd>
     </dl>
@@ -901,7 +1111,7 @@
   <div class="glossary-item">
     <dl>
       <dt>ResourceBundle</dt>
-      <dd>The Java object that looks up a key in the right <code>.properties</code> file for a locale, walking up the parent chain when a key is absent. <span class="text-faint">&mdash; Session 9</span></dd>
+      <dd>The class that picks the right <code>.properties</code> file for a locale and walks up the parent chain when a key is missing &mdash; built on <code>Properties</code>. <span class="text-faint">&mdash; Session 9 · Session 11</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -914,6 +1124,12 @@
     <dl>
       <dt>ResultSetMetaData</dt>
       <dd>A description of one query's result: column count, names and types. <span class="text-faint">&mdash; Session 7</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Ring buffer</dt>
+      <dd>One fixed array with a <code>head</code> and a <code>tail</code> that wrap with a modulo. Nothing is ever shifted. What <code>ArrayDeque</code> is. <span class="text-faint">&mdash; Session 11B</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -945,7 +1161,7 @@
   <div class="glossary-item">
     <dl>
       <dt>Savepoint</dt>
-      <dd>A bookmark inside a transaction; <code>rollback(point)</code> rewinds to it, keeping earlier work. <span class="text-faint">&mdash; Session 8</span></dd>
+      <dd>A checkpoint within an active transaction allowing partial rollback of subsequent operations without discarding prior work. <span class="text-faint">&mdash; Session 8 · Session 12</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -980,6 +1196,12 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Sieve of Eratosthenes</dt>
+      <dd>Finding primes by striking out multiples. With two <code>BitSets</code> it becomes three lines and no division. <span class="text-faint">&mdash; Session 11</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Silent failure</dt>
       <dd>A fault that throws nothing and exits cleanly &mdash; an empty file, a duplicated student, a serialised job. The hardest kind to find. <span class="text-faint">&mdash; Session 6</span></dd>
     </dl>
@@ -992,6 +1214,12 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Spread</dt>
+      <dd>How evenly a hash function distributes keys across buckets. The whole of a hash map's performance lives here. <span class="text-faint">&mdash; Session 11B</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>SQL dialect</dt>
       <dd>The specific spelling of SQL that a database accepts. Standard SQL is the common core; the edges differ. <span class="text-faint">&mdash; Guide</span></dd>
     </dl>
@@ -999,7 +1227,13 @@
   <div class="glossary-item">
     <dl>
       <dt>SQL injection</dt>
-      <dd>An attack where input concatenated into SQL changes the query's meaning. <span class="text-faint">&mdash; Session 7</span></dd>
+      <dd>A security vulnerability where malicious input alters SQL query logic, allowing attackers to read or destroy database contents. <span class="text-faint">&mdash; Session 7 · Session 12</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt><code>Stack.search()</code></dt>
+      <dd>Returns the 1-based position of an element counted from the top of the stack, or <code>-1</code>. <span class="text-faint">&mdash; Session 11</span></dd>
     </dl>
   </div>
   <div class="glossary-item">
@@ -1132,6 +1366,12 @@
   </div>
   <div class="glossary-item">
     <dl>
+      <dt>Treeified bin</dt>
+      <dd>Java 8's fix for a long chain: past eight entries, the chain becomes a balanced tree, so a lookup in it is O(log n) instead of O(n). <span class="text-faint">&mdash; Session 11B</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
       <dt>Two-tier / three-tier</dt>
       <dd>SQL written inline (two-tier) versus SQL behind a DAO (three-tier). <span class="text-faint">&mdash; Session 7</span></dd>
     </dl>
@@ -1194,6 +1434,12 @@
     <dl>
       <dt>Wildcard <code>?</code></dt>
       <dd>"Some unknown type." Upper-bounded <code>? extends X</code>, lower-bounded <code>? super X</code>, unbounded <code>?</code>. <span class="text-faint">&mdash; Session 2</span></dd>
+    </dl>
+  </div>
+  <div class="glossary-item">
+    <dl>
+      <dt>Wrap, don't rewrite</dt>
+      <dd>Put legacy code behind an interface you own, implement it twice, and let one check suite define the behaviour the old code never documented. <span class="text-faint">&mdash; Session 11</span></dd>
     </dl>
   </div>
   <div class="glossary-item">

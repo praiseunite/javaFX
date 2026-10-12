@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Session 12 — Guided Lab: The Enterprise Repair Clinic (Starter).
+  Five planted faults across JDBC, transactions, design patterns, testing, and data structures.
+  Run SelfCheck.java to measure your progress:
+    Start:  0 passed, 5 failed
+    Target: 5 passed, 0 failed
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.aptech</groupId>
+    <artifactId>s12-repair-clinic-starter</artifactId>
+    <version>1.0</version>
+    <name>Session 12 - Enterprise Repair Clinic (Starter)</name>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.3.232</version>
+        </dependency>
+    </dependencies>
+</project>

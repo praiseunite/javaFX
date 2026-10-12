@@ -40,10 +40,10 @@
     { slug: "s10", file: "sessions/s10-unit-testing-ai.html",    unit: "Session 10", title: "Unit Testing & AI Tools" },
     { slug: "s11", file: "sessions/s11-data-structures.html",    unit: "Session 11",  title: "Java Data Structures" },
     { slug: "s11b", file: "sessions/s11b-data-structures-by-hand.html", unit: "Session 11B", title: "Data Structures, By Hand" },
-    { slug: "s12", file: "sessions/s12-review-2.html",           unit: "Review",     title: "Try It Yourself: Sessions 6–10", coming: true },
+    { slug: "s12", file: "sessions/s12-review-2.html",           unit: "Review",     title: "Try It Yourself: Sessions 6–10" },
 
     { group: "Week 4 — JavaFX Foundations" },
-    { slug: "s13", file: "sessions/s13-intro-javafx.html",       unit: "Session 13", title: "Introduction to JavaFX", coming: true },
+    { slug: "s13", file: "sessions/s13-intro-javafx.html",       unit: "Session 13", title: "Introduction to JavaFX" },
     { slug: "s14", file: "sessions/s14-javafx-text-shapes.html", unit: "Session 14", title: "Text, Transforms & Shapes", coming: true },
     { slug: "s15", file: "sessions/s15-javafx-layouts-ui.html",  unit: "Session 15", title: "Layouts, CSS, Controls & Charts", coming: true },
     { slug: "s16", file: "sessions/s16-javafx-events.html",      unit: "Session 16", title: "Event Handling", coming: true },

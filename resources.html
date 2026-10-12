@@ -13,7 +13,7 @@
 
 <main class="page">
   <section class="hero">
-    <span class="tag">Reference &middot; 75 videos &middot; 60 readings</span>
+    <span class="tag">Reference &middot; 101 videos &middot; 69 readings</span>
     <h1>Further Study &amp; Videos</h1>
     <p class="lede">
       Every video and every documentation link the sessions recommend, gathered in one place and
@@ -21,8 +21,8 @@
       revision strategy. Each card says <em>which part of the session</em> it supports.
     </p>
     <div class="meta">
-      <span>&#128250; 75 videos</span>
-      <span>&#128214; 60 readings</span>
+      <span>&#128250; 101 videos</span>
+      <span>&#128214; 69 readings</span>
       <span>&#127760; Videos need internet &mdash; everything else is offline</span>
     </div>
   </section>
@@ -524,6 +524,149 @@
     <li><a href="https://docs.junit.org/5.14.4/user-guide/" target="_blank" rel="noopener">JUnit 5.14.4 User Guide &mdash; the <em>test execution order</em> section</a> why the default order is deliberately unspecified, and what depending on it really costs you.</li>
     <li><a href="https://docs.devin.ai/desktop/devin-desktop-faq" target="_blank" rel="noopener">Devin Desktop FAQ</a> and <a href="https://docs.devin.ai/desktop/recommended-extensions" target="_blank" rel="noopener">Recommended Extensions</a>: the two primary sources behind Part 7.</li>
   </ul>
+
+  <h2 id="s11-data-structures">Session 11 &mdash; Java Data Structures</h2>
+  <p class="text-sm"><a href="sessions/s11-data-structures.html">Open Session 11 &rarr;</a></p>
+  <h3>Watch</h3>
+  <div class="video-grid">
+    <div class="video-card" data-yt="P0f7CLUcbD8" data-title="Java Vector Class | How to use Vector class in Java">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java Vector Class | How to use Vector class in Java</div><div class="video-card__channel">Coding Simplified</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="NP3FX9uM9gY" data-title="Java Stack Class">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java Stack Class</div><div class="video-card__channel">Java Code Geeks</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="YoFBNMMQrRA" data-title="BitSet Data Structure in Java Programming Language | BitSet in Java">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">BitSet Data Structure in Java Programming Language | BitSet in Java</div><div class="video-card__channel">Comrevo</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="jwzg5BcCExI" data-title="HashTable, Properties, Dictionary Data Structure in Java Programming Language">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">HashTable, Properties, Dictionary Data Structure in Java Programming Language</div><div class="video-card__channel">Comrevo</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="8GU6d2560F4" data-title="Properties Class in Java Explained | Java properties tutorial | Java Tutorial">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Properties Class in Java Explained | Java properties tutorial | Java Tutorial</div><div class="video-card__channel">Ram N Java</div><div class="video-card__why"></div></div>
+    </div>
+  </div>
+  <h3>Read (official &amp; trusted)</h3>
+  <ul>
+    <li><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Enumeration.html" target="_blank" rel="noopener">Java 21 API &mdash; <code>Enumeration</code></a> &mdash; two method signatures. Read the whole page in ninety seconds and note that <code>asIterator()</code> is documented as a default method added in Java 9.</li>
+    <li><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/BitSet.html" target="_blank" rel="noopener">Java 21 API &mdash; <code>BitSet</code></a> &mdash; the class list of this session's survivors. Compare <code>size()</code>, <code>length()</code> and <code>cardinality()</code> in the official wording.</li>
+    <li><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Stack.html" target="_blank" rel="noopener">Java 21 API &mdash; <code>Stack</code></a> &mdash; scroll to the top of the page. The first sentence of the class description says <em>"a more complete and consistent set of LIFO stack operations is provided by the <code>Deque</code> interface"</em>. That is the JDK telling you what Part 6 told you.</li>
+    <li><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Dictionary.html" target="_blank" rel="noopener">Java 21 API &mdash; <code>Dictionary</code></a> &mdash; note the word <em>obsolete</em> in the class description, and that this is the one place in the session where the JDK does the telling.</li>
+    <li><a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Properties.html" target="_blank" rel="noopener">Java 21 API &mdash; <code>Properties</code></a> &mdash; read the <code>load(InputStream)</code> paragraph on <strong>ISO-8859-1</strong> and the <code>\uXXXX</code> escape rule. It is the single most surprising fact on this page.</li>
+  </ul>
+
+  <h2 id="s11b-data-structures-by-hand">Session 11B &mdash; Data Structures, By Hand</h2>
+  <p class="text-sm"><a href="sessions/s11b-data-structures-by-hand.html">Open Session 11B &rarr;</a></p>
+  <h3>Watch</h3>
+  <div class="video-grid">
+    <div class="video-card" data-yt="gDl7PS_zwAs" data-title="Dynamic Array in Java | ArrayList Internal working">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Dynamic Array in Java | ArrayList Internal working</div><div class="video-card__channel">Coding Env</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="MTl8djZFWE0" data-title="What is Amortized Time Complexity? - Dynamic Array">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">What is Amortized Time Complexity? - Dynamic Array</div><div class="video-card__channel">Gaurav Sen</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="c3RVW3KGIIE" data-title="How HashMap works in Java? With Animation!! whats new in java8 tutorial">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">How HashMap works in Java? With Animation!! whats new in java8 tutorial</div><div class="video-card__channel">Ranjith ramachandran</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="4X5Kgi2VltI" data-title="Equals and Hashcode Contract in Java [Important Java Interview Question] | Code Decode">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Equals and Hashcode Contract in Java [Important Java Interview Question] | Code Decode</div><div class="video-card__channel">Code Decode</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="8sjFA-IX-Ww" data-title="Circular Queue Implementation - Array">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Circular Queue Implementation - Array</div><div class="video-card__channel">Blue Tree Code</div><div class="video-card__why"></div></div>
+    </div>
+  </div>
+
+  <h2 id="s12-review-2">Session 12 &mdash; Try It Yourself: Sessions 6–10</h2>
+  <p class="text-sm"><a href="sessions/s12-review-2.html">Open Session 12 &rarr;</a></p>
+  <h3>Watch</h3>
+  <div class="video-grid">
+    <div class="video-card" data-yt="pMy5pf3EcyY" data-title="Statement vs Prepared Statement">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Statement vs Prepared Statement</div><div class="video-card__channel">Alex Lee</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="ciNHn38EyRc" data-title="SQL Injection explained">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">SQL Injection explained</div><div class="video-card__channel">Computerphile</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="pomxJOFVcQs" data-title="Relational Database ACID Transactions">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Relational Database ACID Transactions</div><div class="video-card__channel">Hussein Nasser</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="3cNqfKAAt20" data-title="JDBC Batch Processing: addBatch vs executeBatch">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">JDBC Batch Processing: addBatch vs executeBatch</div><div class="video-card__channel">Defog Tech</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="NP7RmrHn1Q0" data-title="Design Patterns in Java Every Developer Should Know | Factory, Observer, Strategy">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Design Patterns in Java Every Developer Should Know</div><div class="video-card__channel">Amigoscode</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="flpmSXVTqBI" data-title="Java Testing - JUnit 5 Crash Course">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java Testing - JUnit 5 Crash Course</div><div class="video-card__channel">freeCodeCamp.org</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="YoFBNMMQrRA" data-title="BitSet Data Structure in Java Programming Language | BitSet in Java">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">BitSet Data Structure in Java</div><div class="video-card__channel">Coding with Aman</div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="jwzg5BcCExI" data-title="HashTable, Properties, Dictionary Data Structure in Java Programming Language">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">HashTable, Properties, Dictionary Data Structures</div><div class="video-card__channel">Coding with Aman</div><div class="video-card__why"></div></div>
+    </div>
+  </div>
+  <h3>Read (official &amp; trusted)</h3>
+  <ul>
+    <li><a href="https://dev.java/learn/" target="_blank" rel="noopener">dev.java &mdash; The Official Java Tutorials</a> The JDBC Trail and Modern Language Features.</li>
+    <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/package-summary.html" target="_blank" rel="noopener">Java 25 API &mdash; java.sql Package</a> <code>Connection</code>, <code>PreparedStatement</code>, <code>Savepoint</code>, and <code>DatabaseMetaData</code>.</li>
+    <li><a href="https://junit.org/junit5/docs/current/user-guide/" target="_blank" rel="noopener">JUnit 5 User Guide</a> Lifecycle annotations, assertions, and parameterized tests.</li>
+    <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/BitSet.html" target="_blank" rel="noopener">Java 25 API &mdash; java.util.BitSet</a> Bit arrays, cardinality, and bitwise operations.</li>
+  </ul>
+
+  <h2 id="s13-intro-javafx">Session 13 &mdash; Introduction to JavaFX</h2>
+  <p class="text-sm"><a href="sessions/s13-intro-javafx.html">Open Session 13 &rarr;</a></p>
+  <h3>Watch</h3>
+  <div class="video-grid">
+    <div class="video-card" data-yt="_7OM-cMYWbQ" data-title="JavaFX install &amp; setup (Eclipse) 🌘">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">JavaFX install &amp; setup (Eclipse) 🌘</div><div class="video-card__channel"></div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="FLkOX4Eez6o" data-title="JavaFX Java GUI Tutorial - 1 - Creating a Basic Window">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">JavaFX Java GUI Tutorial - 1 - Creating a Basic Window</div><div class="video-card__channel"></div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="buW8eZKVK3Q" data-title="JavaFX 8-17: Introduction (TextField, Text and Button)">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">JavaFX 8-17: Introduction (TextField, Text and Button)</div><div class="video-card__channel"></div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="r_tdK8zWr_w" data-title="JavaFX 11+ Maven Tutorial">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">JavaFX 11+ Maven Tutorial</div><div class="video-card__channel"></div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="mOLkdt2sGjA" data-title="JavaFX Software: Auto-localization via Bindings">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">JavaFX Software: Auto-localization via Bindings</div><div class="video-card__channel"></div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="w_PsCNqqcE4" data-title="JavaFX 11+ Cross-platform Deployment">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">JavaFX 11+ Cross-platform Deployment</div><div class="video-card__channel"></div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="vrEnmDZW7Ag" data-title="JavaFX Software: Animated Custom Dialog">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">JavaFX Software: Animated Custom Dialog</div><div class="video-card__channel"></div><div class="video-card__why"></div></div>
+    </div>
+    <div class="video-card" data-yt="XDazKWYaim8" data-title="JavaFX Software: Quiz App (MVC, JSON Serialization)">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">JavaFX Software: Quiz App (MVC, JSON Serialization)</div><div class="video-card__channel"></div><div class="video-card__why"></div></div>
+    </div>
+  </div>
 
   <h2 id="databases">Guide &mdash; H2 &amp; MySQL: the two databases</h2>
   <p class="text-sm"><a href="guides/databases.html">Open Guide &rarr;</a></p>

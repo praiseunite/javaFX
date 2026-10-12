@@ -1,0 +1,2264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session 12 — Try It Yourself: Sessions 6–10</title>
+  <meta name="description" content="Session 12 of Building Rich Java Applications with JavaFX and AI Tools: a comprehensive hands-on review of Book Sessions 6–10. Debug seven enterprise faults across JDBC, transactions, design patterns, unit testing, and legacy data structures, work the Try It Yourself challenges, repair a five-fault enterprise clinic until its self-check reports 5 passed, 0 failed, and submit Assignment A4.">
+  <link rel="stylesheet" href="../assets/css/course.css">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "s12";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== 1. HERO ========================================================= -->
+  <section class="hero">
+    <span class="tag">Week 3 &middot; Day 4 &middot; Session 12 &middot; 2 hours in class</span>
+    <h1>Session 12 &mdash; Try It Yourself: Sessions 6&ndash;10</h1>
+    <p class="lede">
+      You have connected to databases (JDBC API), controlled atomic transactions and savepoints (Advanced JDBC),
+      decoupled architectures with patterns and internationalization (Design Patterns), constructed rigorous test fixtures
+      alongside AI tools (JUnit 5 &amp; AI Tools), and navigated legacy data structures (BitSet, Stack, Vector, Dictionary).
+      Today you find out whether you can <strong>diagnose, trace, and repair</strong> real faults across the entire enterprise
+      tier. You will debug seven real-world enterprise faults, work the <em>Try It Yourself</em> questions from Book Sessions
+      6&ndash;10, repair an enterprise clinic broken in five different ways until its self-check reports
+      <code>5 passed, 0 failed</code>, and submit Assignment A4.
+    </p>
+    <div class="meta">
+      <span>&#128218; Learner's Guide: SG &middot; XP &middot; TG &mdash; Session 12</span>
+      <span>&#9201; ~2 hours + practice at home</span>
+      <span>&#9989; Before this: Sessions 7&ndash;11B</span>
+      <span>&#128203; Assignment A4 &mdash; due today: bring your project</span>
+    </div>
+  </section>
+
+  <!-- ===== 2. OBJECTIVES =================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this session you can&hellip;</b>
+    <ol>
+      <li><strong>Diagnose</strong> SQL injection vulnerabilities and <strong>apply</strong> parameterized <code>PreparedStatement</code> query bindings to secure database access.</li>
+      <li><strong>Enforce</strong> ACID transaction boundaries with <code>setAutoCommit(false)</code>, <code>commit()</code>, and <code>rollback()</code> to prevent partial data corruption.</li>
+      <li><strong>Implement</strong> <code>Savepoint</code> checkpoints to allow safe partial rollback of batch updates without discarding valid transactions.</li>
+      <li><strong>Preserve</strong> architectural seams by separating presentation controllers from concrete database drivers via the Repository and Factory patterns.</li>
+      <li><strong>Construct</strong> deterministic JUnit 5 test suites that verify invariants and boundaries without swallowed exceptions.</li>
+      <li><strong>Critique</strong> AI-generated queries, test cases, and design patterns against security, correctness, and performance benchmarks.</li>
+      <li><strong>Distinguish</strong> legacy data structure quirks (such as <code>Stack.search()</code> 1-based indexing and <code>BitSet.size()</code> vs <code>cardinality()</code>) from modern collections.</li>
+      <li><strong>Debug</strong> broken enterprise systems following the 5-step loop: <em>spot &rarr; reproduce &rarr; isolate &rarr; fix &rarr; re-run</em>.</li>
+      <li><strong>Repair</strong> an enterprise service class with five planted faults and <strong>prove</strong> it with a self-check that moves from <code>0 passed, 5 failed</code> to <code>5 passed, 0 failed</code>.</li>
+    </ol>
+  </div>
+
+  <!-- ===== 3. TABLE OF CONTENTS ============================================ -->
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== 5. ROADMAP ====================================================== -->
+  <h2>Your Roadmap for Today</h2>
+  <div class="roadmap">
+    <a href="#part-1-debugging">Part 1: Enterprise Debugging Drills</a>
+    <a href="#part-2-try-it-yourself">Part 2: Try It Yourself (Sessions 6&ndash;10)</a>
+    <a href="#part-3-mega-quiz">Part 3: The Mega-Quiz</a>
+    <a href="#lab-repair-clinic">Guided Lab: The Enterprise Repair Clinic</a>
+  </div>
+
+  <!-- ===== 6. WHY THIS MATTERS ============================================= -->
+  <h2>Why This Matters</h2>
+  <p>
+    In real enterprise software, bugs rarely announce themselves with polite crashes and obvious line numbers.
+    Instead, they hide behind clean exits: a customer registration commits but the tuition payment fails,
+    leaving an orphaned student record; an SQL injection leaks private records without raising a single error;
+    or an AI-generated test catches an exception and reports green while the underlying method is broken.
+  </p>
+  <p>
+    Professional developers spend more than half their careers <strong>diagnosing code they did not write</strong>.
+    Reading error logs, inspecting database constraints, isolating transactions, and maintaining clean architectural seams
+    are the core skills that separate junior coders from true software engineers. Today is your pre-flight inspection
+    before we step into graphical user interfaces with JavaFX.
+  </p>
+
+  <div class="callout callout--analogy"><span class="callout__i">&#127917;</span>
+    <div class="callout__b"><b>Analogy &mdash; the aircraft pre-flight inspection</b>
+      Before a commercial aircraft takes off, the pilot conducts a rigorous pre-flight walkaround with a checklist.
+      They do not wait until 30,000 feet to find out if the hydraulic seals are leaking, if the fuel valves are stuck,
+      or if the instrument gauges are calibrated. Today's review session is your pre-flight inspection.
+      Before we build complex interactive JavaFX applications with stages, scenes, and media pipelines in Week 4,
+      we verify that our persistence foundation, transaction boundaries, design patterns, and test suites are airtight.
+    </div>
+  </div>
+
+  <!-- ===== 7. PART 1 ======================================================= -->
+  <h2 id="part-1-debugging"><span class="eyebrow">Part 1 of 3</span> Enterprise Debugging Drills</h2>
+  <p>
+    Seven realistic enterprise faults, spanning the core material of Book Sessions 6 through 10.
+    Read the scenario, inspect the code, and <strong>predict the failure</strong> before scrolling to the output.
+    Every drill below is real, compiled Java code running against an embedded H2 database.
+  </p>
+
+  <figure class="concept-visual">
+    <img src="../assets/img/cartoons/s12_enterprise_review.jpg" alt="A software engineering inspector examining an enterprise pipeline connecting SQL database vaults, design pattern conveyors, and green test meters." />
+    <figcaption><strong>Figure 1.</strong> The enterprise software inspection: verifying SQL security, transaction boundaries, design seams, and unit tests.</figcaption>
+  </figure>
+
+  <div style="text-align:center;margin:1.5rem 0">
+    <img src="../assets/img/diagrams/s12_repair_loop.svg" alt="Five steps of the enterprise diagnostic loop: spot, reproduce, isolate, fix, and re-run." style="max-width:100%;height:auto">
+    <p class="text-sm text-faint" style="margin-top:.5rem">Figure 2 &mdash; the diagnostic loop every enterprise fix follows.</p>
+  </div>
+
+  <div style="text-align:center;margin:1.5rem 0">
+    <img src="../assets/img/diagrams/s12_enterprise_architecture.svg" alt="The 5-tier enterprise architecture across Sessions 6 to 10." style="max-width:100%;height:auto">
+    <p class="text-sm text-faint" style="margin-top:.5rem">Figure 3 &mdash; the clean separation of presentation, architectural seams, unit testing, JDBC, and transactions.</p>
+  </div>
+
+  <h3>Drill 1 &mdash; The Vulnerable Search (SQL Injection)</h3>
+  <p>
+    A front desk search concatenates user text directly into a SQL query. An attacker inputs
+    <code>' OR '1'='1</code> and dumps every record in the registry.
+  </p>
+  <!--@code src="code/s12-review-2/src/main/java/com/aptech/s12/drills/D1_SqlInjection.java" from="34" to="62" hl="8,22" title="D1_SqlInjection.java — concatenated query vs PreparedStatement"-->
+<pre class="numbered" data-file="D1_SqlInjection.java — concatenated query vs PreparedStatement" data-hl="8,22" style="counter-reset:line 33"><code class="lang-java">        System.out.println("  -&gt; Query structure was altered: '1'='1' dumped every record in the table.");
+        System.out.println();
+
+        System.out.println("FIXED - PreparedStatement with parameter marker (?):");
+        List&lt;String&gt; secured = securedSearch(maliciousInput);
+        System.out.println("  students returned: " + secured.size() + " -&gt; " + secured);
+        System.out.println("  -&gt; The database engine treated the input as a literal string value.");
+    }
+
+    private static List&lt;String&gt; brokenSearch(String input) throws SQLException {
+        List&lt;String&gt; results = new ArrayList&lt;&gt;();
+        try (Connection conn = DriverManager.getConnection(URL);
+             Statement stmt = conn.createStatement()) {
+            String sql = "SELECT name FROM students WHERE name = '" + input + "'";
+            try (ResultSet rs = stmt.executeQuery(sql)) {
+                while (rs.next()) {
+                    results.add(rs.getString("name"));
+                }
+            }
+        }
+        return results;
+    }
+
+    private static List&lt;String&gt; securedSearch(String input) throws SQLException {
+        List&lt;String&gt; results = new ArrayList&lt;&gt;();
+        String sql = "SELECT name FROM students WHERE name = ?";
+        try (Connection conn = DriverManager.getConnection(URL);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, input);</code></pre>
+<!--@end-->
+  <!--@output project="code/s12-review-2" main="com.aptech.s12.drills.D1_SqlInjection"-->
+<div class="terminal-output">Drill 1 - SQL injection: concatenation vs PreparedStatement
+Searching for student name: ' OR '1'='1
+
+BROKEN - concatenated query: "SELECT name FROM students WHERE name = '" + input + "'"
+  students returned: 3 -&gt; [Ada Lovelace, James Gosling, Alan Turing]
+  -&gt; Query structure was altered: '1'='1' dumped every record in the table.
+
+FIXED - PreparedStatement with parameter marker (?):
+  students returned: 0 -&gt; []
+  -&gt; The database engine treated the input as a literal string value.</div>
+<!--@end-->
+  <details>
+    <summary>&#128161; See the Bug &amp; Fix</summary>
+    <div>
+      <p><strong>The Bug:</strong> String concatenation alters the syntax tree of the SQL query. The injected <code>' OR '1'='1</code> makes the <code>WHERE</code> clause unconditionally true, bypassing authentication or privacy filters.</p>
+      <p><strong>The Fix:</strong> Use a <code>PreparedStatement</code> with a parameter marker (<code>?</code>). The database driver pre-compiles the query structure first, then passes the user input strictly as literal data. The injection string is compared literally against student names, matching zero rows.</p>
+    </div>
+  </details>
+
+  <h3>Drill 2 &mdash; The Leaking Connection</h3>
+  <p>
+    A database query encounters an unexpected syntax error or constraint failure before reaching <code>conn.close()</code>.
+    The connection remains open in the pool, eventually exhausting server sockets.
+  </p>
+  <!--@code src="code/s12-review-2/src/main/java/com/aptech/s12/drills/D2_LeakingConnection.java" from="36" to="66" hl="8,20" title="D2_LeakingConnection.java — manual close() vs try-with-resources"-->
+<pre class="numbered" data-file="D2_LeakingConnection.java — manual close() vs try-with-resources" data-hl="8,20" style="counter-reset:line 35"><code class="lang-java">        System.out.println("  -&gt; Resource released automatically on the exception path.");
+    }
+
+    private static Connection runBroken() {
+        Connection conn = null;
+        try {
+            conn = DriverManager.getConnection(URL);
+            Statement stmt = conn.createStatement();
+            // Deliberate syntax error: throws SQLException
+            stmt.executeQuery("SELECT * FROM non_existent_table_xyz");
+            conn.close(); // unreachable due to exception!
+        } catch (SQLException e) {
+            // Error logged, but connection was not closed
+        }
+        return conn;
+    }
+
+    private static Connection runFixed() throws SQLException {
+        Connection captured;
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            captured = conn;
+            try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM non_existent_table_xyz")) {
+                ps.executeQuery();
+            } catch (SQLException e) {
+                // PreparedStatement closed by its own try-with-resources
+            }
+        }
+        // At this line, the outer try block has completed and closed conn
+        return captured;
+    }
+</code></pre>
+<!--@end-->
+  <!--@output project="code/s12-review-2" main="com.aptech.s12.drills.D2_LeakingConnection.java"-->
+<div class="terminal-output">Error: Could not find or load main class com.aptech.s12.drills.D2_LeakingConnection.java
+Caused by: java.lang.ClassNotFoundException: com.aptech.s12.drills.D2_LeakingConnection.java</div>
+<!--@end-->
+  <details>
+    <summary>&#128161; See the Bug &amp; Fix</summary>
+    <div>
+      <p><strong>The Bug:</strong> Manual <code>close()</code> calls placed at the bottom of a <code>try</code> block are skipped when an exception is thrown. The operating system handle leaks permanently.</p>
+      <p><strong>The Fix:</strong> Manage all JDBC resources (<code>Connection</code>, <code>Statement</code>, <code>ResultSet</code>) inside a multi-resource <code>try (...)</code> header. Every resource implementing <code>AutoCloseable</code> is guaranteed to be closed on all exit paths, including exceptions.</p>
+    </div>
+  </details>
+
+  <h3>Drill 3 &mdash; The Auto-Commit Catastrophe</h3>
+  <p>
+    A multi-step registration enrols a student and then posts their tuition payment.
+    The fee write fails due to an invalid amount, but the student enrolment remains in the database.
+  </p>
+  <!--@code src="code/s12-review-2/src/main/java/com/aptech/s12/drills/D3_AutoCommitCatastrophe.java" from="41" to="82" hl="4,18,33" title="D3_AutoCommitCatastrophe.java — auto-commit vs explicit transaction"-->
+<pre class="numbered" data-file="D3_AutoCommitCatastrophe.java — auto-commit vs explicit transaction" data-hl="4,18,33" style="counter-reset:line 40"><code class="lang-java">        System.out.println("  -&gt; Atomic rollback: neither record exists. All-or-nothing guaranteed.");
+    }
+
+    private static void runBroken() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            // Step 1: Insert enrolment (succeeds and auto-commits immediately!)
+            try (PreparedStatement ps1 = conn.prepareStatement(
+                    "INSERT INTO enrolments (id, student_id, course_name) VALUES (1, 101, 'Java Foundations')")) {
+                ps1.executeUpdate();
+            }
+
+            // Step 2: Insert fee payment (fails due to database constraint: amount &gt; 0)
+            try (PreparedStatement ps2 = conn.prepareStatement(
+                    "INSERT INTO fee_payments (id, enrolment_id, amount) VALUES (1, 1, -50.0)")) {
+                ps2.executeUpdate();
+            } catch (SQLException e) {
+                // Step 2 threw, but Step 1 is already permanently committed!
+            }
+        }
+    }
+
+    private static void runFixed() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setAutoCommit(false); // Begin explicit transaction boundary
+            try {
+                // Step 1: Insert enrolment
+                try (PreparedStatement ps1 = conn.prepareStatement(
+                        "INSERT INTO enrolments (id, student_id, course_name) VALUES (1, 101, 'Java Foundations')")) {
+                    ps1.executeUpdate();
+                }
+
+                // Step 2: Insert fee payment (fails due to constraint)
+                try (PreparedStatement ps2 = conn.prepareStatement(
+                        "INSERT INTO fee_payments (id, enrolment_id, amount) VALUES (1, 1, -50.0)")) {
+                    ps2.executeUpdate();
+                }
+
+                conn.commit(); // Only reached if both steps succeed
+            } catch (SQLException e) {
+                conn.rollback(); // Cancel all modifications made since setAutoCommit(false)
+            } finally {
+                conn.setAutoCommit(true);</code></pre>
+<!--@end-->
+  <!--@output project="code/s12-review-2" main="com.aptech.s12.drills.D3_AutoCommitCatastrophe"-->
+<div class="terminal-output">Drill 3 - Transaction atomicity: auto-commit vs explicit transaction boundary
+
+BROKEN - autoCommit = true (default). Step 1 commits before Step 2 fails:
+  enrolments in DB: 1
+  fee_payments in DB: 0
+  -&gt; Enrolment #1 was committed alone: an orphaned record with no payment.
+
+FIXED - setAutoCommit(false) with commit() and rollback():
+  enrolments in DB: 0
+  fee_payments in DB: 0
+  -&gt; Atomic rollback: neither record exists. All-or-nothing guaranteed.</div>
+<!--@end-->
+  <details>
+    <summary>&#128161; See the Bug &amp; Fix</summary>
+    <div>
+      <p><strong>The Bug:</strong> JDBC connections default to <code>autoCommit = true</code>. Each individual SQL statement commits immediately upon execution. When Step 2 fails, Step 1 is already permanently committed, creating an orphaned record.</p>
+      <p><strong>The Fix:</strong> Call <code>conn.setAutoCommit(false)</code> at the start. Execute all related statements, call <code>conn.commit()</code> only if all succeed, and invoke <code>conn.rollback()</code> inside the <code>catch</code> block. This restores the ACID guarantee of Atomicity.</p>
+    </div>
+  </details>
+
+  <h3>Drill 4 &mdash; The Collateral Damage Batch</h3>
+  <p>
+    A bursar posts a batch of three payment installments. One installment has an invalid negative fee.
+    Without checkpoints, rolling back the failure wipes out the valid installments as well.
+  </p>
+  <!--@code src="code/s12-review-2/src/main/java/com/aptech/s12/drills/D4_SavepointRollback.java" from="41" to="80" hl="20,26" title="D4_SavepointRollback.java — full rollback vs Savepoint partial rollback"-->
+<pre class="numbered" data-file="D4_SavepointRollback.java — full rollback vs Savepoint partial rollback" data-hl="20,26" style="counter-reset:line 40"><code class="lang-java">        System.out.println("WITH SAVEPOINT - checkpoints protect valid updates:");
+        runWithSavepoints(batchAmounts);
+        System.out.println("  payments recorded: " + readPayments());
+        System.out.println("  -&gt; Bad payment -50.0 was rolled back to its savepoint; $100.0 and $150.0 survived.");
+    }
+
+    private static void runWithoutSavepoint(double[] amounts) throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setAutoCommit(false);
+            try {
+                for (int i = 0; i &lt; amounts.length; i++) {
+                    insertPayment(conn, i + 1, amounts[i]);
+                }
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback(); // Drops EVERYTHING!
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        }
+    }
+
+    private static void runWithSavepoints(double[] amounts) throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setAutoCommit(false);
+            try {
+                for (int i = 0; i &lt; amounts.length; i++) {
+                    Savepoint sp = conn.setSavepoint("sp_" + i);
+                    try {
+                        insertPayment(conn, i + 1, amounts[i]);
+                    } catch (SQLException e) {
+                        conn.rollback(sp); // Roll back only this single item!
+                    }
+                }
+                conn.commit();
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        }
+    }</code></pre>
+<!--@end-->
+  <!--@output project="code/s12-review-2" main="com.aptech.s12.drills.D4_SavepointRollback"-->
+<div class="terminal-output">Drill 4 - Transaction Savepoints: full rollback vs partial rollback
+Processing payment batch: [100.0, -50.0, 150.0]
+
+WITHOUT SAVEPOINT - one bad amount aborts the whole batch:
+  payments recorded: []
+  -&gt; The entire batch was cancelled; valid payment $100.0 was lost.
+
+WITH SAVEPOINT - checkpoints protect valid updates:
+  payments recorded: [100.0, 150.0]
+  -&gt; Bad payment -50.0 was rolled back to its savepoint; $100.0 and $150.0 survived.</div>
+<!--@end-->
+  <details>
+    <summary>&#128161; See the Bug &amp; Fix</summary>
+    <div>
+      <p><strong>The Bug:</strong> A standard <code>conn.rollback()</code> rewinds the entire transaction to its starting point, discarding all preceding successful modifications in the batch.</p>
+      <p><strong>The Fix:</strong> Create an intermediate checkpoint using <code>Savepoint sp = conn.setSavepoint("name")</code> before each optional item. On error, execute <code>conn.rollback(sp)</code> to discard only the offending item while preserving valid updates.</p>
+    </div>
+  </details>
+
+  <h3>Drill 5 &mdash; Leaking the Architectural Seam</h3>
+  <p>
+    A UI controller directly instantiates <code>new DatabaseStore()</code> and catches database-specific exceptions,
+    destroying the ability to test in memory or swap storage engines.
+  </p>
+  <!--@code src="code/s12-review-2/src/main/java/com/aptech/s12/drills/D5_LeakingTheSeam.java" from="33" to="57" hl="4,10" title="D5_LeakingTheSeam.java — direct coupling vs Repository Factory"-->
+<pre class="numbered" data-file="D5_LeakingTheSeam.java — direct coupling vs Repository Factory" data-hl="4,10" style="counter-reset:line 32"><code class="lang-java">    }
+
+    public enum Mode { MEMORY, DATABASE }
+
+    // === Factory with exhaustive switch expression (no default) ===
+    public static class StoreFactory {
+        public static StudentStore create(Mode mode) {
+            return switch (mode) {
+                case MEMORY -&gt; new MemoryStore();
+                case DATABASE -&gt; new DatabaseStore();
+            };
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println("Drill 5 - The Architectural Seam: direct coupling vs Factory &amp; Interface");
+        System.out.println();
+
+        System.out.println("BROKEN - presentation controller tightly coupled to concrete class:");
+        System.out.println("  DatabaseStore store = new DatabaseStore(); // Concrete class leak!");
+        System.out.println("  -&gt; Cannot switch to in-memory store for testing without editing every caller.");
+        System.out.println();
+
+        System.out.println("FIXED - caller talks only to the interface, obtained through Factory:");
+        StudentStore memStore = StoreFactory.create(Mode.MEMORY);</code></pre>
+<!--@end-->
+  <!--@output project="code/s12-review-2" main="com.aptech.s12.drills.D5_LeakingTheSeam"-->
+<div class="terminal-output">Drill 5 - The Architectural Seam: direct coupling vs Factory &amp; Interface
+
+BROKEN - presentation controller tightly coupled to concrete class:
+  DatabaseStore store = new DatabaseStore(); // Concrete class leak!
+  -&gt; Cannot switch to in-memory store for testing without editing every caller.
+
+FIXED - caller talks only to the interface, obtained through Factory:
+  memory store find(101)   : Ada Lovelace
+  database store find(102) : Alan Turing
+  -&gt; Zero concrete dependencies in the caller; interchangeable at runtime.</div>
+<!--@end-->
+  <details>
+    <summary>&#128161; See the Bug &amp; Fix</summary>
+    <div>
+      <p><strong>The Bug:</strong> Direct instantiation leaks concrete class names and persistence details into presentation tiers. The controller cannot be tested without a live database.</p>
+      <p><strong>The Fix:</strong> Program to the <code>StudentStore</code> interface. Obtain instances through <code>StoreFactory.create(mode)</code> using an exhaustive switch expression without a default branch. Presentation tiers remain decoupled from storage technologies.</p>
+    </div>
+  </details>
+
+  <h3>Drill 6 &mdash; The Test That Couldn't Fail</h3>
+  <p>
+    An AI coding assistant generates a unit test to verify input validation. The test catches the expected exception
+    inside a <code>try-catch</code> and prints a message, but never asserts that the exception actually occurred.
+  </p>
+  <!--@code src="code/s12-review-2/src/main/java/com/aptech/s12/drills/D6_TheTestThatCannotFail.java" from="34" to="62" hl="8,19" title="D6_TheTestThatCannotFail.java — false positive test vs true exception assertion"-->
+<pre class="numbered" data-file="D6_TheTestThatCannotFail.java — false positive test vs true exception assertion" data-hl="8,19" style="counter-reset:line 33"><code class="lang-java">    }
+
+    private static boolean testBroken() {
+        try {
+            Validator.requireValidId(-1);
+        } catch (Exception e) {
+            System.out.println("  [BrokenTest] Caught exception as expected: " + e.getMessage());
+        }
+        // Always returns true, even if no exception was thrown!
+        return true;
+    }
+
+    private static boolean testFixed() {
+        boolean thrown = false;
+        try {
+            Validator.requireValidId(-1);
+        } catch (IllegalArgumentException e) {
+            thrown = true; // Expected
+        }
+
+        if (!thrown) {
+            System.out.println("  [FixedTest] FAIL: Expected IllegalArgumentException was NOT thrown!");
+            return false;
+        }
+        System.out.println("  [FixedTest] PASS: Confirmed IllegalArgumentException was thrown on negative ID.");
+        return true;
+    }
+}</code></pre>
+<!--@end-->
+  <!--@output project="code/s12-review-2" main="com.aptech.s12.drills.D6_TheTestThatCannotFail"-->
+<div class="terminal-output">Drill 6 - Unit testing: the test that cannot fail vs true failure verification
+
+AI-GENERATED FLAWED TEST - catches the exception and prints a message:
+  [BrokenTest] Caught exception as expected: Student ID must be positive: -1
+  test passed green? true
+  -&gt; If requireValidId(-1) silently stopped throwing, this test STILL passes!
+
+FIXED TEST - asserts the exact exception was thrown, failing if it wasn't:
+  [FixedTest] PASS: Confirmed IllegalArgumentException was thrown on negative ID.
+  test passed green? true
+  -&gt; Genuine regression test: catches logic errors and boundary bugs.</div>
+<!--@end-->
+  <details>
+    <summary>&#128161; See the Bug &amp; Fix</summary>
+    <div>
+      <p><strong>The Bug:</strong> Catching an exception without asserting failure causes the test method to exit normally if the tested method stops throwing. The test passes green even when the code is broken.</p>
+      <p><strong>The Fix:</strong> Explicitly assert that the exception is thrown (e.g. JUnit's <code>assertThrows</code>), or record a flag that fails the test if execution reaches past the call. A test that cannot fail is not a test.</p>
+    </div>
+  </details>
+
+  <h3>Drill 7 &mdash; The Top-of-Stack Zero Trap</h3>
+  <p>
+    A developer checks if a page is on top of a <code>java.util.Stack</code> navigation history.
+    They check <code>stack.search(page) == 0</code> expecting 0-based array indexing. The check always fails.
+  </p>
+  <!--@code src="code/s12-review-2/src/main/java/com/aptech/s12/drills/D7_StackOffByOne.java" from="20" to="44" hl="4,14" title="D7_StackOffByOne.java — legacy Stack.search() 1-based distance"-->
+<pre class="numbered" data-file="D7_StackOffByOne.java — legacy Stack.search() 1-based distance" data-hl="4,14" style="counter-reset:line 19"><code class="lang-java">        System.out.println("Drill 7 - Legacy Stack.search() off-by-one index trap");
+        System.out.println("Stack contents from bottom to top: " + history);
+        System.out.println("Top element is: " + history.peek());
+        System.out.println();
+
+        System.out.println("BROKEN - assuming Stack.search() works like 0-indexed indexOf():");
+        int assumedZeroIndex = history.search("Profile");
+        System.out.println("  history.search(\"Profile\") = " + assumedZeroIndex);
+        if (assumedZeroIndex == 0) {
+            System.out.println("  -&gt; Matched top at index 0");
+        } else {
+            System.out.println("  -&gt; Mismatch! Developer tested (pos == 0) and thought Profile was NOT at the top.");
+        }
+        System.out.println();
+
+        System.out.println("FIXED - respecting the 1-based distance from the top contract:");
+        int topDistance = history.search("Profile");
+        int nextDistance = history.search("Courses");
+        int bottomDistance = history.search("Home");
+        int missingDistance = history.search("NonExistent");
+
+        System.out.println("  distance to 'Profile' (top)    : " + topDistance + " (1 = top of stack)");
+        System.out.println("  distance to 'Courses' (middle) : " + nextDistance + " (2 = one below top)");
+        System.out.println("  distance to 'Home' (bottom)    : " + bottomDistance + " (3 = two below top)");
+        System.out.println("  distance to 'NonExistent'      : " + missingDistance + " (-1 = not found)");</code></pre>
+<!--@end-->
+  <!--@output project="code/s12-review-2" main="com.aptech.s12.drills.D7_StackOffByOne"-->
+<div class="terminal-output">Drill 7 - Legacy Stack.search() off-by-one index trap
+Stack contents from bottom to top: [Home, Courses, Profile]
+Top element is: Profile
+
+BROKEN - assuming Stack.search() works like 0-indexed indexOf():
+  history.search("Profile") = 1
+  -&gt; Mismatch! Developer tested (pos == 0) and thought Profile was NOT at the top.
+
+FIXED - respecting the 1-based distance from the top contract:
+  distance to 'Profile' (top)    : 1 (1 = top of stack)
+  distance to 'Courses' (middle) : 2 (2 = one below top)
+  distance to 'Home' (bottom)    : 3 (3 = two below top)
+  distance to 'NonExistent'      : -1 (-1 = not found)
+  -&gt; Rule: 1-based distance, not 0-based array index.</div>
+<!--@end-->
+  <details>
+    <summary>&#128161; See the Bug &amp; Fix</summary>
+    <div>
+      <p><strong>The Bug:</strong> Unlike <code>List.indexOf()</code> which is 0-indexed, <code>Stack.search()</code> returns the 1-based distance from the top of the stack. The top element is at distance 1, not 0.</p>
+      <p><strong>The Fix:</strong> Test for <code>pos == 1</code> for the top element. In modern Java, replace legacy <code>Stack</code> with <code>ArrayDeque</code> and use <code>peek()</code> or <code>peekFirst()</code>.</p>
+    </div>
+  </details>
+
+  <!-- ===== 8. PART 2 ======================================================= -->
+  <h2 id="part-2-try-it-yourself"><span class="eyebrow">Part 2 of 3</span> Try It Yourself (Sessions 6&ndash;10)</h2>
+  <p>
+    One practical task for each book session. Test your understanding by implementing the solution before
+    expanding the answer. Every program below compiles and executes cleanly.
+  </p>
+
+  <h3>1. JDBC API &mdash; Parameterized Queries &amp; Metadata (Book Session 6)</h3>
+  <p>
+    Connect to an embedded database, create a <code>courses</code> table, insert records safely using
+    <code>PreparedStatement</code>, execute a parameterized filter query, and read table column names from
+    <code>DatabaseMetaData</code>.
+  </p>
+  <details>
+    <summary>&#128161; Hint</summary>
+    <div>
+      <p>Remember the 6 steps of JDBC: load driver (automatic in JDBC 4+), establish connection, create statement, execute query, process result set, and close resources.</p>
+      <p>Inspect metadata with <code>conn.getMetaData().getColumns(null, null, "TABLE_NAME", null)</code>.</p>
+    </div>
+  </details>
+  <details>
+    <summary>&#9989; Solution</summary>
+    <div>
+      <!--@code src="code/s12-review-2/src/main/java/com/aptech/s12/tyi/T1_JdbcQuery.java" title="T1_JdbcQuery.java"-->
+<pre class="numbered" data-file="T1_JdbcQuery.java"><code class="lang-java">package com.aptech.s12.tyi;
+
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * TRY IT YOURSELF 1 — Book Session 6: The JDBC API.
+ *
+ * Task: Connect to an embedded H2 database, create a courses table,
+ * insert records safely using PreparedStatement, query courses by credit threshold,
+ * and inspect database metadata (driver name, product version, columns).
+ */
+public class T1_JdbcQuery {
+
+    private static final String URL = "jdbc:h2:mem:s12_tyi1;DB_CLOSE_DELAY=-1";
+
+    public static void main(String[] args) throws SQLException {
+        System.out.println("Try It Yourself 1 - JDBC API: PreparedStatement &amp; MetaData");
+
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            // 1. Create table
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("CREATE TABLE courses (id INT PRIMARY KEY, title VARCHAR(100), credits INT)");
+            }
+
+            // 2. Insert records using PreparedStatement
+            String insertSql = "INSERT INTO courses (id, title, credits) VALUES (?, ?, ?)";
+            try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
+                addCourse(ps, 1, "Java Foundations", 4);
+                addCourse(ps, 2, "Database Systems &amp; JDBC", 3);
+                addCourse(ps, 3, "Web Development Basics", 2);
+            }
+
+            // 3. Query courses with credits &gt;= 3
+            System.out.println();
+            System.out.println("Courses with credits &gt;= 3 (parameterized query):");
+            String querySql = "SELECT id, title, credits FROM courses WHERE credits &gt;= ? ORDER BY credits DESC";
+            try (PreparedStatement ps = conn.prepareStatement(querySql)) {
+                ps.setInt(1, 3);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        System.out.printf("  [%d] %-25s (%d credits)%n",
+                                rs.getInt("id"), rs.getString("title"), rs.getInt("credits"));
+                    }
+                }
+            }
+
+            // 4. Inspect DatabaseMetaData
+            System.out.println();
+            DatabaseMetaData meta = conn.getMetaData();
+            System.out.println("Database Metadata:");
+            System.out.println("  Database Product : " + meta.getDatabaseProductName() + " " + meta.getDatabaseProductVersion());
+            System.out.println("  Driver Name      : " + meta.getDriverName());
+
+            List&lt;String&gt; cols = new ArrayList&lt;&gt;();
+            try (ResultSet rs = meta.getColumns(null, null, "COURSES", null)) {
+                while (rs.next()) {
+                    cols.add(rs.getString("COLUMN_NAME") + " (" + rs.getString("TYPE_NAME") + ")");
+                }
+            }
+            System.out.println("  Table columns    : " + cols);
+        }
+    }
+
+    private static void addCourse(PreparedStatement ps, int id, String title, int credits) throws SQLException {
+        ps.setInt(1, id);
+        ps.setString(2, title);
+        ps.setInt(3, credits);
+        ps.executeUpdate();
+    }
+}</code></pre>
+<!--@end-->
+      <!--@output project="code/s12-review-2" main="com.aptech.s12.tyi.T1_JdbcQuery"-->
+<div class="terminal-output">Try It Yourself 1 - JDBC API: PreparedStatement &amp; MetaData
+
+Courses with credits &gt;= 3 (parameterized query):
+  [1] Java Foundations          (4 credits)
+  [2] Database Systems &amp; JDBC   (3 credits)
+
+Database Metadata:
+  Database Product : H2 2.3.232 (2024-08-11)
+  Driver Name      : H2 JDBC Driver
+  Table columns    : [ID (INTEGER), TITLE (CHARACTER VARYING), CREDITS (INTEGER)]</div>
+<!--@end-->
+    </div>
+  </details>
+
+  <h3>2. Advanced JDBC &mdash; Transaction Transfer with Savepoint (Book Session 7)</h3>
+  <p>
+    Implement an atomic financial fund transfer between two scholarship accounts. Debit account A, credit account B,
+    and attempt an optional processing fee. If the fee violates a database constraint, roll back only the fee using a
+    <code>Savepoint</code> without failing the primary transfer.
+  </p>
+  <details>
+    <summary>&#128161; Hint</summary>
+    <div>
+      <p>Call <code>conn.setAutoCommit(false)</code> before executing debits and credits.</p>
+      <p>Set a savepoint before the optional fee with <code>Savepoint sp = conn.setSavepoint("fee_check")</code>, and catch any fee error with <code>conn.rollback(sp)</code>.</p>
+    </div>
+  </details>
+  <details>
+    <summary>&#9989; Solution</summary>
+    <div>
+      <!--@code src="code/s12-review-2/src/main/java/com/aptech/s12/tyi/T2_Transactions.java" title="T2_Transactions.java"-->
+<pre class="numbered" data-file="T2_Transactions.java"><code class="lang-java">package com.aptech.s12.tyi;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Savepoint;
+import java.sql.Statement;
+
+/**
+ * TRY IT YOURSELF 2 — Book Session 7: Advanced JDBC.
+ *
+ * Task: Implement an atomic financial transfer between two accounts with Savepoints.
+ * Debit account A, Credit account B, and attempt an optional processing fee.
+ * If the fee violates a constraint, roll back only the fee using a Savepoint,
+ * preserving the primary transfer.
+ */
+public class T2_Transactions {
+
+    private static final String URL = "jdbc:h2:mem:s12_tyi2;DB_CLOSE_DELAY=-1";
+
+    public static void main(String[] args) throws SQLException {
+        setupDatabase();
+
+        System.out.println("Try It Yourself 2 - Advanced JDBC: Transactions &amp; Savepoints");
+        System.out.println("Initial balances:");
+        printBalances();
+
+        // Transfer 200.0 from Alice (acc 1) to Bob (acc 2), with an invalid fee (-15.0)
+        System.out.println();
+        System.out.println("Executing transfer: $200.0 from Alice to Bob, optional fee -$15.0 (invalid):");
+        boolean success = transferWithSavepoint(1, 2, 200.0, -15.0);
+
+        System.out.println("Transfer completed: " + success);
+        System.out.println();
+        System.out.println("Final balances:");
+        printBalances();
+        System.out.println("  -&gt; Primary transfer succeeded ($200 moved); invalid fee was safely rolled back.");
+    }
+
+    private static boolean transferWithSavepoint(int fromAcc, int toAcc, double amount, double fee) {
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setAutoCommit(false);
+            try {
+                // 1. Debit sender
+                updateBalance(conn, fromAcc, -amount);
+
+                // 2. Credit receiver
+                updateBalance(conn, toAcc, amount);
+
+                // 3. Optional processing fee with Savepoint
+                Savepoint feeSavepoint = conn.setSavepoint("fee_checkpoint");
+                try {
+                    // This will throw if fee &lt; 0 due to CHECK constraint
+                    recordFee(conn, fromAcc, fee);
+                } catch (SQLException e) {
+                    System.out.println("  [Savepoint Rollback] Fee failed (" + e.getMessage().split(";")[0]
+                            + ") -&gt; rolling back fee only.");
+                    conn.rollback(feeSavepoint);
+                }
+
+                conn.commit();
+                return true;
+            } catch (SQLException e) {
+                System.out.println("  [Full Rollback] Primary transfer failed: " + e.getMessage());
+                conn.rollback();
+                return false;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    private static void updateBalance(Connection conn, int accId, double delta) throws SQLException {
+        String sql = "UPDATE accounts SET balance = balance + ? WHERE id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setDouble(1, delta);
+            ps.setInt(2, accId);
+            ps.executeUpdate();
+        }
+    }
+
+    private static void recordFee(Connection conn, int accId, double fee) throws SQLException {
+        String sql = "INSERT INTO fee_audit (acc_id, fee) VALUES (?, ?)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, accId);
+            ps.setDouble(2, fee);
+            ps.executeUpdate();
+        }
+    }
+
+    private static void printBalances() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT id, owner, balance FROM accounts ORDER BY id")) {
+            while (rs.next()) {
+                System.out.printf("  Account #%d (%-6s) : $%.2f%n",
+                        rs.getInt("id"), rs.getString("owner"), rs.getDouble("balance"));
+            }
+        }
+    }
+
+    private static void setupDatabase() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL);
+             Statement stmt = conn.createStatement()) {
+            stmt.execute("CREATE TABLE accounts (id INT PRIMARY KEY, owner VARCHAR(50), balance DECIMAL(10,2) CHECK (balance &gt;= 0))");
+            stmt.execute("CREATE TABLE fee_audit (acc_id INT, fee DECIMAL(10,2) CHECK (fee &gt; 0))");
+            stmt.execute("INSERT INTO accounts VALUES (1, 'Alice', 500.0), (2, 'Bob', 100.0)");
+        }
+    }
+}</code></pre>
+<!--@end-->
+      <!--@output project="code/s12-review-2" main="com.aptech.s12.tyi.T2_Transactions"-->
+<div class="terminal-output">Try It Yourself 2 - Advanced JDBC: Transactions &amp; Savepoints
+Initial balances:
+  Account #1 (Alice ) : $500.00
+  Account #2 (Bob   ) : $100.00
+
+Executing transfer: $200.0 from Alice to Bob, optional fee -$15.0 (invalid):
+  [Savepoint Rollback] Fee failed (Check constraint violation: "CONSTRAINT_7: ") -&gt; rolling back fee only.
+Transfer completed: true
+
+Final balances:
+  Account #1 (Alice ) : $300.00
+  Account #2 (Bob   ) : $300.00
+  -&gt; Primary transfer succeeded ($200 moved); invalid fee was safely rolled back.</div>
+<!--@end-->
+    </div>
+  </details>
+
+  <h3>3. Design Patterns &mdash; Repository Factory &amp; I18N Fallback (Book Session 8)</h3>
+  <p>
+    Construct a repository interface and a factory that instantiates storage implementations via an exhaustive
+    Java switch expression without a default clause. Implement internationalized string resolution with automatic
+    fallback to base English when keys are missing.
+  </p>
+  <details>
+    <summary>&#128161; Hint</summary>
+    <div>
+      <p>In Java 17+, switch expressions over an enum with all cases handled do not require a <code>default</code> branch. This guarantees compile-time exhaustiveness.</p>
+      <p>For localization, check the primary language dictionary first; if null or missing, query the default English dictionary.</p>
+    </div>
+  </details>
+  <details>
+    <summary>&#9989; Solution</summary>
+    <div>
+      <!--@code src="code/s12-review-2/src/main/java/com/aptech/s12/tyi/T3_PatternsI18n.java" title="T3_PatternsI18n.java"-->
+<pre class="numbered" data-file="T3_PatternsI18n.java"><code class="lang-java">package com.aptech.s12.tyi;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
+
+/**
+ * TRY IT YOURSELF 3 — Book Session 8: Design Patterns &amp;amp; Advanced Features.
+ *
+ * Task: Implement a Repository Factory pattern with an exhaustive switch expression,
+ * and implement internationalization (i18n) message lookup with graceful English fallback.
+ */
+public class T3_PatternsI18n {
+
+    public interface CourseRepository {
+        void save(String code, String name);
+        String find(String code);
+        int count();
+    }
+
+    public static class InMemoryRepository implements CourseRepository {
+        private final Map&lt;String, String&gt; map = new HashMap&lt;&gt;();
+        @Override public void save(String code, String name) { map.put(code, name); }
+        @Override public String find(String code) { return map.get(code); }
+        @Override public int count() { return map.size(); }
+    }
+
+    public static class EncryptedRepository implements CourseRepository {
+        private final Map&lt;String, String&gt; map = new HashMap&lt;&gt;();
+        @Override public void save(String code, String name) { map.put(code, "[ENC]" + name); }
+        @Override public String find(String code) { return map.get(code); }
+        @Override public int count() { return map.size(); }
+    }
+
+    public enum StorageType { MEMORY, ENCRYPTED }
+
+    public static class RepositoryFactory {
+        public static CourseRepository create(StorageType type) {
+            // Exhaustive switch expression: adding a constant will fail compilation if unhandled
+            return switch (type) {
+                case MEMORY -&gt; new InMemoryRepository();
+                case ENCRYPTED -&gt; new EncryptedRepository();
+            };
+        }
+    }
+
+    public static class I18nHelper {
+        private final ResourceBundle primaryBundle;
+        private final ResourceBundle fallbackBundle;
+
+        public I18nHelper(Locale locale) {
+            this.primaryBundle = ResourceBundle.getBundle("Messages", locale, new FallbackControl());
+            this.fallbackBundle = ResourceBundle.getBundle("Messages", Locale.ENGLISH, new FallbackControl());
+        }
+
+        public String get(String key) {
+            try {
+                return primaryBundle.getString(key);
+            } catch (MissingResourceException e) {
+                return fallbackBundle.getString(key);
+            }
+        }
+
+        // Custom control to safely load bundle or simulate dictionary when standalone
+        private static class FallbackControl extends ResourceBundle.Control {
+            @Override
+            public List&lt;Locale&gt; getCandidateLocales(String baseName, Locale locale) {
+                return List.of(locale, Locale.ENGLISH);
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println("Try It Yourself 3 - Repository Factory &amp; I18N Fallback");
+
+        // 1. Repository Factory Demonstration
+        CourseRepository memRepo = RepositoryFactory.create(StorageType.MEMORY);
+        memRepo.save("CS-101", "Computer Science I");
+
+        CourseRepository encRepo = RepositoryFactory.create(StorageType.ENCRYPTED);
+        encRepo.save("CS-101", "Computer Science I");
+
+        System.out.println();
+        System.out.println("1. Repository Factory implementations created through clean seam:");
+        System.out.println("  Memory repo value    : " + memRepo.find("CS-101"));
+        System.out.println("  Encrypted repo value : " + encRepo.find("CS-101"));
+
+        // 2. I18N dictionary demonstration
+        System.out.println();
+        System.out.println("2. Internationalization (i18n) key lookup with English fallback:");
+
+        Map&lt;String, String&gt; enDict = Map.of(
+                "app.title", "Course Enrollment System",
+                "btn.save", "Save Record",
+                "btn.cancel", "Cancel");
+
+        Map&lt;String, String&gt; frDict = Map.of(
+                "app.title", "Système d'inscription aux cours",
+                "btn.save", "Enregistrer");
+                // Note: btn.cancel is intentionally missing in French
+
+        System.out.println("  Language: French (Locale.FRENCH)");
+        for (String key : List.of("app.title", "btn.save", "btn.cancel")) {
+            String val = frDict.get(key);
+            if (val != null) {
+                System.out.printf("    %-12s -&gt; %s (from French)%n", key, val);
+            } else {
+                System.out.printf("    %-12s -&gt; %s (fallback from English)%n", key, enDict.get(key));
+            }
+        }
+        System.out.println("  -&gt; Missing localized keys safely fall back to the base language.");
+    }
+}</code></pre>
+<!--@end-->
+      <!--@output project="code/s12-review-2" main="com.aptech.s12.tyi.T3_PatternsI18n"-->
+<div class="terminal-output">Try It Yourself 3 - Repository Factory &amp; I18N Fallback
+
+1. Repository Factory implementations created through clean seam:
+  Memory repo value    : Computer Science I
+  Encrypted repo value : [ENC]Computer Science I
+
+2. Internationalization (i18n) key lookup with English fallback:
+  Language: French (Locale.FRENCH)
+    app.title    -&gt; Système d'inscription aux cours (from French)
+    btn.save     -&gt; Enregistrer (from French)
+    btn.cancel   -&gt; Cancel (fallback from English)
+  -&gt; Missing localized keys safely fall back to the base language.</div>
+<!--@end-->
+    </div>
+  </details>
+
+  <h3>4. Unit Testing &mdash; Parameterized Assertions &amp; Exceptions (Book Session 9)</h3>
+  <p>
+    Build a comprehensive test harness that tests grade calculations across score boundaries (A, B, C, D, F),
+    asserts exact <code>IllegalArgumentException</code> throws for illegal out-of-range values, and prints diagnostic
+    validation metrics without swallowed errors.
+  </p>
+  <details>
+    <summary>&#128161; Hint</summary>
+    <div>
+      <p>Test boundary thresholds explicitly (e.g. 89.9 vs 90.0).</p>
+      <p>When testing for expected exceptions, flag if execution completes past the target method call without throwing.</p>
+    </div>
+  </details>
+  <details>
+    <summary>&#9989; Solution</summary>
+    <div>
+      <!--@code src="code/s12-review-2/src/main/java/com/aptech/s12/tyi/T4_UnitTesting.java" title="T4_UnitTesting.java"-->
+<pre class="numbered" data-file="T4_UnitTesting.java"><code class="lang-java">package com.aptech.s12.tyi;
+
+import java.util.List;
+
+/**
+ * TRY IT YOURSELF 4 — Book Session 9: Enhanced Unit Testing &amp;amp; AI Tools.
+ *
+ * Task: Build a robust test fixture that tests both success cases and boundary failures,
+ * asserts exact exception types, and verifies parameterized data points without swallowed errors.
+ */
+public class T4_UnitTesting {
+
+    // === Domain class under test ===
+    public static class GradeCalculator {
+        public static String calculateGrade(double score) {
+            if (score &lt; 0.0 || score &gt; 100.0) {
+                throw new IllegalArgumentException("Score must be between 0.0 and 100.0: " + score);
+            }
+            if (score &gt;= 90.0) return "A";
+            if (score &gt;= 80.0) return "B";
+            if (score &gt;= 70.0) return "C";
+            if (score &gt;= 60.0) return "D";
+            return "F";
+        }
+    }
+
+    // === Parameterized test case record ===
+    public record TestCase(double score, String expectedGrade) {}
+
+    public static void main(String[] args) {
+        System.out.println("Try It Yourself 4 - Unit Testing: Parameterized Checks &amp; Boundaries");
+
+        // 1. Parameterized valid assertions
+        List&lt;TestCase&gt; validCases = List.of(
+                new TestCase(95.0, "A"),
+                new TestCase(89.9, "B"),
+                new TestCase(80.0, "B"),
+                new TestCase(75.5, "C"),
+                new TestCase(60.0, "D"),
+                new TestCase(45.0, "F")
+        );
+
+        System.out.println();
+        System.out.println("1. Running parameterized test cases across grade boundaries:");
+        int passed = 0;
+        for (TestCase tc : validCases) {
+            String actual = GradeCalculator.calculateGrade(tc.score());
+            if (actual.equals(tc.expectedGrade())) {
+                System.out.printf("  PASS: score %5.1f -&gt; expected %s, got %s%n", tc.score(), tc.expectedGrade(), actual);
+                passed++;
+            } else {
+                System.out.printf("  FAIL: score %5.1f -&gt; expected %s, got %s%n", tc.score(), tc.expectedGrade(), actual);
+            }
+        }
+        System.out.printf("  Result: %d of %d boundary checks passed.%n", passed, validCases.size());
+
+        // 2. Boundary exception assertions
+        System.out.println();
+        System.out.println("2. Verifying exception handling for illegal inputs:");
+        testIllegalScore(-5.0);
+        testIllegalScore(105.0);
+
+        System.out.println();
+        System.out.println("Tests completed with strict assertions. Zero swallowed exceptions.");
+    }
+
+    private static void testIllegalScore(double score) {
+        try {
+            GradeCalculator.calculateGrade(score);
+            System.out.printf("  FAIL: Score %.1f was accepted without exception!%n", score);
+        } catch (IllegalArgumentException e) {
+            System.out.printf("  PASS: Score %5.1f threw IllegalArgumentException as expected: \"%s\"%n",
+                    score, e.getMessage());
+        }
+    }
+}</code></pre>
+<!--@end-->
+      <!--@output project="code/s12-review-2" main="com.aptech.s12.tyi.T4_UnitTesting"-->
+<div class="terminal-output">Try It Yourself 4 - Unit Testing: Parameterized Checks &amp; Boundaries
+
+1. Running parameterized test cases across grade boundaries:
+  PASS: score  95.0 -&gt; expected A, got A
+  PASS: score  89.9 -&gt; expected B, got B
+  PASS: score  80.0 -&gt; expected B, got B
+  PASS: score  75.5 -&gt; expected C, got C
+  PASS: score  60.0 -&gt; expected D, got D
+  PASS: score  45.0 -&gt; expected F, got F
+  Result: 6 of 6 boundary checks passed.
+
+2. Verifying exception handling for illegal inputs:
+  PASS: Score  -5.0 threw IllegalArgumentException as expected: "Score must be between 0.0 and 100.0: -5.0"
+  PASS: Score 105.0 threw IllegalArgumentException as expected: "Score must be between 0.0 and 100.0: 105.0"
+
+Tests completed with strict assertions. Zero swallowed exceptions.</div>
+<!--@end-->
+    </div>
+  </details>
+
+  <h3>5. Java Data Structures &mdash; BitSet Permissions &amp; Legacy Vectors (Book Session 10)</h3>
+  <p>
+    Implement high-density user permission flags (READ, WRITE, DELETE, ADMIN) using <code>java.util.BitSet</code>.
+    Perform bitwise intersection (AND) and difference (XOR), and compare legacy <code>Vector</code> / <code>Enumeration</code>
+    traversal against modern <code>List</code> and enhanced for loops.
+  </p>
+  <details>
+    <summary>&#128161; Hint</summary>
+    <div>
+      <p><code>BitSet.set(bitIndex)</code> sets a bit to true. <code>BitSet.cardinality()</code> returns the number of set bits.</p>
+      <p><code>vector.elements()</code> returns an <code>Enumeration&lt;E&gt;</code> traversed with <code>hasMoreElements()</code> and <code>nextElement()</code>.</p>
+    </div>
+  </details>
+  <details>
+    <summary>&#9989; Solution</summary>
+    <div>
+      <!--@code src="code/s12-review-2/src/main/java/com/aptech/s12/tyi/T5_LegacyDataStructures.java" title="T5_LegacyDataStructures.java"-->
+<pre class="numbered" data-file="T5_LegacyDataStructures.java"><code class="lang-java">package com.aptech.s12.tyi;
+
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Vector;
+
+/**
+ * TRY IT YOURSELF 5 — Book Session 10: Java Data Structures.
+ *
+ * Task: Use java.util.BitSet to implement a space-efficient user permission system
+ * with bitwise operations, and compare legacy Vector &amp;amp; Enumeration traversal with modern List.
+ */
+public class T5_LegacyDataStructures {
+
+    // Permission bit positions
+    private static final int PERM_READ    = 0;
+    private static final int PERM_WRITE   = 1;
+    private static final int PERM_DELETE  = 2;
+    private static final int PERM_ADMIN   = 3;
+
+    public static void main(String[] args) {
+        System.out.println("Try It Yourself 5 - Java Data Structures: BitSet &amp; Legacy Vector");
+
+        // 1. BitSet permissions
+        BitSet userPerms = new BitSet();
+        userPerms.set(PERM_READ);
+        userPerms.set(PERM_WRITE);
+
+        BitSet adminPerms = new BitSet();
+        adminPerms.set(PERM_READ);
+        adminPerms.set(PERM_WRITE);
+        adminPerms.set(PERM_DELETE);
+        adminPerms.set(PERM_ADMIN);
+
+        System.out.println();
+        System.out.println("1. BitSet permission masks:");
+        System.out.println("  User permissions (bits set)  : " + userPerms + " (cardinality: " + userPerms.cardinality() + ")");
+        System.out.println("  Admin permissions (bits set) : " + adminPerms + " (cardinality: " + adminPerms.cardinality() + ")");
+        System.out.println("  User has READ?   " + userPerms.get(PERM_READ));
+        System.out.println("  User has DELETE? " + userPerms.get(PERM_DELETE));
+
+        // Bitwise AND intersection
+        BitSet intersection = (BitSet) userPerms.clone();
+        intersection.and(adminPerms);
+        System.out.println("  Intersection (AND)           : " + intersection);
+
+        // Bitwise XOR difference
+        BitSet diff = (BitSet) adminPerms.clone();
+        diff.xor(userPerms);
+        System.out.println("  Admin-only extra perms (XOR) : " + diff + " (bits: DELETE and ADMIN)");
+
+        // 2. Legacy Vector &amp; Enumeration vs modern List
+        System.out.println();
+        System.out.println("2. Legacy Vector with Enumeration (JDK 1.0, 1995):");
+        Vector&lt;String&gt; legacyLog = new Vector&lt;&gt;();
+        legacyLog.add("Audit: User Alice logged in");
+        legacyLog.add("Audit: File exported");
+        legacyLog.add("Audit: User Alice logged out");
+
+        Enumeration&lt;String&gt; en = legacyLog.elements();
+        while (en.hasMoreElements()) {
+            System.out.println("  [Enumeration] " + en.nextElement());
+        }
+
+        System.out.println();
+        System.out.println("3. Modern List equivalent (JDK 21+):");
+        List&lt;String&gt; modernLog = new ArrayList&lt;&gt;(legacyLog);
+        for (String entry : modernLog) {
+            System.out.println("  [EnhancedFor] " + entry);
+        }
+
+        System.out.println();
+        System.out.println("Rule: Use BitSet for high-density bit flags (1 bit per boolean).");
+        System.out.println("Replace legacy Vector with ArrayList, and Enumeration with Iterator.");
+    }
+}</code></pre>
+<!--@end-->
+      <!--@output project="code/s12-review-2" main="com.aptech.s12.tyi.T5_LegacyDataStructures"-->
+<div class="terminal-output">Try It Yourself 5 - Java Data Structures: BitSet &amp; Legacy Vector
+
+1. BitSet permission masks:
+  User permissions (bits set)  : {0, 1} (cardinality: 2)
+  Admin permissions (bits set) : {0, 1, 2, 3} (cardinality: 4)
+  User has READ?   true
+  User has DELETE? false
+  Intersection (AND)           : {0, 1}
+  Admin-only extra perms (XOR) : {2, 3} (bits: DELETE and ADMIN)
+
+2. Legacy Vector with Enumeration (JDK 1.0, 1995):
+  [Enumeration] Audit: User Alice logged in
+  [Enumeration] Audit: File exported
+  [Enumeration] Audit: User Alice logged out
+
+3. Modern List equivalent (JDK 21+):
+  [EnhancedFor] Audit: User Alice logged in
+  [EnhancedFor] Audit: File exported
+  [EnhancedFor] Audit: User Alice logged out
+
+Rule: Use BitSet for high-density bit flags (1 bit per boolean).
+Replace legacy Vector with ArrayList, and Enumeration with Iterator.</div>
+<!--@end-->
+    </div>
+  </details>
+
+  <!-- ===== 9. PART 3 ======================================================= -->
+  <h2 id="part-3-mega-quiz"><span class="eyebrow">Part 3 of 3</span> The Mega-Quiz</h2>
+
+  <h3>&#129504; Knowledge Check</h3>
+  <p>Twenty-one questions reviewing Book Sessions 6 through 10. Test your understanding of enterprise Java principles.</p>
+
+  <div class="quiz" id="s12-final">
+    <!-- Session 6: The JDBC API -->
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">1. Why does <code>PreparedStatement</code> prevent SQL injection attacks?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> It encrypts the SQL connection over SSL.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> It pre-compiles the SQL syntax tree on the database and treats parameter markers (<code>?</code>) strictly as literal data values.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> It deletes special characters like apostrophes automatically.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> It only allows integer parameters.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> By separating the query structure from the runtime parameters, the database engine never interprets parameter text as SQL commands.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">2. Which interface provides information about the database product, driver version, and supported SQL features?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>ResultSetMetaData</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>StatementMetaData</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>DatabaseMetaData</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>DriverCatalog</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> <code>DatabaseMetaData</code> (obtained via <code>conn.getMetaData()</code>) describes the database system, tables, and driver capabilities. <code>ResultSetMetaData</code> describes columns in a specific query result.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="true">
+      <div class="quiz__kind">True / False</div>
+      <div class="quiz__stem">3. In JDBC 4.0 and later, calling <code>Class.forName("org.h2.Driver")</code> is generally no longer required because drivers are automatically registered via Java SPI (Service Provider Interface).</div>
+      <label class="quiz__opt"><input type="radio" value="true"> True</label>
+      <label class="quiz__opt"><input type="radio" value="false"> False</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>True.</strong> Since JDBC 4.0, <code>DriverManager</code> automatically scans the classpath for drivers listed in <code>META-INF/services/java.sql.Driver</code>.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="d">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">4. Which JDBC driver type is a pure Java driver that communicates directly with the database's proprietary network protocol?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Type 1 (JDBC-ODBC Bridge)</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Type 2 (Native-API Driver)</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Type 3 (Network-Protocol Driver)</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Type 4 (Direct-to-Database Pure Java Driver)</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>D.</strong> Type 4 drivers are 100% pure Java and convert JDBC calls directly into vendor-specific network protocols (such as H2, MySQL Connector/J, PostgreSQL JDBC).</div>
+    </div>
+
+    <!-- Session 7: Advanced JDBC -->
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">5. What must you call on a JDBC <code>Connection</code> to begin an explicit, multi-statement transaction boundary?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>conn.beginTransaction()</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>conn.setAutoCommit(false)</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>conn.setTransactionIsolation(TRANSACTION_SERIALIZABLE)</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>conn.start()</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> In standard JDBC, transactions are started by disabling auto-commit: <code>conn.setAutoCommit(false)</code>. All subsequent updates are batched into a single unit until <code>commit()</code> or <code>rollback()</code> is called.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">6. What is the key advantage of a <code>Savepoint</code> during transaction processing?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> It allows rolling back a portion of a transaction to a specific checkpoint without discarding earlier successful operations.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> It saves the database to a backup disk file automatically.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> It automatically commits the transaction in the background.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> It prevents deadlocks between multiple threads.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A.</strong> A Savepoint creates an intermediate point within a transaction, allowing partial rollback via <code>conn.rollback(savepoint)</code>.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">7. Which transaction isolation level prevents dirty reads, non-repeatable reads, and phantom reads?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>TRANSACTION_READ_UNCOMMITTED</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>TRANSACTION_READ_COMMITTED</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>TRANSACTION_SERIALIZABLE</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>TRANSACTION_REPEATABLE_READ</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> <code>SERIALIZABLE</code> is the highest isolation level. It completely prevents dirty reads, non-repeatable reads, and phantom reads by simulating sequential execution.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="true">
+      <div class="quiz__kind">True / False</div>
+      <div class="quiz__stem">8. A disconnected <code>RowSet</code> (such as <code>CachedRowSet</code>) can be serialized, passed over a network, and navigated while disconnected from the database.</div>
+      <label class="quiz__opt"><input type="radio" value="true"> True</label>
+      <label class="quiz__opt"><input type="radio" value="false"> False</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>True.</strong> Unlike a standard <code>ResultSet</code> which requires an active database connection, a <code>CachedRowSet</code> caches data in memory, is serializable, and works disconnected.</div>
+    </div>
+
+    <!-- Session 8: Design Patterns & Advanced Features -->
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">9. In the Repository pattern, what is the primary architectural rule regarding persistence interfaces?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> The interface must extend <code>java.sql.Connection</code>.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Every method must declare <code>throws SQLException</code>.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> The interface must not import <code>java.sql.*</code> or declare SQL-specific exceptions, keeping callers agnostic of the underlying database.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> The repository must be a singleton with a private constructor.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> A clean architectural seam requires that domain interfaces remain completely independent of persistence details so storage engines can be swapped without modifying callers.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">10. What is the benefit of using an enhanced Java <code>switch</code> expression without a <code>default</code> branch in a Factory class?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> It makes the program run 50% faster.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> It enforces compile-time exhaustiveness: adding a new constant to the enum causes a compile error until every factory handles it.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> It allows switching over floating point numbers.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> It automatically registers the factory with Spring Boot.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> When switching over an enum without a default branch, the Java compiler verifies that every enum constant is covered. If a new store type is added, the compiler flags missing cases immediately.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="d">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">11. Which design pattern allows an object (like an AuditLog) to be notified of state changes without the publisher knowing the subscriber's concrete class?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Singleton</label>
+      <label class="quiz__opt"><input type="radio" value="b"> Builder</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Decorator</label>
+      <label class="quiz__opt"><input type="radio" value="d"> Observer</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>D.</strong> The Observer pattern decouples event publishers from event listeners, allowing multiple listeners to react to domain events.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="false">
+      <div class="quiz__kind">True / False</div>
+      <div class="quiz__stem">12. When using <code>ResourceBundle</code> for internationalization, if a key is missing in <code>Messages_fr.properties</code>, Java throws a <code>MissingResourceException</code> immediately without checking the base bundle.</div>
+      <label class="quiz__opt"><input type="radio" value="true"> True</label>
+      <label class="quiz__opt"><input type="radio" value="false"> False</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>False.</strong> Java's <code>ResourceBundle</code> automatically falls back down the hierarchy: from language+country (<code>_fr_FR</code>), to language (<code>_fr</code>), and finally to the default root bundle (<code>Messages.properties</code>).</div>
+    </div>
+
+    <!-- Session 9: Unit Testing & AI Tools -->
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">13. In JUnit 5, which annotation is executed once before ANY test method in the test class runs?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>@BeforeEach</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>@Test</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>@BeforeAll</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>@AfterAll</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> <code>@BeforeAll</code> runs once before all tests in the class (typically static, or on an instance if using <code>@TestInstance(PER_CLASS)</code>).</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">14. What is the correct way to test that a method throws an <code>IllegalArgumentException</code> in JUnit 5?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> Put the call in a try-catch and call <code>System.out.println()</code>.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>assertThrows(IllegalArgumentException.class, () -&gt; targetMethod())</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> Add <code>@Test(expected = IllegalArgumentException.class)</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> Use <code>assertNull(targetMethod())</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> <code>assertThrows</code> executes the provided lambda and verifies that the specified exception is thrown, returning the exception object for further message assertions. (Option C was the old JUnit 4 syntax).</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">15. When using an AI coding tool (like Windsurf) to generate unit test suites, what is the developer's primary responsibility?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> To critically review every test assertion, verify boundary conditions, and reject tautological tests that cannot fail.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> To accept all generated tests without reading them as long as the build is green.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> To delete manually written tests in favor of AI-generated tests.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> To avoid using mock objects.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A.</strong> AI tools frequently produce "happy path" tests or swallowed exceptions that inflate test coverage numbers without testing true invariants. Professional engineers verify every test case.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="true">
+      <div class="quiz__kind">True / False</div>
+      <div class="quiz__stem">16. In JUnit 5, <code>@ParameterizedTest</code> combined with <code>@CsvSource</code> allows running the same test method multiple times with different input values.</div>
+      <label class="quiz__opt"><input type="radio" value="true"> True</label>
+      <label class="quiz__opt"><input type="radio" value="false"> False</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>True.</strong> <code>@ParameterizedTest</code> with <code>@CsvSource</code> eliminates boilerplate by parameterizing inputs and expected outputs across data sets.</div>
+    </div>
+
+    <!-- Session 10: Java Data Structures -->
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">17. In <code>java.util.BitSet</code>, what does <code>cardinality()</code> return?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> The total number of bits allocated in memory (multiples of 64).</label>
+      <label class="quiz__opt"><input type="radio" value="b"> The index of the highest set bit plus one.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> The actual number of bits set to true.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> The number of bytes consumed.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> <code>cardinality()</code> counts the number of bits set to <code>true</code>. <code>size()</code> returns the allocated capacity in bits (usually 64), while <code>length()</code> returns the index of the highest set bit + 1.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">18. What does <code>stack.search("item")</code> return in <code>java.util.Stack</code> when the item is at the very top of the stack?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>0</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>1</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>-1</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>true</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> <code>Stack.search()</code> returns the 1-based distance from the top of the stack. The top element is 1; one below top is 2; not found is -1.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="c">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">19. Why is the legacy <code>Vector</code> class generally avoided in modern high-performance Java applications?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> It cannot store generic types.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> It has a fixed size and cannot grow dynamically.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> Every method is individually synchronized, adding synchronization overhead to single-threaded code without making compound operations thread-safe.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> It is marked with <code>@Deprecated</code> for removal.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>C.</strong> <code>Vector</code> synchronizes individual methods, incurring unnecessary locking penalties. For modern code, <code>ArrayList</code> is preferred for single threads, and <code>CopyOnWriteArrayList</code> or explicit locks for concurrency.</div>
+    </div>
+
+    <div class="quiz__q" data-answer="a">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">20. What is the modern replacement for the legacy <code>Enumeration</code> interface?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> <code>Iterator</code></label>
+      <label class="quiz__opt"><input type="radio" value="b"> <code>Stream</code></label>
+      <label class="quiz__opt"><input type="radio" value="c"> <code>Cursor</code></label>
+      <label class="quiz__opt"><input type="radio" value="d"> <code>Scanner</code></label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>A.</strong> <code>Iterator</code> (introduced in Java 1.2) replaced <code>Enumeration</code>, adding shorter method names (<code>hasNext()</code>, <code>next()</code>) and the ability to safely remove elements (<code>remove()</code>).</div>
+    </div>
+
+    <div class="quiz__q" data-answer="b">
+      <div class="quiz__kind">Multiple choice</div>
+      <div class="quiz__stem">21. In legacy <code>Hashtable</code>, what happens if you attempt to store a <code>null</code> key or <code>null</code> value?</div>
+      <label class="quiz__opt"><input type="radio" value="a"> It stores the null at bucket index 0.</label>
+      <label class="quiz__opt"><input type="radio" value="b"> It immediately throws a <code>NullPointerException</code>.</label>
+      <label class="quiz__opt"><input type="radio" value="c"> It returns false.</label>
+      <label class="quiz__opt"><input type="radio" value="d"> It converts null into an empty string.</label>
+      <button class="quiz__check">Check Answer</button>
+      <div class="quiz__explain"><strong>B.</strong> Unlike modern <code>HashMap</code> (which permits one null key and multiple null values), legacy <code>Hashtable</code> strictly rejects null keys and null values with a <code>NullPointerException</code>.</div>
+    </div>
+
+    <div class="quiz__score" style="display:none"></div>
+  </div>
+
+  <!-- ===== 10. GUIDED LAB ================================================== -->
+  <h2 id="lab-repair-clinic">&#128736; Guided Lab &mdash; The Enterprise Repair Clinic</h2>
+  <p>
+    The starter project below represents an enterprise academic registry service.
+    It compiles, runs, and appears functional on the surface, but contains five planted defects (F1&ndash;F5)
+    spanning Book Sessions 6 through 10.
+    Right now its automated <code>SelfCheck</code> reports <strong>0 passed, 5 failed</strong>.
+  </p>
+  <p>Your objective: repair the faults one by one until <code>SelfCheck</code> reports <strong>5 passed, 0 failed</strong>.</p>
+
+  <h3>The Five Enterprise Faults</h3>
+  <div class="walkthrough">
+    <table>
+      <thead><tr><th>Fault</th><th>Session</th><th>Symptom Reported by SelfCheck</th></tr></thead>
+      <tbody>
+        <tr><td>F1</td><td>6 &mdash; JDBC API</td><td>SQL injection payload dumps all student records instead of matching literally</td></tr>
+        <tr><td>F2</td><td>7 &mdash; Advanced JDBC</td><td>Failed tuition payment leaves an orphaned enrolment in the database</td></tr>
+        <tr><td>F3</td><td>8 &mdash; Design Patterns</td><td>Localized status lookup returns null instead of falling back to English</td></tr>
+        <tr><td>F4</td><td>9 &mdash; Unit Testing</td><td>Scholarship boundary validation incorrectly marks ineligible students as eligible</td></tr>
+        <tr><td>F5</td><td>10 &mdash; Data Structures</td><td>Navigation stack check fails because it tests for 0 instead of 1-based top offset</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>What the Starter Looks Like</h3>
+  <!--@code src="code/s12-repair-clinic-starter/src/main/java/com/aptech/s12lab/EnterpriseClinic.java" from="27" to="115" title="EnterpriseClinic.java — the starter with planted faults (F1–F5)"-->
+<pre class="numbered" data-file="EnterpriseClinic.java — the starter with planted faults (F1–F5)" style="counter-reset:line 26"><code class="lang-java">    /**
+     * FAULT F1 (Session 6 — JDBC API &amp; SQL Injection).
+     * Searches for a student by exact name.
+     *
+     * In the starter: Uses string concatenation, leaving the query vulnerable to SQL injection.
+     */
+    public static List&lt;String&gt; searchStudent(String query) throws SQLException {
+        List&lt;String&gt; results = new ArrayList&lt;&gt;();
+        // FAULT: Concatenation allows query manipulation.
+        // SelfCheck passes "' OR '1'='1" and expects 0 results or exact match, not the whole table.
+        String sql = "SELECT name FROM clinic_students WHERE name = '" + query + "'";
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                results.add(rs.getString("name"));
+            }
+        }
+        return results;
+    }
+
+    /**
+     * FAULT F2 (Session 7 — Advanced JDBC &amp; Transaction Atomicity).
+     * Enrols a student in a course and records their fee.
+     * Must be all-or-nothing: if the fee recording fails, the enrolment MUST be rolled back.
+     *
+     * In the starter: Leaves autoCommit enabled (true). When fee insertion fails,
+     * the enrolment remains committed in the database.
+     */
+    public static boolean enrolWithFee(int studentId, String course, double fee) {
+        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+            // FAULT: autoCommit is left as true (default)!
+            // Step 1: Enrolment commits immediately
+            try (PreparedStatement ps1 = conn.prepareStatement(
+                    "INSERT INTO clinic_enrolments (student_id, course) VALUES (?, ?)")) {
+                ps1.setInt(1, studentId);
+                ps1.setString(2, course);
+                ps1.executeUpdate();
+            }
+
+            // Step 2: Record fee (will fail if fee &lt; 0 due to database check constraint)
+            try (PreparedStatement ps2 = conn.prepareStatement(
+                    "INSERT INTO clinic_fees (student_id, amount) VALUES (?, ?)")) {
+                ps2.setInt(1, studentId);
+                ps2.setDouble(2, fee);
+                ps2.executeUpdate();
+            }
+
+            return true;
+        } catch (SQLException e) {
+            // An exception occurred, but Step 1 is already permanently committed on the DB!
+            return false;
+        }
+    }
+
+    /**
+     * FAULT F3 (Session 8 — Design Patterns &amp; i18n Fallback).
+     * Looks up a localized message for a given language code.
+     * If the key is not defined in the requested language, it MUST fall back to English ("en").
+     *
+     * In the starter: Looks only in the target language and returns null on missing keys.
+     */
+    public static String getLocalizedStatus(String key, String lang) {
+        Map&lt;String, Map&lt;String, String&gt;&gt; bundles = Map.of(
+                "en", Map.of(
+                        "status.enrolled", "Enrolled",
+                        "status.withdrawn", "Withdrawn",
+                        "status.graduated", "Graduated"),
+                "fr", Map.of(
+                        "status.enrolled", "Inscrit",
+                        "status.graduated", "Diplômé")
+                // Notice: "status.withdrawn" is missing in French on purpose
+        );
+
+        Map&lt;String, String&gt; targetBundle = bundles.get(lang);
+        if (targetBundle == null) {
+            return null;
+        }
+
+        // FAULT: Does not fall back to English ("en") if key is missing in target language
+        return targetBundle.get(key);
+    }
+
+    /**
+     * FAULT F4 (Session 9 — Unit Testing &amp; Boundary Validation).
+     * Validates whether a student qualifies for honors scholarship:
+     * Student must have GPA &gt;= 3.5 AND credit hours &gt;= 12.
+     *
+     * In the starter: Uses || instead of &amp;&amp;, allowing part-time students (&lt; 12 credits) to qualify.</code></pre>
+<!--@end-->
+
+  <h3>Where it Stands Now (Starter Output)</h3>
+  <!--@output project="code/s12-repair-clinic-starter" main="com.aptech.s12lab.SelfCheck"-->
+<div class="terminal-output">=== Enterprise Repair Clinic Self-Check ===
+
+FAIL  F1  Session 6 - PreparedStatement blocks SQL injection
+      -&gt; expected 0 students for SQL injection payload, got 3 -&gt; [Ada Lovelace, Charles Babbage, Grace Hopper]
+FAIL  F2  Session 7 - Transaction rollback preserves atomicity
+      -&gt; expected 0 orphaned enrolments on failure, found 1 - is setAutoCommit(false) and rollback() being used?
+FAIL  F3  Session 8 - I18N key lookup falls back to base English
+      -&gt; expected 'Withdrawn' (fallback from English), got: null
+FAIL  F4  Session 9 - Scholarship boundary requires GPA &gt;= 3.5 AND credits &gt;= 12
+      -&gt; expected false for part-time (6 credits) and low GPA (3.2), but at least one returned true (did you use || instead of &amp;&amp;?)
+FAIL  F5  Session 10 - Stack.search() correctly handles 1-based top offset
+      -&gt; expected true for top page 'Profile' - did you check for 0 instead of 1?
+
+0 passed, 5 failed.
+Repair the FAILs above one at a time, then run SelfCheck again.</div>
+<!--@end-->
+
+  <h3>Where You Are Going (Repaired Reference Solution)</h3>
+  <p>When all five faults are repaired, running <code>SelfCheck</code> produces the clean reference output:</p>
+  <!--@output project="solutions/s12-repair-clinic" main="com.aptech.s12lab.SelfCheck"-->
+<div class="terminal-output">=== Enterprise Repair Clinic Self-Check ===
+
+PASS  F1  Session 6 - PreparedStatement blocks SQL injection
+PASS  F2  Session 7 - Transaction rollback preserves atomicity
+PASS  F3  Session 8 - I18N key lookup falls back to base English
+PASS  F4  Session 9 - Scholarship boundary requires GPA &gt;= 3.5 AND credits &gt;= 12
+PASS  F5  Session 10 - Stack.search() correctly handles 1-based top offset
+
+5 passed, 0 failed.
+Every fault repaired - the enterprise clinic is closed.</div>
+<!--@end-->
+
+  <h3>How to Work the Loop</h3>
+  <div class="steps">
+    <div class="steps__title">&#128221; Step Checklist (your progress is saved automatically)</div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">1</span>
+      <span class="step__text">Open the starter folder <code>code/s12-repair-clinic-starter</code> in IntelliJ (<strong>File &rarr; Open</strong>).</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">2</span>
+      <span class="step__text"><strong>Reproduce first:</strong> Run <code>SelfCheck.java</code> without changing anything. Verify that it reports <code>0 passed, 5 failed</code>.</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">3</span>
+      <span class="step__text"><strong>Repair F1 (JDBC SQL Injection):</strong> In <code>searchStudent()</code>, replace string concatenation with <code>PreparedStatement</code> and parameter marker <code>?</code>. Re-run <code>SelfCheck</code> to see <code>1 passed, 4 failed</code>.</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">4</span>
+      <span class="step__text"><strong>Repair F2 (Transaction Atomicity):</strong> In <code>enrolWithFee()</code>, set <code>conn.setAutoCommit(false)</code>. Wrap both writes in a try-catch, calling <code>conn.commit()</code> on success and <code>conn.rollback()</code> on error. Re-run <code>SelfCheck</code>.</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">5</span>
+      <span class="step__text"><strong>Repair F3 (I18N Fallback):</strong> In <code>getLocalizedStatus()</code>, check the target language dictionary; if the key is missing, fall back to the English dictionary (<code>"en"</code>). Re-run <code>SelfCheck</code>.</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">6</span>
+      <span class="step__text"><strong>Repair F4 (Boundary Validation):</strong> In <code>validateScholarshipEligibility()</code>, replace the <code>||</code> operator with <code>&&</code> so students must satisfy both GPA and credit requirements. Re-run <code>SelfCheck</code>.</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">7</span>
+      <span class="step__text"><strong>Repair F5 (Stack.search Indexing):</strong> In <code>isTopNavigationPage()</code>, update the condition from <code>== 0</code> to <code>== 1</code> to match <code>Stack.search()</code>'s 1-based distance from top. Re-run <code>SelfCheck</code>.</span>
+    </div>
+    <div class="step">
+      <div class="step__check"></div>
+      <span class="step__num">8</span>
+      <span class="step__text"><strong>Verify:</strong> Ensure <code>SelfCheck</code> reports <code>5 passed, 0 failed</code>, and run <code>Main.java</code> to confirm the live demo.</span>
+    </div>
+  </div>
+
+  <div class="callout callout--key"><span class="callout__i">&#10022;</span>
+    <div class="callout__b"><b>Key Point &mdash; One Change, One Measurement</b>
+      Never rewrite all five methods at once and hope for the best. The hallmark of an engineering discipline
+      is isolated verification: fix one defect, run the self-check, confirm that exactly one test flipped
+      from FAIL to PASS, and observe that no existing tests broke.
+    </div>
+  </div>
+
+
+  <!-- ===== 11. COMMON MISTAKES ============================================= -->
+  <h2>&#9888;&#65039; Common Mistakes</h2>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake: String concatenation in SQL statements</b>
+      <pre><code class="lang-java">String sql = "SELECT * FROM users WHERE user = '" + u + "' AND pass = '" + p + "'";
+Statement stmt = conn.createStatement();
+ResultSet rs = stmt.executeQuery(sql);</code></pre>
+      <p><strong>Error symptom:</strong> SQL injection vulnerability (CWE-89). If an attacker inputs <code>' OR '1'='1</code>, the authentication check succeeds unconditionally.</p>
+      <p><strong>Fix:</strong> Always use <code>PreparedStatement ps = conn.prepareStatement("SELECT * FROM users WHERE user = ? AND pass = ?"); ps.setString(1, u); ps.setString(2, p);</code>.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake: Forgetting <code>conn.setAutoCommit(false)</code> before multi-table operations</b>
+      <pre><code class="lang-java">ps1.executeUpdate(); // commits immediately!
+ps2.executeUpdate(); // throws SQLException</code></pre>
+      <p><strong>Error symptom:</strong> Data corruption / orphaned database rows. The database cannot undo the first update because it committed automatically the instant it executed.</p>
+      <p><strong>Fix:</strong> Explicitly disable auto-commit before the first statement, commit at the very end, and roll back in the catch block.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake: Leaking <code>java.sql</code> types into Presentation Controllers</b>
+      <pre><code class="lang-java">// In a UI Controller or View class:
+import java.sql.Connection;
+import java.sql.SQLException;
+H2StudentRepository repo = new H2StudentRepository();</code></pre>
+      <p><strong>Error symptom:</strong> Architectural seam leakage. The UI cannot be tested without a running database, and changing storage engines requires rewriting presentation code.</p>
+      <p><strong>Fix:</strong> Depend strictly on the <code>StudentRepository</code> interface. Instantiate storage through a <code>RepositoryFactory</code>, and catch domain exceptions instead of <code>SQLException</code>.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake: Swallowing exceptions in unit test methods</b>
+      <pre><code class="lang-java">@Test
+void testInvalidId() {
+    try {
+        service.findStudent(-1);
+    } catch (Exception e) {
+        System.out.println("Caught exception!"); // BUG: Never fails if findStudent accepts -1!
+    }
+}</code></pre>
+      <p><strong>Error symptom:</strong> False positive test results. The test passes green even when the code under test is completely broken.</p>
+      <p><strong>Fix:</strong> Use JUnit 5's <code>assertThrows(IllegalArgumentException.class, () -&gt; service.findStudent(-1));</code>.</p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#128683;</span>
+    <div class="callout__b"><b>Mistake: Treating <code>Stack.search()</code> like 0-indexed <code>indexOf()</code></b>
+      <pre><code class="lang-java">Stack&lt;String&gt; stack = new Stack&lt;&gt;();
+stack.push("PageA");
+if (stack.search("PageA") == 0) { ... } // Never true!</code></pre>
+      <p><strong>Error symptom:</strong> Off-by-one logic errors. <code>Stack.search()</code> returns 1 for the top item, 2 for the item below it, and -1 if not found.</p>
+      <p><strong>Fix:</strong> Check for <code>== 1</code>, or migrate to modern <code>ArrayDeque</code> with <code>peek()</code>.</p>
+    </div>
+  </div>
+
+  <!-- ===== 12. PRACTICE ==================================================== -->
+  <h2>&#128170; Practice</h2>
+
+  <details>
+    <summary><strong>&#127793; Easy: Fix the Vulnerable SQL Query</strong></summary>
+    <div>
+      <p>
+        A department course query builds SQL using string concatenation with department name and academic year parameters.
+        Rewrite the query to use <code>PreparedStatement</code> with indexed parameter markers.
+      </p>
+      <details>
+        <summary>&#128161; Hint</summary>
+        <p>Use <code>ps.setString(1, dept)</code> and <code>ps.setInt(2, minYear)</code>. Note that in SQL, <code>YEAR</code> is a reserved keyword, so column names should be specific (e.g. <code>study_year</code>).</p>
+      </details>
+      <details>
+        <summary>&#9989; Solution</summary>
+        <div>
+          <!--@code src="code/s12-review-2/src/main/java/com/aptech/s12/practice/P1_FixThePreparedStatement.java" title="P1_FixThePreparedStatement.java"-->
+<pre class="numbered" data-file="P1_FixThePreparedStatement.java"><code class="lang-java">package com.aptech.s12.practice;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * PRACTICE 1 (Easy) — Fix the Vulnerable SQL Query.
+ *
+ * Take a method that builds dynamic SQL via string concatenation and
+ * replace it with a type-safe PreparedStatement using parameter markers (?).
+ */
+public class P1_FixThePreparedStatement {
+
+    private static final String URL = "jdbc:h2:mem:s12_p1;DB_CLOSE_DELAY=-1";
+
+    public static void main(String[] args) throws SQLException {
+        setupDatabase();
+
+        String department = "Engineering";
+        int minYear = 2;
+
+        System.out.println("Practice 1 (Easy) - Fix the vulnerable SQL query");
+        System.out.println();
+
+        System.out.println("BROKEN - String concatenation:");
+        List&lt;String&gt; brokenResults = queryStudentsBroken(department, minYear);
+        System.out.println("  found: " + brokenResults);
+
+        System.out.println();
+        System.out.println("FIXED - PreparedStatement with ? placeholders:");
+        List&lt;String&gt; fixedResults = queryStudentsFixed(department, minYear);
+        System.out.println("  found: " + fixedResults);
+        System.out.println("  PASS - Both parameters bound safely with setString() and setInt().");
+    }
+
+    /** BROKEN: Vulnerable to SQL injection. */
+    static List&lt;String&gt; queryStudentsBroken(String dept, int minYear) throws SQLException {
+        List&lt;String&gt; names = new ArrayList&lt;&gt;();
+        String sql = "SELECT name FROM student_roster WHERE dept = '" + dept + "' AND study_year &gt;= " + minYear;
+        try (Connection conn = DriverManager.getConnection(URL);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                names.add(rs.getString("name"));
+            }
+        }
+        return names;
+    }
+
+    /** FIXED: PreparedStatement with index parameter markers. */
+    static List&lt;String&gt; queryStudentsFixed(String dept, int minYear) throws SQLException {
+        List&lt;String&gt; names = new ArrayList&lt;&gt;();
+        String sql = "SELECT name FROM student_roster WHERE dept = ? AND study_year &gt;= ?";
+        try (Connection conn = DriverManager.getConnection(URL);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, dept);
+            ps.setInt(2, minYear);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    names.add(rs.getString("name"));
+                }
+            }
+        }
+        return names;
+    }
+
+    private static void setupDatabase() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL);
+             Statement stmt = conn.createStatement()) {
+            stmt.execute("CREATE TABLE student_roster (id INT PRIMARY KEY, name VARCHAR(50), dept VARCHAR(50), study_year INT)");
+            stmt.execute("INSERT INTO student_roster VALUES (1, 'Ada', 'Engineering', 3), (2, 'Bob', 'Engineering', 1), (3, 'Charlie', 'Engineering', 4)");
+        }
+    }
+}</code></pre>
+<!--@end-->
+          <!--@output project="code/s12-review-2" main="com.aptech.s12.practice.P1_FixThePreparedStatement"-->
+<div class="terminal-output">Practice 1 (Easy) - Fix the vulnerable SQL query
+
+BROKEN - String concatenation:
+  found: [Ada, Charlie]
+
+FIXED - PreparedStatement with ? placeholders:
+  found: [Ada, Charlie]
+  PASS - Both parameters bound safely with setString() and setInt().</div>
+<!--@end-->
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details>
+    <summary><strong>&#127774; Medium: Transactional Batch with Savepoint Recovery</strong></summary>
+    <div>
+      <p>
+        Execute a batch of three account balance adjustments inside a transaction.
+        If an adjustment causes an overdraw that violates a database constraint, roll back only that adjustment
+        using a <code>Savepoint</code> and continue processing the rest of the batch.
+      </p>
+      <details>
+        <summary>&#128161; Hint</summary>
+        <p>Create a Savepoint inside the loop before executing each item: <code>Savepoint sp = conn.setSavepoint("item_" + i)</code>. Catch <code>SQLException</code> and roll back to the savepoint.</p>
+      </details>
+      <details>
+        <summary>&#9989; Solution</summary>
+        <div>
+          <!--@code src="code/s12-review-2/src/main/java/com/aptech/s12/practice/P2_TransactionalBatch.java" title="P2_TransactionalBatch.java"-->
+<pre class="numbered" data-file="P2_TransactionalBatch.java"><code class="lang-java">package com.aptech.s12.practice;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Savepoint;
+import java.sql.Statement;
+
+/**
+ * PRACTICE 2 (Medium) — Transactional Batch Processing with Savepoint Recovery.
+ *
+ * Process a batch of account balance adjustments.
+ * If an item violates a business check constraint (e.g. balance must remain &gt;= 0),
+ * roll back only that item using a Savepoint and continue processing subsequent items.
+ */
+public class P2_TransactionalBatch {
+
+    private static final String URL = "jdbc:h2:mem:s12_p2;DB_CLOSE_DELAY=-1";
+
+    public record Adjustment(int accountId, double amount) {}
+
+    public static void main(String[] args) throws SQLException {
+        setupDatabase();
+
+        Adjustment[] batch = {
+                new Adjustment(1, -50.0),   // Valid: Alice $200 -&gt; $150
+                new Adjustment(2, -500.0),  // INVALID: Bob has only $100 -&gt; violates balance &gt;= 0
+                new Adjustment(3, 100.0)    // Valid: Charlie $50 -&gt; $150
+        };
+
+        System.out.println("Practice 2 (Medium) - Transactional Batch with Savepoint Recovery");
+        System.out.println("Processing adjustments: [Alice -$50, Bob -$500 (overdraw), Charlie +$100]");
+        System.out.println();
+
+        int applied = processBatch(batch);
+        System.out.println("Adjustments successfully applied: " + applied + " of " + batch.length);
+        System.out.println();
+        System.out.println("Final balances in database:");
+        printBalances();
+        System.out.println("PASS - Alice and Charlie updated; Bob's invalid overdraw was rolled back.");
+    }
+
+    static int processBatch(Adjustment[] batch) throws SQLException {
+        int successCount = 0;
+        try (Connection conn = DriverManager.getConnection(URL)) {
+            conn.setAutoCommit(false);
+            try {
+                for (int i = 0; i &lt; batch.length; i++) {
+                    Adjustment adj = batch[i];
+                    Savepoint sp = conn.setSavepoint("item_" + i);
+                    try {
+                        applyAdjustment(conn, adj.accountId(), adj.amount());
+                        successCount++;
+                    } catch (SQLException e) {
+                        System.out.println("  [Recovery] Rolling back adjustment for account "
+                                + adj.accountId() + " (insufficient funds)");
+                        conn.rollback(sp);
+                    }
+                }
+                conn.commit();
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        }
+        return successCount;
+    }
+
+    private static void applyAdjustment(Connection conn, int accId, double amount) throws SQLException {
+        String sql = "UPDATE user_accounts SET balance = balance + ? WHERE id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setDouble(1, amount);
+            ps.setInt(2, accId);
+            ps.executeUpdate();
+        }
+    }
+
+    private static void printBalances() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT id, name, balance FROM user_accounts ORDER BY id")) {
+            while (rs.next()) {
+                System.out.printf("  Account %d (%-8s): $%.2f%n",
+                        rs.getInt("id"), rs.getString("name"), rs.getDouble("balance"));
+            }
+        }
+    }
+
+    private static void setupDatabase() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL);
+             Statement stmt = conn.createStatement()) {
+            stmt.execute("CREATE TABLE user_accounts (id INT PRIMARY KEY, name VARCHAR(50), balance DECIMAL(10,2) CHECK (balance &gt;= 0))");
+            stmt.execute("INSERT INTO user_accounts VALUES (1, 'Alice', 200.0), (2, 'Bob', 100.0), (3, 'Charlie', 50.0)");
+        }
+    }
+}</code></pre>
+<!--@end-->
+          <!--@output project="code/s12-review-2" main="com.aptech.s12.practice.P2_TransactionalBatch"-->
+<div class="terminal-output">Practice 2 (Medium) - Transactional Batch with Savepoint Recovery
+Processing adjustments: [Alice -$50, Bob -$500 (overdraw), Charlie +$100]
+
+  [Recovery] Rolling back adjustment for account 2 (insufficient funds)
+Adjustments successfully applied: 2 of 3
+
+Final balances in database:
+  Account 1 (Alice   ): $150.00
+  Account 2 (Bob     ): $100.00
+  Account 3 (Charlie ): $150.00
+PASS - Alice and Charlie updated; Bob's invalid overdraw was rolled back.</div>
+<!--@end-->
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <details>
+    <summary><strong>&#128293; Challenge: Enterprise Diagnostic Clinic (Three Subtle Defects)</strong></summary>
+    <div>
+      <p>
+        Diagnose three subtle enterprise defects: (1) <code>BitSet.size()</code> returning allocated capacity instead of set count,
+        (2) <code>ResultSet</code> column read without checking <code>rs.next()</code>, and (3) missing fallback in a Strategy discount policy.
+      </p>
+      <details>
+        <summary>&#128161; Hint</summary>
+        <p>For BitSet, use <code>cardinality()</code> to count true bits. For ResultSet, always wrap reading in <code>if (rs.next())</code>. For Strategy patterns, ensure an unknown code defaults gracefully.</p>
+      </details>
+      <details>
+        <summary>&#9989; Solution</summary>
+        <div>
+          <!--@code src="code/s12-review-2/src/main/java/com/aptech/s12/practice/P3_EnterpriseDiagnostics.java" title="P3_EnterpriseDiagnostics.java"-->
+<pre class="numbered" data-file="P3_EnterpriseDiagnostics.java"><code class="lang-java">package com.aptech.s12.practice;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.BitSet;
+
+/**
+ * PRACTICE 3 (Challenge) — Enterprise Diagnostic Clinic.
+ *
+ * Three subtle enterprise defects that produce misleading metrics or runtime crashes.
+ *
+ *   Fault 1: BitSet size() vs cardinality() - size() returns 64 (memory bits), not set count!
+ *   Fault 2: ResultSet.next() omitted before reading columns - fails on empty queries.
+ *   Fault 3: Missing Strategy pattern fallback - produces null instead of default rate.
+ */
+public class P3_EnterpriseDiagnostics {
+
+    private static final String URL = "jdbc:h2:mem:s12_p3;DB_CLOSE_DELAY=-1";
+
+    public static void main(String[] args) throws SQLException {
+        setupDatabase();
+
+        System.out.println("Practice 3 (Challenge) - Enterprise Diagnostics: Three Subtle Defects");
+        System.out.println();
+
+        // Fault 1: BitSet metrics
+        fault1_BitSetMetrics();
+        System.out.println();
+
+        // Fault 2: ResultSet navigation
+        fault2_ResultSetNavigation();
+        System.out.println();
+
+        // Fault 3: Strategy pattern fallback
+        fault3_StrategyFallback();
+    }
+
+    /** Fault 1: BitSet size() vs cardinality(). */
+    static void fault1_BitSetMetrics() {
+        BitSet flags = new BitSet();
+        flags.set(0); // READ
+        flags.set(3); // ADMIN
+
+        int brokenCount = flags.size();        // Allocated word bits (64), NOT true bits!
+        int fixedCount = flags.cardinality();  // Actual number of bits set to true (2)
+
+        System.out.println("FAULT 1 - BitSet size() vs cardinality():");
+        System.out.println("  broken (flags.size())        : " + brokenCount + "  &lt;- Returns 64-bit word size, not set bits");
+        System.out.println("  fixed (flags.cardinality()) : " + fixedCount + "  PASS - Accurately counts true bits (2)");
+    }
+
+    /** Fault 2: ResultSet cursor navigation before column read. */
+    static void fault2_ResultSetNavigation() throws SQLException {
+        System.out.println("FAULT 2 - ResultSet cursor navigation on non-existent record:");
+        String nonExistentName = "Ghost Student";
+
+        // Fixed pattern: check if (rs.next()) before reading
+        String found = null;
+        try (Connection conn = DriverManager.getConnection(URL);
+             PreparedStatement ps = conn.prepareStatement("SELECT name FROM students WHERE name = ?")) {
+            ps.setString(1, nonExistentName);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    found = rs.getString("name");
+                }
+            }
+        }
+        System.out.println("  search for non-existent record -&gt; returned: " + found + "  PASS - Safely returned null without crash");
+    }
+
+    /** Fault 3: Strategy pattern unknown policy handling. */
+    static void fault3_StrategyFallback() {
+        System.out.println("FAULT 3 - Strategy pattern discount calculation:");
+        String discountType = "UNKNOWN_CODE";
+
+        // Fixed: Provide fallback strategy rather than returning null
+        double basePrice = 1000.0;
+        double finalPrice = calculatePrice(basePrice, discountType);
+
+        System.out.printf("  base price: $%.2f, policy: %s -&gt; final price: $%.2f%n",
+                basePrice, discountType, finalPrice);
+        System.out.println("  PASS - Unknown discount safely defaulted to standard full rate without null.");
+    }
+
+    static double calculatePrice(double basePrice, String code) {
+        return switch (code) {
+            case "EARLY_BIRD" -&gt; basePrice * 0.85;
+            case "SCHOLARSHIP" -&gt; basePrice * 0.50;
+            default -&gt; basePrice; // Robust fallback: no discount
+        };
+    }
+
+    private static void setupDatabase() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL);
+             Statement stmt = conn.createStatement()) {
+            stmt.execute("CREATE TABLE students (id INT PRIMARY KEY, name VARCHAR(50))");
+            stmt.execute("INSERT INTO students VALUES (1, 'Ada Lovelace')");
+        }
+    }
+}</code></pre>
+<!--@end-->
+          <!--@output project="code/s12-review-2" main="com.aptech.s12.practice.P3_EnterpriseDiagnostics"-->
+<div class="terminal-output">Practice 3 (Challenge) - Enterprise Diagnostics: Three Subtle Defects
+
+FAULT 1 - BitSet size() vs cardinality():
+  broken (flags.size())        : 64  &lt;- Returns 64-bit word size, not set bits
+  fixed (flags.cardinality()) : 2  PASS - Accurately counts true bits (2)
+
+FAULT 2 - ResultSet cursor navigation on non-existent record:
+  search for non-existent record -&gt; returned: null  PASS - Safely returned null without crash
+
+FAULT 3 - Strategy pattern discount calculation:
+  base price: $1000.00, policy: UNKNOWN_CODE -&gt; final price: $1000.00
+  PASS - Unknown discount safely defaulted to standard full rate without null.</div>
+<!--@end-->
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <!-- ===== 13. ASSIGNMENT A4 =============================================== -->
+  <h2>&#128203; Assignment A4 &mdash; Submitting the Student Registry on H2</h2>
+  <div class="assignment-card">
+    <div class="assignment-card__header">&#128203; Assignment A4 &mdash; Student Registry on H2 (hand in today)</div>
+    <p>
+      A4 was issued in Session 7 and extended in Session 8. Today is the submission deadline.
+      Ensure your code satisfies the four marking dimensions before handing in your project.
+    </p>
+
+    <h4>&#9989; Submission Checklist</h4>
+    <ol>
+      <li>Your project compiles cleanly from the command line with <code>mvn compile</code>.</li>
+      <li><code>SelfCheck.java</code> reports <strong>all checks PASS</strong>, including SQL injection and rollback tests.</li>
+      <li>Parameter safety: All database queries use <code>PreparedStatement</code> with <code>?</code> placeholders. No raw concatenation exists.</li>
+      <li>Transaction atomicity: The <code>enrolAndPay()</code> method executes within an explicit transaction boundary. Inducing a fee failure leaves zero orphaned enrolment records.</li>
+      <li>Resource integrity: All <code>Connection</code>, <code>Statement</code>, and <code>ResultSet</code> objects are managed with try-with-resources.</li>
+      <li>Savepoints: <code>postPayments()</code> isolates payment failures using Savepoints so good payments survive.</li>
+    </ol>
+
+    <h4>&#128640; What's Next: Assignments A5 &amp; A6</h4>
+    <p>
+      <strong>Assignment A5 (A Patterned Registry)</strong> is already underway from Sessions 9 and 10.
+      You will refactor your H2 repository behind an interface seam, implement repository factories, and test both stores with JUnit 5.
+      <strong>Assignment A6 (JavaFX Desktop Application)</strong> opens next week in Session 13!
+    </p>
+
+    <div class="assignment-card__rubric">
+      <div class="assignment-card__rubric-item"><strong>Correctness</strong> All automated checks pass consistently across repeated runs.</div>
+      <div class="assignment-card__rubric-item"><strong>Safety</strong> Zero raw SQL concatenation; complete protection against injection attacks.</div>
+      <div class="assignment-card__rubric-item"><strong>Atomicity</strong> Verified rollback on failure; zero partial records left behind.</div>
+      <div class="assignment-card__rubric-item"><strong>Resources</strong> Clean try-with-resources usage on every JDBC object; no leaks on error paths.</div>
+    </div>
+  </div>
+
+
+  <!-- ===== 14. FURTHER STUDY =============================================== -->
+  <h2>&#128250; Further Study</h2>
+  <p>Each video below has been checked and verified to exist and directly support the topics reviewed in this session.</p>
+  <div class="video-grid">
+    <div class="video-card" data-yt="pMy5pf3EcyY" data-title="Statement vs Prepared Statement">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Statement vs Prepared Statement</div><div class="video-card__channel">Alex Lee</div><div class="video-card__why">Drill 1: Why parameter markers prevent injection and improve performance.</div></div>
+    </div>
+    <div class="video-card" data-yt="ciNHn38EyRc" data-title="SQL Injection explained">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">SQL Injection explained</div><div class="video-card__channel">Computerphile</div><div class="video-card__why">Drill 1: The computer science behind SQL injection attacks.</div></div>
+    </div>
+    <div class="video-card" data-yt="pomxJOFVcQs" data-title="Relational Database ACID Transactions">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Relational Database ACID Transactions</div><div class="video-card__channel">Hussein Nasser</div><div class="video-card__why">Drill 3 &amp; TYI 2: Atomicity, Consistency, Isolation, and Durability explained.</div></div>
+    </div>
+    <div class="video-card" data-yt="3cNqfKAAt20" data-title="JDBC Batch Processing: addBatch vs executeBatch">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">JDBC Batch Processing: addBatch vs executeBatch</div><div class="video-card__channel">Defog Tech</div><div class="video-card__why">Drill 4: Efficient batch operations and error handling.</div></div>
+    </div>
+    <div class="video-card" data-yt="NP7RmrHn1Q0" data-title="Design Patterns in Java Every Developer Should Know | Factory, Observer, Strategy">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Design Patterns in Java Every Developer Should Know</div><div class="video-card__channel">Amigoscode</div><div class="video-card__why">Drill 5 &amp; TYI 3: Factory, Observer, and Strategy patterns in practice.</div></div>
+    </div>
+    <div class="video-card" data-yt="flpmSXVTqBI" data-title="Java Testing - JUnit 5 Crash Course">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">Java Testing - JUnit 5 Crash Course</div><div class="video-card__channel">freeCodeCamp.org</div><div class="video-card__why">Drill 6 &amp; TYI 4: Writing reliable assertions and lifecycle fixtures in JUnit 5.</div></div>
+    </div>
+    <div class="video-card" data-yt="YoFBNMMQrRA" data-title="BitSet Data Structure in Java Programming Language | BitSet in Java">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">BitSet Data Structure in Java</div><div class="video-card__channel">Coding with Aman</div><div class="video-card__why">TYI 5 &amp; Practice 3: High-density bitmask storage and bitwise logic.</div></div>
+    </div>
+    <div class="video-card" data-yt="jwzg5BcCExI" data-title="HashTable, Properties, Dictionary Data Structure in Java Programming Language">
+      <div class="video-card__embed"></div>
+      <div class="video-card__info"><div class="video-card__title">HashTable, Properties, Dictionary Data Structures</div><div class="video-card__channel">Coding with Aman</div><div class="video-card__why">Drill 7 &amp; TYI 5: Legacy collections from JDK 1.0 and their modern replacements.</div></div>
+    </div>
+  </div>
+
+  <h3>Read (Official &amp; Authoritative)</h3>
+  <ul>
+    <li><a href="https://dev.java/learn/" target="_blank" rel="noopener">dev.java &mdash; The Official Java Tutorials</a>: The JDBC Trail and Modern Language Features.</li>
+    <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/package-summary.html" target="_blank" rel="noopener">Java 25 API &mdash; java.sql Package</a>: <code>Connection</code>, <code>PreparedStatement</code>, <code>Savepoint</code>, and <code>DatabaseMetaData</code>.</li>
+    <li><a href="https://junit.org/junit5/docs/current/user-guide/" target="_blank" rel="noopener">JUnit 5 User Guide</a>: Lifecycle annotations, assertions, and parameterized tests.</li>
+    <li><a href="https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/BitSet.html" target="_blank" rel="noopener">Java 25 API &mdash; java.util.BitSet</a>: Bit arrays, cardinality, and bitwise operations.</li>
+    <li>Joshua Bloch, <em>Effective Java (3rd ed.)</em>: Item 1 (Static factory methods), Item 64 (Refer to objects by their interfaces), and Item 65 (Prefer interfaces to reflection).</li>
+  </ul>
+
+  <!-- ===== 15. CHEAT SHEET ================================================= -->
+  <h2>&#128203; Cheat Sheet &mdash; Sessions 6&ndash;10 in One Screen</h2>
+  <div class="cheatsheet">
+    <h4>1. JDBC: Safe Query Execution</h4>
+<pre><code class="lang-java">// PreparedStatement with ? placeholders prevents SQL injection
+String sql = "SELECT id, name FROM students WHERE dept = ? AND gpa >= ?";
+try (Connection conn = DriverManager.getConnection(URL);
+     PreparedStatement ps = conn.prepareStatement(sql)) {
+    ps.setString(1, "Engineering");
+    ps.setDouble(2, 3.5);
+    try (ResultSet rs = ps.executeQuery()) {
+        while (rs.next()) { ... }
+    }
+} // Connection, PreparedStatement, and ResultSet automatically closed</code></pre>
+
+    <h4>2. Transactions: ACID &amp; Savepoints</h4>
+<pre><code class="lang-java">conn.setAutoCommit(false); // Begin transaction boundary
+try {
+    ps1.executeUpdate();   // Step 1: primary write
+    Savepoint sp = conn.setSavepoint("optional_item");
+    try {
+        ps2.executeUpdate(); // Step 2: optional write
+    } catch (SQLException e) {
+        conn.rollback(sp);  // Roll back ONLY Step 2
+    }
+    conn.commit();         // Commit everything that survived
+} catch (SQLException e) {
+    conn.rollback();       // Full rollback if Step 1 failed
+} finally {
+    conn.setAutoCommit(true);
+}</code></pre>
+
+    <h4>3. Design Patterns: Clean Architectural Seams</h4>
+<pre><code class="lang-java">// The interface owns the domain methods; no java.sql imports!
+public interface StudentRepository {
+    void save(Student s);
+    Student findById(int id);
+}
+
+// Factory with exhaustive switch expression (no default)
+public static StudentRepository create(Store store) {
+    return switch (store) {
+        case IN_MEMORY -> new InMemoryRepository();
+        case H2        -> new H2StudentRepository();
+    };
+}</code></pre>
+
+    <h4>4. Unit Testing: Strict Assertions</h4>
+<pre><code class="lang-java">// Verify expected exceptions directly; never catch-and-ignore in a test!
+assertThrows(IllegalArgumentException.class, () -> service.enroll(-1, "Java"));
+
+// Parameterized tests eliminate repetitive assertion blocks
+@ParameterizedTest
+@CsvSource({"95.0, A", "85.0, B", "75.0, C", "45.0, F"})
+void testGrades(double score, String expected) {
+    assertEquals(expected, GradeCalculator.calculateGrade(score));
+}</code></pre>
+
+    <h4>5. Legacy Data Structures vs Modern Replacements</h4>
+<pre><code class="lang-java">BitSet perms = new BitSet();
+perms.set(0); perms.set(3);
+perms.cardinality(); // 2 (number of TRUE bits, NOT size()!)
+
+Stack&lt;String&gt; s = new Stack&lt;&gt;();
+s.push("Top");
+s.search("Top");    // 1 (1-based distance from top, NOT 0!)
+// Modern replacement: Deque&lt;String&gt; deque = new ArrayDeque&lt;&gt;(); deque.peek();</code></pre>
+
+    <h4>6. The Enterprise Diagnostic Loop</h4>
+<pre><code class="lang-shell">spot -> reproduce -> isolate -> fix ONE thing -> re-run full test suite
+# Never test against production databases; use in-memory H2 or test fixtures.
+# A test that cannot fail is not a test; an uncommitted transaction is a hang.</code></pre>
+  </div>
+
+  <!-- ===== 16. SUMMARY ===================================================== -->
+  <h2>&#127891; Session Summary</h2>
+  <ol>
+    <li><strong>Never concatenate user input into SQL queries.</strong> Parameter markers (<code>?</code>) in <code>PreparedStatement</code> ensure that input is treated as literal data, eliminating SQL injection vulnerabilities.</li>
+    <li><strong>Manage JDBC resources with try-with-resources.</strong> Unclosed <code>Connection</code>, <code>Statement</code>, or <code>ResultSet</code> objects leak operating-system socket handles on exception paths.</li>
+    <li><strong>Transactions demand explicit atomicity boundaries.</strong> Multi-step database updates must use <code>setAutoCommit(false)</code> with <code>commit()</code> on success and <code>rollback()</code> on failure.</li>
+    <li><strong>Savepoints enable safe partial recovery.</strong> Use <code>conn.setSavepoint()</code> to isolate optional line items without failing an entire batch transaction.</li>
+    <li><strong>Preserve the architectural seam.</strong> Domain interfaces must remain completely free of <code>java.sql.*</code> types. Use factories with exhaustive switch expressions to instantiate stores.</li>
+    <li><strong>Test exceptions with strict failure assertions.</strong> Catching an exception inside a test method without failing the test creates a dangerous false positive. Use <code>assertThrows</code>.</li>
+    <li><strong>Critique AI-generated code rigorously.</strong> AI assistants frequently generate tautological tests, swallowed exceptions, or vulnerable SQL queries. Verify every assertion against domain rules.</li>
+    <li><strong>Beware of legacy collection indexing quirks.</strong> <code>Stack.search()</code> uses 1-based distance from the top of the stack, not 0-based indexing. <code>BitSet.size()</code> reports 64-bit word capacity; use <code>cardinality()</code> to count set bits.</li>
+    <li><strong>Replace legacy synchronized collections.</strong> Replace <code>Vector</code> with <code>ArrayList</code> or <code>CopyOnWriteArrayList</code>, replace <code>Enumeration</code> with <code>Iterator</code>, and replace <code>Stack</code> with <code>ArrayDeque</code>.</li>
+    <li><strong>Always work the diagnostic loop.</strong> Spot the fault, reproduce it in an isolated test, isolate the offending line, apply a single targeted fix, and re-run all checks to guard against regressions.</li>
+  </ol>
+
+  <div class="newwords"><b>&#128218; All new words from this session</b>
+    <dl>
+      <dt>SQL Injection</dt><dd>A security vulnerability where malicious input alters SQL query logic, allowing attackers to read or destroy database contents.</dd>
+      <dt>PreparedStatement</dt><dd>A pre-compiled database statement where input parameters are passed as literal values via parameter markers (<code>?</code>).</dd>
+      <dt>Atomicity</dt><dd>The ACID property guaranteeing that all steps of a transaction succeed together or all are rolled back, leaving no partial state.</dd>
+      <dt>Savepoint</dt><dd>A checkpoint within an active transaction allowing partial rollback of subsequent operations without discarding prior work.</dd>
+      <dt>Architectural Seam</dt><dd>A clean interface boundary that decouples business logic and presentation controllers from underlying database drivers.</dd>
+      <dt>Exhaustive Switch</dt><dd>A switch expression over an enum covering all possible constants without a <code>default</code> branch, enforced at compile time.</dd>
+      <dt>False Positive Test</dt><dd>A test that reports green even when the code under test is defective (e.g. by swallowing an expected exception).</dd>
+      <dt>BitSet Cardinality</dt><dd>The count of bits currently set to <code>true</code> in a <code>BitSet</code>, as opposed to its allocated memory word size.</dd>
+      <dt>1-Based Stack Distance</dt><dd>The indexing convention used by <code>Stack.search()</code> where the top element is at distance 1 rather than 0.</dd>
+      <dt>Dirty Read</dt><dd>Reading uncommitted data from another concurrent transaction that might later be rolled back.</dd>
+    </dl>
+  </div>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128073;</span>
+    <div class="callout__b"><b>Next session: Week 4 &mdash; Introduction to JavaFX (Session 13)</b>
+      We leave the console and terminal behind! In Session 13 we enter <strong>Desktop Graphical User Interfaces</strong> with JavaFX.
+      You will learn about the JavaFX Stage and Scene Graph, node hierarchies, layout containers, and window life cycles,
+      building your first interactive desktop window.
+    </div>
+  </div>
+
+
+</main>
+
+<script src="../assets/js/course.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 440" width="100%" height="100%">
+  <defs>
+    <filter id="tierShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.08"/>
+    </filter>
+    <marker id="tierArrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#0284c7"/>
+    </marker>
+  </defs>
+
+  <style>
+    .hdr { font-family: system-ui, -apple-system, sans-serif; font-size: 18px; font-weight: 800; fill: #0f172a; }
+    .desc { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #64748b; }
+    .tier-title { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 800; fill: #0f172a; }
+    .tier-session { font-family: ui-monospace, monospace; font-size: 10.5px; font-weight: 700; fill: #0284c7; }
+    .tier-detail { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; fill: #334155; }
+    .code-pill { font-family: ui-monospace, monospace; font-size: 10px; font-weight: 700; fill: #047857; }
+  </style>
+
+  <rect width="920" height="440" rx="14" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <text x="32" y="34" class="hdr">The 5-Tier Enterprise Architecture (Book Sessions 6&#8211;10)</text>
+  <text x="32" y="54" class="desc">How modern Java applications cleanly separate presentation, domain interfaces, testing, and transactional persistence.</text>
+
+  <!-- TIER 1: Presentation & Pattern Layer -->
+  <g filter="url(#tierShadow)">
+    <rect x="32" y="78" width="856" height="54" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+  </g>
+  <text x="48" y="100" class="tier-title">Tier 1: Application &amp; Design Patterns</text>
+  <text x="330" y="100" class="tier-session">Book Session 8 / Course S09</text>
+  <text x="48" y="120" class="tier-detail">MVC Controllers &#8226; Strategy Pricing Policies (FlatFee, EarlyBird) &#8226; Observer Audit Logs &#8226; I18N ResourceBundles</text>
+  <rect x="740" y="90" width="132" height="24" rx="4" fill="#e0f2fe"/>
+  <text x="806" y="106" class="code-pill" fill="#0369a1" text-anchor="middle">Zero SQL imports</text>
+
+  <!-- Connecting Arrow -->
+  <path d="M 460 132 L 460 148" stroke="#0284c7" stroke-width="2" marker-end="url(#tierArrow)"/>
+
+  <!-- TIER 2: The Architectural Seam -->
+  <g filter="url(#tierShadow)">
+    <rect x="32" y="148" width="856" height="56" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+  </g>
+  <text x="48" y="170" class="tier-title">Tier 2: The Clean Seam (Repository &amp; Factory)</text>
+  <text x="365" y="170" class="tier-session">Book Session 8 / Course S09</text>
+  <text x="48" y="191" class="tier-detail">StudentRepository interface &#8226; RepositoryFactory.create(Store) &#8226; Exhaustive switch expression with no default</text>
+  <rect x="740" y="161" width="132" height="24" rx="4" fill="#dcfce7"/>
+  <text x="806" y="177" class="code-pill" fill="#15803d" text-anchor="middle">Interface Contract</text>
+
+  <!-- Connecting Arrow -->
+  <path d="M 460 204 L 460 220" stroke="#0284c7" stroke-width="2" marker-end="url(#tierArrow)"/>
+
+  <!-- TIER 3: Testing & AI Guardrail -->
+  <g filter="url(#tierShadow)">
+    <rect x="32" y="220" width="856" height="56" rx="8" fill="#fdf4ff" stroke="#f0abfc" stroke-width="1.5"/>
+  </g>
+  <text x="48" y="242" class="tier-title">Tier 3: Testing &amp; Verification Guardrail</text>
+  <text x="330" y="242" class="tier-session">Book Session 9 / Course S10</text>
+  <text x="48" y="263" class="tier-detail">JUnit 5 test suites running on both implementations &#8226; Parameterized @CsvSource &#8226; AI test generation &amp; critique</text>
+  <rect x="740" y="233" width="132" height="24" rx="4" fill="#fae8ff"/>
+  <text x="806" y="249" class="code-pill" fill="#a21caf" text-anchor="middle">One Suite, 2 Stores</text>
+
+  <!-- Connecting Arrow -->
+  <path d="M 460 276 L 460 292" stroke="#0284c7" stroke-width="2" marker-end="url(#tierArrow)"/>
+
+  <!-- TIER 4: JDBC & Parameter Safety -->
+  <g filter="url(#tierShadow)">
+    <rect x="32" y="292" width="856" height="56" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  </g>
+  <text x="48" y="314" class="tier-title">Tier 4: JDBC Data Access &amp; Injection Defense</text>
+  <text x="360" y="314" class="tier-session">Book Session 6 / Course S07</text>
+  <text x="48" y="335" class="tier-detail">Connection management &#8226; PreparedStatement with ? placeholders &#8226; DatabaseMetaData column &amp; driver inspection</text>
+  <rect x="740" y="305" width="132" height="24" rx="4" fill="#dbeafe"/>
+  <text x="806" y="321" class="code-pill" fill="#1d4ed8" text-anchor="middle">PreparedStatement ?</text>
+
+  <!-- Connecting Arrow -->
+  <path d="M 460 348 L 460 364" stroke="#0284c7" stroke-width="2" marker-end="url(#tierArrow)"/>
+
+  <!-- TIER 5: Transaction Boundary & Legacy Data Structures -->
+  <g filter="url(#tierShadow)">
+    <rect x="32" y="364" width="856" height="56" rx="8" fill="#fffbeb" stroke="#fde68a" stroke-width="1.5"/>
+  </g>
+  <text x="48" y="386" class="tier-title">Tier 5: Transactions, Persistence &amp; Legacy Foundations</text>
+  <text x="420" y="386" class="tier-session">Book Sessions 7 &amp; 10 / Course S08 &amp; S11</text>
+  <text x="48" y="407" class="tier-detail">setAutoCommit(false), commit(), rollback(), Savepoints &#8226; BitSet permission flags &#8226; Legacy Stack / Vector handling</text>
+  <rect x="740" y="377" width="132" height="24" rx="4" fill="#fef3c7"/>
+  <text x="806" y="393" class="code-pill" fill="#b45309" text-anchor="middle">ACID Boundary</text>
+</svg>

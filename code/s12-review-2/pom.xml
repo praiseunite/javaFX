@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Session 12 — Review 6–10: the debugging drills, Try It Yourself solutions, and practice exercises.
+  Covers the official Presenter's Manual Session 12 ("The Try It Yourself questions of Session 6
+  to Session 10 of Building Rich Java and JavaFX Applications book should be covered in this session").
+  Runs against embedded H2 in memory/temp and JUnit 5 platform.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.aptech</groupId>
+    <artifactId>s12-review-2</artifactId>
+    <version>1.0</version>
+    <name>Session 12 - Try It Yourself (Sessions 6-10)</name>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.3.232</version>
+        </dependency>
+    </dependencies>
+</project>

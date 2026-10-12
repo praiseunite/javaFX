@@ -1,0 +1,74 @@
+<svg width="780" height="420" viewBox="0 0 780 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow13a" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <!-- Title & Frame -->
+  <rect x="10" y="10" width="760" height="400" rx="12" fill="var(--surface, #1e222b)" stroke="var(--border, #3a4252)" stroke-width="2"/>
+  <text x="390" y="38" text-anchor="middle" fill="currentColor" font-family="system-ui, sans-serif" font-size="16" font-weight="700">JavaFX Architectural Stack</text>
+  <text x="390" y="56" text-anchor="middle" fill="currentColor" opacity="0.65" font-family="system-ui, sans-serif" font-size="12">Multi-Tier Subsystems: From Public Java API to Hardware Acceleration</text>
+
+  <!-- Layer 1: Public JavaFX API -->
+  <g transform="translate(30, 70)">
+    <rect x="0" y="0" width="720" height="52" rx="8" fill="var(--primary, #0ea5e9)" fill-opacity="0.15" stroke="var(--primary, #0ea5e9)" stroke-width="1.8"/>
+    <text x="20" y="24" fill="var(--primary, #0ea5e9)" font-family="system-ui, sans-serif" font-size="13" font-weight="700">1. JavaFX Public API (Application, Stage, Scene, Controls, FXML, Layouts, 2D/3D)</text>
+    <text x="20" y="42" fill="currentColor" opacity="0.8" font-family="monospace" font-size="11">javafx.application.* | javafx.stage.* | javafx.scene.* | javafx.scene.control.* | javafx.beans.*</text>
+  </g>
+
+  <!-- Layer 2: Scene Graph -->
+  <g transform="translate(30, 132)">
+    <rect x="0" y="0" width="720" height="48" rx="8" fill="var(--accent, #6366f1)" fill-opacity="0.15" stroke="var(--accent, #6366f1)" stroke-width="1.8"/>
+    <text x="20" y="22" fill="var(--accent, #6366f1)" font-family="system-ui, sans-serif" font-size="13" font-weight="700">2. Scene Graph (Retained-Mode Tree Model)</text>
+    <text x="20" y="39" fill="currentColor" opacity="0.8" font-family="system-ui, sans-serif" font-size="11">Hierarchical tree of Nodes: Parent, Group, Region, Controls, Transforms, Bounds, Event Dispatch</text>
+  </g>
+
+  <!-- Layer 3: Quantum Toolkit -->
+  <g transform="translate(30, 190)">
+    <rect x="0" y="0" width="720" height="48" rx="8" fill="var(--surface-2, #2a303c)" stroke="var(--border, #4a5568)" stroke-width="1.8"/>
+    <text x="20" y="22" fill="currentColor" font-family="system-ui, sans-serif" font-size="13" font-weight="700">3. Quantum Toolkit (Thread &amp; Pipeline Bridge)</text>
+    <text x="20" y="39" fill="currentColor" opacity="0.8" font-family="system-ui, sans-serif" font-size="11">Coordinates JavaFX Application Thread &amp; Render Thread | Pulse Management (60 fps) | Dirty region tracking</text>
+  </g>
+
+  <!-- Layer 4: Core Subsystems (4 Columns) -->
+  <g transform="translate(30, 248)">
+    <!-- Prism -->
+    <rect x="0" y="0" width="172" height="92" rx="8" fill="var(--surface-2, #2a303c)" stroke="var(--border, #4a5568)" stroke-width="1.5"/>
+    <text x="86" y="24" text-anchor="middle" fill="currentColor" font-family="system-ui, sans-serif" font-size="13" font-weight="700">Prism</text>
+    <text x="86" y="42" text-anchor="middle" fill="currentColor" opacity="0.75" font-family="system-ui, sans-serif" font-size="11">Hardware 2D/3D Engine</text>
+    <line x1="12" y1="52" x2="160" y2="52" stroke="var(--border, #4a5568)" stroke-width="1"/>
+    <text x="86" y="68" text-anchor="middle" fill="currentColor" opacity="0.7" font-family="monospace" font-size="10">DirectX 9/11 (Win)</text>
+    <text x="86" y="82" text-anchor="middle" fill="currentColor" opacity="0.7" font-family="monospace" font-size="10">Metal / OpenGL / Sw</text>
+
+    <!-- Glass Windowing -->
+    <rect x="182" y="0" width="172" height="92" rx="8" fill="var(--surface-2, #2a303c)" stroke="var(--border, #4a5568)" stroke-width="1.5"/>
+    <text x="268" y="24" text-anchor="middle" fill="currentColor" font-family="system-ui, sans-serif" font-size="13" font-weight="700">Glass Toolkit</text>
+    <text x="268" y="42" text-anchor="middle" fill="currentColor" opacity="0.75" font-family="system-ui, sans-serif" font-size="11">Native OS Windowing</text>
+    <line x1="194" y1="52" x2="342" y2="52" stroke="var(--border, #4a5568)" stroke-width="1"/>
+    <text x="268" y="68" text-anchor="middle" fill="currentColor" opacity="0.7" font-family="monospace" font-size="10">Windows HWND / Mac NS</text>
+    <text x="268" y="82" text-anchor="middle" fill="currentColor" opacity="0.7" font-family="monospace" font-size="10">Native Event Loop</text>
+
+    <!-- Media Engine -->
+    <rect x="364" y="0" width="172" height="92" rx="8" fill="var(--surface-2, #2a303c)" stroke="var(--border, #4a5568)" stroke-width="1.5"/>
+    <text x="450" y="24" text-anchor="middle" fill="currentColor" font-family="system-ui, sans-serif" font-size="13" font-weight="700">Media Engine</text>
+    <text x="450" y="42" text-anchor="middle" fill="currentColor" opacity="0.75" font-family="system-ui, sans-serif" font-size="11">Audio &amp; Video Streams</text>
+    <line x1="376" y1="52" x2="524" y2="52" stroke="var(--border, #4a5568)" stroke-width="1"/>
+    <text x="450" y="68" text-anchor="middle" fill="currentColor" opacity="0.7" font-family="monospace" font-size="10">GStreamer Core</text>
+    <text x="450" y="82" text-anchor="middle" fill="currentColor" opacity="0.7" font-family="monospace" font-size="10">MP3, AAC, H.264/MP4</text>
+
+    <!-- Web Engine -->
+    <rect x="546" y="0" width="174" height="92" rx="8" fill="var(--surface-2, #2a303c)" stroke="var(--border, #4a5568)" stroke-width="1.5"/>
+    <text x="633" y="24" text-anchor="middle" fill="currentColor" font-family="system-ui, sans-serif" font-size="13" font-weight="700">Web Engine</text>
+    <text x="633" y="42" text-anchor="middle" fill="currentColor" opacity="0.75" font-family="system-ui, sans-serif" font-size="11">Embedded Web Browser</text>
+    <line x1="558" y1="52" x2="708" y2="52" stroke="var(--border, #4a5568)" stroke-width="1"/>
+    <text x="633" y="68" text-anchor="middle" fill="currentColor" opacity="0.7" font-family="monospace" font-size="10">WebKit Engine Core</text>
+    <text x="633" y="82" text-anchor="middle" fill="currentColor" opacity="0.7" font-family="monospace" font-size="10">HTML5, CSS, WebView</text>
+  </g>
+
+  <!-- Layer 5: Native OS & GPU Hardware -->
+  <g transform="translate(30, 350)">
+    <rect x="0" y="0" width="720" height="42" rx="8" fill="var(--surface-2, #2a303c)" stroke="var(--border, #4a5568)" stroke-width="1.5" stroke-dasharray="4"/>
+    <text x="360" y="26" text-anchor="middle" fill="currentColor" opacity="0.85" font-family="system-ui, sans-serif" font-size="12" font-weight="600">Native Operating System (Windows, macOS, Linux) &amp; GPU Hardware (DirectX / OpenGL Drivers)</text>
+  </g>
+</svg>
