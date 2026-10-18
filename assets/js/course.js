@@ -45,7 +45,7 @@
     { group: "Week 4 — JavaFX Foundations" },
     { slug: "s13", file: "sessions/s13-intro-javafx.html",       unit: "Session 13", title: "Introduction to JavaFX" },
     { slug: "s14", file: "sessions/s14-javafx-text-shapes.html", unit: "Session 14", title: "Text, Transforms & Shapes" },
-    { slug: "s15", file: "sessions/s15-javafx-layouts-ui.html",  unit: "Session 15", title: "Layouts, CSS, Controls & Charts", coming: true },
+    { slug: "s15", file: "sessions/s15-javafx-layouts-ui.html",  unit: "Session 15", title: "Layouts, CSS, Controls & Charts" },
     { slug: "s16", file: "sessions/s16-javafx-events.html",      unit: "Session 16", title: "Event Handling", coming: true },
 
     { group: "Week 5 — JavaFX Advanced & Capstone" },

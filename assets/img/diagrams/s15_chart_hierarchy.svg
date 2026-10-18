@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 400" font-family="system-ui,-apple-system,sans-serif">
+  <defs>
+    <linearGradient id="chartHdr" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#0ea5e9"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient>
+    <linearGradient id="xyHdr" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#a855f7"/></linearGradient>
+    <linearGradient id="leafChart" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+  </defs>
+
+  <rect width="820" height="400" rx="16" fill="#0f172a"/>
+  
+  <text x="410" y="32" text-anchor="middle" fill="#94a3b8" font-size="14" font-weight="600">JavaFX Visual Analytics: Chart Class Hierarchy</text>
+
+  <!-- Top Level: javafx.scene.chart.Chart -->
+  <rect x="310" y="52" width="200" height="38" rx="8" fill="url(#chartHdr)"/>
+  <text x="410" y="76" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">javafx.scene.chart.Chart</text>
+
+  <!-- Line down to branches -->
+  <line x1="410" y1="90" x2="410" y2="120" stroke="#475569" stroke-width="2"/>
+  <line x1="160" y1="120" x2="590" y2="120" stroke="#475569" stroke-width="2"/>
+
+  <!-- Left Branch: PieChart -->
+  <line x1="160" y1="120" x2="160" y2="150" stroke="#475569" stroke-width="2"/>
+  <rect x="70" y="150" width="180" height="46" rx="8" fill="url(#leafChart)"/>
+  <text x="160" y="174" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">PieChart</text>
+  <text x="160" y="188" text-anchor="middle" fill="#d1fae5" font-size="10">ObservableList&lt;PieChart.Data&gt;</text>
+
+  <!-- Mini Pie Icon -->
+  <g transform="translate(160, 245)">
+    <circle cx="0" cy="0" r="36" fill="#0284c7"/>
+    <path d="M 0 0 L 0 -36 A 36 36 0 0 1 31 18 Z" fill="#f59e0b"/>
+    <path d="M 0 0 L 31 18 A 36 36 0 0 1 -25 25 Z" fill="#ec4899"/>
+    <text x="0" y="55" text-anchor="middle" fill="#94a3b8" font-size="10">Proportional Shares (100%)</text>
+  </g>
+
+  <!-- Right Branch: XYChart<X, Y> -->
+  <line x1="590" y1="120" x2="590" y2="150" stroke="#475569" stroke-width="2"/>
+  <rect x="470" y="150" width="240" height="46" rx="8" fill="url(#xyHdr)"/>
+  <text x="590" y="174" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">XYChart&lt;X, Y&gt; (abstract)</text>
+  <text x="590" y="188" text-anchor="middle" fill="#ede9fe" font-size="10">Requires X-Axis &amp; Y-Axis (Category/Number)</text>
+
+  <!-- XYChart Subclasses Line -->
+  <line x1="590" y1="196" x2="590" y2="230" stroke="#475569" stroke-width="2"/>
+  <line x1="330" y1="230" x2="770" y2="230" stroke="#475569" stroke-width="2"/>
+
+  <!-- 1. BarChart -->
+  <line x1="330" y1="230" x2="330" y2="260" stroke="#475569" stroke-width="2"/>
+  <rect x="275" y="260" width="110" height="40" rx="6" fill="#1e293b" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="330" y="284" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="700">BarChart</text>
+  <!-- Mini Bar icon -->
+  <rect x="295" y="325" width="12" height="35" fill="#3b82f6"/>
+  <rect x="313" y="315" width="12" height="45" fill="#60a5fa"/>
+  <rect x="331" y="335" width="12" height="25" fill="#3b82f6"/>
+  <rect x="349" y="305" width="12" height="55" fill="#93c5fd"/>
+  <text x="330" y="380" text-anchor="middle" fill="#64748b" font-size="9">Discrete Categories</text>
+
+  <!-- 2. LineChart -->
+  <line x1="475" y1="230" x2="475" y2="260" stroke="#475569" stroke-width="2"/>
+  <rect x="420" y="260" width="110" height="40" rx="6" fill="#1e293b" stroke="#10b981" stroke-width="1.5"/>
+  <text x="475" y="284" text-anchor="middle" fill="#6ee7b7" font-size="12" font-weight="700">LineChart</text>
+  <!-- Mini Line icon -->
+  <polyline points="435,350 455,325 480,335 505,305" fill="none" stroke="#10b981" stroke-width="2.5"/>
+  <circle cx="435" cy="350" r="3" fill="#6ee7b7"/>
+  <circle cx="455" cy="325" r="3" fill="#6ee7b7"/>
+  <circle cx="480" cy="335" r="3" fill="#6ee7b7"/>
+  <circle cx="505" cy="305" r="3" fill="#6ee7b7"/>
+  <text x="475" y="380" text-anchor="middle" fill="#64748b" font-size="9">Trends &amp; Time Series</text>
+
+  <!-- 3. AreaChart -->
+  <line x1="625" y1="230" x2="625" y2="260" stroke="#475569" stroke-width="2"/>
+  <rect x="570" y="260" width="110" height="40" rx="6" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="625" y="284" text-anchor="middle" fill="#fcd34d" font-size="12" font-weight="700">AreaChart</text>
+  <!-- Mini Area icon -->
+  <polygon points="585,360 585,340 610,320 635,335 660,310 660,360" fill="#f59e0b" fill-opacity="0.4" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="625" y="380" text-anchor="middle" fill="#64748b" font-size="9">Cumulative Volume</text>
+
+  <!-- 4. ScatterChart -->
+  <line x1="770" y1="230" x2="770" y2="260" stroke="#475569" stroke-width="2"/>
+  <rect x="715" y="260" width="95" height="40" rx="6" fill="#1e293b" stroke="#ec4899" stroke-width="1.5"/>
+  <text x="762" y="284" text-anchor="middle" fill="#f472b6" font-size="11" font-weight="700">ScatterChart</text>
+  <!-- Mini Scatter icon -->
+  <circle cx="730" cy="345" r="3" fill="#ec4899"/>
+  <circle cx="745" cy="320" r="3" fill="#f472b6"/>
+  <circle cx="755" cy="350" r="3" fill="#ec4899"/>
+  <circle cx="770" cy="315" r="3" fill="#f472b6"/>
+  <circle cx="785" cy="330" r="3" fill="#ec4899"/>
+  <text x="762" y="380" text-anchor="middle" fill="#64748b" font-size="9">Data Distribution</text>
+</svg>

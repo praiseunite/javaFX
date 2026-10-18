@@ -1,0 +1,2683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session 15 — JavaFX Layouts, CSS, Controls &amp; Charts</title>
+  <meta name="description" content="Session 15 of Building Rich Java Applications with JavaFX and AI Tools: JavaFX Layouts, CSS, Controls &amp; Charts. Master responsive container panes (BorderPane, GridPane, HBox, VBox, FlowPane, TilePane, StackPane, AnchorPane), the JavaFX CSS styling box model with -fx-* selectors, modern UI controls (ComboBox, RadioButton, ToggleGroup, DatePicker, Slider, ProgressBar), and hardware-accelerated business data visualizations (PieChart, BarChart, LineChart). Complete with runnable examples, interactive walkthroughs, SVG diagrams, and enterprise registrar dashboard capstone lab.">
+  <link rel="stylesheet" href="../assets/css/course.css">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "s15";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== 1. HERO ========================================================= -->
+  <section class="hero">
+    <span class="tag">Week 4 &middot; Day 3 &middot; Session 15 &middot; 2 hours in class + practice at home</span>
+    <h1>Session 15 &mdash; JavaFX Layouts, CSS, Controls &amp; Charts</h1>
+    <p class="lede">
+      In Session 14, you learned to draw, transform, and animate custom 2D vector shapes and 3D meshes. Today, you
+      transition from raw graphic canvases to building sophisticated, production-grade enterprise desktop user interfaces.
+      You will master JavaFX responsive layout panes (<code>BorderPane</code>, <code>GridPane</code>, <code>HBox</code>,
+      <code>VBox</code>, <code>FlowPane</code>, <code>TilePane</code>, <code>StackPane</code>, and <code>AnchorPane</code>),
+      skin applications with corporate styling using the JavaFX CSS box model and <code>-fx-*</code> vendor rules,
+      bind interactive form controls with reactive property listeners, and render high-impact business intelligence
+      visualizations using <code>PieChart</code>, <code>BarChart</code>, and <code>LineChart</code>.
+    </p>
+    <div class="meta">
+      <span>&#128218; Learner's Guide: SG &middot; XP &middot; TG &mdash; Session 13</span>
+      <span>&#9201; ~2 hours in class</span>
+      <span>&#9989; Before this: Session 14 (Text, Transforms &amp; Shapes)</span>
+      <span>&#128187; Guided Lab: Aptech Enterprise Registrar Dashboard &amp; Analytics Portal</span>
+    </div>
+  </section>
+
+  <!-- ===== 2. OBJECTIVES =================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this session you can&hellip;</b>
+    <ol>
+      <li><strong>Structure</strong> multi-panel corporate application frames using <code>BorderPane</code>, <code>HBox</code>, and <code>VBox</code> with dynamic resizing via <code>Priority.ALWAYS</code>.</li>
+      <li><strong>Construct</strong> complex 2D data entry forms using <code>GridPane</code> coordinates, column spans, row spans, horizontal gaps, and cell alignments.</li>
+      <li><strong>Select and apply</strong> specialized layout containers including <code>FlowPane</code> (wrapping tags), <code>TilePane</code> (uniform KPI cards), <code>StackPane</code> (Z-order badges), and <code>AnchorPane</code> (docked corner controls).</li>
+      <li><strong>Style</strong> JavaFX components using external <code>.css</code> stylesheets, class selectors, pseudo-classes (<code>:hover</code>, <code>:focused</code>), and understand why the <code>-fx-*</code> vendor prefix is mandatory.</li>
+      <li><strong>Implement</strong> rich input forms combining <code>TextField</code>, <code>ComboBox</code>, <code>RadioButton</code>, <code>ToggleGroup</code>, <code>CheckBox</code>, and <code>DatePicker</code>.</li>
+      <li><strong>Synchronize</strong> reactive ranges and state indicators by binding <code>Slider</code> properties to a <code>ProgressBar</code> using <code>ChangeListener</code>.</li>
+      <li><strong>Plot</strong> proportional business distributions using <code>PieChart</code>, and update slice values dynamically at runtime without rebuilding the chart.</li>
+      <li><strong>Engineer</strong> multi-series comparative trend analytics using <code>XYChart</code>, <code>CategoryAxis</code>, <code>NumberAxis</code>, <code>BarChart</code>, and <code>LineChart</code>.</li>
+    </ol>
+  </div>
+
+  <!-- ===== 3. TABLE OF CONTENTS ============================================ -->
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== 5. ROADMAP ====================================================== -->
+  <h2>Your Roadmap for Today</h2>
+  <div class="roadmap">
+    <a href="#part-1-borderpane">Part 1: JavaFX Layout Panes: BorderPane, HBox &amp; VBox</a>
+    <a href="#part-2-gridpane">Part 2: Two-Dimensional Grid Systems: GridPane Coordinates &amp; Spans</a>
+    <a href="#part-3-secondary-panes">Part 3: Secondary Layout Panes: FlowPane, TilePane, StackPane &amp; AnchorPane</a>
+    <a href="#part-4-css">Part 4: JavaFX CSS Box Model, Skinning &amp; -fx-* Selectors</a>
+    <a href="#part-5-controls">Part 5: Interactive UI Controls, Range Sliders &amp; Reactive Data Binding</a>
+    <a href="#part-6-piechart">Part 6: Proportional Visualizations: PieChart Analytics &amp; Dynamic Slices</a>
+    <a href="#part-7-xychart">Part 7: Cartesian Coordinate Visualizations: XYChart, BarChart &amp; LineChart</a>
+    <a href="#lab-dashboard">Guided Lab: Aptech Enterprise Registrar Dashboard Portal</a>
+  </div>
+
+  <!-- ===== 6. WHY THIS MATTERS ============================================= -->
+  <h2>Why This Matters</h2>
+  <p>
+    In amateur desktop development, developers frequently position UI elements using absolute coordinate pixels:
+    placing a button at <code>(x = 120, y = 80)</code> and a text field at <code>(x = 240, y = 80)</code>.
+    While this looks acceptable on the developer's specific monitor, absolute positioning completely breaks in
+    enterprise deployments:
+  </p>
+  <ul>
+    <li>When a user resizes or maximizes the window, controls remain clustered in the top-left corner, leaving vast empty deserts of grey background.</li>
+    <li>When running on high-DPI "Retina" or 4K displays, font scaling causes labels to collide or truncate inside fixed pixel rectangles.</li>
+    <li>When translating an application into another language (localization), text lengths expand, causing words to overflow fixed boxes.</li>
+  </ul>
+  <p>
+    <strong>JavaFX solves this completely through responsive layout managers (Panes) and CSS skinning.</strong>
+    Instead of hardcoding pixels, you declare geometric relationships: <em>"Place this header at the TOP, expand the
+    search field horizontally to consume any extra space, align this form in a 2-column matrix with 14px gutters,
+    and style the entire portal with a dark navy theme."</em> The layout engine continuously calculates optimal
+    sizes and positions on every window resize, ensuring a flawless user experience across all devices and screen resolutions.
+  </p>
+
+  <div class="callout callout--analogy"><span class="callout__i">&#127963;</span>
+    <div class="callout__b"><b>Analogy &mdash; The Architectural Skyscraper &amp; Modern Interior Design</b>
+      Building a JavaFX desktop interface is identical to designing and constructing a state-of-the-art corporate headquarters:
+      <ul>
+        <li><strong>Layout Panes (<code>Pane</code>)</strong> are the structural steel beams, floorplans, and modular partitions. <code>BorderPane</code> defines the building outline: the penthouse lounge (Top), the lobby (Bottom), the elevator shaft (Left), and the expansive central atrium (Center). <code>GridPane</code> lays out the modular cubicle floorplan with exact rows and columns.</li>
+        <li><strong>UI Controls (<code>Control</code>)</strong> are the functional furnishings, touchscreens, doors, and appliances: buttons that trigger elevators, text boxes that receive mail, date pickers on the calendar, and sliders that dim the lights.</li>
+        <li><strong>JavaFX CSS (<code>.css</code>)</strong> is the interior design finish: the polished slate floors, obsidian glass panels, brushed aluminum borders, and ambient neon backlights. You can completely remodel the building from traditional marble to cyberpunk dark mode without knocking down a single structural wall!</li>
+        <li><strong>Business Charts (<code>Chart</code>)</strong> are the holographic executive status monitors installed in the boardroom: real-time pie charts showing market share and dynamic line graphs plotting quarterly corporate revenue.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Layout Panes Architecture Diagram -->
+  <div style="text-align:center;margin:2rem 0">
+    <img src="../assets/img/diagrams/s15_layout_panes.svg" alt="Architecture diagram of JavaFX layout panes including BorderPane, GridPane, HBox, VBox, FlowPane, TilePane, StackPane, and AnchorPane" style="max-width:100%;height:auto;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,0.15);border:1px solid var(--border,#3a4252)">
+    <p class="text-sm text-faint" style="margin-top:0.5rem">Figure 15.1 &mdash; JavaFX Core Layout Panes: Visual comparison of 5-region distribution, linear flow, 2D grid matrix, wrapping tiles, and edge docking.</p>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PART 1: BORDERPANE & LINEAR BOXES                                         -->
+  <!-- ========================================================================= -->
+  <section id="part-1-borderpane">
+    <h2>Part 1: JavaFX Layout Panes: BorderPane, HBox &amp; VBox Linear Flow</h2>
+    <p>
+      At the root of almost every enterprise desktop application sits <code>javafx.scene.layout.BorderPane</code>.
+      <code>BorderPane</code> divides its available screen real estate into five distinct structural zones:
+      <strong>Top</strong>, <strong>Bottom</strong>, <strong>Left</strong>, <strong>Right</strong>, and <strong>Center</strong>.
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Zone</th>
+            <th>Primary Purpose</th>
+            <th>Resizing Behavior</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>Top</code></td>
+            <td>Application menu bars, branding headers, toolbars, search bars</td>
+            <td>Stretches horizontally to fill window width; maintains preferred height.</td>
+          </tr>
+          <tr>
+            <td><code>Left</code></td>
+            <td>Navigation drawers, icon sidebars, category accordions</td>
+            <td>Maintains preferred width; stretches vertically between Top and Bottom.</td>
+          </tr>
+          <tr>
+            <td><code>Right</code></td>
+            <td>Properties inspector, tool utility palettes, notification feeds</td>
+            <td>Maintains preferred width; stretches vertically between Top and Bottom.</td>
+          </tr>
+          <tr>
+            <td><code>Bottom</code></td>
+            <td>Status bars, pagination controls, zoom sliders, system telemetry</td>
+            <td>Stretches horizontally to fill window width; maintains preferred height.</td>
+          </tr>
+          <tr>
+            <td><code>Center</code></td>
+            <td>Primary work area, document editor, data tables, analytics dashboards</td>
+            <td><strong>Aggressive expansion:</strong> Claims 100% of all remaining horizontal and vertical space.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Linear Layouts: HBox and VBox</h3>
+    <p>
+      While <code>BorderPane</code> governs the macro application shell, <code>HBox</code> (Horizontal Box) and
+      <code>VBox</code> (Vertical Box) govern micro component flow. An <code>HBox</code> arranges its children in a
+      single horizontal row from left to right; a <code>VBox</code> arranges its children in a single vertical column
+      from top to bottom.
+    </p>
+    <p>
+      Two critical concepts make linear boxes truly responsive:
+    </p>
+    <ol>
+      <li><strong>Spacing and Insets</strong>: <code>new HBox(12)</code> defines a 12-pixel gutter between consecutive siblings. <code>setPadding(new Insets(top, right, bottom, left))</code> defines the internal margin between the box's outer border and its children.</li>
+      <li><strong>Flexible Growth (<code>Priority.ALWAYS</code>)</strong>: By default, controls in a box only take up their preferred width. To force an element (such as a search field) to absorb all extra horizontal space when the window widens, call <code>HBox.setHgrow(searchField, Priority.ALWAYS)</code>.</li>
+    </ol>
+
+    <!-- CODE BLOCK: E01 -->
+    <!--@code src="code/s15-javafx-layouts-ui/src/main/java/com/aptech/s15/E01_BorderPaneAndLinearBoxes.java" title="E01_BorderPaneAndLinearBoxes.java" hl="25,48,60,82,105"-->
+<pre class="numbered" data-file="E01_BorderPaneAndLinearBoxes.java" data-hl="25,48,60,82,105"><code class="lang-java">package com.aptech.s15;
+
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+/**
+ * Session 15 - Example 1: BorderPane and Linear Box Layouts (HBox &amp; VBox)
+ *
+ * Demonstrates:
+ * 1. BorderPane 5-region distribution (Top, Bottom, Left, Right, Center).
+ * 2. Center expansion: Center region claims all remaining window space.
+ * 3. HBox and VBox spacing, padding (Insets), and alignment (Pos).
+ * 4. Priority.ALWAYS: Flexible element growth on window resize.
+ * 5. Combining nested boxes into a cohesive modern application frame.
+ */
+public class E01_BorderPaneAndLinearBoxes {
+
+    public static class LayoutApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+            System.out.println("=== JavaFX BorderPane, HBox &amp; VBox Architecture ===");
+
+            BorderPane root = new BorderPane();
+
+            // 1. TOP REGION: Application Header Bar (HBox)
+            HBox header = new HBox(12);
+            header.setPadding(new Insets(12, 20, 12, 20));
+            header.setAlignment(Pos.CENTER_LEFT);
+            header.setStyle("-fx-background-color: #1E293B; -fx-border-color: #334155; -fx-border-width: 0 0 1 0;");
+
+            Label brand = new Label("Aptech Campus Portal");
+            brand.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #38BDF8;");
+
+            TextField searchField = new TextField();
+            searchField.setPromptText("Search modules, students, reports...");
+            searchField.setStyle("-fx-background-color: #0F172A; -fx-text-fill: #F8FAFC; -fx-border-color: #475569; -fx-border-radius: 4px;");
+            // Give search field flexible growth
+            HBox.setHgrow(searchField, Priority.ALWAYS);
+
+            Button btnProfile = new Button("Admin Profile");
+            btnProfile.setStyle("-fx-background-color: #2563EB; -fx-text-fill: white; -fx-font-weight: bold;");
+
+            header.getChildren().addAll(brand, searchField, btnProfile);
+            root.setTop(header);
+
+            // 2. LEFT REGION: Side Navigation (VBox)
+            VBox sidebar = new VBox(8);
+            sidebar.setPadding(new Insets(16, 12, 16, 12));
+            sidebar.setPrefWidth(180);
+            sidebar.setStyle("-fx-background-color: #0F172A; -fx-border-color: #334155; -fx-border-width: 0 1 0 0;");
+
+            String[] navItems = {"Dashboard", "Students", "Curriculum", "Examinations", "Settings"};
+            for (int i = 0; i &lt; navItems.length; i++) {
+                Button navBtn = new Button(navItems[i]);
+                navBtn.setMaxWidth(Double.MAX_VALUE);
+                navBtn.setAlignment(Pos.CENTER_LEFT);
+                if (i == 0) {
+                    navBtn.setStyle("-fx-background-color: #2563EB; -fx-text-fill: white; -fx-font-weight: bold;");
+                } else {
+                    navBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #94A3B8;");
+                }
+                sidebar.getChildren().add(navBtn);
+            }
+            root.setLeft(sidebar);
+
+            // 3. CENTER REGION: Work Area with Auto-Expansion
+            VBox centerContent = new VBox(16);
+            centerContent.setPadding(new Insets(24));
+            centerContent.setStyle("-fx-background-color: #0B1120;");
+
+            Label centerTitle = new Label("Active Academic Term Overview");
+            centerTitle.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #F8FAFC;");
+
+            Label centerDesc = new Label(
+                "BorderPane allocates center region all unclaimed horizontal and vertical space.\n" +
+                "When the application window is resized, Top and Bottom maintain their preferred heights,\n" +
+                "Left and Right retain their preferred widths, and Center expands dynamically."
+            );
+            centerDesc.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 13px;");
+
+            centerContent.getChildren().addAll(centerTitle, centerDesc);
+            root.setCenter(centerContent);
+
+            // 4. BOTTOM REGION: System Status Bar (HBox)
+            HBox statusBar = new HBox(16);
+            statusBar.setPadding(new Insets(6, 16, 6, 16));
+            statusBar.setAlignment(Pos.CENTER_LEFT);
+            statusBar.setStyle("-fx-background-color: #1E293B; -fx-border-color: #334155; -fx-border-width: 1 0 0 0;");
+
+            Label statusMsg = new Label("System Status: Online | Database: Connected (Localhost:3306)");
+            statusMsg.setStyle("-fx-text-fill: #10B981; -fx-font-size: 11px;");
+            Label versionMsg = new Label("v2.4.0-FX21");
+            versionMsg.setStyle("-fx-text-fill: #64748B; -fx-font-size: 11px;");
+
+            HBox.setHgrow(statusMsg, Priority.ALWAYS);
+            statusBar.getChildren().addAll(statusMsg, versionMsg);
+            root.setBottom(statusBar);
+
+            // Verification diagnostics
+            System.out.println("Root Pane Type: " + root.getClass().getSimpleName());
+            System.out.println("Top Region Child Count: " + header.getChildren().size());
+            System.out.println("Left Region Width: " + sidebar.getPrefWidth() + "px");
+            System.out.println("Center Region Node: " + root.getCenter().getClass().getSimpleName());
+            System.out.println("Bottom Region: " + root.getBottom().getClass().getSimpleName());
+
+            Scene scene = new Scene(root, 760, 480);
+            primaryStage.setTitle("Session 15 - BorderPane &amp; Linear Boxes");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+        }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(LayoutApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+
+    <!-- OUTPUT BLOCK: E01 -->
+    <!--@output project="code/s15-javafx-layouts-ui" main="com.aptech.s15.E01_BorderPaneAndLinearBoxes"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== JavaFX BorderPane, HBox &amp; VBox Architecture ===
+Root Pane Type: BorderPane
+Top Region Child Count: 3
+Left Region Width: 180.0px
+Center Region Node: VBox
+Bottom Region: HBox
+[Stage.show()] Primary window displayed: 'Session 15 - BorderPane &amp; Linear Boxes' (760x480)
+[JavaFX Runtime] Step 3: Application active. Window title: 'Session 15 - BorderPane &amp; Linear Boxes'
+[JavaFX Runtime] Scene root: BorderPane [Width: 760.0, Height: 480.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+
+    <div class="walkthrough">
+      <h4>Line-by-Line Code Walkthrough &mdash; E01_BorderPaneAndLinearBoxes.java</h4>
+      <ul>
+        <li><code>Line 25</code>: <code>BorderPane root = new BorderPane();</code> instantiates the 5-region application master container.</li>
+        <li><code>Line 28&ndash;45</code>: Creates the <code>Top</code> header using an <code>HBox</code> with 12px spacing, padded by <code>new Insets(12, 20, 12, 20)</code>.</li>
+        <li><code>Line 38</code>: <code>HBox.setHgrow(searchField, Priority.ALWAYS);</code> instructs the layout engine that whenever the window expands horizontally, the search text field must expand to claim all unused space while the brand label and button maintain their natural sizes.</li>
+        <li><code>Line 51&ndash;70</code>: Creates the <code>Left</code> sidebar using a <code>VBox</code> with 8px spacing, fixed at <code>prefWidth = 180</code>. Each navigation button is configured with <code>setMaxWidth(Double.MAX_VALUE)</code> so it spans the entire sidebar width.</li>
+        <li><code>Line 73&ndash;88</code>: Creates the <code>Center</code> workspace using a <code>VBox</code>. Because it is placed into <code>root.setCenter()</code>, JavaFX automatically grants it all remaining horizontal and vertical pixels.</li>
+        <li><code>Line 91&ndash;108</code>: Creates the <code>Bottom</code> status bar using an <code>HBox</code> with <code>HBox.setHgrow(statusMsg, Priority.ALWAYS)</code> pushing the version label to the far right edge.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- PART 2: GRIDPANE 2D MATRIX                                                -->
+  <!-- ========================================================================= -->
+  <section id="part-2-gridpane">
+    <h2>Part 2: Two-Dimensional Grid Systems: GridPane Coordinates, Spans &amp; Constraints</h2>
+    <p>
+      While linear boxes (<code>HBox</code> and <code>VBox</code>) excel at single-axis rows and columns, structured
+      business forms (such as registration forms, login dialogs, and property sheets) require strict multi-column
+      alignment where label widths and input field edges line up precisely across multiple rows. For this, JavaFX
+      provides <code>javafx.scene.layout.GridPane</code>.
+    </p>
+
+    <h3>The (Column, Row) Coordinate System</h3>
+    <p>
+      Unlike 2D mathematical arrays in Java (which are indexed as <code>matrix[row][col]</code>), <strong>JavaFX
+      GridPane indexes cells as (columnIndex, rowIndex)</strong> &mdash; matching Cartesian (X, Y) coordinates:
+    </p>
+    <ul>
+      <li><code>grid.add(node, 0, 0);</code> places a node at Column 0 (left column), Row 0 (top row).</li>
+      <li><code>grid.add(node, 1, 0);</code> places a node at Column 1 (right column), Row 0 (top row).</li>
+      <li><code>grid.add(node, 0, 1);</code> places a node at Column 0 (left column), Row 1 (second row).</li>
+    </ul>
+
+    <div class="callout callout--warning"><span class="callout__i">&#9888;</span>
+      <div class="callout__b"><b>The (Column, Row) Inversion Trap</b>
+        The most common beginner error in JavaFX forms is passing <code>(row, col)</code> instead of <code>(col, row)</code> to <code>grid.add()</code>.
+        Remember: <strong>Column = X axis (horizontal), Row = Y axis (vertical)</strong>. Always pass <code>add(node, col, row)</code>!
+      </div>
+    </div>
+
+    <h3>Spanning Across Multiple Columns and Rows</h3>
+    <p>
+      Frequently, a form header or a wide action button needs to span across multiple columns. The overloaded
+      <code>add()</code> method allows you to specify column and row spans:
+    </p>
+    <pre><code>// signature: add(Node child, int colIndex, int rowIndex, int colSpan, int rowSpan)
+grid.add(headerLabel, 0, 0, 2, 1); // Spans 2 columns across row 0</code></pre>
+
+    <!-- CODE BLOCK: E02 -->
+    <!--@code src="code/s15-javafx-layouts-ui/src/main/java/com/aptech/s15/E02_GridPaneFormLayout.java" title="E02_GridPaneFormLayout.java" hl="24,28,34,42,59"-->
+<pre class="numbered" data-file="E02_GridPaneFormLayout.java" data-hl="24,28,34,42,59"><code class="lang-java">package com.aptech.s15;
+
+import javafx.application.Application;
+import javafx.geometry.HPos;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
+import javafx.stage.Stage;
+
+/**
+ * Session 15 - Example 2: GridPane 2D Matrix Form Layout
+ *
+ * Demonstrates:
+ * 1. Cell coordinate system: add(Node, columnIndex, rowIndex).
+ * 2. Column spans and row spans for spanning wide fields across columns.
+ * 3. Horizontal and vertical gaps (hgap, vgap) and outer padding.
+ * 4. Priority.ALWAYS applied to columns to create responsive input fields.
+ * 5. Alignment of individual controls within cells (HPos.RIGHT, Pos.CENTER).
+ */
+public class E02_GridPaneFormLayout {
+
+    public static class FormApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+            System.out.println("=== JavaFX GridPane Form Architecture ===");
+
+            GridPane grid = new GridPane();
+            grid.setPadding(new Insets(24));
+            grid.setHgap(14);
+            grid.setVgap(14);
+            grid.setAlignment(Pos.CENTER);
+            grid.setStyle("-fx-background-color: #0F172A;");
+
+            // Row 0: Form Header spanning both columns
+            Label header = new Label("Student Registration Record");
+            header.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #38BDF8;");
+            // Span 2 columns, 1 row: add(node, col, row, colspan, rowspan)
+            grid.add(header, 0, 0, 2, 1);
+            GridPane.setHalignment(header, HPos.CENTER);
+
+            // Row 1: Full Name
+            Label lblName = new Label("Full Legal Name:");
+            lblName.setStyle("-fx-text-fill: #94A3B8; -fx-font-weight: bold;");
+            TextField txtName = new TextField();
+            txtName.setPromptText("e.g. John Doe");
+            txtName.setStyle("-fx-background-color: #1E293B; -fx-text-fill: white; -fx-border-color: #475569;");
+            GridPane.setHgrow(txtName, Priority.ALWAYS);
+            grid.add(lblName, 0, 1);
+            grid.add(txtName, 1, 1);
+
+            // Row 2: Student ID (Roll No)
+            Label lblId = new Label("Aptech Roll No:");
+            lblId.setStyle("-fx-text-fill: #94A3B8; -fx-font-weight: bold;");
+            TextField txtId = new TextField();
+            txtId.setPromptText("APT-2026-9042");
+            txtId.setStyle("-fx-background-color: #1E293B; -fx-text-fill: white; -fx-border-color: #475569;");
+            grid.add(lblId, 0, 2);
+            grid.add(txtId, 1, 2);
+
+            // Row 3: Security Passcode
+            Label lblPass = new Label("Portal Passcode:");
+            lblPass.setStyle("-fx-text-fill: #94A3B8; -fx-font-weight: bold;");
+            TextField txtPass = new TextField();
+            txtPass.setPromptText("Enter secure pin");
+            txtPass.setStyle("-fx-background-color: #1E293B; -fx-text-fill: white; -fx-border-color: #475569;");
+            grid.add(lblPass, 0, 3);
+            grid.add(txtPass, 1, 3);
+
+            // Row 4: Submit Button aligned to the right
+            Button btnSave = new Button("Register Student");
+            btnSave.setStyle("-fx-background-color: #2563EB; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20 8 20;");
+            grid.add(btnSave, 1, 4);
+            GridPane.setHalignment(btnSave, HPos.RIGHT);
+
+            // Diagnostics output
+            System.out.println("GridPane HGap: " + grid.getHgap() + "px | VGap: " + grid.getVgap() + "px");
+            System.out.println("Grid Children Count: " + grid.getChildren().size());
+            System.out.println("Header ColSpan: " + GridPane.getColumnSpan(header));
+            System.out.println("Button Halignment: " + GridPane.getHalignment(btnSave));
+
+            Scene scene = new Scene(grid, 520, 320);
+            primaryStage.setTitle("Session 15 - GridPane Form Layout");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+        }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(FormApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+
+    <!-- OUTPUT BLOCK: E02 -->
+    <!--@output project="code/s15-javafx-layouts-ui" main="com.aptech.s15.E02_GridPaneFormLayout"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== JavaFX GridPane Form Architecture ===
+GridPane HGap: 14.0px | VGap: 14.0px
+Grid Children Count: 8
+Header ColSpan: 2
+Button Halignment: RIGHT
+[Stage.show()] Primary window displayed: 'Session 15 - GridPane Form Layout' (520x320)
+[JavaFX Runtime] Step 3: Application active. Window title: 'Session 15 - GridPane Form Layout'
+[JavaFX Runtime] Scene root: GridPane [Width: 520.0, Height: 320.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+
+    <div class="walkthrough">
+      <h4>Line-by-Line Code Walkthrough &mdash; E02_GridPaneFormLayout.java</h4>
+      <ul>
+        <li><code>Line 24&ndash;28</code>: Initializes <code>GridPane</code> with 14px horizontal gutter (<code>hgap</code>) between columns and 14px vertical gutter (<code>vgap</code>) between rows. Outer margin is set to 24px via <code>setPadding()</code>.</li>
+        <li><code>Line 34</code>: <code>grid.add(header, 0, 0, 2, 1);</code> places the title banner at Column 0, Row 0, spanning 2 columns wide and 1 row tall. <code>GridPane.setHalignment(header, HPos.CENTER);</code> centers the banner across both columns.</li>
+        <li><code>Line 42</code>: <code>GridPane.setHgrow(txtName, Priority.ALWAYS);</code> configures Column 1 to dynamically absorb all horizontal expansion when the user widens the window.</li>
+        <li><code>Line 59</code>: <code>GridPane.setHalignment(btnSave, HPos.RIGHT);</code> aligns the action button flush against the right boundary of the form.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- PART 3: SECONDARY LAYOUT PANES                                            -->
+  <!-- ========================================================================= -->
+  <section id="part-3-secondary-panes">
+    <h2>Part 3: Secondary Layout Panes: FlowPane, TilePane, StackPane &amp; AnchorPane</h2>
+    <p>
+      Beyond <code>BorderPane</code> and <code>GridPane</code>, JavaFX provides four specialized layout containers
+      engineered for distinct UI patterns:
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Container</th>
+            <th>Primary Layout Behavior</th>
+            <th>Canonical Enterprise Use Case</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>FlowPane</code></td>
+            <td>Wraps consecutive children to the next row (or column) when the container boundary is exceeded.</td>
+            <td>Tag clouds, photo thumbnail galleries, filter chip badges.</td>
+          </tr>
+          <tr>
+            <td><code>TilePane</code></td>
+            <td>Enforces strictly uniform cell dimensions for all children (equal width and height).</td>
+            <td>Dashboard KPI metric cards, numeric pin pads, product catalogs.</td>
+          </tr>
+          <tr>
+            <td><code>StackPane</code></td>
+            <td>Layers children directly on top of each other in Z-order (back to front).</td>
+            <td>Badge counters over icons, loading spinners over data tables, watermark backgrounds.</td>
+          </tr>
+          <tr>
+            <td><code>AnchorPane</code></td>
+            <td>Pins child edges to specific pixel offsets from container boundaries (Top, Bottom, Left, Right).</td>
+            <td>Docked floating action buttons, sticky status bars, anchored corner controls.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- CODE BLOCK: E03 -->
+    <!--@code src="code/s15-javafx-layouts-ui/src/main/java/com/aptech/s15/E03_FlowTileStackAnchorPanes.java" title="E03_FlowTileStackAnchorPanes.java" hl="34,48,67,86,88"-->
+<pre class="numbered" data-file="E03_FlowTileStackAnchorPanes.java" data-hl="34,48,67,86,88"><code class="lang-java">package com.aptech.s15;
+
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.TilePane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+import javafx.stage.Stage;
+
+/**
+ * Session 15 - Example 3: FlowPane, TilePane, StackPane &amp; AnchorPane
+ *
+ * Demonstrates:
+ * 1. FlowPane: Wrapping consecutive children horizontally when boundary is reached.
+ * 2. TilePane: Enforcing uniform rectangular cells for all children regardless of prefSize.
+ * 3. StackPane: Layering nodes in Z-order (back to front), overlaying text on badges.
+ * 4. AnchorPane: Pinning controls to specific pixel offsets from container edges.
+ */
+public class E03_FlowTileStackAnchorPanes {
+
+    public static class MultiPaneApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+            System.out.println("=== JavaFX FlowPane, TilePane, StackPane &amp; AnchorPane ===");
+
+            VBox mainContainer = new VBox(20);
+            mainContainer.setPadding(new Insets(20));
+            mainContainer.setStyle("-fx-background-color: #0F172A;");
+
+            // 1. FLOWPANE: Tag Cloud wrapping buttons
+            Label flowTitle = new Label("1. FlowPane (Tag Cloud Wrapping)");
+            flowTitle.setStyle("-fx-font-weight: bold; -fx-text-fill: #38BDF8;");
+
+            FlowPane flowPane = new FlowPane(Orientation.HORIZONTAL, 8, 8);
+            flowPane.setPadding(new Insets(10));
+            flowPane.setStyle("-fx-background-color: #1E293B; -fx-background-radius: 6px;");
+
+            String[] tags = {"JavaFX", "CSS Skinning", "GridPane", "Charts", "Enterprise UI", "FXML", "Responsive", "Prism D3D"};
+            for (String tag : tags) {
+                Button tagBtn = new Button("#" + tag);
+                tagBtn.setStyle("-fx-background-color: #334155; -fx-text-fill: #E2E8F0; -fx-font-size: 11px;");
+                flowPane.getChildren().add(tagBtn);
+            }
+
+            // 2. TILEPANE: Uniform metric tiles
+            Label tileTitle = new Label("2. TilePane (Uniform Grid Cells)");
+            tileTitle.setStyle("-fx-font-weight: bold; -fx-text-fill: #38BDF8;");
+
+            TilePane tilePane = new TilePane(10, 10);
+            tilePane.setPrefColumns(3);
+            tilePane.setPadding(new Insets(10));
+            tilePane.setStyle("-fx-background-color: #1E293B; -fx-background-radius: 6px;");
+
+            for (int i = 1; i &lt;= 3; i++) {
+                VBox card = new VBox(4);
+                card.setPadding(new Insets(8));
+                card.setAlignment(Pos.CENTER);
+                card.setStyle("-fx-background-color: #0F172A; -fx-border-color: #475569; -fx-border-radius: 4px;");
+                Label val = new Label("KPI " + (i * 24));
+                val.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #10B981;");
+                Label desc = new Label("Metric Tile " + i);
+                desc.setStyle("-fx-font-size: 10px; -fx-text-fill: #94A3B8;");
+                card.getChildren().addAll(val, desc);
+                tilePane.getChildren().add(card);
+            }
+
+            // 3. STACKPANE: Layering badge over background
+            Label stackTitle = new Label("3. StackPane (Z-Order Layering)");
+            stackTitle.setStyle("-fx-font-weight: bold; -fx-text-fill: #38BDF8;");
+
+            StackPane stackPane = new StackPane();
+            Rectangle bgBox = new Rectangle(280, 50);
+            bgBox.setFill(Color.DODGERBLUE);
+            bgBox.setArcWidth(10);
+            bgBox.setArcHeight(10);
+
+            Label badgeText = new Label("StackPane: Background Shape + Text Layered");
+            badgeText.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 12px;");
+            stackPane.getChildren().addAll(bgBox, badgeText);
+
+            // 4. ANCHORPANE: Docked corner controls
+            Label anchorTitle = new Label("4. AnchorPane (Edge-Pinned Docking)");
+            anchorTitle.setStyle("-fx-font-weight: bold; -fx-text-fill: #38BDF8;");
+
+            AnchorPane anchorPane = new AnchorPane();
+            anchorPane.setPrefHeight(60);
+            anchorPane.setStyle("-fx-background-color: #1E293B; -fx-background-radius: 6px;");
+
+            Button pinTopLeft = new Button("Pinned Top-Left");
+            pinTopLeft.setStyle("-fx-background-color: #0284C7; -fx-text-fill: white; -fx-font-size: 11px;");
+            AnchorPane.setTopAnchor(pinTopLeft, 10.0);
+            AnchorPane.setLeftAnchor(pinTopLeft, 10.0);
+
+            Button pinBottomRight = new Button("Pinned Bottom-Right");
+            pinBottomRight.setStyle("-fx-background-color: #10B981; -fx-text-fill: white; -fx-font-size: 11px;");
+            AnchorPane.setBottomAnchor(pinBottomRight, 10.0);
+            AnchorPane.setRightAnchor(pinBottomRight, 10.0);
+
+            anchorPane.getChildren().addAll(pinTopLeft, pinBottomRight);
+
+            // Assemble into main layout
+            mainContainer.getChildren().addAll(
+                flowTitle, flowPane,
+                tileTitle, tilePane,
+                stackTitle, stackPane,
+                anchorTitle, anchorPane
+            );
+
+            // Print diagnostics
+            System.out.println("FlowPane Children Count: " + flowPane.getChildren().size());
+            System.out.println("TilePane Columns: " + tilePane.getPrefColumns());
+            System.out.println("StackPane Layers Count: " + stackPane.getChildren().size());
+            System.out.println("AnchorPane TopAnchor: " + AnchorPane.getTopAnchor(pinTopLeft));
+            System.out.println("AnchorPane RightAnchor: " + AnchorPane.getRightAnchor(pinBottomRight));
+
+            Scene scene = new Scene(mainContainer, 640, 560);
+            primaryStage.setTitle("Session 15 - Flow, Tile, Stack &amp; Anchor Panes");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+        }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(MultiPaneApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+
+    <!-- OUTPUT BLOCK: E03 -->
+    <!--@output project="code/s15-javafx-layouts-ui" main="com.aptech.s15.E03_FlowTileStackAnchorPanes"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== JavaFX FlowPane, TilePane, StackPane &amp; AnchorPane ===
+FlowPane Children Count: 8
+TilePane Columns: 3
+StackPane Layers Count: 2
+AnchorPane TopAnchor: 10.0
+AnchorPane RightAnchor: 10.0
+[Stage.show()] Primary window displayed: 'Session 15 - Flow, Tile, Stack &amp; Anchor Panes' (640x560)
+[JavaFX Runtime] Step 3: Application active. Window title: 'Session 15 - Flow, Tile, Stack &amp; Anchor Panes'
+[JavaFX Runtime] Scene root: VBox [Width: 640.0, Height: 560.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+
+    <div class="walkthrough">
+      <h4>Line-by-Line Code Walkthrough &mdash; E03_FlowTileStackAnchorPanes.java</h4>
+      <ul>
+        <li><code>Line 34</code>: <code>FlowPane flowPane = new FlowPane(Orientation.HORIZONTAL, 8, 8);</code> creates a horizontal wrapping flow with 8px horizontal and vertical spacing. As tags are added, they fill the row and wrap naturally when width is exhausted.</li>
+        <li><code>Line 48</code>: <code>TilePane tilePane = new TilePane(10, 10); tilePane.setPrefColumns(3);</code> guarantees that all 3 KPI cards receive identical rectangular boundaries regardless of differing text length inside each card.</li>
+        <li><code>Line 67&ndash;75</code>: <code>StackPane stackPane = new StackPane();</code> places the rounded <code>Rectangle</code> at the back and layers the bold <code>Label</code> directly on top of it.</li>
+        <li><code>Line 86&ndash;92</code>: <code>AnchorPane.setTopAnchor(pinTopLeft, 10.0);</code> and <code>AnchorPane.setBottomAnchor(pinBottomRight, 10.0);</code> pin the buttons to opposite corners of the pane, maintaining their docked distance regardless of pane resizing.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- PART 4: CSS SKINNING & SELECTORS                                          -->
+  <!-- ========================================================================= -->
+  <section id="part-4-css">
+    <h2>Part 4: JavaFX CSS Box Model, Skinning &amp; -fx-* Vendor Selectors</h2>
+    <p>
+      One of JavaFX's greatest architectural strengths is its separation of visual presentation from application
+      logic through <strong>JavaFX CSS</strong>. Based on the W3C CSS 2.1 specification, JavaFX allows you to style
+      fonts, colors, borders, shadows, and hover states using standard CSS stylesheets.
+    </p>
+
+    <!-- CSS Box Model Diagram -->
+    <div style="text-align:center;margin:2rem 0">
+      <img src="../assets/img/diagrams/s15_css_box_model.svg" alt="JavaFX CSS Box Model architecture showing insets, border widths, radii, padding, and selectors" style="max-width:100%;height:auto;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,0.15);border:1px solid var(--border,#3a4252)">
+      <p class="text-sm text-faint" style="margin-top:0.5rem">Figure 15.2 &mdash; JavaFX CSS Box Model: Visual hierarchy of margins, borders, backgrounds, insets, padding, and pseudo-class selectors.</p>
+    </div>
+
+    <h3>The Mandatory <code>-fx-*</code> Vendor Prefix</h3>
+    <p>
+      Every CSS property in JavaFX begins with the vendor prefix <code>-fx-</code> (e.g., <code>-fx-background-color</code>,
+      <code>-fx-font-size</code>, <code>-fx-border-radius</code>). This prefix was deliberately chosen by the JavaFX
+      architecture team to ensure that JavaFX CSS rules never collide with standard web browser CSS rules when
+      rendering embedded web views or sharing stylesheets.
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Standard Web CSS</th>
+            <th>JavaFX CSS Equivalent</th>
+            <th>Description &amp; Syntax Example</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>background-color</code></td>
+            <td><code>-fx-background-color</code></td>
+            <td>Solid color, hex code, or gradient: <code>-fx-background-color: #1E293B;</code></td>
+          </tr>
+          <tr>
+            <td><code>border-radius</code></td>
+            <td><code>-fx-background-radius</code> / <code>-fx-border-radius</code></td>
+            <td>Corner rounding radius: <code>-fx-background-radius: 8px;</code></td>
+          </tr>
+          <tr>
+            <td><code>color</code></td>
+            <td><code>-fx-text-fill</code></td>
+            <td>Text glyph fill color: <code>-fx-text-fill: #38BDF8;</code></td>
+          </tr>
+          <tr>
+            <td><code>padding</code></td>
+            <td><code>-fx-padding</code></td>
+            <td>Internal insets: <code>-fx-padding: 10 16 10 16;</code> (top right bottom left)</td>
+          </tr>
+          <tr>
+            <td><code>font-size</code></td>
+            <td><code>-fx-font-size</code></td>
+            <td>Point or pixel font size: <code>-fx-font-size: 14px;</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- CODE BLOCK: E04 -->
+    <!--@code src="code/s15-javafx-layouts-ui/src/main/java/com/aptech/s15/E04_CssSkinningAndThemes.java" title="E04_CssSkinningAndThemes.java" hl="27,33,40,73"-->
+<pre class="numbered" data-file="E04_CssSkinningAndThemes.java" data-hl="27,33,40,73"><code class="lang-java">package com.aptech.s15;
+
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+import java.net.URL;
+
+/**
+ * Session 15 - Example 4: JavaFX CSS Skinning and External Stylesheets
+ *
+ * Demonstrates:
+ * 1. JavaFX CSS architecture: The mandatory `-fx-*` property namespace.
+ * 2. Attaching external stylesheets via Scene.getStylesheets().add(url).
+ * 3. Class selectors: node.getStyleClass().add("kpi-card").
+ * 4. Pseudo-class states: :hover, :focused, :pressed.
+ * 5. Dynamic theme toggling: Switching stylesheets at runtime.
+ */
+public class E04_CssSkinningAndThemes {
+
+    public static class CssApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+            System.out.println("=== JavaFX CSS Skinning &amp; Theme Engine ===");
+
+            VBox root = new VBox(20);
+            root.getStyleClass().add("root");
+            root.setPadding(new Insets(24));
+            root.setAlignment(Pos.TOP_CENTER);
+
+            // 1. Header Card styled with CSS class
+            HBox headerBar = new HBox(12);
+            headerBar.getStyleClass().add("header-bar");
+            headerBar.setAlignment(Pos.CENTER_LEFT);
+
+            Label brand = new Label("Aptech CSS Styling Engine");
+            brand.getStyleClass().add("brand-title");
+
+            Label badge = new Label("JavaFX 21");
+            badge.getStyleClass().add("brand-badge");
+
+            headerBar.getChildren().addAll(brand, badge);
+
+            // 2. Interactive KPI Card with hover border
+            VBox kpiCard = new VBox(8);
+            kpiCard.getStyleClass().add("kpi-card");
+            kpiCard.setPrefWidth(320);
+
+            Label kpiTitle = new Label("Total Enrolled Candidates");
+            kpiTitle.getStyleClass().add("kpi-label");
+
+            Label kpiCount = new Label("1,428 Students");
+            kpiCount.getStyleClass().add("kpi-number");
+
+            Label kpiDelta = new Label("+18.4% vs previous semester");
+            kpiDelta.getStyleClass().add("kpi-delta");
+
+            kpiCard.getChildren().addAll(kpiTitle, kpiCount, kpiDelta);
+
+            // 3. Form Inputs styled via CSS
+            TextField searchField = new TextField();
+            searchField.setPromptText("Type here to test :focused pseudo-class...");
+            searchField.getStyleClass().add("text-field");
+            searchField.setPrefWidth(320);
+
+            // 4. Buttons demonstrating Primary and Secondary classes
+            HBox buttonBar = new HBox(12);
+            buttonBar.setAlignment(Pos.CENTER);
+
+            Button btnPrimary = new Button("Apply Dark Theme");
+            btnPrimary.getStyleClass().add("btn-primary");
+
+            Button btnSecondary = new Button("Reset Style");
+            btnSecondary.getStyleClass().add("btn-secondary");
+
+            buttonBar.getChildren().addAll(btnPrimary, btnSecondary);
+
+            root.getChildren().addAll(headerBar, kpiCard, searchField, buttonBar);
+
+            Scene scene = new Scene(root, 620, 440);
+
+            // Load external dashboard.css
+            URL cssUrl = getClass().getResource("/dashboard.css");
+            if (cssUrl != null) {
+                scene.getStylesheets().add(cssUrl.toExternalForm());
+                System.out.println("Loaded external CSS: " + cssUrl.toExternalForm());
+            } else {
+                System.out.println("CSS resource path fallback: using inline class markers");
+            }
+
+            // Print diagnostics
+            System.out.println("Scene Stylesheets: " + scene.getStylesheets());
+            System.out.println("Root Style Classes: " + root.getStyleClass());
+            System.out.println("KPI Card Style Classes: " + kpiCard.getStyleClass());
+            System.out.println("Primary Button Classes: " + btnPrimary.getStyleClass());
+
+            primaryStage.setTitle("Session 15 - CSS Skinning &amp; Themes");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+        }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(CssApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+
+    <!-- OUTPUT BLOCK: E04 -->
+    <!--@output project="code/s15-javafx-layouts-ui" main="com.aptech.s15.E04_CssSkinningAndThemes"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== JavaFX CSS Skinning &amp; Theme Engine ===
+Loaded external CSS: file:/C:/Projects/Aptech/JavaFX/code/s15-javafx-layouts-ui/src/main/resources/dashboard.css
+Scene Stylesheets: [file:/C:/Projects/Aptech/JavaFX/code/s15-javafx-layouts-ui/src/main/resources/dashboard.css]
+Root Style Classes: [root]
+KPI Card Style Classes: [kpi-card]
+Primary Button Classes: [btn-primary]
+[Stage.show()] Primary window displayed: 'Session 15 - CSS Skinning &amp; Themes' (620x440)
+[JavaFX Runtime] Step 3: Application active. Window title: 'Session 15 - CSS Skinning &amp; Themes'
+[JavaFX Runtime] Scene root: VBox [Width: 620.0, Height: 440.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+
+    <div class="walkthrough">
+      <h4>Line-by-Line Code Walkthrough &mdash; E04_CssSkinningAndThemes.java</h4>
+      <ul>
+        <li><code>Line 27</code>: <code>root.getStyleClass().add("root");</code> assigns the top-level style class defined in <code>dashboard.css</code>, establishing the global dark background and Segoe UI typography.</li>
+        <li><code>Line 33</code>: <code>headerBar.getStyleClass().add("header-bar");</code> styles the header container with a horizontal linear gradient and bottom dividing border.</li>
+        <li><code>Line 40</code>: <code>kpiCard.getStyleClass().add("kpi-card");</code> applies the slate background, 10px rounded corners, and hover border highlight defined in the external stylesheet.</li>
+        <li><code>Line 73</code>: <code>scene.getStylesheets().add(cssUrl.toExternalForm());</code> dynamically attaches the compiled <code>dashboard.css</code> stylesheet to the scene graph at runtime.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- PART 5: UI CONTROLS & BINDING                                             -->
+  <!-- ========================================================================= -->
+  <section id="part-5-controls">
+    <h2>Part 5: Interactive UI Controls, Range Sliders &amp; Reactive Data Binding</h2>
+    <p>
+      JavaFX features a comprehensive library of input controls inheriting from <code>javafx.scene.control.Control</code>:
+    </p>
+    <ul>
+      <li><code>ComboBox&lt;T&gt;</code>: Dropdown menu presenting an <code>ObservableList&lt;T&gt;</code> of selectable options.</li>
+      <li><code>RadioButton</code> &amp; <code>ToggleGroup</code>: Mutually exclusive selection controls where only one option in the group can be selected at any given time.</li>
+      <li><code>DatePicker</code>: Localized calendar widget managing ISO-8601 <code>java.time.LocalDate</code> instances.</li>
+      <li><code>Slider</code>: Continuous or stepped numeric range selector with <code>min</code>, <code>max</code>, and <code>value</code> properties.</li>
+      <li><code>ProgressBar</code>: Visual metric bar representing completion progress from <code>0.0</code> (0%) to <code>1.0</code> (100%).</li>
+    </ul>
+
+    <h3>Reactive Data Binding with ChangeListener</h3>
+    <p>
+      In JavaFX, every control property is an <strong>Observable Property</strong> (such as <code>slider.valueProperty()</code>).
+      Instead of writing manual polling loops, you register a <code>ChangeListener</code> that triggers automatically
+      whenever the property's state changes:
+    </p>
+    <pre><code>slider.valueProperty().addListener((observable, oldValue, newValue) -> {
+    double progress = newValue.doubleValue() / 100.0;
+    progressBar.setProgress(progress);
+});</code></pre>
+
+    <!-- CODE BLOCK: E05 -->
+    <!--@code src="code/s15-javafx-layouts-ui/src/main/java/com/aptech/s15/E05_UiControlsAndDataBinding.java" title="E05_UiControlsAndDataBinding.java" hl="42,56,69,82,88"-->
+<pre class="numbered" data-file="E05_UiControlsAndDataBinding.java" data-hl="42,56,69,82,88"><code class="lang-java">package com.aptech.s15;
+
+import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.Slider;
+import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+import java.time.LocalDate;
+
+/**
+ * Session 15 - Example 5: JavaFX UI Controls and Observable Property Binding
+ *
+ * Demonstrates:
+ * 1. Essential Form Controls: ComboBox, RadioButton, ToggleGroup, CheckBox, DatePicker.
+ * 2. Range and Progress Controls: Slider and ProgressBar synchronization.
+ * 3. Observable Properties: Binding slider value to progress bar and real-time labels.
+ * 4. Mutual exclusion with ToggleGroup for radio buttons.
+ * 5. Action event dispatching and form validation readout.
+ */
+public class E05_UiControlsAndDataBinding {
+
+    public static class ControlsApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+            System.out.println("=== JavaFX UI Controls &amp; Reactive Data Binding ===");
+
+            VBox root = new VBox(16);
+            root.setPadding(new Insets(24));
+            root.setStyle("-fx-background-color: #0F172A;");
+
+            Label title = new Label("Student Enrollment &amp; Coursework Configurator");
+            title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #38BDF8;");
+
+            GridPane form = new GridPane();
+            form.setHgap(12);
+            form.setVgap(12);
+
+            // 1. Module Selector: ComboBox
+            Label lblTrack = new Label("Specialization Track:");
+            lblTrack.setStyle("-fx-text-fill: #94A3B8; -fx-font-weight: bold;");
+
+            ComboBox&lt;String&gt; cmbTrack = new ComboBox&lt;&gt;(FXCollections.observableArrayList(
+                "ADSE - Advanced Java &amp; Cloud Architecture",
+                "CPISM - Information Systems Management",
+                "DISM - Database Systems &amp; Analytics",
+                "ACCP - Enterprise Application Engineering"
+            ));
+            cmbTrack.setValue("ADSE - Advanced Java &amp; Cloud Architecture");
+            cmbTrack.setStyle("-fx-background-color: #1E293B; -fx-text-fill: white;");
+            form.add(lblTrack, 0, 0);
+            form.add(cmbTrack, 1, 0);
+
+            // 2. Study Mode: RadioButtons in a ToggleGroup
+            Label lblMode = new Label("Study Mode:");
+            lblMode.setStyle("-fx-text-fill: #94A3B8; -fx-font-weight: bold;");
+
+            ToggleGroup modeGroup = new ToggleGroup();
+            RadioButton rbFullTime = new RadioButton("Full-Time On-Campus");
+            RadioButton rbPartTime = new RadioButton("Part-Time Weekend");
+            RadioButton rbOnline = new RadioButton("Virtual Distance Learning");
+
+            rbFullTime.setToggleGroup(modeGroup);
+            rbPartTime.setToggleGroup(modeGroup);
+            rbOnline.setToggleGroup(modeGroup);
+            rbFullTime.setSelected(true);
+
+            rbFullTime.setStyle("-fx-text-fill: #E2E8F0;");
+            rbPartTime.setStyle("-fx-text-fill: #E2E8F0;");
+            rbOnline.setStyle("-fx-text-fill: #E2E8F0;");
+
+            HBox radioBox = new HBox(12, rbFullTime, rbPartTime, rbOnline);
+            form.add(lblMode, 0, 1);
+            form.add(radioBox, 1, 1);
+
+            // 3. Admission Date: DatePicker
+            Label lblDate = new Label("Commencement Date:");
+            lblDate.setStyle("-fx-text-fill: #94A3B8; -fx-font-weight: bold;");
+            DatePicker datePicker = new DatePicker(LocalDate.of(2026, 11, 1));
+            datePicker.setStyle("-fx-background-color: #1E293B; -fx-text-fill: white;");
+            form.add(lblDate, 0, 2);
+            form.add(datePicker, 1, 2);
+
+            // 4. Scholarship Level: Slider &amp; ProgressBar synchronization
+            Label lblScholarship = new Label("Scholarship Allocation:");
+            lblScholarship.setStyle("-fx-text-fill: #94A3B8; -fx-font-weight: bold;");
+
+            Slider slider = new Slider(0, 100, 25);
+            slider.setPrefWidth(200);
+
+            ProgressBar progressBar = new ProgressBar(0.25);
+            progressBar.setPrefWidth(200);
+            progressBar.setStyle("-fx-accent: #10B981;");
+
+            Label lblPercent = new Label("25% Aid");
+            lblPercent.setStyle("-fx-text-fill: #10B981; -fx-font-weight: bold;");
+
+            // Reactive property listener connecting Slider to ProgressBar
+            slider.valueProperty().addListener((obs, oldVal, newVal) -&gt; {
+                double pct = newVal.doubleValue() / 100.0;
+                progressBar.setProgress(pct);
+                lblPercent.setText(String.format("%.0f%% Aid", newVal.doubleValue()));
+            });
+
+            HBox sliderBox = new HBox(12, slider, progressBar, lblPercent);
+            sliderBox.setAlignment(Pos.CENTER_LEFT);
+            form.add(lblScholarship, 0, 3);
+            form.add(sliderBox, 1, 3);
+
+            // 5. Terms CheckBox
+            CheckBox chkTerms = new CheckBox("Candidate has submitted verified identity documents");
+            chkTerms.setSelected(true);
+            chkTerms.setStyle("-fx-text-fill: #94A3B8;");
+            form.add(chkTerms, 1, 4);
+
+            // 6. Action Button &amp; Feedback Label
+            Button btnSubmit = new Button("Validate &amp; Commit Enrollment");
+            btnSubmit.setStyle("-fx-background-color: #2563EB; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20 8 20;");
+
+            Label feedback = new Label("Ready to record student enrollment.");
+            feedback.setStyle("-fx-text-fill: #38BDF8; -fx-font-size: 12px;");
+
+            btnSubmit.setOnAction(e -&gt; {
+                feedback.setText("Recorded: " + cmbTrack.getValue() + " | Scholarship: " + lblPercent.getText());
+                System.out.println("[Action] Form committed: " + cmbTrack.getValue() + " | Aid: " + slider.getValue());
+            });
+
+            root.getChildren().addAll(title, form, btnSubmit, feedback);
+
+            // Print diagnostics
+            System.out.println("Track Selected: " + cmbTrack.getValue());
+            System.out.println("Selected Toggle: " + ((RadioButton) modeGroup.getSelectedToggle()).getText());
+            System.out.println("Admission Date: " + datePicker.getValue());
+            System.out.println("Initial Slider Value: " + slider.getValue() + "%");
+            System.out.println("ProgressBar Initial: " + progressBar.getProgress());
+
+            Scene scene = new Scene(root, 720, 420);
+            primaryStage.setTitle("Session 15 - UI Controls &amp; Binding");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+        }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(ControlsApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+
+    <!-- OUTPUT BLOCK: E05 -->
+    <!--@output project="code/s15-javafx-layouts-ui" main="com.aptech.s15.E05_UiControlsAndDataBinding"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== JavaFX UI Controls &amp; Reactive Data Binding ===
+Track Selected: ADSE - Advanced Java &amp; Cloud Architecture
+Selected Toggle: Full-Time On-Campus
+Admission Date: 2026-11-01
+Initial Slider Value: 25.0%
+ProgressBar Initial: 0.25
+[Stage.show()] Primary window displayed: 'Session 15 - UI Controls &amp; Binding' (720x420)
+[JavaFX Runtime] Step 3: Application active. Window title: 'Session 15 - UI Controls &amp; Binding'
+[JavaFX Runtime] Scene root: VBox [Width: 720.0, Height: 420.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+
+    <div class="walkthrough">
+      <h4>Line-by-Line Code Walkthrough &mdash; E05_UiControlsAndDataBinding.java</h4>
+      <ul>
+        <li><code>Line 42&ndash;49</code>: Populates <code>ComboBox&lt;String&gt;</code> with an <code>ObservableList</code> of Aptech course tracks and sets the default selected value.</li>
+        <li><code>Line 56&ndash;64</code>: Creates three <code>RadioButton</code> controls and registers them to a common <code>ToggleGroup</code>, guaranteeing that selecting one automatically deselects the others.</li>
+        <li><code>Line 69</code>: <code>DatePicker datePicker = new DatePicker(LocalDate.of(2026, 11, 1));</code> initializes the date picker directly with modern <code>java.time.LocalDate</code>.</li>
+        <li><code>Line 82&ndash;91</code>: Creates a <code>Slider</code> (0 to 100) and a <code>ProgressBar</code> (0.0 to 1.0). Attaches a reactive lambda listener to <code>slider.valueProperty()</code>, dynamically synchronizing the progress bar and percentage label on every slider drag.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- PART 6: PIECHART ANALYTICS                                                -->
+  <!-- ========================================================================= -->
+  <section id="part-6-piechart">
+    <h2>Part 6: Proportional Visualizations: PieChart Analytics &amp; Dynamic Slices</h2>
+    <p>
+      Data visualization transforms raw database numbers into actionable executive insights. In JavaFX, all charts
+      reside in the <code>javafx.scene.chart</code> package and inherit from the base <code>Chart</code> class.
+    </p>
+
+    <!-- Chart Class Hierarchy Diagram -->
+    <div style="text-align:center;margin:2rem 0">
+      <img src="../assets/img/diagrams/s15_chart_hierarchy.svg" alt="JavaFX Chart class hierarchy diagram showing Chart, PieChart, XYChart, BarChart, LineChart, AreaChart, and ScatterChart" style="max-width:100%;height:auto;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,0.15);border:1px solid var(--border,#3a4252)">
+      <p class="text-sm text-faint" style="margin-top:0.5rem">Figure 15.3 &mdash; JavaFX Chart Class Hierarchy: Base Chart class branching into proportional PieChart and cartesian XYChart implementations.</p>
+    </div>
+
+    <h3>The PieChart Data Architecture</h3>
+    <p>
+      A <code>PieChart</code> visualizes part-to-whole proportions. Its data model is backed by an
+      <code>ObservableList&lt;PieChart.Data&gt;</code>, where each slice is defined by a category name and a numeric value:
+    </p>
+    <pre><code>ObservableList&lt;PieChart.Data&gt; data = FXCollections.observableArrayList(
+    new PieChart.Data("Java &amp; Cloud", 480),
+    new PieChart.Data("Web Engineering", 520)
+);
+PieChart chart = new PieChart(data);</code></pre>
+
+    <p>
+      Because the chart is backed by an <strong>observable collection</strong>, any modification to the list (such as
+      calling <code>data.add()</code> or <code>slice.setPieValue()</code>) instantly causes the chart to re-render
+      and animate the new slices without having to rebuild the scene graph!
+    </p>
+
+    <!-- CODE BLOCK: E06 -->
+    <!--@code src="code/s15-javafx-layouts-ui/src/main/java/com/aptech/s15/E06_PieChartAnalytics.java" title="E06_PieChartAnalytics.java" hl="33,42,59,65"-->
+<pre class="numbered" data-file="E06_PieChartAnalytics.java" data-hl="33,42,59,65"><code class="lang-java">package com.aptech.s15;
+
+import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.chart.PieChart;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+/**
+ * Session 15 - Example 6: JavaFX PieChart Data Analytics
+ *
+ * Demonstrates:
+ * 1. PieChart architectural model: PieChart.Data(name, value).
+ * 2. ObservableList&lt;PieChart.Data&gt; backing: Modifying collection updates the chart automatically.
+ * 3. Configuration properties: setTitle(), setClockwise(), setLabelsVisible(), setLegendVisible().
+ * 4. Dynamic runtime updates: Adding/modifying slices on button click.
+ * 5. Calculating percentages across data slices for dashboard metrics.
+ */
+public class E06_PieChartAnalytics {
+
+    public static class ChartApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+            System.out.println("=== JavaFX PieChart Analytics Architecture ===");
+
+            VBox root = new VBox(16);
+            root.setPadding(new Insets(20));
+            root.setAlignment(Pos.CENTER);
+            root.setStyle("-fx-background-color: #0F172A;");
+
+            // 1. Initialize Observable Data Collection
+            ObservableList&lt;PieChart.Data&gt; courseData = FXCollections.observableArrayList(
+                new PieChart.Data("Cloud Computing &amp; DevOps", 340),
+                new PieChart.Data("Advanced Java &amp; Spring Boot", 480),
+                new PieChart.Data("Full-Stack Web Engineering", 520),
+                new PieChart.Data("Data Science &amp; AI", 290)
+            );
+
+            // 2. Instantiate and Configure PieChart
+            PieChart pieChart = new PieChart(courseData);
+            pieChart.setTitle("Aptech Enrollment Distribution by Discipline (2026)");
+            pieChart.setClockwise(true);
+            pieChart.setLabelsVisible(true);
+            pieChart.setLegendVisible(true);
+            pieChart.setPrefSize(560, 380);
+
+            // 3. Interactive Data Controls (Add New Stream)
+            HBox controls = new HBox(12);
+            controls.setAlignment(Pos.CENTER);
+
+            Button btnAddStream = new Button("Add CyberSecurity Stream");
+            btnAddStream.setStyle("-fx-background-color: #2563EB; -fx-text-fill: white; -fx-font-weight: bold;");
+
+            Button btnUpdateJava = new Button("Surge Java Enrollment (+150)");
+            btnUpdateJava.setStyle("-fx-background-color: #10B981; -fx-text-fill: white; -fx-font-weight: bold;");
+
+            Label statusLabel = new Label("Total Slices: " + courseData.size());
+            statusLabel.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 12px;");
+
+            btnAddStream.setOnAction(e -&gt; {
+                courseData.add(new PieChart.Data("CyberSecurity &amp; Ethical Hacking", 210));
+                statusLabel.setText("Total Slices: " + courseData.size() + " (CyberSecurity Added)");
+                btnAddStream.setDisable(true);
+            });
+
+            btnUpdateJava.setOnAction(e -&gt; {
+                for (PieChart.Data d : courseData) {
+                    if (d.getName().contains("Java")) {
+                        d.setPieValue(d.getPieValue() + 150);
+                        statusLabel.setText("Java count surged to: " + (int) d.getPieValue());
+                        break;
+                    }
+                }
+            });
+
+            controls.getChildren().addAll(btnAddStream, btnUpdateJava, statusLabel);
+
+            root.getChildren().addAll(pieChart, controls);
+
+            // Calculate total and print breakdown
+            double totalStudents = 0;
+            for (PieChart.Data d : courseData) {
+                totalStudents += d.getPieValue();
+            }
+            System.out.println("PieChart Title: " + pieChart.getTitle());
+            System.out.println("Total Candidates Enrolled: " + (int) totalStudents);
+            for (PieChart.Data d : courseData) {
+                double pct = (d.getPieValue() / totalStudents) * 100.0;
+                System.out.println(String.format(" - %s: %.0f students (%.1f%%)", d.getName(), d.getPieValue(), pct));
+            }
+
+            Scene scene = new Scene(root, 640, 480);
+            primaryStage.setTitle("Session 15 - PieChart Analytics");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+        }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(ChartApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+
+    <!-- OUTPUT BLOCK: E06 -->
+    <!--@output project="code/s15-javafx-layouts-ui" main="com.aptech.s15.E06_PieChartAnalytics"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== JavaFX PieChart Analytics Architecture ===
+PieChart Title: Aptech Enrollment Distribution by Discipline (2026)
+Total Candidates Enrolled: 1630
+ - Cloud Computing &amp; DevOps: 340 students (20.9%)
+ - Advanced Java &amp; Spring Boot: 480 students (29.4%)
+ - Full-Stack Web Engineering: 520 students (31.9%)
+ - Data Science &amp; AI: 290 students (17.8%)
+[Stage.show()] Primary window displayed: 'Session 15 - PieChart Analytics' (640x480)
+[JavaFX Runtime] Step 3: Application active. Window title: 'Session 15 - PieChart Analytics'
+[JavaFX Runtime] Scene root: VBox [Width: 640.0, Height: 480.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+
+    <div class="walkthrough">
+      <h4>Line-by-Line Code Walkthrough &mdash; E06_PieChartAnalytics.java</h4>
+      <ul>
+        <li><code>Line 33&ndash;38</code>: Instantiates the observable list of <code>PieChart.Data</code> slices representing student enrollment across 4 major disciplines.</li>
+        <li><code>Line 42&ndash;47</code>: Configures chart title, clockwise slice rotation, visible value labels, and visible legend markers.</li>
+        <li><code>Line 59&ndash;63</code>: The "Add Stream" button appends a 5th data slice to <code>courseData</code> at runtime, demonstrating that the chart listens to collection mutations and smoothly redraws.</li>
+        <li><code>Line 65&ndash;72</code>: Demonstrates value updating: locating an existing slice and invoking <code>d.setPieValue()</code> triggers an immediate proportional recalculation across all slices.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- PART 7: XYCHART, BARCHART & LINECHART                                     -->
+  <!-- ========================================================================= -->
+  <section id="part-7-xychart">
+    <h2>Part 7: Cartesian Coordinate Visualizations: XYChart, BarChart &amp; LineChart</h2>
+    <p>
+      While pie charts show proportional slices, Cartesian coordinate charts plot numerical quantities against
+      two perpendicular axes: an X axis and a Y axis. In JavaFX, all such charts inherit from <code>XYChart&lt;X, Y&gt;</code>.
+    </p>
+
+    <h3>Axes: CategoryAxis vs NumberAxis</h3>
+    <ul>
+      <li><strong><code>CategoryAxis</code></strong>: Represents discrete qualitative categories (e.g., quarters <code>"Q1"</code>, <code>"Q2"</code>, or months <code>"Jan"</code>, <code>"Feb"</code>).</li>
+      <li><strong><code>NumberAxis</code></strong>: Represents continuous quantitative values (e.g., student counts <code>0 to 600</code>, pass percentages <code>0% to 100%</code>). Configured with <code>new NumberAxis(lowerBound, upperBound, tickUnit)</code>.</li>
+    </ul>
+
+    <h3>Series and Multi-Dataset Comparison</h3>
+    <p>
+      Data inside an <code>XYChart</code> is organized into <strong>Series</strong> (<code>XYChart.Series&lt;X, Y&gt;</code>).
+      This allows you to compare multiple cohorts side by side on the same chart (e.g., <em>Cohort 2025</em> vs <em>Cohort 2026</em>):
+    </p>
+
+    <!-- CODE BLOCK: E07 -->
+    <!--@code src="code/s15-javafx-layouts-ui/src/main/java/com/aptech/s15/E07_BarAndLineCharts.java" title="E07_BarAndLineCharts.java" hl="38,41,43,49,69,74"-->
+<pre class="numbered" data-file="E07_BarAndLineCharts.java" data-hl="38,41,43,49,69,74"><code class="lang-java">package com.aptech.s15;
+
+import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.chart.BarChart;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
+import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+/**
+ * Session 15 - Example 7: JavaFX BarChart and LineChart (XYChart Architecture)
+ *
+ * Demonstrates:
+ * 1. XYChart hierarchy: CategoryAxis (discrete X domain) &amp; NumberAxis (continuous Y range).
+ * 2. BarChart&lt;String, Number&gt;: Multi-series comparison across academic quarters.
+ * 3. LineChart&lt;String, Number&gt;: Continuous performance and graduation trend analysis.
+ * 4. XYChart.Series and XYChart.Data structures.
+ * 5. Formatting bar gap, category gap, and symbol indicators.
+ */
+public class E07_BarAndLineCharts {
+
+    public static class XYChartApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+            System.out.println("=== JavaFX XYChart: BarChart &amp; LineChart Architecture ===");
+
+            VBox root = new VBox(20);
+            root.setPadding(new Insets(20));
+            root.setStyle("-fx-background-color: #0F172A;");
+
+            Label title = new Label("Academic Performance &amp; Trajectory Analytics (2025 - 2026)");
+            title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #38BDF8;");
+
+            HBox chartsRow = new HBox(16);
+            chartsRow.setAlignment(Pos.CENTER);
+
+            // -------------------------------------------------------------
+            // 1. BARCHART: Enrollment per Quarter (2025 vs 2026)
+            // -------------------------------------------------------------
+            CategoryAxis barXAxis = new CategoryAxis();
+            barXAxis.setLabel("Academic Quarter");
+
+            NumberAxis barYAxis = new NumberAxis("Enrolled Candidates", 0, 600, 100);
+
+            BarChart&lt;String, Number&gt; barChart = new BarChart&lt;&gt;(barXAxis, barYAxis);
+            barChart.setTitle("Quarterly Enrollment Comparison");
+            barChart.setCategoryGap(20);
+            barChart.setBarGap(6);
+            barChart.setPrefSize(420, 360);
+
+            // Series 1: 2025 Cohort
+            XYChart.Series&lt;String, Number&gt; series2025 = new XYChart.Series&lt;&gt;();
+            series2025.setName("Cohort 2025");
+            series2025.getData().add(new XYChart.Data&lt;&gt;("Q1", 280));
+            series2025.getData().add(new XYChart.Data&lt;&gt;("Q2", 340));
+            series2025.getData().add(new XYChart.Data&lt;&gt;("Q3", 410));
+            series2025.getData().add(new XYChart.Data&lt;&gt;("Q4", 450));
+
+            // Series 2: 2026 Cohort
+            XYChart.Series&lt;String, Number&gt; series2026 = new XYChart.Series&lt;&gt;();
+            series2026.setName("Cohort 2026");
+            series2026.getData().add(new XYChart.Data&lt;&gt;("Q1", 360));
+            series2026.getData().add(new XYChart.Data&lt;&gt;("Q2", 420));
+            series2026.getData().add(new XYChart.Data&lt;&gt;("Q3", 510));
+            series2026.getData().add(new XYChart.Data&lt;&gt;("Q4", 580));
+
+            barChart.getData().addAll(FXCollections.observableArrayList(series2025, series2026));
+
+            // -------------------------------------------------------------
+            // 2. LINECHART: Examination Pass Rates over Time
+            // -------------------------------------------------------------
+            CategoryAxis lineXAxis = new CategoryAxis();
+            lineXAxis.setLabel("Assessment Cycle");
+
+            NumberAxis lineYAxis = new NumberAxis("Average Pass Rate (%)", 60, 100, 10);
+
+            LineChart&lt;String, Number&gt; lineChart = new LineChart&lt;&gt;(lineXAxis, lineYAxis);
+            lineChart.setTitle("Assessment Mastery Trajectory");
+            lineChart.setPrefSize(420, 360);
+
+            XYChart.Series&lt;String, Number&gt; passRateSeries = new XYChart.Series&lt;&gt;();
+            passRateSeries.setName("Java Certification Pass %");
+            passRateSeries.getData().add(new XYChart.Data&lt;&gt;("Cycle 1", 74));
+            passRateSeries.getData().add(new XYChart.Data&lt;&gt;("Cycle 2", 82));
+            passRateSeries.getData().add(new XYChart.Data&lt;&gt;("Cycle 3", 89));
+            passRateSeries.getData().add(new XYChart.Data&lt;&gt;("Cycle 4", 94));
+
+            lineChart.getData().add(passRateSeries);
+
+            chartsRow.getChildren().addAll(barChart, lineChart);
+            root.getChildren().addAll(title, chartsRow);
+
+            // Diagnostics readout
+            System.out.println("BarChart Title: " + barChart.getTitle());
+            System.out.println("BarChart Series Count: " + barChart.getData().size());
+            System.out.println("BarChart X-Axis Label: " + barXAxis.getLabel());
+            System.out.println("LineChart Title: " + lineChart.getTitle());
+            System.out.println("LineChart Final Cycle Pass Rate: " + passRateSeries.getData().get(3).getYValue() + "%");
+
+            Scene scene = new Scene(root, 900, 480);
+            primaryStage.setTitle("Session 15 - BarChart &amp; LineChart Analytics");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+        }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(XYChartApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+
+    <!-- OUTPUT BLOCK: E07 -->
+    <!--@output project="code/s15-javafx-layouts-ui" main="com.aptech.s15.E07_BarAndLineCharts"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== JavaFX XYChart: BarChart &amp; LineChart Architecture ===
+BarChart Title: Quarterly Enrollment Comparison
+BarChart Series Count: 2
+BarChart X-Axis Label: Academic Quarter
+LineChart Title: Assessment Mastery Trajectory
+LineChart Final Cycle Pass Rate: 94%
+[Stage.show()] Primary window displayed: 'Session 15 - BarChart &amp; LineChart Analytics' (900x480)
+[JavaFX Runtime] Step 3: Application active. Window title: 'Session 15 - BarChart &amp; LineChart Analytics'
+[JavaFX Runtime] Scene root: VBox [Width: 900.0, Height: 480.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+
+    <div class="walkthrough">
+      <h4>Line-by-Line Code Walkthrough &mdash; E07_BarAndLineCharts.java</h4>
+      <ul>
+        <li><code>Line 38&ndash;41</code>: Creates a <code>CategoryAxis</code> for quarterly intervals and a <code>NumberAxis</code> ranging from 0 to 600 with tick marks every 100 students.</li>
+        <li><code>Line 43&ndash;47</code>: Instantiates <code>BarChart&lt;String, Number&gt;</code> and tunes bar spacing via <code>setCategoryGap(20)</code> and <code>setBarGap(6)</code>.</li>
+        <li><code>Line 49&ndash;64</code>: Creates two distinct <code>XYChart.Series</code> (Cohort 2025 and Cohort 2026), populating each with quarterly data points to display grouped comparative bars.</li>
+        <li><code>Line 69&ndash;78</code>: Constructs a companion <code>LineChart&lt;String, Number&gt;</code> tracking certification pass rate trajectory over 4 assessment cycles.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- GUIDED LAB: REGISTRAR DASHBOARD PORTAL                                    -->
+  <!-- ========================================================================= -->
+  <section id="lab-dashboard">
+    <h2>Guided Lab: Aptech Enterprise Registrar Dashboard &amp; Analytics Portal</h2>
+    <p>
+      Now, you will combine all the concepts mastered in this session &mdash; <code>BorderPane</code>, <code>GridPane</code>,
+      linear boxes, external CSS skinning, interactive form controls, <code>PieChart</code>, and <code>BarChart</code> &mdash;
+      into a single, production-grade corporate enterprise desktop portal.
+    </p>
+
+    <div class="callout callout--tip"><span class="callout__i">&#127919;</span>
+      <div class="callout__b"><b>Lab Goal &mdash; The Corporate Registrar Portal</b>
+        Build the <strong>Aptech Enterprise Registrar Dashboard &amp; Analytics Portal</strong>:
+        <ol>
+          <li>A <code>BorderPane</code> master frame with an executive top bar and left navigation sidebar.</li>
+          <li>Three real-time KPI stat cards displaying total candidates, active tracks, and pass rate.</li>
+          <li>A <code>GridPane</code> rapid student enrollment desk collecting candidate name, specialization track, study mode, and start date.</li>
+          <li>A split analytics dashboard displaying live track distribution (<code>PieChart</code>) and quarterly pass rates (<code>BarChart</code>).</li>
+          <li>Professional dark navy corporate skinning via <code>dashboard.css</code>.</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- CODE BLOCK: LAB -->
+    <!--@code src="code/s15-javafx-layouts-ui/src/main/java/com/aptech/s15/lab/RegistrarDashboardApp.java" title="RegistrarDashboardApp.java" hl="45,51,70,102,118,172,190"-->
+<pre class="numbered" data-file="RegistrarDashboardApp.java" data-hl="45,51,70,102,118,172,190"><code class="lang-java">package com.aptech.s15.lab;
+
+import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.HPos;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.chart.BarChart;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.PieChart;
+import javafx.scene.chart.XYChart;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.Slider;
+import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+import java.net.URL;
+import java.time.LocalDate;
+
+/**
+ * Session 15 Guided Lab: Aptech Enterprise Registrar Dashboard &amp; Analytics Portal
+ *
+ * Architecture:
+ * - Root: BorderPane (5-zone corporate desktop application frame)
+ * - Top: Header Bar with branding, search field (Priority.ALWAYS), user badge
+ * - Left: Navigation sidebar with active state markers
+ * - Center: Executive Dashboard featuring:
+ *     1. KPI Stat Cards (Total Students, Active Courses, Pass Rate)
+ *     2. SplitPane layout: Left: GridPane Rapid Registration Form | Right: PieChart &amp; BarChart Visualizations
+ * - Bottom: Real-time system telemetry status bar
+ * - CSS Skinning: External dashboard.css styling with dark theme, hover accents, and modern typography.
+ */
+public class RegistrarDashboardApp {
+
+    public static class DashboardFxApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+            System.out.println("=======================================================");
+            System.out.println(" APTECH ENTERPRISE REGISTRAR DASHBOARD &amp; ANALYTICS");
+            System.out.println(" Session 15 Capstone Guided Laboratory Architecture");
+            System.out.println("=======================================================");
+
+            BorderPane root = new BorderPane();
+            root.getStyleClass().add("root");
+
+            // -------------------------------------------------------------
+            // 1. TOP ZONE: Header Navigation Bar
+            // -------------------------------------------------------------
+            HBox header = new HBox(16);
+            header.getStyleClass().add("header-bar");
+
+            Label brand = new Label("APTECH REGISTRAR PORTAL");
+            brand.getStyleClass().add("brand-title");
+
+            Label badge = new Label("ENTERPRISE v2.4");
+            badge.getStyleClass().add("brand-badge");
+
+            TextField searchField = new TextField();
+            searchField.setPromptText("Search students, enrollments, examinations...");
+            searchField.getStyleClass().add("text-field");
+            HBox.setHgrow(searchField, Priority.ALWAYS);
+
+            Button btnProfile = new Button("Academic Officer (Admin)");
+            btnProfile.getStyleClass().add("btn-secondary");
+
+            header.getChildren().addAll(brand, badge, searchField, btnProfile);
+            root.setTop(header);
+
+            // -------------------------------------------------------------
+            // 2. LEFT ZONE: Side Navigation Menu
+            // -------------------------------------------------------------
+            VBox sidebar = new VBox(8);
+            sidebar.getStyleClass().add("sidebar");
+            sidebar.setPrefWidth(210);
+
+            String[] menuItems = {
+                "Executive Overview",
+                "Enrollment Desk",
+                "Academic Modules",
+                "Examination Board",
+                "Graduation Analytics",
+                "System Settings"
+            };
+
+            for (int i = 0; i &lt; menuItems.length; i++) {
+                Button navBtn = new Button(menuItems[i]);
+                navBtn.setMaxWidth(Double.MAX_VALUE);
+                if (i == 0) {
+                    navBtn.getStyleClass().addAll("nav-button", "nav-button-active");
+                } else {
+                    navBtn.getStyleClass().add("nav-button");
+                }
+                sidebar.getChildren().add(navBtn);
+            }
+            root.setLeft(sidebar);
+
+            // -------------------------------------------------------------
+            // 3. CENTER ZONE: KPI Cards, Registration Form &amp; Analytics
+            // -------------------------------------------------------------
+            VBox centerArea = new VBox(20);
+            centerArea.setPadding(new Insets(20));
+
+            // 3A. KPI Overview Row (3 Metric Cards)
+            HBox kpiRow = new HBox(16);
+
+            VBox card1 = createKpiCard("TOTAL CANDIDATES", "1,842", "+14.2% YoY Growth");
+            VBox card2 = createKpiCard("ACTIVE DIPLOMA TRACKS", "28 Tracks", "4 Centers Online");
+            VBox card3 = createKpiCard("CERTIFICATION PASS RATE", "94.6%", "+3.1% Target Met");
+
+            HBox.setHgrow(card1, Priority.ALWAYS);
+            HBox.setHgrow(card2, Priority.ALWAYS);
+            HBox.setHgrow(card3, Priority.ALWAYS);
+            kpiRow.getChildren().addAll(card1, card2, card3);
+
+            // 3B. Main Work Area: Left Form + Right Analytics
+            HBox workspace = new HBox(18);
+
+            // Left Panel: Student Fast Registration Form (GridPane)
+            VBox formCard = new VBox(12);
+            formCard.getStyleClass().add("chart-container");
+            formCard.setPrefWidth(420);
+
+            Label formTitle = new Label("Rapid Student Enrollment");
+            formTitle.getStyleClass().add("chart-title");
+
+            GridPane formGrid = new GridPane();
+            formGrid.setHgap(10);
+            formGrid.setVgap(12);
+
+            // Row 0: Full Name
+            Label lblName = new Label("Full Name:");
+            lblName.setStyle("-fx-text-fill: #94A3B8;");
+            TextField txtName = new TextField();
+            txtName.setPromptText("First and Last Legal Name");
+            txtName.getStyleClass().add("text-field");
+            GridPane.setHgrow(txtName, Priority.ALWAYS);
+            formGrid.add(lblName, 0, 0);
+            formGrid.add(txtName, 1, 0);
+
+            // Row 1: Course Track
+            Label lblTrack = new Label("Track:");
+            lblTrack.setStyle("-fx-text-fill: #94A3B8;");
+            ComboBox&lt;String&gt; cmbTrack = new ComboBox&lt;&gt;(FXCollections.observableArrayList(
+                "ADSE - Advanced Java &amp; Cloud",
+                "CPISM - Systems Management",
+                "DISM - Database Systems",
+                "AI &amp; Machine Learning"
+            ));
+            cmbTrack.setValue("ADSE - Advanced Java &amp; Cloud");
+            cmbTrack.getStyleClass().add("combo-box");
+            formGrid.add(lblTrack, 0, 1);
+            formGrid.add(cmbTrack, 1, 1);
+
+            // Row 2: Study Mode Radio Buttons
+            Label lblMode = new Label("Study Mode:");
+            lblMode.setStyle("-fx-text-fill: #94A3B8;");
+            ToggleGroup modeGroup = new ToggleGroup();
+            RadioButton rbDay = new RadioButton("Full-Time");
+            RadioButton rbEve = new RadioButton("Weekend");
+            rbDay.setToggleGroup(modeGroup);
+            rbEve.setToggleGroup(modeGroup);
+            rbDay.setSelected(true);
+            rbDay.setStyle("-fx-text-fill: #E2E8F0;");
+            rbEve.setStyle("-fx-text-fill: #E2E8F0;");
+            HBox modes = new HBox(12, rbDay, rbEve);
+            formGrid.add(lblMode, 0, 2);
+            formGrid.add(modes, 1, 2);
+
+            // Row 3: Admission Date
+            Label lblDate = new Label("Start Date:");
+            lblDate.setStyle("-fx-text-fill: #94A3B8;");
+            DatePicker datePicker = new DatePicker(LocalDate.of(2026, 11, 2));
+            datePicker.getStyleClass().add("date-picker");
+            formGrid.add(lblDate, 0, 3);
+            formGrid.add(datePicker, 1, 3);
+
+            // Row 4: Submit Button
+            Button btnEnroll = new Button("Commit Enrollment");
+            btnEnroll.getStyleClass().add("btn-primary");
+            GridPane.setHalignment(btnEnroll, HPos.RIGHT);
+            formGrid.add(btnEnroll, 1, 4);
+
+            Label formFeedback = new Label("All fields ready for data entry.");
+            formFeedback.setStyle("-fx-text-fill: #38BDF8; -fx-font-size: 11px;");
+
+            btnEnroll.setOnAction(e -&gt; {
+                String name = txtName.getText().trim().isEmpty() ? "Candidate" : txtName.getText().trim();
+                formFeedback.setText("Enrolled " + name + " in " + cmbTrack.getValue());
+                System.out.println("[Enrollment Desk] Committed record: " + name + " (" + cmbTrack.getValue() + ")");
+            });
+
+            formCard.getChildren().addAll(formTitle, formGrid, formFeedback);
+
+            // Right Panel: PieChart + BarChart Data Visualizations
+            VBox analyticsCard = new VBox(14);
+            analyticsCard.getStyleClass().add("chart-container");
+            HBox.setHgrow(analyticsCard, Priority.ALWAYS);
+
+            Label analyticsTitle = new Label("Discipline Distribution &amp; Quarterly Performance");
+            analyticsTitle.getStyleClass().add("chart-title");
+
+            HBox chartsRow = new HBox(14);
+            chartsRow.setAlignment(Pos.CENTER);
+
+            // PieChart
+            ObservableList&lt;PieChart.Data&gt; pieData = FXCollections.observableArrayList(
+                new PieChart.Data("Java / Cloud", 620),
+                new PieChart.Data("Web Engineering", 480),
+                new PieChart.Data("Data / AI", 410),
+                new PieChart.Data("CyberSecurity", 332)
+            );
+            PieChart pieChart = new PieChart(pieData);
+            pieChart.setTitle("Track Distribution");
+            pieChart.setPrefSize(260, 220);
+
+            // BarChart
+            CategoryAxis bX = new CategoryAxis();
+            bX.setLabel("Quarter");
+            NumberAxis bY = new NumberAxis("Pass %", 50, 100, 10);
+            BarChart&lt;String, Number&gt; barChart = new BarChart&lt;&gt;(bX, bY);
+            barChart.setTitle("Pass Rate %");
+            barChart.setPrefSize(280, 220);
+
+            XYChart.Series&lt;String, Number&gt; s = new XYChart.Series&lt;&gt;();
+            s.setName("2026 Cohort");
+            s.getData().add(new XYChart.Data&lt;&gt;("Q1", 86));
+            s.getData().add(new XYChart.Data&lt;&gt;("Q2", 91));
+            s.getData().add(new XYChart.Data&lt;&gt;("Q3", 94));
+            barChart.getData().add(s);
+
+            chartsRow.getChildren().addAll(pieChart, barChart);
+            analyticsCard.getChildren().addAll(analyticsTitle, chartsRow);
+
+            workspace.getChildren().addAll(formCard, analyticsCard);
+            centerArea.getChildren().addAll(kpiRow, workspace);
+            root.setCenter(centerArea);
+
+            // -------------------------------------------------------------
+            // 4. BOTTOM ZONE: Real-time Telemetry Status Bar
+            // -------------------------------------------------------------
+            HBox statusBar = new HBox(14);
+            statusBar.setPadding(new Insets(6, 16, 6, 16));
+            statusBar.setStyle("-fx-background-color: #1E293B; -fx-border-color: #334155; -fx-border-width: 1 0 0 0;");
+
+            Label statusIndicator = new Label("Service Engine: RUNNING (Socket 8080) | DB: Connected");
+            statusIndicator.setStyle("-fx-text-fill: #10B981; -fx-font-size: 11px;");
+            HBox.setHgrow(statusIndicator, Priority.ALWAYS);
+
+            Label nodeInfo = new Label("Cluster Node: Lagos-HQ-01 | Latency: 4ms");
+            nodeInfo.setStyle("-fx-text-fill: #64748B; -fx-font-size: 11px;");
+
+            statusBar.getChildren().addAll(statusIndicator, nodeInfo);
+            root.setBottom(statusBar);
+
+            Scene scene = new Scene(root, 1080, 680);
+
+            URL cssUrl = getClass().getResource("/dashboard.css");
+            if (cssUrl != null) {
+                scene.getStylesheets().add(cssUrl.toExternalForm());
+                System.out.println("Applied Portal CSS Stylesheet: " + cssUrl.toExternalForm());
+            }
+
+            // Print system startup telemetry
+            System.out.println("Dashboard Window Initialized: 1080x680 px");
+            System.out.println("KPI Cards Rendered: " + kpiRow.getChildren().size());
+            System.out.println("Navigation Sidebar Elements: " + sidebar.getChildren().size());
+            System.out.println("Analytics PieChart Slices: " + pieData.size());
+            System.out.println("Quarterly BarChart Data Points: " + s.getData().size());
+            System.out.println("Status: Ready for Registrar Operative Tasks.");
+
+            primaryStage.setTitle("Aptech Enterprise Registrar Portal - Session 15 Capstone");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+        }
+
+        private VBox createKpiCard(String title, String value, String delta) {
+            VBox card = new VBox(6);
+            card.getStyleClass().add("kpi-card");
+
+            Label lblTitle = new Label(title);
+            lblTitle.getStyleClass().add("kpi-label");
+
+            Label lblVal = new Label(value);
+            lblVal.getStyleClass().add("kpi-number");
+
+            Label lblDelta = new Label(delta);
+            lblDelta.getStyleClass().add("kpi-delta");
+
+            card.getChildren().addAll(lblTitle, lblVal, lblDelta);
+            return card;
+        }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(DashboardFxApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+
+    <!-- OUTPUT BLOCK: LAB -->
+    <!--@output project="code/s15-javafx-layouts-ui" main="com.aptech.s15.lab.RegistrarDashboardApp"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=======================================================
+ APTECH ENTERPRISE REGISTRAR DASHBOARD &amp; ANALYTICS
+ Session 15 Capstone Guided Laboratory Architecture
+=======================================================
+Applied Portal CSS Stylesheet: file:/C:/Projects/Aptech/JavaFX/code/s15-javafx-layouts-ui/src/main/resources/dashboard.css
+Dashboard Window Initialized: 1080x680 px
+KPI Cards Rendered: 3
+Navigation Sidebar Elements: 6
+Analytics PieChart Slices: 4
+Quarterly BarChart Data Points: 3
+Status: Ready for Registrar Operative Tasks.
+[Stage.show()] Primary window displayed: 'Aptech Enterprise Registrar Portal - Session 15 Capstone' (1080x680)
+[JavaFX Runtime] Step 3: Application active. Window title: 'Aptech Enterprise Registrar Portal - Session 15 Capstone'
+[JavaFX Runtime] Scene root: BorderPane [Width: 1080.0, Height: 680.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+
+    <div class="walkthrough">
+      <h4>Line-by-Line Code Walkthrough &mdash; RegistrarDashboardApp.java</h4>
+      <ul>
+        <li><code>Line 45&ndash;49</code>: Instantiates root <code>BorderPane</code> and assigns the <code>"root"</code> CSS class selector.</li>
+        <li><code>Line 51&ndash;66</code>: Builds the Top zone header bar containing the brand title, enterprise badge, responsive search field (<code>HBox.setHgrow(searchField, Priority.ALWAYS)</code>), and profile button.</li>
+        <li><code>Line 70&ndash;94</code>: Builds the Left zone navigation sidebar with 6 navigation buttons, highlighting the active "Executive Overview" button with <code>"nav-button-active"</code>.</li>
+        <li><code>Line 102&ndash;112</code>: Creates the KPI stat cards row using <code>createKpiCard()</code> and configures flexible growth across all 3 cards.</li>
+        <li><code>Line 118&ndash;165</code>: Implements the rapid enrollment desk using a <code>GridPane</code> with <code>TextField</code>, <code>ComboBox</code>, <code>RadioButton</code> in <code>ToggleGroup</code>, and <code>DatePicker</code>. Clicking the "Commit Enrollment" button logs the student record to the console and updates UI status.</li>
+        <li><code>Line 172&ndash;205</code>: Integrates side-by-side data visualizations: a <code>PieChart</code> showing discipline share and a <code>BarChart</code> showing quarterly pass trajectory.</li>
+        <li><code>Line 223&ndash;227</code>: Dynamically links the external <code>dashboard.css</code> stylesheet to style the entire portal.</li>
+      </ul>
+    </div>
+
+    <!-- Interactive Persistent Checklist -->
+    <h3>Lab Verification Checklist</h3>
+    <div class="checklist" data-checklist="s15-lab">
+      <label><input type="checkbox"> The application launches cleanly via <code>AppLauncher.java</code> with no modular runtime errors.</label>
+      <label><input type="checkbox"> The top header bar expands properly on window resize with the search box consuming extra space.</label>
+      <label><input type="checkbox"> All three KPI cards display with dark rounded corners and hover borders.</label>
+      <label><input type="checkbox"> Selecting study mode radio buttons enforces mutual exclusion (only one active at a time).</label>
+      <label><input type="checkbox"> Submitting the enrollment form validates the student name and updates the feedback label.</label>
+      <label><input type="checkbox"> Both the PieChart and BarChart render side by side without overflowing the right panel.</label>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- COMMON MISTAKES & GOTCHAS                                                 -->
+  <!-- ========================================================================= -->
+  <h2>Common Mistakes &amp; Gotchas</h2>
+
+  <div class="callout callout--danger"><span class="callout__i">&#10060;</span>
+    <div class="callout__b"><b>Gotcha 1: The Missing <code>-fx-</code> Prefix in CSS</b>
+      <p>
+        In standard web CSS, you write <code>background-color: #1E293B;</code>. In JavaFX CSS, if you write
+        <code>background-color</code>, <strong>JavaFX silently ignores the property without throwing any error!</strong>
+        Your control simply fails to style, leaving you puzzled.
+      </p>
+      <p>
+        <strong>The Fix:</strong> Always verify that every custom styling attribute starts with the mandatory
+        <code>-fx-</code> vendor prefix: <code>-fx-background-color</code>, <code>-fx-text-fill</code>,
+        <code>-fx-background-radius</code>, <code>-fx-font-size</code>.
+      </p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#10060;</span>
+    <div class="callout__b"><b>Gotcha 2: The Center-Region Squeeze Trap in BorderPane</b>
+      <p>
+        Developers often place a wide form into the <code>Left</code> or <code>Right</code> region of a <code>BorderPane</code>
+        without setting an explicit preferred width (<code>setPrefWidth()</code>) or maximum width. As a result, the side
+        region expands unpredictably and crushes the <code>Center</code> region down to zero width.
+      </p>
+      <p>
+        <strong>The Fix:</strong> Always assign a reasonable fixed or preferred width to <code>Left</code> and
+        <code>Right</code> sidebars (e.g. <code>sidebar.setPrefWidth(210);</code>). Reserve <code>Center</code> for the
+        main responsive content, as only the Center region receives automatic multi-directional expansion.
+      </p>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#10060;</span>
+    <div class="callout__b"><b>Gotcha 3: Mutating Chart Data from a Background Thread</b>
+      <p>
+        When receiving real-time telemetry or database updates on a background worker thread, attempting to call
+        <code>series.getData().add(...)</code> directly from that background thread throws an immediate:
+        <code>java.lang.IllegalStateException: Not on FX application thread</code>.
+      </p>
+      <p>
+        <strong>The Fix:</strong> All scene graph and chart modifications must occur on the single-threaded JavaFX
+        Application Thread. Wrap background updates in <code>Platform.runLater(() -&gt; { ... });</code>.
+      </p>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- KNOWLEDGE CHECK                                                           -->
+  <!-- ========================================================================= -->
+  <h2>Knowledge Check</h2>
+  <div class="quiz" data-quiz="s15-quiz">
+
+    <!-- Question 1 -->
+    <div class="quiz__q" data-kind="mc" data-ans="c">
+      <b>1. In a JavaFX <code>BorderPane</code>, which region automatically expands to claim all remaining unclaimed screen space on window resize?</b>
+      <label><input type="radio" name="q1" value="a"> Top</label>
+      <label><input type="radio" name="q1" value="b"> Bottom</label>
+      <label><input type="radio" name="q1" value="c"> Center</label>
+      <label><input type="radio" name="q1" value="d"> Left</label>
+      <div class="quiz__explain">
+        <b>Correct: C.</b> Center is specifically architected as the primary work area and claims 100% of all unused horizontal and vertical space.
+      </div>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="quiz__q" data-kind="mc" data-ans="b">
+      <b>2. How are cell coordinates ordered when placing a node into a <code>GridPane</code> using <code>grid.add(node, a, b)</code>?</b>
+      <label><input type="radio" name="q2" value="a"> <code>(rowIndex, columnIndex)</code></label>
+      <label><input type="radio" name="q2" value="b"> <code>(columnIndex, rowIndex)</code></label>
+      <label><input type="radio" name="q2" value="c"> <code>(xOffsetPixels, yOffsetPixels)</code></label>
+      <label><input type="radio" name="q2" value="d"> <code>(cellNumber, rowSpan)</code></label>
+      <div class="quiz__explain">
+        <b>Correct: B.</b> JavaFX GridPane follows Cartesian (X, Y) convention: Column index first (horizontal X), then Row index second (vertical Y).
+      </div>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="quiz__q" data-kind="mc" data-ans="d">
+      <b>3. Which layout pane guarantees that every child element receives strictly identical width and height boundaries?</b>
+      <label><input type="radio" name="q3" value="a"> FlowPane</label>
+      <label><input type="radio" name="q3" value="b"> VBox</label>
+      <label><input type="radio" name="q3" value="c"> StackPane</label>
+      <label><input type="radio" name="q3" value="d"> TilePane</label>
+      <div class="quiz__explain">
+        <b>Correct: D.</b> TilePane enforces uniform grid tiles of identical width and height across all children.
+      </div>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="quiz__q" data-kind="mc" data-ans="a">
+      <b>4. Why do JavaFX CSS properties require the <code>-fx-</code> prefix (e.g. <code>-fx-background-color</code>)?</b>
+      <label><input type="radio" name="q4" value="a"> To prevent collisions with standard W3C web CSS rules when sharing stylesheets or embedding web views.</label>
+      <label><input type="radio" name="q4" value="b"> Because Java bytecode does not support standard hyphenated words.</label>
+      <label><input type="radio" name="q4" value="c"> Because it compiles to FXML at build time.</label>
+      <label><input type="radio" name="q4" value="d"> It is only required for buttons, not layouts.</label>
+      <div class="quiz__explain">
+        <b>Correct: A.</b> The vendor prefix -fx- protects JavaFX styling properties from colliding with standard web browser CSS rules.
+      </div>
+    </div>
+
+    <!-- Question 5 -->
+    <div class="quiz__q" data-kind="mc" data-ans="c">
+      <b>5. To ensure mutually exclusive selection among three <code>RadioButton</code> controls, what must you do?</b>
+      <label><input type="radio" name="q5" value="a"> Place them inside an HBox with Priority.ALWAYS.</label>
+      <label><input type="radio" name="q5" value="b"> Bind them to a single ComboBox property.</label>
+      <label><input type="radio" name="q5" value="c"> Register all three radio buttons to the same <code>ToggleGroup</code> instance.</label>
+      <label><input type="radio" name="q5" value="d"> Set their action listeners to call fire().</label>
+      <div class="quiz__explain">
+        <b>Correct: C.</b> Assigning radio buttons to the same ToggleGroup ensures that selecting one automatically deselects all others in the group.
+      </div>
+    </div>
+
+    <!-- Question 6 -->
+    <div class="quiz__q" data-kind="mc" data-ans="b">
+      <b>6. What happens when you add or modify a <code>PieChart.Data</code> slice inside an active <code>PieChart</code>'s observable collection?</b>
+      <label><input type="radio" name="q6" value="a"> The application throws an UnsupportedOperationException.</label>
+      <label><input type="radio" name="q6" value="b"> The PieChart automatically recalculates proportions and smoothly updates visual slices without rebuilding the scene.</label>
+      <label><input type="radio" name="q6" value="c"> You must manually call chart.repaint() or chart.layout().</label>
+      <label><input type="radio" name="q6" value="d"> The chart clears all existing data and resets to zero.</label>
+      <div class="quiz__explain">
+        <b>Correct: B.</b> Because PieChart is backed by an ObservableList, mutations trigger automatic reactive re-rendering.
+      </div>
+    </div>
+
+    <!-- Question 7 -->
+    <div class="quiz__q" data-kind="mc" data-ans="a">
+      <b>7. Which axis type should be used for qualitative categories (such as "Q1", "Q2", "Q3") in a <code>BarChart</code>?</b>
+      <label><input type="radio" name="q7" value="a"> <code>CategoryAxis</code></label>
+      <label><input type="radio" name="q7" value="b"> <code>NumberAxis</code></label>
+      <label><input type="radio" name="q7" value="c"> <code>ValueAxis</code></label>
+      <label><input type="radio" name="q7" value="d"> <code>DiscreteRangeAxis</code></label>
+      <div class="quiz__explain">
+        <b>Correct: A.</b> CategoryAxis represents qualitative text labels and discrete categories along an axis.
+      </div>
+    </div>
+
+    <!-- Question 8 -->
+    <div class="quiz__q" data-kind="mc" data-ans="d">
+      <b>8. Which method forces a child element inside an <code>HBox</code> to absorb all leftover horizontal space when the parent window expands?</b>
+      <label><input type="radio" name="q8" value="a"> <code>HBox.setMaxWidth(Double.MAX_VALUE)</code></label>
+      <label><input type="radio" name="q8" value="b"> <code>child.setFillWidth(true)</code></label>
+      <label><input type="radio" name="q8" value="c"> <code>child.setPrefWidth(1000)</code></label>
+      <label><input type="radio" name="q8" value="d"> <code>HBox.setHgrow(child, Priority.ALWAYS)</code></label>
+      <div class="quiz__explain">
+        <b>Correct: D.</b> HBox.setHgrow(child, Priority.ALWAYS) instructs the linear container to allocate all surplus horizontal space to that node.
+      </div>
+    </div>
+
+
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PRACTICE EXERCISES                                                        -->
+  <!-- ========================================================================= -->
+  <h2>Practice Exercises</h2>
+
+  <!-- Exercise 1 (Easy) -->
+  <div class="exercise">
+    <div class="exercise__header">
+      <span class="exercise__badge exercise__badge--easy">Easy</span>
+      <span class="exercise__title">Exercise 1: Themed Course Product Card (P1_ThemedProductCard)</span>
+    </div>
+    <div class="exercise__body">
+      <p>
+        Build a reusable, modern corporate course product card component using <code>VBox</code>, <code>HBox</code>,
+        and CSS styling. The card must feature:
+      </p>
+      <ul>
+        <li>A top badge ("APTECH CERTIFIED") and duration indicator.</li>
+        <li>Course title ("Java Enterprise &amp; Cloud Architecture") and descriptive paragraph.</li>
+        <li>A bottom row containing a tuition fee tag and an interactive "Enroll Now" button.</li>
+        <li>Interactive button behavior: Clicking the button updates its text to "Enrolled ✓" and turns emerald green.</li>
+      </ul>
+      <details>
+        <summary><b>Hints</b></summary>
+        <p>Use <code>HBox.setHgrow(priceBox, Priority.ALWAYS)</code> in the bottom row to push the button flush to the right. Apply rounded borders using <code>-fx-background-radius: 12px;</code> and <code>-fx-border-radius: 12px;</code>.</p>
+      </details>
+      <details>
+        <summary><b>View Solution Code</b></summary>
+        <!--@code src="code/s15-javafx-layouts-ui/src/main/java/com/aptech/s15/practice/P1_ThemedProductCard.java" title="P1_ThemedProductCard.java"-->
+<pre class="numbered" data-file="P1_ThemedProductCard.java"><code class="lang-java">package com.aptech.s15.practice;
+
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+/**
+ * Session 15 - Practice Exercise 1 (Easy): Themed Course Product Card
+ *
+ * Requirements:
+ * - Build a cohesive, modern course card using VBox, HBox, and CSS styling.
+ * - Display a category badge, course title, curriculum bullet points, fee tag, and an interactive button.
+ * - Implement hover feedback and dynamic button action state.
+ */
+public class P1_ThemedProductCard {
+
+    public static class CardApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+            System.out.println("=== Practice 1: Themed Course Product Card ===");
+
+            VBox screen = new VBox();
+            screen.setAlignment(Pos.CENTER);
+            screen.setPadding(new Insets(30));
+            screen.setStyle("-fx-background-color: #0F172A;");
+
+            // Course Card Container
+            VBox card = new VBox(14);
+            card.setPrefWidth(340);
+            card.setPadding(new Insets(24));
+            card.setStyle(
+                "-fx-background-color: #1E293B; " +
+                "-fx-border-color: #334155; " +
+                "-fx-border-width: 1px; " +
+                "-fx-border-radius: 12px; " +
+                "-fx-background-radius: 12px;"
+            );
+
+            // Badge Row
+            HBox badgeRow = new HBox(8);
+            Label badge = new Label("APTECH CERTIFIED");
+            badge.setStyle(
+                "-fx-background-color: #0284C7; " +
+                "-fx-text-fill: white; " +
+                "-fx-font-size: 10px; " +
+                "-fx-font-weight: bold; " +
+                "-fx-padding: 3 8 3 8; " +
+                "-fx-background-radius: 10px;"
+            );
+
+            Label duration = new Label("6 Months | 120 Hours");
+            duration.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 11px;");
+            badgeRow.getChildren().addAll(badge, duration);
+
+            // Title &amp; Description
+            Label title = new Label("Java Enterprise &amp; Cloud Architecture");
+            title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #F8FAFC;");
+
+            Label description = new Label(
+                "Master modern Java 21, JavaFX desktop engineering, Spring Boot microservices, " +
+                "and cloud containerization with hands-on enterprise projects."
+            );
+            description.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 12px;");
+
+            // Price &amp; Enrollment CTA
+            HBox footer = new HBox(12);
+            footer.setAlignment(Pos.CENTER_LEFT);
+
+            VBox priceBox = new VBox(2);
+            Label priceLabel = new Label("Tuition Fee");
+            priceLabel.setStyle("-fx-text-fill: #64748B; -fx-font-size: 10px;");
+            Label priceVal = new Label("$1,250 USD");
+            priceVal.setStyle("-fx-text-fill: #10B981; -fx-font-size: 16px; -fx-font-weight: bold;");
+            priceBox.getChildren().addAll(priceLabel, priceVal);
+
+            Button btnEnroll = new Button("Enroll Now");
+            btnEnroll.setStyle(
+                "-fx-background-color: #2563EB; " +
+                "-fx-text-fill: white; " +
+                "-fx-font-weight: bold; " +
+                "-fx-padding: 8 18 8 18; " +
+                "-fx-background-radius: 6px;"
+            );
+            HBox.setHgrow(priceBox, Priority.ALWAYS);
+
+            Label feedback = new Label();
+            feedback.setStyle("-fx-text-fill: #38BDF8; -fx-font-size: 11px;");
+
+            btnEnroll.setOnAction(e -&gt; {
+                feedback.setText("Seat reserved for Java Enterprise!");
+                btnEnroll.setText("Enrolled ✓");
+                btnEnroll.setStyle("-fx-background-color: #10B981; -fx-text-fill: white; -fx-font-weight: bold;");
+                System.out.println("[Practice 1] Candidate enrolled in Java Enterprise &amp; Cloud.");
+            });
+
+            footer.getChildren().addAll(priceBox, btnEnroll);
+            card.getChildren().addAll(badgeRow, title, description, footer, feedback);
+            screen.getChildren().add(card);
+
+            System.out.println("Product Card Component Configured Successfully.");
+            Scene scene = new Scene(screen, 460, 420);
+            primaryStage.setTitle("Practice 1 - Themed Course Card");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+        }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(CardApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s15-javafx-layouts-ui" main="com.aptech.s15.practice.P1_ThemedProductCard"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== Practice 1: Themed Course Product Card ===
+Product Card Component Configured Successfully.
+[Stage.show()] Primary window displayed: 'Practice 1 - Themed Course Card' (460x420)
+[JavaFX Runtime] Step 3: Application active. Window title: 'Practice 1 - Themed Course Card'
+[JavaFX Runtime] Scene root: VBox [Width: 460.0, Height: 420.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+      </details>
+    </div>
+  </div>
+
+  <!-- Exercise 2 (Medium) -->
+  <div class="exercise">
+    <div class="exercise__header">
+      <span class="exercise__badge exercise__badge--med">Medium</span>
+      <span class="exercise__title">Exercise 2: Student Registration Form with Validation (P2_StudentRegistrationForm)</span>
+    </div>
+    <div class="exercise__body">
+      <p>
+        Construct a responsive student admissions form using <code>GridPane</code> that collects:
+      </p>
+      <ul>
+        <li>Candidate Name and Email Address in flexible text fields.</li>
+        <li>Program Track using a <code>ComboBox&lt;String&gt;</code>.</li>
+        <li>Academic Level (Diploma, Higher Diploma, Degree Transfer) using radio buttons bound to a <code>ToggleGroup</code>.</li>
+        <li>A prerequisite verification <code>CheckBox</code>.</li>
+        <li>Validation logic: If name or email is blank, or the prerequisite box is unchecked, display a red error message. When valid, display a green success banner summarizing candidate details.</li>
+      </ul>
+      <details>
+        <summary><b>Hints</b></summary>
+        <p>Remember that <code>grid.add()</code> takes <code>(columnIndex, rowIndex)</code>. Call <code>txtName.getText().trim().isEmpty()</code> to validate input. Obtain the selected radio button via <code>(RadioButton) levelGroup.getSelectedToggle()</code>.</p>
+      </details>
+      <details>
+        <summary><b>View Solution Code</b></summary>
+        <!--@code src="code/s15-javafx-layouts-ui/src/main/java/com/aptech/s15/practice/P2_StudentRegistrationForm.java" title="P2_StudentRegistrationForm.java"-->
+<pre class="numbered" data-file="P2_StudentRegistrationForm.java"><code class="lang-java">package com.aptech.s15.practice;
+
+import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.geometry.HPos;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+/**
+ * Session 15 - Practice Exercise 2 (Medium): Student Registration Form with Validation
+ *
+ * Requirements:
+ * - Build a structured multi-field registration form using GridPane.
+ * - Collect Candidate Name, Email Address, Degree Specialization, and Study Level.
+ * - Perform field verification (checks that inputs are non-blank).
+ * - Render an interactive validation readout with student summary confirmation.
+ */
+public class P2_StudentRegistrationForm {
+
+    public static class FormApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+            System.out.println("=== Practice 2: Student Registration Form with Validation ===");
+
+            VBox root = new VBox(18);
+            root.setPadding(new Insets(24));
+            root.setStyle("-fx-background-color: #0F172A;");
+
+            Label title = new Label("Candidate Admissions Processing Desk");
+            title.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #38BDF8;");
+
+            GridPane grid = new GridPane();
+            grid.setHgap(14);
+            grid.setVgap(14);
+
+            // Row 0: Full Name
+            Label lblName = new Label("Student Name:");
+            lblName.setStyle("-fx-text-fill: #94A3B8; -fx-font-weight: bold;");
+            TextField txtName = new TextField("Ada Lovelace");
+            txtName.setStyle("-fx-background-color: #1E293B; -fx-text-fill: white; -fx-border-color: #475569;");
+            GridPane.setHgrow(txtName, Priority.ALWAYS);
+            grid.add(lblName, 0, 0);
+            grid.add(txtName, 1, 0);
+
+            // Row 1: Email
+            Label lblEmail = new Label("Email Address:");
+            lblEmail.setStyle("-fx-text-fill: #94A3B8; -fx-font-weight: bold;");
+            TextField txtEmail = new TextField("ada.lovelace@aptech-edu.org");
+            txtEmail.setStyle("-fx-background-color: #1E293B; -fx-text-fill: white; -fx-border-color: #475569;");
+            grid.add(lblEmail, 0, 1);
+            grid.add(txtEmail, 1, 1);
+
+            // Row 2: Specialization
+            Label lblTrack = new Label("Program Track:");
+            lblTrack.setStyle("-fx-text-fill: #94A3B8; -fx-font-weight: bold;");
+            ComboBox&lt;String&gt; cmbTrack = new ComboBox&lt;&gt;(FXCollections.observableArrayList(
+                "Software Engineering (ADSE)",
+                "Network Security &amp; CyberOps",
+                "Data Science &amp; Predictive Analytics"
+            ));
+            cmbTrack.setValue("Software Engineering (ADSE)");
+            cmbTrack.setStyle("-fx-background-color: #1E293B; -fx-text-fill: white;");
+            grid.add(lblTrack, 0, 2);
+            grid.add(cmbTrack, 1, 2);
+
+            // Row 3: Study Level Radios
+            Label lblLevel = new Label("Academic Level:");
+            lblLevel.setStyle("-fx-text-fill: #94A3B8; -fx-font-weight: bold;");
+
+            ToggleGroup levelGroup = new ToggleGroup();
+            RadioButton rbDiploma = new RadioButton("Diploma");
+            RadioButton rbHigher = new RadioButton("Higher Diploma");
+            RadioButton rbDegree = new RadioButton("Degree Transfer");
+
+            rbDiploma.setToggleGroup(levelGroup);
+            rbHigher.setToggleGroup(levelGroup);
+            rbDegree.setToggleGroup(levelGroup);
+            rbHigher.setSelected(true);
+
+            rbDiploma.setStyle("-fx-text-fill: #E2E8F0;");
+            rbHigher.setStyle("-fx-text-fill: #E2E8F0;");
+            rbDegree.setStyle("-fx-text-fill: #E2E8F0;");
+
+            HBox radios = new HBox(12, rbDiploma, rbHigher, rbDegree);
+            grid.add(lblLevel, 0, 3);
+            grid.add(radios, 1, 3);
+
+            // Row 4: Terms Checkbox
+            CheckBox chkTerms = new CheckBox("I confirm that the applicant holds prerequisite O-Level credentials");
+            chkTerms.setSelected(true);
+            chkTerms.setStyle("-fx-text-fill: #94A3B8;");
+            grid.add(chkTerms, 1, 4);
+
+            // Row 5: Action Button
+            Button btnSubmit = new Button("Validate &amp; Register Candidate");
+            btnSubmit.setStyle("-fx-background-color: #2563EB; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20 8 20;");
+            GridPane.setHalignment(btnSubmit, HPos.RIGHT);
+            grid.add(btnSubmit, 1, 5);
+
+            // Confirmation Box
+            VBox summaryBox = new VBox(6);
+            summaryBox.setPadding(new Insets(12));
+            summaryBox.setStyle("-fx-background-color: #1E293B; -fx-border-color: #334155; -fx-border-radius: 6px;");
+
+            Label summaryTitle = new Label("Registration Status: Ready for validation");
+            summaryTitle.setStyle("-fx-text-fill: #38BDF8; -fx-font-weight: bold;");
+            Label summaryDetail = new Label("Fill candidate credentials and press Register.");
+            summaryDetail.setStyle("-fx-text-fill: #94A3B8; -fx-font-size: 11px;");
+
+            summaryBox.getChildren().addAll(summaryTitle, summaryDetail);
+
+            btnSubmit.setOnAction(e -&gt; {
+                String name = txtName.getText().trim();
+                String email = txtEmail.getText().trim();
+                if (name.isEmpty() || email.isEmpty()) {
+                    summaryTitle.setText("Validation Error: Missing required fields!");
+                    summaryTitle.setStyle("-fx-text-fill: #EF4444; -fx-font-weight: bold;");
+                    summaryDetail.setText("Please enter both Candidate Name and Email Address.");
+                } else if (!chkTerms.isSelected()) {
+                    summaryTitle.setText("Validation Error: Verification check required!");
+                    summaryTitle.setStyle("-fx-text-fill: #EF4444; -fx-font-weight: bold;");
+                    summaryDetail.setText("Prerequisite credential confirmation box must be checked.");
+                } else {
+                    RadioButton selectedLevel = (RadioButton) levelGroup.getSelectedToggle();
+                    String levelStr = selectedLevel != null ? selectedLevel.getText() : "Standard";
+                    summaryTitle.setText("Candidate Successfully Registered ✓");
+                    summaryTitle.setStyle("-fx-text-fill: #10B981; -fx-font-weight: bold;");
+                    summaryDetail.setText(
+                        "Student: " + name + " (" + email + ")\n" +
+                        "Program: " + cmbTrack.getValue() + " | Level: " + levelStr
+                    );
+                    System.out.println("[Practice 2] Successfully registered: " + name + " | " + cmbTrack.getValue());
+                }
+            });
+
+            root.getChildren().addAll(title, grid, summaryBox);
+
+            System.out.println("Student Registration Form Configured.");
+            Scene scene = new Scene(root, 640, 480);
+            primaryStage.setTitle("Practice 2 - Student Registration Form");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+        }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(FormApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s15-javafx-layouts-ui" main="com.aptech.s15.practice.P2_StudentRegistrationForm"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== Practice 2: Student Registration Form with Validation ===
+Student Registration Form Configured.
+[Stage.show()] Primary window displayed: 'Practice 2 - Student Registration Form' (640x480)
+[JavaFX Runtime] Step 3: Application active. Window title: 'Practice 2 - Student Registration Form'
+[JavaFX Runtime] Scene root: VBox [Width: 640.0, Height: 480.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+      </details>
+    </div>
+  </div>
+
+  <!-- Exercise 3 (Challenge) -->
+  <div class="exercise">
+    <div class="exercise__header">
+      <span class="exercise__badge exercise__badge--hard">Challenge</span>
+      <span class="exercise__title">Exercise 3: Live Telemetry Dashboard &amp; Dynamic Charts (P3_LiveTelemetryChart)</span>
+    </div>
+    <div class="exercise__body">
+      <p>
+        Build a dual-chart telemetry monitoring center for a campus datacenter:
+      </p>
+      <ul>
+        <li>A <code>LineChart&lt;String, Number&gt;</code> plotting server CPU load percentage over time.</li>
+        <li>A <code>PieChart</code> visualizing current memory allocation (Active JVM Heaps, Database Buffer Pool, OS Reserved).</li>
+        <li>A control bar with an interactive button: "Simulate Telemetry Pulse". Clicking the button appends a new timestamped data point to the line chart series and recalculates the JVM heap pie slice dynamically.</li>
+      </ul>
+      <details>
+        <summary><b>Hints</b></summary>
+        <p>Keep a reference to <code>cpuSeries.getData()</code> and invoke <code>.add(new XYChart.Data&lt;&gt;(timestamp, val))</code> on button click. For the pie chart, modify existing slice values via <code>resourceData.get(0).setPieValue(val)</code>.</p>
+      </details>
+      <details>
+        <summary><b>View Solution Code</b></summary>
+        <!--@code src="code/s15-javafx-layouts-ui/src/main/java/com/aptech/s15/practice/P3_LiveTelemetryChart.java" title="P3_LiveTelemetryChart.java"-->
+<pre class="numbered" data-file="P3_LiveTelemetryChart.java"><code class="lang-java">package com.aptech.s15.practice;
+
+import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.PieChart;
+import javafx.scene.chart.XYChart;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+/**
+ * Session 15 - Practice Exercise 3 (Challenge): Live Telemetry Dashboard &amp; Dynamic Charts
+ *
+ * Requirements:
+ * - Build a multi-chart telemetry center with LineChart (server memory &amp; CPU utilization)
+ *   and PieChart (storage allocation).
+ * - Implement dynamic data appending: Clicking "Simulate Live Telemetry Tick" pushes new
+ *   metrics to the line chart series and dynamically adjusts pie slices.
+ * - Manage category axes, numeric ranges, and live diagnostic readouts.
+ */
+public class P3_LiveTelemetryChart {
+
+    public static class TelemetryApp extends Application {
+        private int tickCount = 4;
+
+        @Override
+        public void start(Stage primaryStage) {
+            System.out.println("=== Practice 3: Live Telemetry Dashboard &amp; Dynamic Charts ===");
+
+            VBox root = new VBox(18);
+            root.setPadding(new Insets(20));
+            root.setStyle("-fx-background-color: #0F172A;");
+
+            Label header = new Label("Campus Datacenter Live Telemetry Stream");
+            header.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #38BDF8;");
+
+            HBox chartsBox = new HBox(16);
+            chartsBox.setAlignment(Pos.CENTER);
+
+            // 1. LineChart: CPU &amp; Memory Load over Time
+            CategoryAxis timeAxis = new CategoryAxis();
+            timeAxis.setLabel("Clock Tick (Seconds)");
+
+            NumberAxis loadAxis = new NumberAxis("Utilization (%)", 0, 100, 10);
+
+            LineChart&lt;String, Number&gt; telemetryChart = new LineChart&lt;&gt;(timeAxis, loadAxis);
+            telemetryChart.setTitle("Cluster CPU Utilization");
+            telemetryChart.setPrefSize(440, 320);
+
+            XYChart.Series&lt;String, Number&gt; cpuSeries = new XYChart.Series&lt;&gt;();
+            cpuSeries.setName("Node-Alpha CPU %");
+            cpuSeries.getData().add(new XYChart.Data&lt;&gt;("10:00:00", 38));
+            cpuSeries.getData().add(new XYChart.Data&lt;&gt;("10:00:05", 44));
+            cpuSeries.getData().add(new XYChart.Data&lt;&gt;("10:00:10", 62));
+            cpuSeries.getData().add(new XYChart.Data&lt;&gt;("10:00:15", 58));
+
+            telemetryChart.getData().add(cpuSeries);
+
+            // 2. PieChart: Datacenter Resource Distribution
+            ObservableList&lt;PieChart.Data&gt; resourceData = FXCollections.observableArrayList(
+                new PieChart.Data("Active JVM Heaps", 45),
+                new PieChart.Data("Database Buffer Pool", 30),
+                new PieChart.Data("System OS Reserved", 25)
+            );
+
+            PieChart resourcePie = new PieChart(resourceData);
+            resourcePie.setTitle("Memory Allocation");
+            resourcePie.setPrefSize(380, 320);
+
+            chartsBox.getChildren().addAll(telemetryChart, resourcePie);
+
+            // 3. Control Panel: Push Live Telemetry Tick
+            HBox controlBar = new HBox(14);
+            controlBar.setAlignment(Pos.CENTER_LEFT);
+            controlBar.setPadding(new Insets(10, 14, 10, 14));
+            controlBar.setStyle("-fx-background-color: #1E293B; -fx-background-radius: 8px;");
+
+            Button btnTick = new Button("⚡ Simulate Telemetry Pulse");
+            btnTick.setStyle("-fx-background-color: #2563EB; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16 8 16;");
+
+            Label statusLabel = new Label("Telemetry status: Listening on UDP:9020 | Ticks logged: 4");
+            statusLabel.setStyle("-fx-text-fill: #10B981; -fx-font-size: 11px;");
+            HBox.setHgrow(statusLabel, Priority.ALWAYS);
+
+            btnTick.setOnAction(e -&gt; {
+                tickCount++;
+                int simulatedLoad = 40 + (int) (Math.random() * 45);
+                String timestamp = String.format("10:00:%02d", tickCount * 5);
+                cpuSeries.getData().add(new XYChart.Data&lt;&gt;(timestamp, simulatedLoad));
+
+                // Update pie slices
+                resourceData.get(0).setPieValue(simulatedLoad);
+
+                statusLabel.setText(String.format("Logged pulse [%s]: CPU load %d%% | Total ticks: %d", timestamp, simulatedLoad, tickCount));
+                System.out.println("[Telemetry Tick] Appended " + timestamp + " -&gt; " + simulatedLoad + "%");
+            });
+
+            controlBar.getChildren().addAll(btnTick, statusLabel);
+
+            root.getChildren().addAll(header, chartsBox, controlBar);
+
+            System.out.println("Live Telemetry Dashboard configured with 2 chart visualizers.");
+            Scene scene = new Scene(root, 880, 480);
+            primaryStage.setTitle("Practice 3 - Live Telemetry Chart");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+        }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(TelemetryApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+        <!--@output project="code/s15-javafx-layouts-ui" main="com.aptech.s15.practice.P3_LiveTelemetryChart"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== Practice 3: Live Telemetry Dashboard &amp; Dynamic Charts ===
+Live Telemetry Dashboard configured with 2 chart visualizers.
+[Stage.show()] Primary window displayed: 'Practice 3 - Live Telemetry Chart' (880x480)
+[JavaFX Runtime] Step 3: Application active. Window title: 'Practice 3 - Live Telemetry Chart'
+[JavaFX Runtime] Scene root: VBox [Width: 880.0, Height: 480.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+      </details>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- CHEAT SHEET                                                               -->
+  <!-- ========================================================================= -->
+  <h2>Session 15 Quick Reference Cheat Sheet</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Class / API</th>
+          <th>Type</th>
+          <th>Key Methods &amp; Properties</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>BorderPane</code></td>
+          <td>Layout Pane</td>
+          <td><code>setTop(Node)</code>, <code>setBottom(Node)</code>, <code>setLeft(Node)</code>, <code>setRight(Node)</code>, <code>setCenter(Node)</code></td>
+          <td>5-zone master layout container. Center region claims all surplus window space.</td>
+        </tr>
+        <tr>
+          <td><code>HBox</code> / <code>VBox</code></td>
+          <td>Layout Pane</td>
+          <td><code>setSpacing(double)</code>, <code>setAlignment(Pos)</code>, <code>HBox.setHgrow(node, Priority)</code>, <code>VBox.setVgrow(node, Priority)</code></td>
+          <td>Single-axis linear horizontal or vertical flow with flexible growth rules.</td>
+        </tr>
+        <tr>
+          <td><code>GridPane</code></td>
+          <td>Layout Pane</td>
+          <td><code>add(node, col, row)</code>, <code>add(node, col, row, colSpan, rowSpan)</code>, <code>setHgap(d)</code>, <code>setVgap(d)</code></td>
+          <td>2D Cartesian coordinate matrix for precise multi-column form alignment.</td>
+        </tr>
+        <tr>
+          <td><code>FlowPane</code></td>
+          <td>Layout Pane</td>
+          <td><code>setOrientation(Orientation)</code>, <code>setHgap(d)</code>, <code>setVgap(d)</code></td>
+          <td>Wraps consecutive children horizontally or vertically when boundary is reached.</td>
+        </tr>
+        <tr>
+          <td><code>TilePane</code></td>
+          <td>Layout Pane</td>
+          <td><code>setPrefColumns(int)</code>, <code>setPrefRows(int)</code>, <code>setHgap(d)</code>, <code>setVgap(d)</code></td>
+          <td>Enforces strictly uniform cell dimensions across all child elements.</td>
+        </tr>
+        <tr>
+          <td><code>StackPane</code></td>
+          <td>Layout Pane</td>
+          <td><code>getChildren().addAll(bg, fg)</code>, <code>setAlignment(Pos)</code></td>
+          <td>Layers children in back-to-front Z-order (badges over cards, overlays).</td>
+        </tr>
+        <tr>
+          <td><code>AnchorPane</code></td>
+          <td>Layout Pane</td>
+          <td><code>setTopAnchor(node, d)</code>, <code>setBottomAnchor(node, d)</code>, <code>setLeftAnchor(node, d)</code>, <code>setRightAnchor(node, d)</code></td>
+          <td>Pins child boundaries to fixed pixel offsets from container edges.</td>
+        </tr>
+        <tr>
+          <td><code>ToggleGroup</code></td>
+          <td>Control Model</td>
+          <td><code>getToggles()</code>, <code>getSelectedToggle()</code>, <code>selectToggle(Toggle)</code></td>
+          <td>Manages mutual exclusion for groups of RadioButton or ToggleButton controls.</td>
+        </tr>
+        <tr>
+          <td><code>PieChart</code></td>
+          <td>Data Chart</td>
+          <td><code>PieChart.Data(name, val)</code>, <code>setData(ObservableList)</code>, <code>setTitle(str)</code>, <code>setClockwise(b)</code></td>
+          <td>Proportional circular distribution chart backed by reactive observable list.</td>
+        </tr>
+        <tr>
+          <td><code>XYChart</code></td>
+          <td>Data Chart</td>
+          <td><code>XYChart.Series&lt;X,Y&gt;</code>, <code>XYChart.Data&lt;X,Y&gt;</code>, <code>BarChart</code>, <code>LineChart</code></td>
+          <td>2-axis Cartesian charts pairing a CategoryAxis with a NumberAxis.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- FURTHER STUDY                                                             -->
+  <!-- ========================================================================= -->
+  <h2>Further Study &amp; External References</h2>
+  <ul>
+    <li><a href="https://openjfx.io/javadoc/21/javafx.graphics/javafx/scene/layout/package-summary.html" target="_blank" rel="noopener">OpenJFX 21 Layout API Documentation</a> &mdash; Official specifications for BorderPane, GridPane, and Region constraints.</li>
+    <li><a href="https://openjfx.io/javadoc/21/javafx.graphics/javafx/scene/doc-files/cssref.html" target="_blank" rel="noopener">JavaFX CSS Reference Guide (Official Oracle / OpenJFX)</a> &mdash; Complete dictionary of all <code>-fx-*</code> styling properties, pseudoclasses, and color notations.</li>
+    <li><a href="https://openjfx.io/javadoc/21/javafx.controls/javafx/scene/chart/package-summary.html" target="_blank" rel="noopener">OpenJFX 21 Charting API</a> &mdash; In-depth architectural guide for PieChart, XYChart, BarChart, and LineChart.</li>
+  </ul>
+
+  <!-- ========================================================================= -->
+  <!-- SUMMARY & BRIDGE TO SESSION 16                                            -->
+  <!-- ========================================================================= -->
+  <section class="summary">
+    <h2>Session Summary &amp; Looking Ahead</h2>
+    <p>
+      Today, you completed your mastery of core JavaFX user interface engineering. You progressed from raw vector
+      drawings to building fully responsive, enterprise-grade desktop portals:
+    </p>
+    <ul>
+      <li>You mastered <strong>BorderPane</strong> 5-zone application framing and <strong>HBox/VBox</strong> linear flow with <code>Priority.ALWAYS</code>.</li>
+      <li>You aligned complex multi-field data entry screens with <strong>GridPane</strong> 2D coordinates and column spans.</li>
+      <li>You leveraged <strong>FlowPane</strong>, <strong>TilePane</strong>, <strong>StackPane</strong>, and <strong>AnchorPane</strong> for specialized UI layouts.</li>
+      <li>You skinned your entire application with a polished dark theme using the <strong>JavaFX CSS Box Model</strong> and mandatory <code>-fx-*</code> vendor rules.</li>
+      <li>You configured interactive controls (<code>ComboBox</code>, <code>ToggleGroup</code>, <code>DatePicker</code>) and connected reactive listeners between <code>Slider</code> and <code>ProgressBar</code>.</li>
+      <li>You visualized business intelligence metrics using <strong>PieChart</strong> and multi-series <strong>BarChart</strong> and <strong>LineChart</strong> implementations.</li>
+    </ul>
+    <p>
+      <strong>Looking Ahead to Session 16</strong>: You have now mastered the foundational pillars of modern Java
+      desktop development &mdash; utility APIs, concurrency, I/O, unit testing, scene graphs, 2D/3D shapes, transforms,
+      layouts, CSS, and business charts. In Session 16, we embark on our <strong>Comprehensive Enterprise Review &amp;
+      Final Capstone Integration</strong>, preparing you for the official Aptech semester examination and professional
+      software engineering portfolio showcase!
+    </p>
+  </section>
+
+</main>
+
+<script src="../assets/js/course.js"></script>
+</body>
+</html>

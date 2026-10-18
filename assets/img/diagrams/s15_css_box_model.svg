@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 400" font-family="system-ui,-apple-system,sans-serif">
+  <defs>
+    <linearGradient id="cssHdr" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#ec4899"/><stop offset="100%" stop-color="#f43f5e"/></linearGradient>
+    <linearGradient id="boxContent" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0284c7"/><stop offset="100%" stop-color="#0369a1"/></linearGradient>
+  </defs>
+
+  <rect width="820" height="400" rx="16" fill="#0b1120"/>
+  
+  <text x="410" y="32" text-anchor="middle" fill="#94a3b8" font-size="14" font-weight="600">JavaFX CSS Box Model &amp; Skinning Architecture</text>
+
+  <!-- Left: The JavaFX CSS Box Model (Nested concentric frames) -->
+  <g transform="translate(40, 55)">
+    <!-- Outer Margin / Layout Bounds -->
+    <rect width="440" height="320" rx="16" fill="#1e293b" stroke="#475569" stroke-dasharray="4,4" stroke-width="1.5"/>
+    <text x="20" y="24" fill="#94a3b8" font-size="11" font-weight="700">Margin / Parent Layout Space (HBox/VBox Spacing)</text>
+
+    <!-- Border Layer (-fx-border-color, -fx-border-width, -fx-border-radius) -->
+    <rect x="25" y="38" width="390" height="260" rx="14" fill="#0f172a" stroke="#f43f5e" stroke-width="3"/>
+    <text x="40" y="58" fill="#f43f5e" font-size="11" font-weight="700">-fx-border-color &amp; -fx-border-radius (Outer Stroke)</text>
+
+    <!-- Padding Layer (-fx-padding) -->
+    <rect x="50" y="74" width="340" height="200" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-dasharray="3,3" stroke-width="1.5"/>
+    <text x="65" y="94" fill="#f59e0b" font-size="11" font-weight="700">-fx-padding (Internal Breathing Room)</text>
+
+    <!-- Background Layer & Content (-fx-background-color, -fx-background-radius) -->
+    <rect x="75" y="110" width="290" height="140" rx="8" fill="url(#boxContent)" stroke="#38bdf8" stroke-width="1.5"/>
+    <text x="220" y="145" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700">Node Content Area (Text &amp; Graphic)</text>
+    <text x="220" y="168" text-anchor="middle" fill="#bae6fd" font-size="11">-fx-background-color: #0284c7;</text>
+    <text x="220" y="186" text-anchor="middle" fill="#bae6fd" font-size="11">-fx-background-radius: 8px;</text>
+    <text x="220" y="204" text-anchor="middle" fill="#bae6fd" font-size="11">-fx-text-fill: #ffffff;</text>
+  </g>
+
+  <!-- Right: CSS Selectors & Pseudo-classes -->
+  <g transform="translate(510, 55)">
+    <rect width="270" height="320" rx="12" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+    <text x="135" y="28" text-anchor="middle" fill="#38bdf8" font-size="13" font-weight="700">JavaFX CSS Selectors</text>
+
+    <!-- 1. Type Selector -->
+    <rect x="18" y="44" width="234" height="48" rx="6" fill="#0f172a" stroke="#475569"/>
+    <text x="28" y="63" fill="#a78bfa" font-size="11" font-weight="700">Type Selector: .button</text>
+    <text x="28" y="80" fill="#94a3b8" font-size="10">Applies to all Button instances</text>
+
+    <!-- 2. Class Selector -->
+    <rect x="18" y="100" width="234" height="48" rx="6" fill="#0f172a" stroke="#475569"/>
+    <text x="28" y="119" fill="#38bdf8" font-size="11" font-weight="700">Class Selector: .kpi-card</text>
+    <text x="28" y="136" fill="#94a3b8" font-size="10">node.getStyleClass().add("kpi-card")</text>
+
+    <!-- 3. ID Selector -->
+    <rect x="18" y="156" width="234" height="48" rx="6" fill="#0f172a" stroke="#475569"/>
+    <text x="28" y="175" fill="#10b981" font-size="11" font-weight="700">ID Selector: #enrol-btn</text>
+    <text x="28" y="192" fill="#94a3b8" font-size="10">node.setId("enrol-btn") (Unique)</text>
+
+    <!-- 4. Pseudo-classes -->
+    <rect x="18" y="212" width="234" height="92" rx="6" fill="#0f172a" stroke="#f43f5e"/>
+    <text x="28" y="232" fill="#f43f5e" font-size="11" font-weight="700">Dynamic Pseudo-Classes</text>
+    <text x="28" y="250" fill="#cbd5e1" font-size="10">.button:hover { -fx-opacity: 0.9; }</text>
+    <text x="28" y="268" fill="#cbd5e1" font-size="10">.button:pressed { -fx-scale-x: 0.98; }</text>
+    <text x="28" y="286" fill="#cbd5e1" font-size="10">.text-field:focused { -fx-border-color: #38bdf8; }</text>
+  </g>
+</svg>
