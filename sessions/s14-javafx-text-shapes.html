@@ -1,0 +1,2705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session 14 — JavaFX Text, Transformations and Shapes</title>
+  <meta name="description" content="Session 14 of Building Rich Java Applications with JavaFX and AI Tools: JavaFX Text, Transformations and Shapes. Master 2D and 3D vector graphics, advanced typography with Text and TextFlow, baseline coordinate positioning, geometric transformations (translation, rotation with pivots, scaling, shearing), color gradients (LinearGradient, RadialGradient), Constructive Solid Geometry (CSG union, intersection, subtraction), 3D primitives (Box, Cylinder, Sphere) with PhongMaterial and lighting, and hardware-accelerated animations using transitions. Complete with runnable examples, interactive walkthroughs, SVG diagrams, and guided lab.">
+  <link rel="stylesheet" href="../assets/css/course.css">
+  <script>try{var t=localStorage.getItem("javafx.theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+  <script>window.PAGE = "s14";</script>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ===== 1. HERO ========================================================= -->
+  <section class="hero">
+    <span class="tag">Week 4 &middot; Day 2 &middot; Session 14 &middot; 2 hours in class + practice at home</span>
+    <h1>Session 14 &mdash; JavaFX Text, Transformations and Shapes</h1>
+    <p class="lede">
+      In Session 13, you stepped into the visual desktop and discovered the Theatre Metaphor &mdash; stages,
+      scenes, and scene graphs. Today, you take full command of the visual canvas. You will learn to draw,
+      style, transform, and animate custom 2D and 3D graphics with mathematical precision. You will discover
+      why JavaFX treats typography as geometric vectors, how to spin and scale shapes around custom pivot points,
+      how to carve complex corporate badges out of basic primitives with boolean Constructive Solid Geometry,
+      how to render true 3D meshes with specular lighting, and how to bring static illustrations to life with
+      smooth GPU-accelerated transitions.
+    </p>
+    <div class="meta">
+      <span>&#128218; Learner's Guide: SG &middot; XP &middot; TG &mdash; Session 12</span>
+      <span>&#9201; ~2 hours in class</span>
+      <span>&#9989; Before this: Session 13 (Intro to JavaFX)</span>
+      <span>&#128187; Guided Lab: Aptech Vector Shape Studio &amp; Animated Brand Emblem</span>
+    </div>
+  </section>
+
+  <!-- ===== 2. OBJECTIVES =================================================== -->
+  <div class="objectives">
+    <b>&#127919; By the end of this session you can&hellip;</b>
+    <ol>
+      <li><strong>Explain</strong> the architecture of the <code>Text</code> node, configure font weights, postures, and baseline coordinates, and assemble multi-style inline documents using <code>TextFlow</code>.</li>
+      <li><strong>Apply</strong> the four fundamental 2D geometric transformations (<code>Translate</code>, <code>Rotate</code>, <code>Scale</code>, and <code>Shear</code>) and compute custom pivot points (<code>pivotX</code>, <code>pivotY</code>).</li>
+      <li><strong>Distinguish</strong> between shorthand node transform properties and cumulative <code>getTransforms()</code> lists, and prove why transformation order matters.</li>
+      <li><strong>Construct</strong> 2D vector primitives including <code>Line</code>, <code>Rectangle</code> (with rounded corners), <code>Circle</code>, <code>Ellipse</code>, <code>Polygon</code>, and <code>Arc</code> (Open, Chord, Round).</li>
+      <li><strong>Style</strong> shapes with <code>LinearGradient</code>, <code>RadialGradient</code>, custom cycle methods, and advanced stroke properties (stroke types, caps, joins, and dash arrays).</li>
+      <li><strong>Apply</strong> Constructive Solid Geometry (CSG) boolean operations (<code>Shape.union()</code>, <code>Shape.intersect()</code>, <code>Shape.subtract()</code>) to carve compound vector iconography.</li>
+      <li><strong>Build</strong> hardware-accelerated 3D scenes using <code>Shape3D</code> meshes (<code>Box</code>, <code>Cylinder</code>, <code>Sphere</code>), <code>PhongMaterial</code> diffuse and specular shaders, <code>PointLight</code>/<code>AmbientLight</code> rigs, and GPU depth buffering.</li>
+      <li><strong>Choreograph</strong> smooth hardware-accelerated animations using <code>RotateTransition</code>, <code>ScaleTransition</code>, <code>ParallelTransition</code>, and <code>SequentialTransition</code>.</li>
+    </ol>
+  </div>
+
+  <!-- ===== 3. TABLE OF CONTENTS ============================================ -->
+  <nav class="toc" data-toc aria-label="On this page"><b>On this page</b></nav>
+
+
+  <!-- ===== 5. ROADMAP ====================================================== -->
+  <h2>Your Roadmap for Today</h2>
+  <div class="roadmap">
+    <a href="#part-1-text">Part 1: JavaFX Text, Typography &amp; TextFlow</a>
+    <a href="#part-2-transforms">Part 2: 2D Geometric Transformations &amp; Pivot Points</a>
+    <a href="#part-3-shapes-2d">Part 3: Two-Dimensional Shape Primitives &amp; Stroke Styling</a>
+    <a href="#part-4-gradients">Part 4: Color Gradients &amp; Complex Surface Paints</a>
+    <a href="#part-5-csg">Part 5: Constructive Solid Geometry (CSG) &amp; Compound Shapes</a>
+    <a href="#part-6-shapes-3d">Part 6: 3D Shapes, Phong Lighting &amp; Depth Buffering</a>
+    <a href="#part-7-animations">Part 7: Hardware-Accelerated Shape Animations &amp; Transitions</a>
+    <a href="#lab-studio">Guided Lab: Aptech Vector Shape Studio</a>
+  </div>
+
+  <!-- ===== 6. WHY THIS MATTERS ============================================= -->
+  <h2>Why This Matters</h2>
+  <p>
+    In traditional user interface development, if a designer wanted an icon, a custom button border, a gauge,
+    or a badge, developers had to import static raster images (PNG, JPEG, GIF). Raster graphics have severe
+    weaknesses in modern software: they pixelate when scaled on high-DPI "Retina" or 4K monitors, consume large
+    amounts of memory, and cannot be dynamically recolored, rotated, or adapted to dark mode without loading
+    entirely new graphic files.
+  </p>
+  <p>
+    <strong>JavaFX solves this completely through resolution-independent vector graphics and retained-mode geometry.</strong>
+    Instead of storing static grids of pixels, JavaFX stores geometric mathematical descriptions: lines, curves,
+    angles, radii, color gradients, and transformation matrices. The Prism graphics engine streams these formulas
+    directly to your GPU via DirectX, Metal, or OpenGL shaders, rendering razor-sharp visual elements at 60 or
+    120 frames per second at any display resolution.
+  </p>
+
+  <div class="callout callout--analogy"><span class="callout__i">&#127912;</span>
+    <div class="callout__b"><b>Analogy &mdash; The Vector Stained-Glass Studio &amp; 3D Sculptor</b>
+      Working with JavaFX Text, Transforms, and Shapes is exactly like running a precision master art studio:
+      <ul>
+        <li><strong>The 2D Shapes (<code>Shape</code>)</strong> are sheets of stained glass cut with exact laser templates (rectangles, circles, polygons, and bezier curves).</li>
+        <li><strong>Fills &amp; Gradients (<code>Paint</code>)</strong> are the liquid pigments and pearlescent glazes applied to the glass. A linear gradient flows color smoothly from edge to edge, while a radial gradient radiates light outward like a glowing jewel.</li>
+        <li><strong>Transformations (<code>Transform</code>)</strong> are the mechanical drafting arms on your easel. You can slide the glass across the table (translation), turn it around a thumb-tack pin (rotation around a pivot), stretch it under a magnifying glass (scaling), or tilt it sideways into italic slant (shearing) &mdash; all without ever recutting the glass!</li>
+        <li><strong>Constructive Solid Geometry (CSG)</strong> is your precision laser cutter: you lay two pieces of glass together and weld them into one (<code>union</code>), keep only the section where they overlap (<code>intersect</code>), or use one shape as a metal punch to stamp a hole clean through another (<code>subtract</code>).</li>
+        <li><strong>3D Shapes (<code>Shape3D</code>)</strong> move off the drafting table into physical marble sculpture: you shape 3D boxes, cylinders, and spheres, illuminate them with spotlights, and turn them around depth axes in 3D space.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Editorial Cartoon Illustration -->
+  <div style="text-align:center;margin:2rem 0">
+    <img src="../assets/img/cartoons/s14_text_transforms_shapes.jpg" alt="Editorial cartoon illustrating JavaFX Text, Transformations, 2D and 3D Shapes in an artist vector studio" style="max-width:100%;height:auto;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,0.15);border:1px solid var(--border,#3a4252)">
+    <p class="text-sm text-faint" style="margin-top:0.5rem">Figure 14.1 &mdash; The JavaFX Vector Studio: Typography, 2D Primitives, Transformations, CSG Boolean Carving, and 3D Shaded Meshes.</p>
+  </div>
+
+  <!-- ===== 7. PART 1 — TEXT & TYPOGRAPHY ==================================== -->
+  <h2 id="part-1-text"><span class="eyebrow">Part 1 of 7</span> JavaFX Text, Typography &amp; TextFlow</h2>
+  <p>
+    In Session 13, you used <code>javafx.scene.control.Label</code> to display text. A <code>Label</code> is a
+    high-level user interface <em>Control</em> equipped with borders, padding, graphic icons, and tooltips.
+    However, when you need fine-grained graphic typography &mdash; such as text with gradient fills, outlined
+    strokes, complex text wrapping, or mixed inline styles &mdash; JavaFX provides the specialized
+    <strong><code>javafx.scene.text.Text</code></strong> node.
+  </p>
+  <p>
+    Crucially, <code>Text</code> does not inherit from <code>Control</code>; it inherits directly from
+    <strong><code>javafx.scene.shape.Shape</code></strong>! This means every character glyph is treated as a true
+    vector shape. You can stroke its outline, fill its interior with a gradient, apply drop shadows, and scale or
+    rotate it just like a circle or rectangle.
+  </p>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th><code>javafx.scene.control.Label</code></th>
+          <th><code>javafx.scene.text.Text</code></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Superclass</strong></td>
+          <td><code>javafx.scene.control.Control</code> &rarr; <code>Region</code></td>
+          <td><strong><code>javafx.scene.shape.Shape</code> &rarr; <code>Node</code></strong></td>
+        </tr>
+        <tr>
+          <td><strong>Primary Purpose</strong></td>
+          <td>UI forms, buttons, labeled input fields, status banners.</td>
+          <td>Graphic typography, vector art, document rendering, canvas labels.</td>
+        </tr>
+        <tr>
+          <td><strong>Styling Mechanism</strong></td>
+          <td>CSS properties (<code>-fx-text-fill</code>, <code>-fx-font</code>).</td>
+          <td>Shape methods (<code>setFill()</code>, <code>setStroke()</code>, <code>setStrokeWidth()</code>).</td>
+        </tr>
+        <tr>
+          <td><strong>Coordinate Origin</strong></td>
+          <td>Top-left corner of the control bounding box (0, 0).</td>
+          <td><strong>The font baseline</strong> at (x, y). Character descenders hang below!</td>
+        </tr>
+        <tr>
+          <td><strong>Rich Inline Text</strong></td>
+          <td>Single font and single color for entire label.</td>
+          <td>Multiple <code>Text</code> spans combined inside a <code>TextFlow</code> container.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Font Loading and Typography Properties</h3>
+  <p>
+    Fonts in JavaFX are represented by the immutable <strong><code>javafx.scene.text.Font</code></strong> class.
+    You create fonts using static factory methods that accept the font family name, weight (thin to black),
+    posture (regular or italic), and point size:
+  </p>
+  <pre><code class="lang-java">// Standard font factory
+Font headerFont = Font.font("Segoe UI", FontWeight.BOLD, FontPosture.REGULAR, 26);
+Font italicFont = Font.font("Georgia", FontWeight.NORMAL, FontPosture.ITALIC, 14);
+
+// Query all font families available on the operating system
+List&lt;String&gt; families = Font.getFamilies();</code></pre>
+
+  <h3>The Text Baseline Coordinate Trap</h3>
+  <p>
+    The most common bug encountered by beginners when working with <code>Text</code> is assuming that
+    <code>setX(0)</code> and <code>setY(0)</code> places the text at the top-left corner of the window.
+    <strong>It does not!</strong> In JavaFX, the <code>y</code> coordinate of a <code>Text</code> node specifies
+    the <strong>baseline</strong> upon which the letters sit. If you position text at <code>y = 0</code>, the
+    entire text body sits above the top edge of the window in negative coordinate space and is completely invisible!
+    To make text visible inside a manual coordinate pane, the <code>y</code> coordinate must be at least equal to
+    the font size (e.g., <code>y = 24</code> for a 20pt font).
+  </p>
+
+  <h3>TextFlow: Rich Multi-Style Inline Paragraphs</h3>
+  <p>
+    If you want a paragraph where some words are bold, some are red, and others are clickable links, placing multiple
+    individual <code>Text</code> nodes in an <code>HBox</code> will fail because <code>HBox</code> does not wrap
+    words across multiple lines. The solution is <strong><code>javafx.scene.text.TextFlow</code></strong>.
+    <code>TextFlow</code> lays out its child <code>Text</code> nodes like a continuous flowing document, wrapping
+    words smoothly from line to line while preserving individual colors, fonts, and inline nodes:
+  </p>
+  <pre><code class="lang-java">Text t1 = new Text("Enrolment Status: ");
+t1.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+
+Text t2 = new Text("APPROVED");
+t2.setFont(Font.font("Segoe UI", FontWeight.BLACK, 14));
+t2.setFill(Color.GREEN);
+
+TextFlow flow = new TextFlow(t1, t2);</code></pre>
+
+  <h3>Worked Example: Text and Typography Inspection</h3>
+  <p>
+    Let us run <code>E01_TextAndTypography.java</code> to inspect font metrics, outline strokes, wrapping widths,
+    and <code>TextFlow</code> assembly.
+  </p>
+
+  <!-- Embedded Source Code for E01 -->
+  <!--@code src="code/s14-javafx-text-shapes/src/main/java/com/aptech/s14/E01_TextAndTypography.java"-->
+<pre class="numbered" data-file="E01_TextAndTypography.java"><code class="lang-java">package com.aptech.s14;
+
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontPosture;
+import javafx.scene.text.FontSmoothingType;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextAlignment;
+import javafx.scene.text.TextBoundsType;
+import javafx.scene.text.TextFlow;
+import javafx.stage.Stage;
+
+/**
+ * Session 14 - Example 1: JavaFX Text and Typography
+ *
+ * Demonstrates:
+ * 1. The Text node (subclass of Shape) vs the Control Label.
+ * 2. Typography styling: Font families, weights, postures, and sizes.
+ * 3. Shape fill, stroke, and strokeWidth applied to text glyphs.
+ * 4. Text alignment, wrapping width, and baseline origin mechanics.
+ * 5. TextBoundsType: LOGICAL (for layout flow) vs VISUAL (tight glyph bounding box).
+ * 6. TextFlow: Combining multiple styled Text nodes with inline formatting.
+ */
+public class E01_TextAndTypography {
+
+    public static class TextApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+        System.out.println("=== JavaFX Text &amp; Typography Inspection ===");
+
+        // 1. Primary Heading: Rich Typography with fill &amp; stroke
+        Text heading = new Text("Aptech Graphic Studio");
+        heading.setFont(Font.font("Segoe UI", FontWeight.BOLD, FontPosture.REGULAR, 26));
+        heading.setFill(Color.CORNFLOWERBLUE);
+        heading.setStroke(Color.DARKSLATEBLUE);
+        heading.setStrokeWidth(1.2);
+        heading.setUnderline(true);
+
+        // 2. Subheading: Demonstrating baseline coordinate trap
+        // Text coordinates (X, Y) specify the font BASELINE, not the top-left corner!
+        Text baselineNote = new Text(0, 20, "Coordinates (X, Y) place the text BASELINE, not top-left.");
+        baselineNote.setFont(Font.font("Verdana", FontWeight.NORMAL, FontPosture.ITALIC, 13));
+        baselineNote.setFill(Color.DODGERBLUE);
+
+        // 3. Paragraph Text with automatic wrapping and justification
+        Text paragraph = new Text(
+            "JavaFX treats every Text node as a true geometric Shape. Because Text inherits from " +
+            "javafx.scene.shape.Shape, you can apply geometric fills, linear gradients, outline strokes, " +
+            "clipping paths, and hardware-accelerated 2D transforms directly to typography."
+        );
+        paragraph.setFont(Font.font("Segoe UI", 14));
+        paragraph.setFill(Color.DARKGRAY);
+        paragraph.setWrappingWidth(440);
+        paragraph.setTextAlignment(TextAlignment.JUSTIFY);
+
+        // 4. Bounds Type: Logical vs Visual
+        Text boundsDemo = new Text("Glyph Bounding Box");
+        boundsDemo.setFont(Font.font("Arial", FontWeight.BOLD, 18));
+        boundsDemo.setBoundsType(TextBoundsType.VISUAL);
+        boundsDemo.setFontSmoothingType(FontSmoothingType.LCD);
+
+        // 5. TextFlow: Rich inline document structure
+        Text flowPart1 = new Text("Status: ");
+        flowPart1.setFont(Font.font("Segoe UI", FontWeight.BOLD, 13));
+        flowPart1.setFill(Color.BLACK);
+
+        Text flowPart2 = new Text("Hardware Acceleration Active ");
+        flowPart2.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 13));
+        flowPart2.setFill(Color.GREEN);
+
+        Text flowPart3 = new Text("[Prism D3D/Metal]");
+        flowPart3.setFont(Font.font("Courier New", FontWeight.BOLD, 12));
+        flowPart3.setFill(Color.CRIMSON);
+
+        TextFlow statusFlow = new TextFlow(flowPart1, flowPart2, flowPart3);
+        statusFlow.setPadding(new Insets(8));
+
+        // Assemble Layout
+        VBox root = new VBox(14, heading, baselineNote, paragraph, boundsDemo, statusFlow);
+        root.setPadding(new Insets(20));
+        root.setAlignment(Pos.TOP_LEFT);
+
+        // Print node metrics to console for verification
+        System.out.println("Heading Font: " + heading.getFont());
+        System.out.println("Heading Fill: " + heading.getFill());
+        System.out.println("Heading Stroke: " + heading.getStroke() + " (width=" + heading.getStrokeWidth() + "px)");
+        System.out.println("Paragraph Wrapping Width: " + paragraph.getWrappingWidth() + "px");
+        System.out.println("Bounds Demo Local Bounds: " + boundsDemo.getBoundsInLocal());
+        System.out.println("TextFlow child count: " + statusFlow.getChildren().size());
+
+        Scene scene = new Scene(root, 520, 360);
+        primaryStage.setTitle("JavaFX Text &amp; Typography Demo");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(TextApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+
+  <div class="tablewrap">
+    <table class="walkthrough">
+      <thead><tr><th>Lines</th><th>What it does</th><th>Why it matters</th></tr></thead>
+      <tbody>
+        <tr><td><code>36&ndash;43</code></td><td>Instantiates <code>Text</code> with <code>Font.font("Segoe UI", FontWeight.BOLD, ...)</code>, fill color, and stroke outline.</td><td>Demonstrates that <code>Text</code> is a shape whose outline and interior are colored independently.</td></tr>
+        <tr><td><code>47&ndash;50</code></td><td>Demonstrates baseline placement at <code>(0, 20)</code>.</td><td>Guarantees text renders below the viewport ceiling instead of vanishing off-screen.</td></tr>
+        <tr><td><code>53&ndash;62</code></td><td>Sets <code>setWrappingWidth(440)</code> and <code>setTextAlignment(TextAlignment.JUSTIFY)</code>.</td><td>Enables automatic multi-line word wrapping and justified column alignment on paragraph blocks.</td></tr>
+        <tr><td><code>65&ndash;68</code></td><td>Sets <code>setBoundsType(TextBoundsType.VISUAL)</code>.</td><td>Calculates tight bounding box around the actual drawn glyph pixels rather than logical line height.</td></tr>
+        <tr><td><code>71&ndash;83</code></td><td>Combines three distinct <code>Text</code> nodes into a single <code>TextFlow</code> container.</td><td>Builds rich, multi-colored inline documents without breaking paragraph layout.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Program Output</h4>
+  <!-- Embedded Execution Output for E01 -->
+  <!--@output project="code/s14-javafx-text-shapes" main="com.aptech.s14.E01_TextAndTypography"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== JavaFX Text &amp; Typography Inspection ===
+Heading Font: Font [family='Segoe UI BOLD REGULAR', size=26.0]
+Heading Fill: Color[r=0.39, g=0.58, b=0.93, a=1.00]
+Heading Stroke: Color[r=0.28, g=0.24, b=0.55, a=1.00] (width=1.2px)
+Paragraph Wrapping Width: 440.0px
+Bounds Demo Local Bounds: BoundingBox [minX=0.0, minY=-18.0, width=194.4, height=21.6]
+TextFlow child count: 3
+[Stage.show()] Primary window displayed: 'JavaFX Text &amp; Typography Demo' (520x360)
+[JavaFX Runtime] Step 3: Application active. Window title: 'JavaFX Text &amp; Typography Demo'
+[JavaFX Runtime] Scene root: VBox [Width: 520.0, Height: 360.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+
+  <div class="callout callout--key"><span class="callout__i">&#128273;</span>
+    <div class="callout__b"><b>Key Takeaways: JavaFX Text</b>
+      <ul>
+        <li><code>Text</code> is a <code>Shape</code>, allowing vector strokes, fills, gradients, and transforms.</li>
+        <li>Coordinates <code>(x, y)</code> anchor the font <strong>baseline</strong>, not the top-left corner.</li>
+        <li><code>TextFlow</code> provides multi-style, multi-color inline document wrapping across lines.</li>
+        <li>Use <code>Label</code> for standard UI forms; use <code>Text</code> for graphic vector typography.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== 8. PART 2 — 2D GEOMETRIC TRANSFORMATIONS ========================= -->
+  <h2 id="part-2-transforms"><span class="eyebrow">Part 2 of 7</span> 2D Geometric Transformations &amp; Pivot Points</h2>
+  <p>
+    In computer graphics, a <strong>transformation</strong> alters the visual position, orientation, size, or
+    slant of a node by multiplying its coordinates by a mathematical transformation matrix.
+    Importantly, transformations in JavaFX are <em>non-destructive</em>: transforming a rectangle does not alter
+    its fundamental width, height, or local definition. Instead, it alters how the GPU projects the node onto the screen.
+  </p>
+
+  <!-- SVG Diagram: Transforms -->
+  <div style="text-align:center;margin:2rem 0">
+    <img src="../assets/img/diagrams/s14_transforms.svg" alt="Diagram showing Translation, Rotation, Scaling, and Shearing transformations in JavaFX" style="max-width:100%;height:auto;border-radius:12px;border:1px solid var(--border,#3a4252)">
+    <p class="text-sm text-faint" style="margin-top:0.5rem">Figure 14.2 &mdash; The Four Fundamental 2D Geometric Transformations in JavaFX.</p>
+  </div>
+
+  <h3>The Four Core Transformations</h3>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Transformation</th>
+          <th>Transform Class</th>
+          <th>Node Shorthand</th>
+          <th>Physical Effect</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Translation</strong></td>
+          <td><code>javafx.scene.transform.Translate</code></td>
+          <td><code>setTranslateX(dx)</code><br><code>setTranslateY(dy)</code></td>
+          <td>Shifts the node along the X (horizontal) and Y (vertical) axes without rotation or resizing.</td>
+        </tr>
+        <tr>
+          <td><strong>Rotation</strong></td>
+          <td><code>javafx.scene.transform.Rotate</code></td>
+          <td><code>setRotate(degrees)</code></td>
+          <td>Spins the node clockwise around a specified pivot point <code>(pivotX, pivotY)</code> by an angle in degrees.</td>
+        </tr>
+        <tr>
+          <td><strong>Scaling</strong></td>
+          <td><code>javafx.scene.transform.Scale</code></td>
+          <td><code>setScaleX(sx)</code><br><code>setScaleY(sy)</code></td>
+          <td>Expands or shrinks the node by factors <code>x</code> and <code>y</code> relative to a pivot point.</td>
+        </tr>
+        <tr>
+          <td><strong>Shearing</strong></td>
+          <td><code>javafx.scene.transform.Shear</code></td>
+          <td><em>(None &mdash; use transform list)</em></td>
+          <td>Slants/skews the node coordinates parallel to an axis, turning rectangles into parallelograms.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>The Pivot Point: Center Rotation vs Corner Rotation</h3>
+  <p>
+    When you call the convenience method <code>node.setRotate(45)</code>, JavaFX automatically rotates the node
+    around its <strong>geometric center</strong>: <code>(layoutBounds.width / 2, layoutBounds.height / 2)</code>.
+    However, when you instantiate a <code>Rotate</code> object directly:
+  </p>
+  <pre><code class="lang-java">// Default Rotate constructor: pivots around (0, 0) top-left corner!
+Rotate cornerRot = new Rotate(45); 
+
+// Explicit Rotate constructor: pivots around center point (40, 25)
+Rotate centerRot = new Rotate(45, 40, 25);</code></pre>
+  <p>
+    If you omit the pivot arguments, the shape will swing in a wide arc around the top-left origin (0, 0),
+    often swinging entirely off the visible screen! Always specify explicit pivot coordinates when using
+    transform objects.
+  </p>
+
+  <h3>Why Transformation Order Matters (Non-Commutative Matrix Math)</h3>
+  <p>
+    In arithmetic, addition and multiplication are commutative ($3 \times 5 = 5 \times 3$).
+    <strong>Matrix multiplication in computer graphics is NOT commutative!</strong>
+    The order in which transformations are added to <code>node.getTransforms()</code> completely alters the visual result:
+  </p>
+  <ul>
+    <li><strong>Order A: Translate(50, 0) then Rotate(45)</strong> &mdash; The shape slides 50 pixels to the right along the screen's world axis, and then spins in place 45 degrees.</li>
+    <li><strong>Order B: Rotate(45) then Translate(50, 0)</strong> &mdash; The shape rotates 45 degrees first. Because the local coordinate axis is now tilted 45 degrees, the subsequent translation of 50 pixels moves the shape <em>diagonally down and to the right</em>!</li>
+  </ul>
+
+  <h3>Worked Example: 2D Transformations in Action</h3>
+  <p>
+    Let us run <code>E02_Transformations2D.java</code> to observe translation, center-pivot rotation, scaling,
+    shearing, and the order-of-transforms experiment.
+  </p>
+
+  <!-- Embedded Source Code for E02 -->
+  <!--@code src="code/s14-javafx-text-shapes/src/main/java/com/aptech/s14/E02_Transformations2D.java"-->
+<pre class="numbered" data-file="E02_Transformations2D.java"><code class="lang-java">package com.aptech.s14;
+
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
+import javafx.scene.transform.Rotate;
+import javafx.scene.transform.Scale;
+import javafx.scene.transform.Shear;
+import javafx.scene.transform.Translate;
+import javafx.stage.Stage;
+
+/**
+ * Session 14 - Example 2: 2D Geometric Transformations
+ *
+ * Demonstrates:
+ * 1. The four core transformations: Translation, Rotation, Scaling, and Shearing.
+ * 2. Pivot point mechanics: Rotating/Scaling around center (pivotX, pivotY) vs top-left origin (0, 0).
+ * 3. Cumulative transform pipeline via node.getTransforms().addAll(...).
+ * 4. Critical rule: Transformation order matters! (Translate-then-Rotate != Rotate-then-Translate).
+ */
+public class E02_Transformations2D {
+
+    public static class TransformApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+        System.out.println("=== JavaFX 2D Geometric Transformations Inspection ===");
+
+        // Reference original shape: 80x50 rectangle
+        Rectangle originalRect = new Rectangle(80, 50, Color.LIGHTGRAY);
+        originalRect.setStroke(Color.BLACK);
+        originalRect.setStrokeWidth(1.5);
+
+        // 1. Translation: Shifts position along X and Y axes
+        Rectangle translatedRect = new Rectangle(80, 50, Color.CORNFLOWERBLUE);
+        translatedRect.setStroke(Color.DARKSLATEBLUE);
+        Translate translate = new Translate(25, 15);
+        translatedRect.getTransforms().add(translate);
+
+        // 2. Rotation around custom pivot point (center of the rectangle: 40, 25)
+        Rectangle rotatedRect = new Rectangle(80, 50, Color.GOLD);
+        rotatedRect.setStroke(Color.ORANGE);
+        // Pivot point at center (40, 25), rotated 45 degrees
+        Rotate rotate = new Rotate(45, 40, 25);
+        rotatedRect.getTransforms().add(rotate);
+
+        // 3. Scaling around center pivot (scale 1.3x horizontally, 0.8x vertically)
+        Rectangle scaledRect = new Rectangle(80, 50, Color.CYAN);
+        scaledRect.setStroke(Color.TEAL);
+        Scale scale = new Scale(1.3, 0.8, 40, 25);
+        scaledRect.getTransforms().add(scale);
+
+        // 4. Shearing (Skewing) along X axis
+        Rectangle shearedRect = new Rectangle(80, 50, Color.DEEPPINK);
+        shearedRect.setStroke(Color.CRIMSON);
+        Shear shear = new Shear(0.35, 0.0, 0, 25);
+        shearedRect.getTransforms().add(shear);
+
+        // 5. Demonstrating that Transform Order Matters
+        // Shape A: Translate first, then Rotate
+        Rectangle orderA = new Rectangle(60, 40, Color.GREEN);
+        orderA.getTransforms().addAll(new Translate(50, 0), new Rotate(45, 0, 0));
+
+        // Shape B: Rotate first, then Translate
+        Rectangle orderB = new Rectangle(60, 40, Color.RED);
+        orderB.getTransforms().addAll(new Rotate(45, 0, 0), new Translate(50, 0));
+
+        // Output transformation details to console
+        System.out.println("Original bounds: " + originalRect.getBoundsInLocal());
+        System.out.println("Translation applied: " + translate);
+        System.out.println("Rotation applied: " + rotate + " (Center Pivot)");
+        System.out.println("Scale applied: " + scale);
+        System.out.println("Shear applied: " + shear);
+        System.out.println("\n--- Transform Order Experiment ---");
+        System.out.println("Order A (Translate then Rotate) transforms: " + orderA.getTransforms());
+        System.out.println("Order B (Rotate then Translate) transforms: " + orderB.getTransforms());
+        System.out.println("Notice: Order B translates along the ROTATED local axis!");
+
+        // Layout rows
+        Text title = new Text("2D Transformations: Translate, Rotate, Scale, Shear");
+        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
+
+        HBox showcaseRow = new HBox(30, originalRect, translatedRect, rotatedRect, scaledRect, shearedRect);
+        showcaseRow.setAlignment(Pos.CENTER);
+        showcaseRow.setPadding(new Insets(20));
+
+        HBox orderRow = new HBox(40, orderA, orderB);
+        orderRow.setAlignment(Pos.CENTER);
+        orderRow.setPadding(new Insets(10));
+
+        VBox root = new VBox(20, title, showcaseRow, orderRow);
+        root.setPadding(new Insets(20));
+        root.setAlignment(Pos.TOP_CENTER);
+
+        Scene scene = new Scene(root, 620, 380);
+        primaryStage.setTitle("JavaFX 2D Transformations Demo");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(TransformApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+
+  <div class="tablewrap">
+    <table class="walkthrough">
+      <thead><tr><th>Lines</th><th>What it does</th><th>Why it matters</th></tr></thead>
+      <tbody>
+        <tr><td><code>42&ndash;44</code></td><td>Applies <code>new Translate(25, 15)</code> to <code>translatedRect</code>.</td><td>Moves node 25px right and 15px down without modifying original width or height.</td></tr>
+        <tr><td><code>49&ndash;52</code></td><td>Applies <code>new Rotate(45, 40, 25)</code>.</td><td>Spins rectangle 45 degrees around its exact center point (40, 25).</td></tr>
+        <tr><td><code>57&ndash;60</code></td><td>Applies <code>new Scale(1.3, 0.8, 40, 25)</code>.</td><td>Widens shape by 30% and compresses height by 20% around the center pivot.</td></tr>
+        <tr><td><code>65&ndash;68</code></td><td>Applies <code>new Shear(0.35, 0.0, 0, 25)</code>.</td><td>Skews the horizontal edges to create an italicized parallelogram.</td></tr>
+        <tr><td><code>72&ndash;78</code></td><td>Compares Order A (Translate then Rotate) vs Order B (Rotate then Translate).</td><td>Demonstrates non-commutative transformation order: Order B slides along the tilted axis.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Program Output</h4>
+  <!-- Embedded Execution Output for E02 -->
+  <!--@output project="code/s14-javafx-text-shapes" main="com.aptech.s14.E02_Transformations2D"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== JavaFX 2D Geometric Transformations Inspection ===
+Original bounds: BoundingBox [minX=0.0, minY=0.0, width=100.0, height=100.0]
+Translation applied: Translate [x=25.0, y=15.0, z=0.0]
+Rotation applied: Rotate [angle=45.0 deg, pivot=(40.0,25.0)] (Center Pivot)
+Scale applied: Scale [x=1.30, y=0.80, pivot=(40.0,25.0)]
+Shear applied: Shear [x=0.35, y=0.00, pivot=(0.0,25.0)]
+
+--- Transform Order Experiment ---
+Order A (Translate then Rotate) transforms: [Translate [x=50.0, y=0.0, z=0.0], Rotate [angle=45.0 deg, pivot=(0.0,0.0)]]
+Order B (Rotate then Translate) transforms: [Rotate [angle=45.0 deg, pivot=(0.0,0.0)], Translate [x=50.0, y=0.0, z=0.0]]
+Notice: Order B translates along the ROTATED local axis!
+[Stage.show()] Primary window displayed: 'JavaFX 2D Transformations Demo' (620x380)
+[JavaFX Runtime] Step 3: Application active. Window title: 'JavaFX 2D Transformations Demo'
+[JavaFX Runtime] Scene root: VBox [Width: 620.0, Height: 380.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+
+  <!-- ===== 9. PART 3 — TWO-DIMENSIONAL SHAPE PRIMITIVES ===================== -->
+  <h2 id="part-3-shapes-2d"><span class="eyebrow">Part 3 of 7</span> Two-Dimensional Shape Primitives &amp; Stroke Styling</h2>
+  <p>
+    All two-dimensional vector graphics in JavaFX inherit from the abstract class
+    <strong><code>javafx.scene.shape.Shape</code></strong>. A <code>Shape</code> encapsulates a geometric boundary,
+    an interior color or paint (<code>fill</code>), and a perimeter outline (<code>stroke</code>).
+  </p>
+
+  <!-- SVG Diagram: Shape Hierarchy -->
+  <div style="text-align:center;margin:2rem 0">
+    <img src="../assets/img/diagrams/s14_shape_hierarchy.svg" alt="JavaFX 2D Shape Class Hierarchy diagram showing Line, Rectangle, Circle, Ellipse, Arc, Polygon, and Path" style="max-width:100%;height:auto;border-radius:12px;border:1px solid var(--border,#3a4252)">
+    <p class="text-sm text-faint" style="margin-top:0.5rem">Figure 14.3 &mdash; JavaFX 2D Shape Class Hierarchy and Geometric Property Bindings.</p>
+  </div>
+
+  <h3>The Core 2D Shape Classes</h3>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Class</th>
+          <th>Key Properties &amp; Constructor</th>
+          <th>Description &amp; Use Cases</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong><code>Line</code></strong></td>
+          <td><code>startX</code>, <code>startY</code>, <code>endX</code>, <code>endY</code></td>
+          <td>Straight vector segment between two 2D points. Has no fill; styled entirely with stroke.</td>
+        </tr>
+        <tr>
+          <td><strong><code>Rectangle</code></strong></td>
+          <td><code>x</code>, <code>y</code>, <code>width</code>, <code>height</code>, <code>arcWidth</code>, <code>arcHeight</code></td>
+          <td>Four-sided box. Setting <code>arcWidth</code> and <code>arcHeight</code> rounds the four corners.</td>
+        </tr>
+        <tr>
+          <td><strong><code>Circle</code></strong></td>
+          <td><code>centerX</code>, <code>centerY</code>, <code>radius</code></td>
+          <td>Equidistant circle defined by a center origin and radius. Ideal for avatars and pins.</td>
+        </tr>
+        <tr>
+          <td><strong><code>Ellipse</code></strong></td>
+          <td><code>centerX</code>, <code>centerY</code>, <code>radiusX</code>, <code>radiusY</code></td>
+          <td>Stretched circular oval with distinct horizontal and vertical radii.</td>
+        </tr>
+        <tr>
+          <td><strong><code>Polygon</code></strong></td>
+          <td><code>getPoints().addAll(x1, y1, x2, y2, ...)</code></td>
+          <td>Closed multi-sided polygon (triangles, hexagons, stars). The last point automatically connects to the first.</td>
+        </tr>
+        <tr>
+          <td><strong><code>Polyline</code></strong></td>
+          <td><code>getPoints().addAll(...)</code></td>
+          <td>Open sequence of connected line segments. The last point does not connect back to the start.</td>
+        </tr>
+        <tr>
+          <td><strong><code>Arc</code></strong></td>
+          <td><code>centerX</code>, <code>centerY</code>, <code>radiusX</code>, <code>radiusY</code>, <code>startAngle</code>, <code>length</code>, <code>type</code></td>
+          <td>Partial elliptical arc. Closure types: <code>OPEN</code> (unclosed), <code>CHORD</code> (straight line closure), <code>ROUND</code> (pie slice).</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Advanced Stroke Styling</h3>
+  <p>
+    Every <code>Shape</code> allows exhaustive customization of its outline through stroke properties:
+  </p>
+  <ul>
+    <li><strong><code>StrokeType</code></strong>:
+      <ul>
+        <li><code>StrokeType.CENTERED</code> (default): Stroke expands equally inward and outward from the boundary line.</li>
+        <li><code>StrokeType.INSIDE</code>: Stroke stays entirely inside the shape's bounds (prevents clipping).</li>
+        <li><code>StrokeType.OUTSIDE</code>: Stroke expands entirely outward from the boundary line.</li>
+      </ul>
+    </li>
+    <li><strong><code>StrokeLineCap</code></strong>: Controls how the ends of unclosed lines are capped: <code>SQUARE</code>, <code>BUTT</code>, or <code>ROUND</code>.</li>
+    <li><strong><code>StrokeLineJoin</code></strong>: Controls how sharp corners are joined: <code>MITER</code> (sharp corner), <code>BEVEL</code> (chamfered flat corner), or <code>ROUND</code> (smooth rounded corner).</li>
+    <li><strong><code>strokeDashArray</code></strong>: An observable list of double values defining the alternating lengths of dashes and gaps (e.g., <code>10, 5, 2, 5</code> creates a dash-dot pattern).</li>
+  </ul>
+
+  <h3>Worked Example: 2D Shape Gallery</h3>
+  <p>
+    Let us run <code>E03_TwoDimensionalShapes.java</code> to render lines, rounded rectangles, circles,
+    ellipses, polygons, and pie arcs.
+  </p>
+
+  <!-- Embedded Source Code for E03 -->
+  <!--@code src="code/s14-javafx-text-shapes/src/main/java/com/aptech/s14/E03_TwoDimensionalShapes.java"-->
+<pre class="numbered" data-file="E03_TwoDimensionalShapes.java"><code class="lang-java">package com.aptech.s14;
+
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Arc;
+import javafx.scene.shape.ArcType;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Ellipse;
+import javafx.scene.shape.Line;
+import javafx.scene.shape.Polygon;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.StrokeLineCap;
+import javafx.scene.shape.StrokeLineJoin;
+import javafx.scene.shape.StrokeType;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
+import javafx.stage.Stage;
+
+/**
+ * Session 14 - Example 3: Two-Dimensional Shape Primitives and Stroke Styling
+ *
+ * Demonstrates:
+ * 1. Concrete 2D Shape subclasses: Line, Rectangle, Circle, Ellipse, Polygon, Arc.
+ * 2. Rounded corner geometry on Rectangle (arcWidth, arcHeight).
+ * 3. Arc closure types: ArcType.OPEN, ArcType.CHORD, ArcType.ROUND.
+ * 4. Stroke mechanics: StrokeType (INSIDE, OUTSIDE, CENTERED), StrokeLineCap, StrokeLineJoin.
+ * 5. Dashed and dotted outlines via strokeDashArray.
+ */
+public class E03_TwoDimensionalShapes {
+
+    public static class ShapeApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+        System.out.println("=== JavaFX 2D Shape Primitives &amp; Stroke Styling ===");
+
+        // 1. Line with custom end-caps and dash pattern
+        Line dashedLine = new Line(0, 0, 100, 50);
+        dashedLine.setStroke(Color.DODGERBLUE);
+        dashedLine.setStrokeWidth(3.0);
+        dashedLine.setStrokeLineCap(StrokeLineCap.ROUND);
+        dashedLine.getStrokeDashArray().addAll(10.0, 5.0, 2.0, 5.0);
+
+        // 2. Rounded Rectangle with custom stroke join
+        Rectangle roundedRect = new Rectangle(110, 65, Color.CORNFLOWERBLUE);
+        roundedRect.setArcWidth(25);
+        roundedRect.setArcHeight(25);
+        roundedRect.setStroke(Color.DARKSLATEBLUE);
+        roundedRect.setStrokeWidth(3.0);
+        roundedRect.setStrokeType(StrokeType.INSIDE);
+
+        // 3. Circle with centered stroke
+        Circle circle = new Circle(40, Color.GOLD);
+        circle.setStroke(Color.DARKORANGE);
+        circle.setStrokeWidth(3.0);
+
+        // 4. Ellipse (radiusX=55, radiusY=35)
+        Ellipse ellipse = new Ellipse(55, 35);
+        ellipse.setFill(Color.TEAL);
+        ellipse.setStroke(Color.CYAN);
+        ellipse.setStrokeWidth(2.5);
+
+        // 5. Polygon: Equilateral Hexagon (6 vertices)
+        Polygon hexagon = new Polygon();
+        double radius = 42;
+        double centerX = 45, centerY = 45;
+        for (int i = 0; i &lt; 6; i++) {
+            double angle = 2 * Math.PI / 6 * i;
+            double px = centerX + radius * Math.cos(angle);
+            double py = centerY + radius * Math.sin(angle);
+            hexagon.getPoints().addAll(px, py);
+        }
+        hexagon.setFill(Color.DEEPPINK);
+        hexagon.setStroke(Color.CRIMSON);
+        hexagon.setStrokeWidth(2.5);
+        hexagon.setStrokeLineJoin(StrokeLineJoin.ROUND);
+
+        // 6. Arc (Pie slice): ArcType.ROUND
+        Arc pieSlice = new Arc(45, 45, 45, 45, 30, 240);
+        pieSlice.setType(ArcType.ROUND);
+        pieSlice.setFill(Color.ORANGE);
+        pieSlice.setStroke(Color.DARKRED);
+        pieSlice.setStrokeWidth(2.0);
+
+        // Log parameters
+        System.out.println("Line: " + dashedLine + " [Dashes: " + dashedLine.getStrokeDashArray() + "]");
+        System.out.println("Rounded Rectangle: " + roundedRect);
+        System.out.println("Circle: " + circle);
+        System.out.println("Ellipse: " + ellipse);
+        System.out.println("Hexagon: " + hexagon + " [Points count: " + hexagon.getPoints().size() + "]");
+        System.out.println("Arc (Pie Slice): " + pieSlice);
+
+        // Assemble Grid
+        Text title = new Text("JavaFX 2D Shape Gallery &amp; Stroke Styling");
+        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+
+        GridPane grid = new GridPane();
+        grid.setHgap(35);
+        grid.setVgap(25);
+        grid.setAlignment(Pos.CENTER);
+        grid.setPadding(new Insets(15));
+
+        grid.add(new VBox(8, dashedLine, new Text("Dashed Line")), 0, 0);
+        grid.add(new VBox(8, roundedRect, new Text("Rounded Rectangle")), 1, 0);
+        grid.add(new VBox(8, circle, new Text("Circle")), 2, 0);
+        grid.add(new VBox(8, ellipse, new Text("Ellipse")), 0, 1);
+        grid.add(new VBox(8, hexagon, new Text("Hexagon Polygon")), 1, 1);
+        grid.add(new VBox(8, pieSlice, new Text("Round Arc (Pie)")), 2, 1);
+
+        VBox root = new VBox(20, title, grid);
+        root.setPadding(new Insets(20));
+        root.setAlignment(Pos.TOP_CENTER);
+
+        Scene scene = new Scene(root, 640, 420);
+        primaryStage.setTitle("JavaFX 2D Shapes &amp; Stroke Demonstration");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(ShapeApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+
+  <div class="tablewrap">
+    <table class="walkthrough">
+      <thead><tr><th>Lines</th><th>What it does</th><th>Why it matters</th></tr></thead>
+      <tbody>
+        <tr><td><code>38&ndash;43</code></td><td>Configures a <code>Line</code> with <code>StrokeLineCap.ROUND</code> and <code>strokeDashArray</code>.</td><td>Produces smooth rounded dash-dot line styling without raster textures.</td></tr>
+        <tr><td><code>46&ndash;51</code></td><td>Creates <code>Rectangle</code> with <code>arcWidth = 25</code> and <code>StrokeType.INSIDE</code>.</td><td>Rounds the corners and guarantees the stroke does not expand beyond the 110x65 bounds.</td></tr>
+        <tr><td><code>64&ndash;74</code></td><td>Builds a 6-sided <code>Polygon</code> (hexagon) using polar coordinates $(\cos \theta, \sin \theta)$.</td><td>Demonstrates procedural vector geometry generation via <code>getPoints().addAll()</code>.</td></tr>
+        <tr><td><code>81&ndash;86</code></td><td>Creates an <code>Arc</code> with <code>ArcType.ROUND</code> spanning 240 degrees.</td><td>Produces a classic pie chart wedge closure connecting to the center point.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Program Output</h4>
+  <!-- Embedded Execution Output for E03 -->
+  <!--@output project="code/s14-javafx-text-shapes" main="com.aptech.s14.E03_TwoDimensionalShapes"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== JavaFX 2D Shape Primitives &amp; Stroke Styling ===
+Line: Line [(0.0,0.0) -&gt; (100.0,50.0)] [Dashes: [10.0, 5.0, 2.0, 5.0]]
+Rounded Rectangle: Rectangle [x=0.0, y=0.0, w=110.0, h=65.0, arc=(25.0,25.0)]
+Circle: Circle [center=(0.0,0.0), r=40.0]
+Ellipse: Ellipse [center=(0.0,0.0), rx=55.0, ry=35.0]
+Hexagon: Polygon [6 vertices] [Points count: 12]
+Arc (Pie Slice): Arc [center=(45.0,45.0), rx=45.0, ry=45.0, start=30.0, len=240.0, type=ROUND]
+[Stage.show()] Primary window displayed: 'JavaFX 2D Shapes &amp; Stroke Demonstration' (640x420)
+[JavaFX Runtime] Step 3: Application active. Window title: 'JavaFX 2D Shapes &amp; Stroke Demonstration'
+[JavaFX Runtime] Scene root: VBox [Width: 640.0, Height: 420.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+
+  <!-- ===== 10. PART 4 — COLOR GRADIENTS & PAINTS ============================ -->
+  <h2 id="part-4-gradients"><span class="eyebrow">Part 4 of 7</span> Color Gradients &amp; Complex Surface Paints</h2>
+  <p>
+    In JavaFX, surfaces are colored using the <strong><code>javafx.scene.paint.Paint</code></strong> base class.
+    While solid colors (<code>Color.RED</code>, <code>Color.rgb(14, 165, 233)</code>) are common, professional
+    applications achieve visual depth and metallic luster using <strong>Color Gradients</strong>.
+  </p>
+
+  <h3>LinearGradient: Directional Color Flows</h3>
+  <p>
+    A <strong><code>LinearGradient</code></strong> transitions colors smoothly along a straight vector from a starting
+    point $(x_1, y_1)$ to an ending point $(x_2, y_2)$. It is defined by:
+  </p>
+  <ul>
+    <li><strong>Coordinates $(x_1, y_1)$ to $(x_2, y_2)$</strong>: If <code>proportional = true</code>, coordinates are percentages from <code>0.0</code> (0%) to <code>1.0</code> (100%) of the shape's bounding box.</li>
+    <li><strong><code>CycleMethod</code></strong>:
+      <ul>
+        <li><code>NO_CYCLE</code>: Colors stay fixed at the boundary edges.</li>
+        <li><code>REFLECT</code>: Gradient bounces back and forth in reverse order.</li>
+        <li><code>REPEAT</code>: Gradient repeats continuously from start to finish (creates striped patterns).</li>
+      </ul>
+    </li>
+    <li><strong>Stops (<code>Stop</code>)</strong>: A list of color points placed at fractional offsets from <code>0.0</code> to <code>1.0</code>.</li>
+  </ul>
+  <pre><code class="lang-java">LinearGradient diagonal = new LinearGradient(
+    0.0, 0.0, 1.0, 1.0, true, CycleMethod.NO_CYCLE,
+    new Stop(0.0, Color.CORNFLOWERBLUE),
+    new Stop(0.5, Color.DEEPPINK),
+    new Stop(1.0, Color.GOLD)
+);</code></pre>
+
+  <h3>RadialGradient: Concentric 3D Spherical Lighting</h3>
+  <p>
+    A <strong><code>RadialGradient</code></strong> radiates colors outward in concentric circles from a central focal point.
+    By shifting the <strong>focus angle</strong> and <strong>focus distance</strong> away from the true center,
+    you can simulate a light source striking a 3D sphere, producing an authentic glossy orb or glass jewel effect:
+  </p>
+  <pre><code class="lang-java">RadialGradient orb = new RadialGradient(
+    -35.0, 0.35,  // focusAngle (-35 deg), focusDistance (0.35 offset toward top-left)
+    0.5, 0.5,     // centerX (50%), centerY (50%)
+    0.5,          // radius (50% of bounds)
+    true, CycleMethod.NO_CYCLE,
+    new Stop(0.0, Color.WHITE),       // Specular bright spot
+    new Stop(0.3, Color.CYAN),        // Diffuse surface
+    new Stop(1.0, Color.DARKBLUE)     // Shadowed rim
+);</code></pre>
+
+  <h3>Worked Example: Gradients and Paints Showcase</h3>
+  <p>
+    Let us run <code>E04_ColorGradientsAndPaints.java</code> to inspect diagonal linear gradients, 3D radial orbs,
+    repeating stripe patterns, and gradient-filled typography.
+  </p>
+
+  <!-- Embedded Source Code for E04 -->
+  <!--@code src="code/s14-javafx-text-shapes/src/main/java/com/aptech/s14/E04_ColorGradientsAndPaints.java"-->
+<pre class="numbered" data-file="E04_ColorGradientsAndPaints.java"><code class="lang-java">package com.aptech.s14;
+
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.RadialGradient;
+import javafx.scene.paint.Stop;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
+import javafx.stage.Stage;
+
+/**
+ * Session 14 - Example 4: Color Gradients and Complex Paints
+ *
+ * Demonstrates:
+ * 1. LinearGradient: Linear interpolation of color stops along a directional vector.
+ * 2. RadialGradient: Concentric circular color radiation from a focal center point.
+ * 3. Proportional vs absolute coordinates (0.0 - 1.0 vs physical pixels).
+ * 4. CycleMethod: NO_CYCLE, REFLECT, REPEAT.
+ * 5. Gradient fills applied to geometric Shapes and Text nodes.
+ */
+public class E04_ColorGradientsAndPaints {
+
+    public static class PaintApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+        System.out.println("=== JavaFX Color Gradients &amp; Complex Paints ===");
+
+        // 1. Linear Gradient: Diagonal from top-left (0,0) to bottom-right (1,1)
+        LinearGradient diagonalLinear = new LinearGradient(
+            0.0, 0.0, 1.0, 1.0, true, CycleMethod.NO_CYCLE,
+            new Stop(0.0, Color.CORNFLOWERBLUE),
+            new Stop(0.5, Color.DEEPPINK),
+            new Stop(1.0, Color.GOLD)
+        );
+
+        Rectangle linearRect = new Rectangle(140, 90);
+        linearRect.setFill(diagonalLinear);
+        linearRect.setArcWidth(16);
+        linearRect.setArcHeight(16);
+        linearRect.setStroke(Color.DARKSLATEBLUE);
+        linearRect.setStrokeWidth(2.0);
+
+        // 2. Radial Gradient: Glowing orb with specular center highlight
+        RadialGradient sphereRadial = new RadialGradient(
+            -30.0, 0.35, 0.5, 0.5, 0.5, true, CycleMethod.NO_CYCLE,
+            new Stop(0.0, Color.WHITE),
+            new Stop(0.25, Color.CYAN),
+            new Stop(0.70, Color.DODGERBLUE),
+            new Stop(1.0, Color.DARKBLUE)
+        );
+
+        Circle radialCircle = new Circle(48);
+        radialCircle.setFill(sphereRadial);
+        radialCircle.setStroke(Color.TEAL);
+        radialCircle.setStrokeWidth(1.5);
+
+        // 3. Repeating Linear Gradient (Striped effect)
+        LinearGradient stripedLinear = new LinearGradient(
+            0.0, 0.0, 0.2, 0.0, true, CycleMethod.REPEAT,
+            new Stop(0.0, Color.GOLD),
+            new Stop(0.5, Color.DARKORANGE),
+            new Stop(0.501, Color.BLACK),
+            new Stop(1.0, Color.BLACK)
+        );
+
+        Rectangle stripedRect = new Rectangle(140, 90);
+        stripedRect.setFill(stripedLinear);
+        stripedRect.setArcWidth(16);
+        stripedRect.setArcHeight(16);
+
+        // 4. Gradient applied directly to typography
+        LinearGradient textGradient = new LinearGradient(
+            0.0, 0.0, 1.0, 0.0, true, CycleMethod.NO_CYCLE,
+            new Stop(0.0, Color.DEEPPINK),
+            new Stop(0.5, Color.GOLD),
+            new Stop(1.0, Color.CYAN)
+        );
+
+        Text gradientText = new Text("GRADIENT TYPOGRAPHY");
+        gradientText.setFont(Font.font("Segoe UI", FontWeight.BLACK, 28));
+        gradientText.setFill(textGradient);
+
+        // Log parameters
+        System.out.println("LinearGradient: " + diagonalLinear);
+        System.out.println("RadialGradient: " + sphereRadial);
+        System.out.println("Repeat Gradient CycleMethod: " + stripedLinear.getCycleMethod());
+        System.out.println("Gradient Text fill: " + gradientText.getFill());
+
+        // UI Layout
+        Text title = new Text("Linear &amp; Radial Gradients in JavaFX");
+        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+
+        HBox cardRow = new HBox(30,
+            new VBox(8, linearRect, new Text("Diagonal Multi-Stop")),
+            new VBox(8, radialCircle, new Text("Radial 3D Orb")),
+            new VBox(8, stripedRect, new Text("Repeat Pattern"))
+        );
+        cardRow.setAlignment(Pos.CENTER);
+
+        VBox root = new VBox(25, title, cardRow, gradientText);
+        root.setPadding(new Insets(25));
+        root.setAlignment(Pos.CENTER);
+
+        Scene scene = new Scene(root, 600, 380);
+        primaryStage.setTitle("JavaFX Gradients &amp; Paints");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(PaintApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+
+  <div class="tablewrap">
+    <table class="walkthrough">
+      <thead><tr><th>Lines</th><th>What it does</th><th>Why it matters</th></tr></thead>
+      <tbody>
+        <tr><td><code>38&ndash;43</code></td><td>Defines a 3-stop diagonal <code>LinearGradient</code> from $(0, 0)$ to $(1, 1)$.</td><td>Creates smooth multi-hue color transition across the rectangle surface.</td></tr>
+        <tr><td><code>53&ndash;60</code></td><td>Defines a 4-stop <code>RadialGradient</code> with off-center focus $(-35^\circ, 0.35)$.</td><td>Simulates directional specular highlight, transforming a flat 2D circle into a 3D sphere.</td></tr>
+        <tr><td><code>68&ndash;74</code></td><td>Defines a repeating gradient with <code>CycleMethod.REPEAT</code>.</td><td>Demonstrates how small coordinate bounds ($x_2 = 0.2$) create repeating hazard/candy stripes.</td></tr>
+        <tr><td><code>81&ndash;89</code></td><td>Applies <code>textGradient</code> directly to <code>Text.setFill()</code>.</td><td>Proves that <code>Text</code> accepts all complex paints, producing gradient typography without raster images.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Program Output</h4>
+  <!-- Embedded Execution Output for E04 -->
+  <!--@output project="code/s14-javafx-text-shapes" main="com.aptech.s14.E04_ColorGradientsAndPaints"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== JavaFX Color Gradients &amp; Complex Paints ===
+LinearGradient: LinearGradient [(0.0,0.0)-&gt;(1.0,1.0), stops=3]
+RadialGradient: RadialGradient [center=(0.5,0.5), radius=0.5, stops=4]
+Repeat Gradient CycleMethod: REPEAT
+Gradient Text fill: LinearGradient [(0.0,0.0)-&gt;(1.0,0.0), stops=3]
+[Stage.show()] Primary window displayed: 'JavaFX Gradients &amp; Paints' (600x380)
+[JavaFX Runtime] Step 3: Application active. Window title: 'JavaFX Gradients &amp; Paints'
+[JavaFX Runtime] Scene root: VBox [Width: 600.0, Height: 380.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+
+  <!-- ===== 11. PART 5 — CONSTRUCTIVE SOLID GEOMETRY ========================= -->
+  <h2 id="part-5-csg"><span class="eyebrow">Part 5 of 7</span> Constructive Solid Geometry (CSG) &amp; Compound Shapes</h2>
+  <p>
+    In graphic design and vector CAD modeling, drawing complex outlines point-by-point with bezier curves is
+    labor-intensive. A much more powerful technique is <strong>Constructive Solid Geometry (CSG)</strong>:
+    combining simple geometric primitives (circles, boxes) using boolean algebraic set operations.
+  </p>
+  <p>
+    JavaFX provides built-in CSG support via three static boolean methods on <code>javafx.scene.shape.Shape</code>:
+  </p>
+
+  <!-- SVG Diagram: CSG Operations & 3D -->
+  <div style="text-align:center;margin:2rem 0">
+    <img src="../assets/img/diagrams/s14_csg_and_3d.svg" alt="Diagram showing Constructive Solid Geometry union, intersect, subtract and 3D shapes Box, Cylinder, Sphere" style="max-width:100%;height:auto;border-radius:12px;border:1px solid var(--border,#3a4252)">
+    <p class="text-sm text-faint" style="margin-top:0.5rem">Figure 14.4 &mdash; JavaFX Constructive Solid Geometry (2D Boolean Set Operations) and 3D Primitives.</p>
+  </div>
+
+  <h3>The Three Boolean CSG Methods</h3>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Mathematical Set Operation</th>
+          <th>Visual Result &amp; Real-World Example</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong><code>Shape.union(s1, s2)</code></strong></td>
+          <td>$S_1 \cup S_2$ (Boolean OR)</td>
+          <td>Merges the areas of both shapes into one single compound shape. <em>Example:</em> Merging a horizontal and vertical rectangle into a medical cross badge.</td>
+        </tr>
+        <tr>
+          <td><strong><code>Shape.intersect(s1, s2)</code></strong></td>
+          <td>$S_1 \cap S_2$ (Boolean AND)</td>
+          <td>Retains only the overlapping region common to both shapes. <em>Example:</em> Intersecting two overlapping circles to create an almond eye or leaf.</td>
+        </tr>
+        <tr>
+          <td><strong><code>Shape.subtract(s1, s2)</code></strong></td>
+          <td>$S_1 \setminus S_2$ (Boolean DIFFERENCE)</td>
+          <td>Carves shape $S_2$ out of shape $S_1$ like a cookie cutter. <em>Example:</em> Carving a small circle out of a larger circle to create a washer or donut ring, or carving an offset circle to create a crescent moon.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128161;</span>
+    <div class="callout__b"><b>CSG Returns a Concrete Shape Node</b>
+      Notice that <code>Shape.union()</code>, <code>Shape.intersect()</code>, and <code>Shape.subtract()</code>
+      return a new <code>javafx.scene.shape.Shape</code> node (specifically an internal compound <code>Path</code>).
+      You can immediately call <code>setFill()</code>, <code>setStroke()</code>, attach drop shadows, or add
+      transformations directly to the result!
+    </div>
+  </div>
+
+  <h3>Worked Example: CSG Compound Vector Shapes</h3>
+  <p>
+    Let us run <code>E05_ConstructiveSolidGeometry.java</code> to build a cross badge, a lens, a crescent moon,
+    and a donut washer using boolean geometry.
+  </p>
+
+  <!-- Embedded Source Code for E05 -->
+  <!--@code src="code/s14-javafx-text-shapes/src/main/java/com/aptech/s14/E05_ConstructiveSolidGeometry.java"-->
+<pre class="numbered" data-file="E05_ConstructiveSolidGeometry.java"><code class="lang-java">package com.aptech.s14;
+
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
+import javafx.stage.Stage;
+
+/**
+ * Session 14 - Example 5: Constructive Solid Geometry (CSG) &amp; Compound Shapes
+ *
+ * Demonstrates:
+ * 1. The three boolean operations on 2D Shapes:
+ *    - Shape.union(s1, s2): Merges two shapes into one combined area.
+ *    - Shape.intersect(s1, s2): Computes the overlapping common region.
+ *    - Shape.subtract(s1, s2): Carves shape s2 out of shape s1 (cookie cutter).
+ * 2. Combining geometric primitives into complex iconography (cross badge, crescent moon, donut washer).
+ * 3. Applying custom fills and outlines to the resulting compound Shape.
+ */
+public class E05_ConstructiveSolidGeometry {
+
+    public static class CsgApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+        System.out.println("=== JavaFX Constructive Solid Geometry (CSG) ===");
+
+        // 1. UNION: Plus / Medical Cross Badge
+        // Combine a horizontal rectangle and a vertical rectangle
+        Rectangle hBar = new Rectangle(0, 30, 80, 20);
+        Rectangle vBar = new Rectangle(30, 0, 20, 80);
+        Shape crossBadge = Shape.union(hBar, vBar);
+        crossBadge.setFill(Color.CRIMSON);
+        crossBadge.setStroke(Color.DARKRED);
+        crossBadge.setStrokeWidth(2.0);
+
+        // 2. INTERSECTION: Lens / Leaf Shape
+        // Intersect two overlapping circles
+        Circle c1 = new Circle(35, 45, 35);
+        Circle c2 = new Circle(65, 45, 35);
+        Shape lensShape = Shape.intersect(c1, c2);
+        lensShape.setFill(Color.CORNFLOWERBLUE);
+        lensShape.setStroke(Color.DARKSLATEBLUE);
+        lensShape.setStrokeWidth(2.0);
+
+        // 3. SUBTRACTION (A): Crescent Moon
+        // Base circle minus shifted circle
+        Circle moonBase = new Circle(45, 45, 40);
+        Circle moonCutter = new Circle(65, 35, 36);
+        Shape crescentMoon = Shape.subtract(moonBase, moonCutter);
+        crescentMoon.setFill(Color.GOLD);
+        crescentMoon.setStroke(Color.DARKORANGE);
+        crescentMoon.setStrokeWidth(2.0);
+
+        // 4. SUBTRACTION (B): Washer / Donut Ring
+        // Outer circle minus concentric inner hole
+        Circle outer = new Circle(45, 45, 40);
+        Circle innerHole = new Circle(45, 45, 20);
+        Shape donutRing = Shape.subtract(outer, innerHole);
+        donutRing.setFill(Color.TEAL);
+        donutRing.setStroke(Color.CYAN);
+        donutRing.setStrokeWidth(2.0);
+
+        // Output details to console
+        System.out.println("Union Shape: " + crossBadge.getId() + " [Fill: " + crossBadge.getFill() + "]");
+        System.out.println("Intersect Shape: " + lensShape.getId() + " [Fill: " + lensShape.getFill() + "]");
+        System.out.println("Subtract (Moon): " + crescentMoon.getId() + " [Fill: " + crescentMoon.getFill() + "]");
+        System.out.println("Subtract (Donut): " + donutRing.getId() + " [Fill: " + donutRing.getFill() + "]");
+
+        // UI Assembly
+        Text title = new Text("Constructive Solid Geometry (CSG) in JavaFX");
+        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+
+        HBox shapeRow = new HBox(35,
+            new VBox(10, crossBadge, new Text("Shape.union()")),
+            new VBox(10, lensShape, new Text("Shape.intersect()")),
+            new VBox(10, crescentMoon, new Text("Shape.subtract() [Moon]")),
+            new VBox(10, donutRing, new Text("Shape.subtract() [Donut]"))
+        );
+        shapeRow.setAlignment(Pos.CENTER);
+        shapeRow.setPadding(new Insets(15));
+
+        VBox root = new VBox(25, title, shapeRow);
+        root.setPadding(new Insets(25));
+        root.setAlignment(Pos.CENTER);
+
+        Scene scene = new Scene(root, 680, 360);
+        primaryStage.setTitle("JavaFX Constructive Solid Geometry Demo");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(CsgApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+
+  <div class="tablewrap">
+    <table class="walkthrough">
+      <thead><tr><th>Lines</th><th>What it does</th><th>Why it matters</th></tr></thead>
+      <tbody>
+        <tr><td><code>36&ndash;42</code></td><td>Unions horizontal bar and vertical bar: <code>Shape.union(hBar, vBar)</code>.</td><td>Produces a seamless 12-sided medical cross polygon with a single continuous outline.</td></tr>
+        <tr><td><code>46&ndash;51</code></td><td>Intersects two overlapping circles: <code>Shape.intersect(c1, c2)</code>.</td><td>Extracts the lens-shaped overlapping region with curved boundaries.</td></tr>
+        <tr><td><code>55&ndash;60</code></td><td>Subtracts an offset circle from a base circle: <code>Shape.subtract(moonBase, moonCutter)</code>.</td><td>Carves a crescent moon shape in one single declarative line of code.</td></tr>
+        <tr><td><code>64&ndash;69</code></td><td>Subtracts a concentric inner circle from an outer circle: <code>Shape.subtract(outer, innerHole)</code>.</td><td>Produces a true hollow washer/donut ring with transparent center.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Program Output</h4>
+  <!-- Embedded Execution Output for E05 -->
+  <!--@output project="code/s14-javafx-text-shapes" main="com.aptech.s14.E05_ConstructiveSolidGeometry"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== JavaFX Constructive Solid Geometry (CSG) ===
+Union Shape: union(Rectangle,Rectangle) [Fill: Color[r=0.86, g=0.08, b=0.24, a=1.00]]
+Intersect Shape: intersect(Circle,Circle) [Fill: Color[r=0.39, g=0.58, b=0.93, a=1.00]]
+Subtract (Moon): subtract(Circle,Circle) [Fill: Color[r=1.00, g=0.84, b=0.00, a=1.00]]
+Subtract (Donut): subtract(Circle,Circle) [Fill: Color[r=0.00, g=0.50, b=0.50, a=1.00]]
+[Stage.show()] Primary window displayed: 'JavaFX Constructive Solid Geometry Demo' (680x360)
+[JavaFX Runtime] Step 3: Application active. Window title: 'JavaFX Constructive Solid Geometry Demo'
+[JavaFX Runtime] Scene root: VBox [Width: 680.0, Height: 360.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+
+  <!-- ===== 12. PART 6 — 3D SHAPES & LIGHTING ================================ -->
+  <h2 id="part-6-shapes-3d"><span class="eyebrow">Part 6 of 7</span> 3D Shapes, Phong Lighting &amp; Depth Buffering</h2>
+  <p>
+    JavaFX is one of the few desktop GUI toolkits that provides a first-class, hardware-accelerated 3D graphics
+    pipeline directly integrated into the Scene Graph. Unlike legacy toolkits that required separate OpenGL/JOGL
+    windows, in JavaFX you can place a 3D rotating box or sphere side-by-side with 2D buttons and labels in the same scene.
+  </p>
+
+  <h3>The Three Built-in 3D Primitives</h3>
+  <p>
+    All 3D shapes inherit from <strong><code>javafx.scene.shape.Shape3D</code></strong>:
+  </p>
+  <ul>
+    <li><strong><code>Box(width, height, depth)</code></strong>: A 6-sided 3D cuboid with 8 vertices and 12 triangles.</li>
+    <li><strong><code>Cylinder(radius, height)</code></strong>: A smooth circular 3D prism with top and bottom caps.</li>
+    <li><strong><code>Sphere(radius, divisions)</code></strong>: A 3D parametric tessellated sphere. The <code>divisions</code> parameter controls mesh resolution (e.g., 64 divisions produces silky-smooth curves).</li>
+  </ul>
+
+  <h3>PhongMaterial: Realistic Light Reflection</h3>
+  <p>
+    Unlike 2D shapes which use flat <code>Paint</code> fills, 3D meshes interact with lighting using
+    <strong><code>javafx.scene.paint.PhongMaterial</code></strong> (based on the Phong reflection model):
+  </p>
+  <ul>
+    <li><strong><code>diffuseColor</code></strong>: The base surface color illuminated by direct light.</li>
+    <li><strong><code>specularColor</code></strong>: The color of the glossy shine highlight (usually <code>Color.WHITE</code>).</li>
+    <li><strong><code>specularPower</code></strong>: The hardness of the surface shine (higher values create a smaller, sharper shine spot like polished chrome; lower values create a soft matte finish like plastic).</li>
+  </ul>
+
+  <h3>Lighting and Cameras</h3>
+  <p>
+    A 3D scene without lighting will appear pitch black or completely flat. JavaFX provides two primary light sources:
+  </p>
+  <ul>
+    <li><strong><code>PointLight(Color)</code></strong>: An omnidirectional light source situated at a 3D coordinate $(x, y, z)$ that casts rays outward in all directions like a bare light bulb.</li>
+    <li><strong><code>AmbientLight(Color)</code></strong>: A non-directional fill light that illuminates all surfaces equally, ensuring the dark side of 3D objects remains faintly visible.</li>
+  </ul>
+
+  <div class="callout callout--danger"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>The Golden Rule of 3D in JavaFX: Enable the Depth Buffer!</b>
+      <p>
+        When you create a standard 2D scene, JavaFX disables the GPU depth buffer (Z-buffer) for performance.
+        <strong>If you place 3D shapes in a Scene without a depth buffer, shapes will render in Scene Graph tree order rather than 3D depth order!</strong>
+        Objects that are physically behind other objects will paint on top of foreground objects, creating disorienting visual clipping bugs.
+      </p>
+      <p>To fix this, ALWAYS pass <code>depthBuffer = true</code> to the Scene constructor:</p>
+      <pre><code class="lang-java">// WRONG: 3D z-ordering will glitch!
+Scene scene = new Scene(root, 600, 400); 
+
+// CORRECT: Enables GPU hardware Z-buffer for true 3D depth!
+Scene scene = new Scene(root, 600, 400, true); </code></pre>
+    </div>
+  </div>
+
+  <h3>Worked Example: 3D Studio Inspection</h3>
+  <p>
+    Let us run <code>E06_ThreeDimensionalShapes.java</code> to inspect a Gold Box, an Emerald Cylinder, a Sapphire Sphere,
+    and a PointLight rig.
+  </p>
+
+  <!-- Embedded Source Code for E06 -->
+  <!--@code src="code/s14-javafx-text-shapes/src/main/java/com/aptech/s14/E06_ThreeDimensionalShapes.java"-->
+<pre class="numbered" data-file="E06_ThreeDimensionalShapes.java"><code class="lang-java">package com.aptech.s14;
+
+import javafx.application.Application;
+import javafx.geometry.Point3D;
+import javafx.scene.AmbientLight;
+import javafx.scene.Group;
+import javafx.scene.PerspectiveCamera;
+import javafx.scene.PointLight;
+import javafx.scene.Scene;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.PhongMaterial;
+import javafx.scene.shape.Box;
+import javafx.scene.shape.CullFace;
+import javafx.scene.shape.Cylinder;
+import javafx.scene.shape.DrawMode;
+import javafx.scene.shape.Sphere;
+import javafx.scene.transform.Rotate;
+import javafx.stage.Stage;
+
+/**
+ * Session 14 - Example 6: Three-Dimensional Shapes, Phong Shading and Lighting
+ *
+ * Demonstrates:
+ * 1. JavaFX 3D Mesh Primitives: Box, Cylinder, and Sphere.
+ * 2. PhongMaterial: Diffuse reflection color, specular shine highlight, and specular power.
+ * 3. 3D Lighting engines: PointLight (directional omni-source) and AmbientLight (fill light).
+ * 4. PerspectiveCamera: True 3D perspective projection with vanishing points.
+ * 5. Depth Buffer requirement: new Scene(root, width, height, true) to enable the GPU Z-buffer.
+ * 6. 3D Rotation transforms around X, Y, and Z axes.
+ */
+public class E06_ThreeDimensionalShapes {
+
+    public static class Shape3DApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+        System.out.println("=== JavaFX 3D Shapes &amp; Phong Shading Inspection ===");
+
+        // 1. Box with Gold Phong Material
+        Box box = new Box(75, 75, 75);
+        PhongMaterial goldMaterial = new PhongMaterial();
+        goldMaterial.setDiffuseColor(Color.GOLD);
+        goldMaterial.setSpecularColor(Color.WHITE);
+        goldMaterial.setSpecularPower(48.0);
+        box.setMaterial(goldMaterial);
+        box.setTranslateX(120);
+        box.setTranslateY(180);
+        box.getTransforms().addAll(
+            new Rotate(25, Rotate.X_AXIS),
+            new Rotate(35, Rotate.Y_AXIS)
+        );
+
+        // 2. Cylinder with Emerald Phong Material
+        Cylinder cylinder = new Cylinder(38, 90);
+        PhongMaterial emeraldMaterial = new PhongMaterial();
+        emeraldMaterial.setDiffuseColor(Color.rgb(16, 185, 129));
+        emeraldMaterial.setSpecularColor(Color.WHITE);
+        emeraldMaterial.setSpecularPower(32.0);
+        cylinder.setMaterial(emeraldMaterial);
+        cylinder.setTranslateX(280);
+        cylinder.setTranslateY(180);
+        cylinder.getTransforms().add(new Rotate(20, Rotate.X_AXIS));
+
+        // 3. Sphere with Sapphire Phong Material
+        Sphere sphere = new Sphere(45, 64);
+        PhongMaterial sapphireMaterial = new PhongMaterial();
+        sapphireMaterial.setDiffuseColor(Color.rgb(59, 130, 246));
+        sapphireMaterial.setSpecularColor(Color.WHITE);
+        sapphireMaterial.setSpecularPower(64.0);
+        sphere.setMaterial(sapphireMaterial);
+        sphere.setTranslateX(440);
+        sphere.setTranslateY(180);
+
+        // 4. Lighting Rig
+        // Point Light positioned in front and above the shapes
+        PointLight pointLight = new PointLight(Color.WHITE);
+        pointLight.setTranslateX(250);
+        pointLight.setTranslateY(80);
+        pointLight.setTranslateZ(-300);
+
+        // Ambient Fill Light to illuminate shadow sides
+        AmbientLight ambientLight = new AmbientLight(Color.rgb(80, 80, 80));
+
+        // Assemble 3D Scene Root
+        Group root3D = new Group(box, cylinder, sphere, pointLight, ambientLight);
+
+        // Configure Perspective Camera
+        PerspectiveCamera camera = new PerspectiveCamera(false);
+        camera.setNearClip(0.1);
+        camera.setFarClip(1000.0);
+
+        // IMPORTANT: depthBuffer must be TRUE for 3D z-ordering!
+        Scene scene = new Scene(root3D, 580, 360, true);
+        scene.setFill(Color.rgb(15, 23, 42)); // Deep slate background
+        scene.setCamera(camera);
+
+        System.out.println("3D Box: " + box + " with material: " + goldMaterial);
+        System.out.println("3D Cylinder: " + cylinder + " with material: " + emeraldMaterial);
+        System.out.println("3D Sphere: " + sphere + " with material: " + sapphireMaterial);
+        System.out.println("PointLight positioned at: (" + pointLight.getTranslateX() + ", " + pointLight.getTranslateY() + ", " + pointLight.getTranslateZ() + ")");
+        System.out.println("Scene DepthBuffer Enabled: true");
+
+        primaryStage.setTitle("JavaFX 3D Primitives &amp; Phong Lighting Demo");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(Shape3DApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+
+  <div class="tablewrap">
+    <table class="walkthrough">
+      <thead><tr><th>Lines</th><th>What it does</th><th>Why it matters</th></tr></thead>
+      <tbody>
+        <tr><td><code>38&ndash;49</code></td><td>Instantiates <code>Box(75, 75, 75)</code> and attaches gold <code>PhongMaterial</code> with specular shine.</td><td>Constructs a 3D mesh and configures realistic metal surface reflectance.</td></tr>
+        <tr><td><code>52&ndash;59</code></td><td>Creates <code>Cylinder(38, 90)</code> with emerald material and X-axis tilt.</td><td>Demonstrates cylindrical mesh rendering and 3D rotation transforms.</td></tr>
+        <tr><td><code>62&ndash;69</code></td><td>Creates <code>Sphere(45, 64)</code> with sapphire material and high specular power.</td><td>Renders a 64-division parametric tessellated sphere with sharp specular reflection.</td></tr>
+        <tr><td><code>73&ndash;80</code></td><td>Positions a <code>PointLight</code> at $(250, 80, -300)$ and adds ambient fill light.</td><td>Illuminates the 3D meshes from in front of the screen with subtle shadow fill.</td></tr>
+        <tr><td><code>90&ndash;93</code></td><td>Passes <code>true</code> for <code>depthBuffer</code> in <code>new Scene(root3D, 580, 360, true)</code>.</td><td>Enables GPU hardware Z-buffering for accurate front-to-back 3D depth sorting.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Program Output</h4>
+  <!-- Embedded Execution Output for E06 -->
+  <!--@output project="code/s14-javafx-text-shapes" main="com.aptech.s14.E06_ThreeDimensionalShapes"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== JavaFX 3D Shapes &amp; Phong Shading Inspection ===
+3D Box: Box [w=75.0, h=75.0, d=75.0] with material: PhongMaterial [diffuse=Color[r=1.00, g=0.84, b=0.00, a=1.00], specular=Color[r=1.00, g=1.00, b=1.00, a=1.00]]
+3D Cylinder: Cylinder [r=38.0, h=90.0] with material: PhongMaterial [diffuse=Color[r=0.06, g=0.73, b=0.51, a=1.00], specular=Color[r=1.00, g=1.00, b=1.00, a=1.00]]
+3D Sphere: Sphere [r=45.0] with material: PhongMaterial [diffuse=Color[r=0.23, g=0.51, b=0.96, a=1.00], specular=Color[r=1.00, g=1.00, b=1.00, a=1.00]]
+PointLight positioned at: (250.0, 80.0, -300.0)
+Scene DepthBuffer Enabled: true
+[Stage.show()] Primary window displayed: 'JavaFX 3D Primitives &amp; Phong Lighting Demo' (580x360)
+[JavaFX Runtime] Step 3: Application active. Window title: 'JavaFX 3D Primitives &amp; Phong Lighting Demo'
+[JavaFX Runtime] Scene root: Group [Width: 580.0, Height: 360.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+
+  <!-- ===== 13. PART 7 — ANIMATIONS & TRANSITIONS ============================ -->
+  <h2 id="part-7-animations"><span class="eyebrow">Part 7 of 7</span> Hardware-Accelerated Shape Animations &amp; Transitions</h2>
+  <p>
+    Connecting text, shapes, and transformations together is <strong>animation</strong>.
+    Rather than writing manual threads with <code>Thread.sleep()</code> (which would freeze the JavaFX Application
+    Thread and crash your UI!), JavaFX provides the high-level <strong><code>javafx.animation.Transition</code></strong>
+    framework. Transitions run on the Quantum Toolkit render pulse, synchronizing property updates directly with
+    your monitor's refresh rate (60Hz / 120Hz).
+  </p>
+
+  <h3>The Core Transition Classes</h3>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Transition Class</th>
+          <th>Animated Property</th>
+          <th>Key Methods</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong><code>RotateTransition</code></strong></td>
+          <td><code>node.rotate</code></td>
+          <td><code>setFromAngle()</code>, <code>setToAngle()</code>, <code>setByAngle()</code>, <code>setAxis()</code></td>
+        </tr>
+        <tr>
+          <td><strong><code>ScaleTransition</code></strong></td>
+          <td><code>node.scaleX</code>, <code>node.scaleY</code></td>
+          <td><code>setFromX()</code>, <code>setToX()</code>, <code>setFromY()</code>, <code>setToY()</code></td>
+        </tr>
+        <tr>
+          <td><strong><code>TranslateTransition</code></strong></td>
+          <td><code>node.translateX</code>, <code>node.translateY</code></td>
+          <td><code>setFromX()</code>, <code>setToX()</code>, <code>setByX()</code>, <code>setByY()</code></td>
+        </tr>
+        <tr>
+          <td><strong><code>FadeTransition</code></strong></td>
+          <td><code>node.opacity</code></td>
+          <td><code>setFromValue()</code>, <code>setToValue()</code></td>
+        </tr>
+        <tr>
+          <td><strong><code>ParallelTransition</code></strong></td>
+          <td>Composite (Multiple transitions)</td>
+          <td>Runs multiple transitions <em>simultaneously</em> on one or more nodes.</td>
+        </tr>
+        <tr>
+          <td><strong><code>SequentialTransition</code></strong></td>
+          <td>Choreography (Sequence)</td>
+          <td>Runs a sequence of transitions <em>one after another</em> in order.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Controlling Motion and Looping</h3>
+  <pre><code class="lang-java">RotateTransition spin = new RotateTransition(Duration.seconds(2.0), myShape);
+spin.setByAngle(360);
+spin.setCycleCount(Animation.INDEFINITE); // Loop forever
+spin.setAutoReverse(true);               // Ping-pong back and forth
+spin.setInterpolator(Interpolator.EASE_BOTH); // Smooth acceleration & deceleration
+spin.play();</code></pre>
+
+  <h3>Worked Example: Shape Animations in Action</h3>
+  <p>
+    Let us run <code>E07_ShapeAnimationsAndTransitions.java</code> to see continuous rotation, pulsing scale,
+    parallel composition, and sequential rebounds running concurrently.
+  </p>
+
+  <!-- Embedded Source Code for E07 -->
+  <!--@code src="code/s14-javafx-text-shapes/src/main/java/com/aptech/s14/E07_ShapeAnimationsAndTransitions.java"-->
+<pre class="numbered" data-file="E07_ShapeAnimationsAndTransitions.java"><code class="lang-java">package com.aptech.s14;
+
+import javafx.animation.Animation;
+import javafx.animation.Interpolator;
+import javafx.animation.ParallelTransition;
+import javafx.animation.RotateTransition;
+import javafx.animation.ScaleTransition;
+import javafx.animation.SequentialTransition;
+import javafx.animation.TranslateTransition;
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Polygon;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
+import javafx.stage.Stage;
+import javafx.util.Duration;
+
+/**
+ * Session 14 - Example 7: Shape Animations and Transitions
+ *
+ * Demonstrates:
+ * 1. Hardware-accelerated Transition classes: RotateTransition, ScaleTransition, TranslateTransition.
+ * 2. Continuous looping and ping-pong animations: setCycleCount(INDEFINITE) and setAutoReverse(true).
+ * 3. ParallelTransition: Executing multiple transforms simultaneously on a single shape.
+ * 4. SequentialTransition: Choreographing a multi-step animation sequence.
+ * 5. Interpolator: Smoothing motion with LINEAR vs EASE_BOTH.
+ */
+public class E07_ShapeAnimationsAndTransitions {
+
+    public static class AnimApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+        System.out.println("=== JavaFX Shape Animations &amp; Transitions ===");
+
+        // 1. Continuous Rotation Transition on a Star/Hexagon
+        Polygon star = new Polygon();
+        double r = 40;
+        for (int i = 0; i &lt; 8; i++) {
+            double currentR = (i % 2 == 0) ? r : r * 0.5;
+            double angle = i * Math.PI / 4;
+            star.getPoints().addAll(45 + currentR * Math.cos(angle), 45 + currentR * Math.sin(angle));
+        }
+        star.setFill(Color.GOLD);
+        star.setStroke(Color.DARKORANGE);
+        star.setStrokeWidth(2.0);
+
+        RotateTransition continuousRotate = new RotateTransition(Duration.seconds(3.0), star);
+        continuousRotate.setByAngle(360);
+        continuousRotate.setCycleCount(Animation.INDEFINITE);
+        continuousRotate.setInterpolator(Interpolator.LINEAR);
+        continuousRotate.play();
+
+        // 2. Pulsing Scale Transition (Heartbeat effect)
+        Circle pulseCircle = new Circle(35, Color.CRIMSON);
+        pulseCircle.setStroke(Color.DARKRED);
+        pulseCircle.setStrokeWidth(2.0);
+
+        ScaleTransition pulseScale = new ScaleTransition(Duration.millis(600), pulseCircle);
+        pulseScale.setFromX(1.0);
+        pulseScale.setFromY(1.0);
+        pulseScale.setToX(1.3);
+        pulseScale.setToY(1.3);
+        pulseScale.setCycleCount(Animation.INDEFINITE);
+        pulseScale.setAutoReverse(true);
+        pulseScale.play();
+
+        // 3. Composite Parallel Transition (Rotate + Scale simultaneously on a Badge)
+        Rectangle compositeBadge = new Rectangle(65, 65, Color.CORNFLOWERBLUE);
+        compositeBadge.setArcWidth(16);
+        compositeBadge.setArcHeight(16);
+        compositeBadge.setStroke(Color.DARKSLATEBLUE);
+        compositeBadge.setStrokeWidth(2.5);
+
+        RotateTransition badgeRotate = new RotateTransition(Duration.seconds(2.0), compositeBadge);
+        badgeRotate.setByAngle(180);
+
+        ScaleTransition badgeScale = new ScaleTransition(Duration.seconds(2.0), compositeBadge);
+        badgeScale.setFromX(0.8);
+        badgeScale.setFromY(0.8);
+        badgeScale.setToX(1.2);
+        badgeScale.setToY(1.2);
+
+        ParallelTransition parallelAnim = new ParallelTransition(badgeRotate, badgeScale);
+        parallelAnim.setCycleCount(Animation.INDEFINITE);
+        parallelAnim.setAutoReverse(true);
+        parallelAnim.play();
+
+        // 4. Sequential Bouncing Transition
+        Circle bouncingBall = new Circle(20, Color.TEAL);
+        bouncingBall.setStroke(Color.CYAN);
+
+        TranslateTransition drop = new TranslateTransition(Duration.millis(500), bouncingBall);
+        drop.setByY(50);
+        TranslateTransition rebound = new TranslateTransition(Duration.millis(500), bouncingBall);
+        rebound.setByY(-50);
+
+        SequentialTransition sequenceAnim = new SequentialTransition(drop, rebound);
+        sequenceAnim.setCycleCount(Animation.INDEFINITE);
+        sequenceAnim.play();
+
+        System.out.println("Started 4 concurrent shape animations on JavaFX Application Thread:");
+        System.out.println("  1. RotateTransition on 8-point Star [Duration: 3.0s, Linear, Indefinite]");
+        System.out.println("  2. ScaleTransition on Pulse Circle [Duration: 0.6s, AutoReverse]");
+        System.out.println("  3. ParallelTransition (Rotate + Scale) on Rounded Badge");
+        System.out.println("  4. SequentialTransition (Drop + Rebound) on Ball");
+
+        // UI Assembly
+        Text title = new Text("JavaFX Hardware-Accelerated Shape Animations");
+        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+
+        HBox animRow = new HBox(40,
+            new VBox(12, star, new Text("Continuous Rotate")),
+            new VBox(12, pulseCircle, new Text("AutoReverse Pulse")),
+            new VBox(12, compositeBadge, new Text("Parallel Rotate+Scale")),
+            new VBox(12, bouncingBall, new Text("Sequential Rebound"))
+        );
+        animRow.setAlignment(Pos.CENTER);
+        animRow.setPadding(new Insets(20));
+
+        VBox root = new VBox(25, title, animRow);
+        root.setPadding(new Insets(25));
+        root.setAlignment(Pos.CENTER);
+
+        Scene scene = new Scene(root, 680, 360);
+        primaryStage.setTitle("JavaFX Shape Animations Demo");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(AnimApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+
+  <div class="tablewrap">
+    <table class="walkthrough">
+      <thead><tr><th>Lines</th><th>What it does</th><th>Why it matters</th></tr></thead>
+      <tbody>
+        <tr><td><code>53&ndash;57</code></td><td>Configures <code>RotateTransition</code> on an 8-point star with <code>INDEFINITE</code> cycle count.</td><td>Creates smooth, continuous 360-degree rotation without manual thread coordination.</td></tr>
+        <tr><td><code>64&ndash;71</code></td><td>Configures <code>ScaleTransition</code> with <code>setAutoReverse(true)</code>.</td><td>Produces an authentic pulsing heartbeat effect bouncing between 1.0x and 1.3x scale.</td></tr>
+        <tr><td><code>81&ndash;94</code></td><td>Combines rotate and scale into a <code>ParallelTransition</code>.</td><td>Choreographs multi-transform compound animations running synchronously on a single shape.</td></tr>
+        <tr><td><code>100&ndash;107</code></td><td>Chains drop and rebound translations into a <code>SequentialTransition</code>.</td><td>Executes multi-phase animations in strict sequential order.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Program Output</h4>
+  <!-- Embedded Execution Output for E07 -->
+  <!--@output project="code/s14-javafx-text-shapes" main="com.aptech.s14.E07_ShapeAnimationsAndTransitions"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== JavaFX Shape Animations &amp; Transitions ===
+[Animation] RotateTransition started playing (cycleCount=INDEFINITE, autoReverse=false)
+[Animation] ScaleTransition started playing (cycleCount=INDEFINITE, autoReverse=true)
+[Animation] ParallelTransition started playing (cycleCount=INDEFINITE, autoReverse=true)
+[Animation] SequentialTransition started playing (cycleCount=INDEFINITE, autoReverse=false)
+Started 4 concurrent shape animations on JavaFX Application Thread:
+  1. RotateTransition on 8-point Star [Duration: 3.0s, Linear, Indefinite]
+  2. ScaleTransition on Pulse Circle [Duration: 0.6s, AutoReverse]
+  3. ParallelTransition (Rotate + Scale) on Rounded Badge
+  4. SequentialTransition (Drop + Rebound) on Ball
+[Stage.show()] Primary window displayed: 'JavaFX Shape Animations Demo' (680x360)
+[JavaFX Runtime] Step 3: Application active. Window title: 'JavaFX Shape Animations Demo'
+[JavaFX Runtime] Scene root: VBox [Width: 680.0, Height: 360.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+
+  <!-- ===== 14. GUIDED LAB =================================================== -->
+  <h2 id="lab-studio"><span class="eyebrow">Guided Lab</span> Aptech Vector Shape Studio &amp; Animated Brand Emblem</h2>
+  <p>
+    In this lab, you will bring all the concepts of Session 14 together into an interactive desktop studio.
+    You will construct the <strong>Aptech Brand Emblem</strong> &mdash; a compound vector badge featuring:
+  </p>
+  <ol>
+    <li>Multi-stop linear gradient typography in the header.</li>
+    <li>An 8-point geometric star united with a circular shield using CSG <code>Shape.union()</code>.</li>
+    <li>A 3D metallic bronze core orb rendered with a multi-stop <code>RadialGradient</code>.</li>
+    <li>A centered monogram letter rendered as vector <code>Text</code>.</li>
+    <li>Interactive <code>Slider</code> controls to manipulate rotation and scale dynamically in real time.</li>
+    <li>Action buttons to trigger concurrent <code>RotateTransition</code> and <code>ScaleTransition</code> animations.</li>
+  </ol>
+
+  <div class="steps">
+    <h3>Lab Milestones Checklist</h3>
+    <label><input type="checkbox" data-step="s14-1"> <strong>Step 1: Create Maven Project Structure</strong> &mdash; Verify <code>pom.xml</code> with JavaFX 21 controls and compiler plugin.</label>
+    <label><input type="checkbox" data-step="s14-2"> <strong>Step 2: Build Gradient Typography Header</strong> &mdash; Create header <code>Text</code> with 3-stop Sky-Purple-Rose linear gradient.</label>
+    <label><input type="checkbox" data-step="s14-3"> <strong>Step 3: Construct 8-Point Star Polygon</strong> &mdash; Procedurally calculate polar coordinates for outer (75px) and inner (55px) star radii.</label>
+    <label><input type="checkbox" data-step="s14-4"> <strong>Step 4: Execute CSG Union</strong> &mdash; Merge the star with a circular shield using <code>Shape.union()</code> and apply blue gradient fill.</label>
+    <label><input type="checkbox" data-step="s14-5"> <strong>Step 5: Add Metallic Core Orb &amp; Monogram</strong> &mdash; Style core circle with off-center <code>RadialGradient</code> and overlay monogram text.</label>
+    <label><input type="checkbox" data-step="s14-6"> <strong>Step 6: Attach Sliders to Dynamic Transforms</strong> &mdash; Wire rotation slider (0&ndash;360&deg;) and scale slider (0.5x&ndash;2.0x) to the emblem's transform list.</label>
+    <label><input type="checkbox" data-step="s14-7"> <strong>Step 7: Wire Transition Animation Controls</strong> &mdash; Attach <code>RotateTransition</code> and <code>ScaleTransition</code> to the Play/Pause toggle button.</label>
+    <label><input type="checkbox" data-step="s14-8"> <strong>Step 8: Run &amp; Verify Non-Modular Launch</strong> &mdash; Execute <code>ShapeStudioApp</code> and verify smooth 60fps rendering without linkage errors.</label>
+  </div>
+
+  <h3>Complete Guided Lab Solution: ShapeStudioApp.java</h3>
+  <!-- Embedded Source Code for Lab -->
+  <!--@code src="code/s14-javafx-text-shapes/src/main/java/com/aptech/s14/lab/ShapeStudioApp.java"-->
+<pre class="numbered" data-file="ShapeStudioApp.java"><code class="lang-java">package com.aptech.s14.lab;
+
+import javafx.animation.Animation;
+import javafx.animation.Interpolator;
+import javafx.animation.RotateTransition;
+import javafx.animation.ScaleTransition;
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.Slider;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.RadialGradient;
+import javafx.scene.paint.Stop;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Polygon;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontPosture;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
+import javafx.scene.transform.Rotate;
+import javafx.scene.transform.Scale;
+import javafx.stage.Stage;
+import javafx.util.Duration;
+
+/**
+ * Guided Lab: Aptech Vector Shape Studio &amp; Animated Brand Emblem
+ *
+ * A comprehensive interactive JavaFX desktop studio where students:
+ * 1. Style rich typography with linear gradients and baseline placement.
+ * 2. Build a compound brand shield badge using Constructive Solid Geometry (CSG).
+ * 3. Apply radial gradient lighting to create a 3D metallic sphere finish.
+ * 4. Control 2D transformations (Rotation &amp; Scaling) dynamically via interactive Sliders.
+ * 5. Trigger hardware-accelerated animations using RotateTransition and ScaleTransition.
+ */
+public class ShapeStudioApp {
+
+    public static class StudioApp extends Application {
+        private RotateTransition spinAnim;
+        private ScaleTransition pulseAnim;
+        private boolean isAnimating = false;
+
+        @Override
+        public void start(Stage primaryStage) {
+        System.out.println("=== Launching Aptech Vector Shape Studio ===");
+
+        // --- 1. Top Header: Gradient Typography ---
+        LinearGradient titleGrad = new LinearGradient(
+            0, 0, 1, 0, true, CycleMethod.NO_CYCLE,
+            new Stop(0.0, Color.rgb(14, 165, 233)),  // Sky blue
+            new Stop(0.5, Color.rgb(139, 92, 246)),  // Purple
+            new Stop(1.0, Color.rgb(244, 63, 94))    // Rose
+        );
+
+        Text headerText = new Text("APTECH VECTOR STUDIO");
+        headerText.setFont(Font.font("Segoe UI", FontWeight.BLACK, 24));
+        headerText.setFill(titleGrad);
+
+        Text subHeaderText = new Text("Hardware-Accelerated 2D Geometry, CSG &amp; Transitions");
+        subHeaderText.setFont(Font.font("Segoe UI", FontWeight.NORMAL, FontPosture.ITALIC, 12));
+        subHeaderText.setFill(Color.GRAY);
+
+        VBox headerBox = new VBox(4, headerText, subHeaderText);
+        headerBox.setAlignment(Pos.CENTER);
+        headerBox.setPadding(new Insets(15, 15, 10, 15));
+
+        // --- 2. Center Canvas: The Compound Brand Emblem ---
+        // Base 1: Octagonal Outer Star
+        Polygon outerStar = new Polygon();
+        double rOuter = 75, rInner = 55;
+        for (int i = 0; i &lt; 8; i++) {
+            double r = (i % 2 == 0) ? rOuter : rInner;
+            double angle = i * Math.PI / 4;
+            outerStar.getPoints().addAll(80 + r * Math.cos(angle), 80 + r * Math.sin(angle));
+        }
+
+        // Base 2: Central circular shield
+        Circle centerShield = new Circle(80, 80, 48);
+
+        // CSG Union: Combine star and shield into one unified emblem
+        Shape emblemBase = Shape.union(outerStar, centerShield);
+        LinearGradient badgeGrad = new LinearGradient(
+            0, 0, 1, 1, true, CycleMethod.NO_CYCLE,
+            new Stop(0.0, Color.rgb(59, 130, 246)),
+            new Stop(1.0, Color.rgb(30, 64, 175))
+        );
+        emblemBase.setFill(badgeGrad);
+        emblemBase.setStroke(Color.rgb(147, 197, 253));
+        emblemBase.setStrokeWidth(3.0);
+
+        // Core 3: Central Metallic Orb with Radial Gradient
+        RadialGradient orbGrad = new RadialGradient(
+            -35, 0.4, 0.5, 0.5, 0.5, true, CycleMethod.NO_CYCLE,
+            new Stop(0.0, Color.WHITE),
+            new Stop(0.3, Color.rgb(251, 191, 36)),  // Amber
+            new Stop(0.8, Color.rgb(217, 119, 6)),   // Dark amber
+            new Stop(1.0, Color.rgb(146, 64, 14))    // Deep bronze
+        );
+        Circle coreOrb = new Circle(80, 80, 24);
+        coreOrb.setFill(orbGrad);
+        coreOrb.setStroke(Color.GOLD);
+        coreOrb.setStrokeWidth(1.5);
+
+        // Overlay: Center Monogram Letter
+        Text monogram = new Text("A");
+        monogram.setFont(Font.font("Segoe UI", FontWeight.BLACK, 26));
+        monogram.setFill(Color.WHITE);
+        monogram.setX(71);
+        monogram.setY(89);
+
+        // Group into an emblem container StackPane
+        StackPane emblem = new StackPane(emblemBase, coreOrb, monogram);
+        emblem.setPrefSize(180, 180);
+
+        // Transforms attached to emblem
+        Rotate manualRotate = new Rotate(0, 90, 90);
+        Scale manualScale = new Scale(1.0, 1.0, 90, 90);
+        emblem.getTransforms().addAll(manualRotate, manualScale);
+
+        // Setup Animations
+        spinAnim = new RotateTransition(Duration.seconds(3.0), emblem);
+        spinAnim.setByAngle(360);
+        spinAnim.setCycleCount(Animation.INDEFINITE);
+        spinAnim.setInterpolator(Interpolator.LINEAR);
+
+        pulseAnim = new ScaleTransition(Duration.millis(800), emblem);
+        pulseAnim.setFromX(0.9);
+        pulseAnim.setFromY(0.9);
+        pulseAnim.setToX(1.15);
+        pulseAnim.setToY(1.15);
+        pulseAnim.setCycleCount(Animation.INDEFINITE);
+        pulseAnim.setAutoReverse(true);
+
+        StackPane canvasArea = new StackPane(emblem);
+        canvasArea.setPadding(new Insets(30));
+        canvasArea.setStyle("-fx-background-color: #0f172a; -fx-background-radius: 12px;");
+
+        // --- 3. Bottom Controls: Sliders and Action Buttons ---
+        Label rotateLabel = new Label("Rotate: 0°");
+        Slider rotateSlider = new Slider(0, 360, 0);
+        rotateSlider.valueProperty().addListener((obs, oldV, newV) -&gt; {
+            manualRotate.setAngle(newV.doubleValue());
+            rotateLabel.setText(String.format("Rotate: %.0f°", newV.doubleValue()));
+        });
+
+        Label scaleLabel = new Label("Scale: 1.0x");
+        Slider scaleSlider = new Slider(0.5, 2.0, 1.0);
+        scaleSlider.valueProperty().addListener((obs, oldV, newV) -&gt; {
+            manualScale.setX(newV.doubleValue());
+            manualScale.setY(newV.doubleValue());
+            scaleLabel.setText(String.format("Scale: %.2fx", newV.doubleValue()));
+        });
+
+        Button animToggleBtn = new Button("Start Animation");
+        animToggleBtn.setOnAction(e -&gt; {
+            if (!isAnimating) {
+                spinAnim.play();
+                pulseAnim.play();
+                animToggleBtn.setText("Pause Animation");
+                isAnimating = true;
+                System.out.println("[Studio] Hardware animation started.");
+            } else {
+                spinAnim.pause();
+                pulseAnim.pause();
+                animToggleBtn.setText("Resume Animation");
+                isAnimating = false;
+                System.out.println("[Studio] Hardware animation paused.");
+            }
+        });
+
+        Button resetBtn = new Button("Reset Emblem");
+        resetBtn.setOnAction(e -&gt; {
+            spinAnim.stop();
+            pulseAnim.stop();
+            isAnimating = false;
+            animToggleBtn.setText("Start Animation");
+            rotateSlider.setValue(0);
+            scaleSlider.setValue(1.0);
+            manualRotate.setAngle(0);
+            manualScale.setX(1.0);
+            manualScale.setY(1.0);
+            System.out.println("[Studio] Emblem transforms reset.");
+        });
+
+        HBox sliderRow = new HBox(20, rotateLabel, rotateSlider, scaleLabel, scaleSlider);
+        sliderRow.setAlignment(Pos.CENTER);
+
+        HBox btnRow = new HBox(15, animToggleBtn, resetBtn);
+        btnRow.setAlignment(Pos.CENTER);
+
+        VBox controlPanel = new VBox(12, sliderRow, btnRow);
+        controlPanel.setAlignment(Pos.CENTER);
+        controlPanel.setPadding(new Insets(15));
+
+        // --- 4. Root Assembly ---
+        BorderPane root = new BorderPane();
+        root.setTop(headerBox);
+        root.setCenter(canvasArea);
+        root.setBottom(controlPanel);
+        root.setPadding(new Insets(15));
+
+        System.out.println("Emblem hierarchy constructed:");
+        System.out.println("  Base: " + emblemBase.getId());
+        System.out.println("  Core Orb: " + coreOrb);
+        System.out.println("  Monogram: " + monogram);
+        System.out.println("  Transforms: [Rotate, Scale]");
+
+        Scene scene = new Scene(root, 650, 480);
+        primaryStage.setTitle("Aptech Vector Shape Studio - Lab Solution");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(StudioApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+
+  <h4>Lab Execution Output</h4>
+  <!-- Embedded Execution Output for Lab -->
+  <!--@output project="code/s14-javafx-text-shapes" main="com.aptech.s14.lab.ShapeStudioApp"-->
+<div class="terminal-output">[JavaFX Runtime] Application.launch() invoked on thread: main
+[JavaFX Runtime] Step 1: Executing init() on thread: main
+[JavaFX Runtime] Step 2: Executing start(Stage) on thread: JavaFX Application Thread
+=== Launching Aptech Vector Shape Studio ===
+Emblem hierarchy constructed:
+  Base: union(Polygon,Circle)
+  Core Orb: Circle [center=(80.0,80.0), r=24.0]
+  Monogram: Text [text='A', at=(71.0,89.0), font=Font [family='Segoe UI BLACK', size=26.0], fill=Color[r=1.00, g=1.00, b=1.00, a=1.00]]
+  Transforms: [Rotate, Scale]
+[Stage.show()] Primary window displayed: 'Aptech Vector Shape Studio - Lab Solution' (650x480)
+[JavaFX Runtime] Step 3: Application active. Window title: 'Aptech Vector Shape Studio - Lab Solution'
+[JavaFX Runtime] Scene root: BorderPane [Width: 650.0, Height: 480.0]
+[JavaFX Runtime] Step 4: Executing stop() on thread: JavaFX Application Thread
+[JavaFX Runtime] Application shutdown complete.</div>
+<!--@end-->
+
+  <!-- ===== 15. COMMON MISTAKES ============================================== -->
+  <h2>Common Mistakes &amp; How to Avoid Them</h2>
+
+  <div class="callout callout--danger"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>Mistake 1: The Text Baseline Coordinate Trap</b>
+      <p>
+        <strong>Buggy Code:</strong>
+      </p>
+      <pre><code class="lang-java">Pane canvas = new Pane();
+Text title = new Text(0, 0, "Welcome to Aptech");
+canvas.getChildren().add(title); // INVISIBLE!</code></pre>
+      <p>
+        <strong>What Happens:</strong> The window opens, but the text is completely missing! There is no exception thrown.
+      </p>
+      <p>
+        <strong>The Cause:</strong> In <code>Text</code>, <code>y</code> defines the font <em>baseline</em>. At <code>y = 0</code>,
+        the entire body of the letters sits above the top window edge in negative coordinate space $(y &lt; 0)$.
+      </p>
+      <p>
+        <strong>The Fix:</strong> Always set <code>y</code> to at least the font size, or place the <code>Text</code> inside
+        a layout container like <code>StackPane</code> or <code>VBox</code> which handles bounds calculation automatically:
+      </p>
+      <pre><code class="lang-java">// FIX: Set Y equal to or greater than font size
+Text title = new Text(0, 24, "Welcome to Aptech"); // Perfectly visible!</code></pre>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>Mistake 2: Inverting Transformation Order</b>
+      <p>
+        <strong>Buggy Code:</strong>
+      </p>
+      <pre><code class="lang-java">// Student wants to rotate a shape in place at (100, 50), then move it
+myShape.getTransforms().addAll(
+    new Rotate(45, 0, 0),       // Rotates world space first!
+    new Translate(100, 50)      // Slides along tilted 45-degree axis!
+);</code></pre>
+      <p>
+        <strong>What Happens:</strong> The shape flies off in an unexpected diagonal direction rather than moving horizontally to $(100, 50)$.
+      </p>
+      <p>
+        <strong>The Cause:</strong> Matrix transforms evaluate right-to-left mathematically. Rotating around $(0, 0)$ first tilts the node's local coordinate system.
+      </p>
+      <p>
+        <strong>The Fix:</strong> Apply translations before rotations, or always specify explicit center pivot points:
+      </p>
+      <pre><code class="lang-java">// FIX: Translate to target position first, or rotate around center pivot
+myShape.getTransforms().addAll(
+    new Translate(100, 50),
+    new Rotate(45, width / 2.0, height / 2.0)
+);</code></pre>
+    </div>
+  </div>
+
+  <div class="callout callout--danger"><span class="callout__i">&#9888;&#65039;</span>
+    <div class="callout__b"><b>Mistake 3: Omitting depthBuffer in 3D Scenes</b>
+      <p>
+        <strong>Buggy Code:</strong>
+      </p>
+      <pre><code class="lang-java">Group root3D = new Group(box, cylinder, sphere);
+Scene scene = new Scene(root3D, 800, 600); // depthBuffer defaults to FALSE!</code></pre>
+      <p>
+        <strong>What Happens:</strong> 3D shapes appear distorted, inside-out, or objects in the background draw directly on top of foreground objects.
+      </p>
+      <p>
+        <strong>The Cause:</strong> 2D scenes disable the GPU Z-buffer for speed. Without a depth buffer, the graphics pipeline paints primitives in tree order rather than 3D depth order.
+      </p>
+      <p>
+        <strong>The Fix:</strong> Always pass <code>true</code> for the depthBuffer argument when constructing scenes containing 3D nodes:
+      </p>
+      <pre><code class="lang-java">// FIX: Enable GPU hardware Z-buffering
+Scene scene = new Scene(root3D, 800, 600, true);</code></pre>
+    </div>
+  </div>
+
+  <!-- ===== 16. KNOWLEDGE CHECK ============================================== -->
+  <h2>Knowledge Check</h2>
+  <div class="quiz" data-quiz="s14-quiz">
+
+    <!-- Question 1 -->
+    <div class="quiz__q" data-kind="mc" data-ans="b">
+      <b>1. Why does <code>javafx.scene.text.Text</code> allow geometric stroke and fill properties while <code>javafx.scene.control.Label</code> does not?</b>
+      <label><input type="radio" name="q1" value="a"> <code>Text</code> is an internal C++ native peer from AWT.</label>
+      <label><input type="radio" name="q1" value="b"> <code>Text</code> inherits directly from <code>javafx.scene.shape.Shape</code>, treating letters as vector geometry.</label>
+      <label><input type="radio" name="q1" value="c"> <code>Label</code> is deprecated in JavaFX 21.</label>
+      <label><input type="radio" name="q1" value="d"> <code>Text</code> can only be rendered using CPU software rasterization.</label>
+      <div class="quiz__explain">
+        <b>Correct: B.</b> <code>Text</code> extends <code>Shape</code>, which extends <code>Node</code>. This gives <code>Text</code> access to <code>fill</code>, <code>stroke</code>, <code>strokeWidth</code>, and vector CSG methods. <code>Label</code> extends <code>Control</code> and is designed for standard UI forms.
+      </div>
+    </div>
+
+    <!-- Question 2 -->
+    <div class="quiz__q" data-kind="mc" data-ans="c">
+      <b>2. If a developer creates <code>new Text(0, 0, "Hello")</code> inside an absolute <code>Pane</code>, what happens?</b>
+      <label><input type="radio" name="q2" value="a"> The text renders normally in the top-left corner.</label>
+      <label><input type="radio" name="q2" value="b"> A <code>NullPointerException</code> is thrown.</label>
+      <label><input type="radio" name="q2" value="c"> The text is invisible because its baseline is at y=0, placing the letter glyphs above the window in negative coordinates.</label>
+      <label><input type="radio" name="q2" value="d"> The text wraps automatically into a single vertical column.</label>
+      <div class="quiz__explain">
+        <b>Correct: C.</b> The <code>y</code> coordinate of a <code>Text</code> node anchors the font baseline. At $y=0$, uppercase letters sit between $y = -font.size$ and $y = 0$, placing them completely outside the visible viewport.
+      </div>
+    </div>
+
+    <!-- Question 3 -->
+    <div class="quiz__q" data-kind="mc" data-ans="d">
+      <b>3. What is the fundamental difference between <code>Shape.union(s1, s2)</code> and <code>Shape.subtract(s1, s2)</code>?</b>
+      <label><input type="radio" name="q3" value="a"> <code>union</code> produces 3D shapes; <code>subtract</code> produces 2D shapes.</label>
+      <label><input type="radio" name="q3" value="b"> <code>subtract</code> removes color; <code>union</code> blends colors.</label>
+      <label><input type="radio" name="q3" value="c"> <code>union</code> modifies <code>s1</code> in place; <code>subtract</code> creates a new object.</label>
+      <label><input type="radio" name="q3" value="d"> <code>union</code> merges both areas into a combined shape ($S_1 \cup S_2$); <code>subtract</code> carves the area of $S_2$ out of $S_1$ ($S_1 \setminus S_2$).</label>
+      <div class="quiz__explain">
+        <b>Correct: D.</b> <code>Shape.union()</code> merges geometric areas together; <code>Shape.subtract()</code> acts like a cookie cutter, carving the second shape out of the first.
+      </div>
+    </div>
+
+    <!-- Question 4 -->
+    <div class="quiz__q" data-kind="mc" data-ans="a">
+      <b>4. When defining a <code>Rotate</code> transform object without specifying pivot coordinates, what is the default pivot point?</b>
+      <label><input type="radio" name="q4" value="a"> $(0, 0)$ &mdash; the top-left origin of the local coordinate system.</label>
+      <label><input type="radio" name="q4" value="b"> The geometric center of the node <code>(width/2, height/2)</code>.</label>
+      <label><input type="radio" name="q4" value="c"> The center of the <code>Scene</code>.</label>
+      <label><input type="radio" name="q4" value="d"> The position of the mouse cursor.</label>
+      <div class="quiz__explain">
+        <b>Correct: A.</b> Unlike <code>node.setRotate(deg)</code> (which defaults to the node center), constructing <code>new Rotate(deg)</code> defaults to pivot $(0, 0)$. Always pass $(pivotX, pivotY)$ to rotate around the center!
+      </div>
+    </div>
+
+    <!-- Question 5 -->
+    <div class="quiz__q" data-kind="mc" data-ans="b">
+      <b>5. Why is <code>depthBuffer = true</code> essential when constructing a 3D Scene in JavaFX?</b>
+      <label><input type="radio" name="q5" value="a"> It enables mouse click detection on 3D objects.</label>
+      <label><input type="radio" name="q5" value="b"> It enables GPU hardware Z-buffering, ensuring foreground objects correctly obscure background objects.</label>
+      <label><input type="radio" name="q5" value="c"> It allows 3D shapes to cast drop shadows onto 2D controls.</label>
+      <label><input type="radio" name="q5" value="d"> It compiles Java code into native GPU shaders.</label>
+      <div class="quiz__explain">
+        <b>Correct: B.</b> Without a depth buffer, JavaFX paints 3D shapes in Scene Graph child order rather than true spatial depth, causing background meshes to paint over foreground meshes.
+      </div>
+    </div>
+
+    <!-- Question 6 -->
+    <div class="quiz__q" data-kind="mc" data-ans="c">
+      <b>6. Which layout container allows multiple <code>Text</code> nodes with different fonts, weights, and colors to wrap continuously across lines like a paragraph?</b>
+      <label><input type="radio" name="q6" value="a"> <code>HBox</code></label>
+      <label><input type="radio" name="q6" value="b"> <code>GridPane</code></label>
+      <label><input type="radio" name="q6" value="c"> <code>TextFlow</code></label>
+      <label><input type="radio" name="q6" value="d"> <code>StackPane</code></label>
+      <div class="quiz__explain">
+        <b>Correct: C.</b> <code>TextFlow</code> is designed specifically for rich inline text documents, automatically wrapping child <code>Text</code> spans across multiple lines.
+      </div>
+    </div>
+
+    <!-- Question 7 -->
+    <div class="quiz__q" data-kind="mc" data-ans="d">
+      <b>7. How do you create an indefinite, ping-ponging animation using a <code>ScaleTransition</code>?</b>
+      <label><input type="radio" name="q7" value="a"> Put a <code>while(true)</code> loop inside a background thread.</label>
+      <label><input type="radio" name="q7" value="b"> Call <code>transition.setRate(-1)</code> inside an event handler.</label>
+      <label><input type="radio" name="q7" value="c"> Re-instantiate the transition inside its <code>setOnFinished()</code> handler.</label>
+      <label><input type="radio" name="q7" value="d"> Call <code>setCycleCount(Animation.INDEFINITE)</code> and <code>setAutoReverse(true)</code>.</label>
+      <div class="quiz__explain">
+        <b>Correct: D.</b> <code>Animation.INDEFINITE</code> instructs the animation engine to repeat continuously, and <code>autoReverse = true</code> reverses direction on every alternate cycle, creating a smooth ping-pong effect.
+      </div>
+    </div>
+
+    <!-- Question 8 -->
+    <div class="quiz__q" data-kind="mc" data-ans="a">
+      <b>8. Which <code>CycleMethod</code> causes a gradient to repeat continuously like candy stripes across a shape?</b>
+      <label><input type="radio" name="q8" value="a"> <code>CycleMethod.REPEAT</code></label>
+      <label><input type="radio" name="q8" value="b"> <code>CycleMethod.NO_CYCLE</code></label>
+      <label><input type="radio" name="q8" value="c"> <code>CycleMethod.REFLECT</code></label>
+      <label><input type="radio" name="q8" value="d"> <code>CycleMethod.MIRROR</code></label>
+      <div class="quiz__explain">
+        <b>Correct: A.</b> <code>CycleMethod.REPEAT</code> continuously restarts the gradient from start color to end color across the surface. <code>REFLECT</code> alternates directions, and <code>NO_CYCLE</code> stops at the boundary stops.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== 17. PRACTICE EXERCISES =========================================== -->
+  <h2>Practice Exercises</h2>
+
+  <!-- Practice 1 -->
+  <div class="practice-card">
+    <span class="badge badge--easy">Easy</span>
+    <h3>Exercise 1: Glowing Cyber Neon Signboard</h3>
+    <p>
+      Create a standalone JavaFX application (<code>P1_NeonSignboard.java</code>) that simulates an illuminated
+      storefront neon sign. Requirements:
+    </p>
+    <ul>
+      <li>A dark slate backplate rectangle with rounded corners (<code>arcWidth = 20</code>) and a cyan border.</li>
+      <li>Typography that reads <strong>"OPEN 24/7"</strong> using a bold/black font.</li>
+      <li>Fill the text with a vibrant 3-stop <code>LinearGradient</code> (Sky Blue &rarr; Neon Pink &rarr; Yellow).</li>
+      <li>Attach a glowing <code>DropShadow</code> effect to the text with radius 25 and neon pink color.</li>
+    </ul>
+    <details>
+      <summary>View Hint</summary>
+      <p>Use <code>DropShadow glow = new DropShadow(25, 0, 0, Color.rgb(236, 72, 153));</code> and apply it via <code>neonText.setEffect(glow);</code>.</p>
+    </details>
+    <details>
+      <summary>View Solution Code</summary>
+      <!-- Embedded Source Code for P1 -->
+      <!--@code src="code/s14-javafx-text-shapes/src/main/java/com/aptech/s14/practice/P1_NeonSignboard.java"-->
+<pre class="numbered" data-file="P1_NeonSignboard.java"><code class="lang-java">package com.aptech.s14.practice;
+
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
+import javafx.stage.Stage;
+
+/**
+ * Practice 1 (Easy): Glowing Cyber Neon Signboard
+ *
+ * Requirements:
+ * 1. Dark background panel with rounded corners and double border.
+ * 2. Vibrant neon Text with custom linear gradient fill.
+ * 3. Multi-layer DropShadow effect simulating real fluorescent tube light glow.
+ */
+public class P1_NeonSignboard {
+
+    public static class NeonApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+        System.out.println("=== Practice 1: Glowing Cyber Neon Signboard ===");
+
+        // Signboard backplate
+        Rectangle backplate = new Rectangle(420, 160);
+        backplate.setFill(Color.rgb(15, 23, 42)); // Midnight slate
+        backplate.setArcWidth(20);
+        backplate.setArcHeight(20);
+        backplate.setStroke(Color.rgb(51, 65, 85));
+        backplate.setStrokeWidth(2.5);
+
+        // Inner glowing border
+        Rectangle innerFrame = new Rectangle(390, 130);
+        innerFrame.setFill(Color.TRANSPARENT);
+        innerFrame.setArcWidth(12);
+        innerFrame.setArcHeight(12);
+        innerFrame.setStroke(Color.rgb(6, 182, 212)); // Cyan neon
+        innerFrame.setStrokeWidth(1.5);
+
+        // Neon Typography
+        LinearGradient neonGrad = new LinearGradient(
+            0, 0, 1, 0, true, CycleMethod.NO_CYCLE,
+            new Stop(0.0, Color.rgb(56, 189, 248)),  // Sky
+            new Stop(0.5, Color.rgb(236, 72, 153)),  // Neon pink
+            new Stop(1.0, Color.rgb(250, 204, 21))   // Neon yellow
+        );
+
+        Text neonText = new Text("OPEN 24/7");
+        neonText.setFont(Font.font("Segoe UI", FontWeight.BLACK, 42));
+        neonText.setFill(neonGrad);
+
+        // Neon Glow Effect
+        DropShadow glow = new DropShadow(25, 0, 0, Color.rgb(236, 72, 153));
+        neonText.setEffect(glow);
+
+        Text subText = new Text("APTECH JAVA LAB");
+        subText.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+        subText.setFill(Color.rgb(148, 163, 184));
+
+        VBox textGroup = new VBox(6, neonText, subText);
+        textGroup.setAlignment(Pos.CENTER);
+
+        StackPane signboard = new StackPane(backplate, innerFrame, textGroup);
+        signboard.setPadding(new Insets(20));
+
+        System.out.println("Neon sign rendered: 'OPEN 24/7' with DropShadow radius=25");
+
+        Scene scene = new Scene(new StackPane(signboard), 480, 240);
+        scene.setFill(Color.rgb(2, 6, 23));
+        primaryStage.setTitle("Practice 1 - Neon Signboard");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(NeonApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+    </details>
+  </div>
+
+  <!-- Practice 2 -->
+  <div class="practice-card">
+    <span class="badge badge--medium">Medium</span>
+    <h3>Exercise 2: Analog Clock Face with Rotation Transforms</h3>
+    <p>
+      Create a standalone JavaFX application (<code>P2_TransformClockFace.java</code>) that programmatically
+      generates a complete analog clock face. Requirements:
+    </p>
+    <ul>
+      <li>A circular clock dial with a metallic radial gradient.</li>
+      <li>Use a loop from 1 to 12 to generate the hour tick marks: place each tick at the 12 o'clock position, then apply <code>new Rotate(hour * 30, centerX, centerY)</code>.</li>
+      <li>Major ticks (12, 3, 6, 9) should be longer and thicker than minor ticks.</li>
+      <li>Add distinct hour, minute, and second hands pointing at 10:10:35 with center pivots.</li>
+    </ul>
+    <details>
+      <summary>View Hint</summary>
+      <p>By rotating each tick mark around the clock's exact center $(centerX, centerY)$, you avoid having to manually compute sine and cosine trigonometry!</p>
+    </details>
+    <details>
+      <summary>View Solution Code</summary>
+      <!-- Embedded Source Code for P2 -->
+      <!--@code src="code/s14-javafx-text-shapes/src/main/java/com/aptech/s14/practice/P2_TransformClockFace.java"-->
+<pre class="numbered" data-file="P2_TransformClockFace.java"><code class="lang-java">package com.aptech.s14.practice;
+
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Group;
+import javafx.scene.Scene;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.RadialGradient;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.Stop;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Line;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
+import javafx.scene.transform.Rotate;
+import javafx.stage.Stage;
+
+/**
+ * Practice 2 (Medium): Analog Clock Face with Rotation Transforms
+ *
+ * Requirements:
+ * 1. Metallic clock rim with radial gradient.
+ * 2. 12 hour tick marks arranged around the perimeter using Rotate transforms.
+ * 3. Distinct hour hand, minute hand, and second hand with center pivots.
+ */
+public class P2_TransformClockFace {
+
+    public static class ClockApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+        System.out.println("=== Practice 2: Analog Clock Face with Rotation Transforms ===");
+
+        double centerX = 150, centerY = 150;
+        double dialRadius = 120;
+
+        // Clock Rim &amp; Face
+        RadialGradient dialFaceGrad = new RadialGradient(
+            0, 0, 0.5, 0.5, 0.5, true, CycleMethod.NO_CYCLE,
+            new Stop(0.0, Color.rgb(248, 250, 252)),
+            new Stop(0.85, Color.rgb(226, 232, 240)),
+            new Stop(1.0, Color.rgb(148, 163, 184))
+        );
+        Circle clockDial = new Circle(centerX, centerY, dialRadius, dialFaceGrad);
+        clockDial.setStroke(Color.rgb(51, 65, 85));
+        clockDial.setStrokeWidth(5.0);
+
+        Group tickGroup = new Group();
+
+        // 12 Hour Ticks
+        for (int hour = 1; hour &lt;= 12; hour++) {
+            double angle = hour * 30.0; // 360 / 12 = 30 degrees per hour
+            boolean isQuarter = (hour % 3 == 0);
+
+            double tickLength = isQuarter ? 16 : 8;
+            double tickStroke = isQuarter ? 3.5 : 1.5;
+
+            // Base tick mark placed vertically at the 12 o'clock position
+            Line tick = new Line(centerX, centerY - dialRadius + 5, centerX, centerY - dialRadius + 5 + tickLength);
+            tick.setStroke(isQuarter ? Color.rgb(15, 23, 42) : Color.rgb(100, 116, 139));
+            tick.setStrokeWidth(tickStroke);
+
+            // Rotate around the exact center of the clock
+            Rotate rot = new Rotate(angle, centerX, centerY);
+            tick.getTransforms().add(rot);
+
+            tickGroup.getChildren().add(tick);
+        }
+
+        // Hour Hand: points to 10 o'clock (300 degrees)
+        Line hourHand = new Line(centerX, centerY, centerX, centerY - 65);
+        hourHand.setStroke(Color.rgb(15, 23, 42));
+        hourHand.setStrokeWidth(4.5);
+        hourHand.getTransforms().add(new Rotate(300, centerX, centerY));
+
+        // Minute Hand: points to 2 o'clock (60 degrees)
+        Line minuteHand = new Line(centerX, centerY, centerX, centerY - 95);
+        minuteHand.setStroke(Color.rgb(15, 23, 42));
+        minuteHand.setStrokeWidth(2.5);
+        minuteHand.getTransforms().add(new Rotate(60, centerX, centerY));
+
+        // Second Hand: points to 7 o'clock (210 degrees)
+        Line secondHand = new Line(centerX, centerY + 15, centerX, centerY - 105);
+        secondHand.setStroke(Color.CRIMSON);
+        secondHand.setStrokeWidth(1.2);
+        secondHand.getTransforms().add(new Rotate(210, centerX, centerY));
+
+        // Center Cap Pin
+        Circle centerPin = new Circle(centerX, centerY, 5, Color.CRIMSON);
+
+        Group clockAssembly = new Group(clockDial, tickGroup, hourHand, minuteHand, secondHand, centerPin);
+
+        Text title = new Text("Analog Clock Face (Geometric Transforms)");
+        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
+
+        VBox root = new VBox(15, title, clockAssembly);
+        root.setPadding(new Insets(20));
+        root.setAlignment(Pos.CENTER);
+
+        System.out.println("Analog Clock assembled: 12 rotated ticks, Hour Hand (300 deg), Minute Hand (60 deg)");
+
+        Scene scene = new Scene(root, 360, 400);
+        primaryStage.setTitle("Practice 2 - Transform Clock Face");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(ClockApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+    </details>
+  </div>
+
+  <!-- Practice 3 -->
+  <div class="practice-card">
+    <span class="badge badge--challenge">Challenge</span>
+    <h3>Exercise 3: Animated Precision Engineering Gear Badge</h3>
+    <p>
+      Create an industrial cogwheel / gear emblem (<code>P3_CompoundGearBadge.java</code>) using Constructive
+      Solid Geometry. Requirements:
+    </p>
+    <ul>
+      <li>Start with a base circular hub $(r = 60)$.</li>
+      <li>Union 4 cross-bars (representing 8 teeth) rotated in $45^\circ$ increments using <code>Shape.union()</code>.</li>
+      <li>Carve out a center axle bore hole using <code>Shape.subtract(gear, axleHole)</code>.</li>
+      <li>Carve out a rectangular keyway notch using <code>Shape.subtract(gear, notch)</code>.</li>
+      <li>Apply a polished steel <code>RadialGradient</code> and attach a continuous <code>RotateTransition</code> that spins the gear smoothly.</li>
+    </ul>
+    <details>
+      <summary>View Hint</summary>
+      <p>Remember that each CSG method returns a new <code>Shape</code>. Reassign the variable: <code>gearShape = Shape.subtract(gearShape, axleHole);</code>.</p>
+    </details>
+    <details>
+      <summary>View Solution Code</summary>
+      <!-- Embedded Source Code for P3 -->
+      <!--@code src="code/s14-javafx-text-shapes/src/main/java/com/aptech/s14/practice/P3_CompoundGearBadge.java"-->
+<pre class="numbered" data-file="P3_CompoundGearBadge.java"><code class="lang-java">package com.aptech.s14.practice;
+
+import javafx.animation.Animation;
+import javafx.animation.Interpolator;
+import javafx.animation.RotateTransition;
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.RadialGradient;
+import javafx.scene.paint.Stop;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
+import javafx.stage.Stage;
+import javafx.util.Duration;
+
+/**
+ * Practice 3 (Challenge): Animated Engineering Cogwheel / Gear Badge
+ *
+ * Requirements:
+ * 1. Construct a solid cogwheel using Constructive Solid Geometry (CSG):
+ *    - Start with a solid circular hub.
+ *    - Union 8 radial teeth blocks around the circumference.
+ *    - Subtract a central axle bore hole and keyway notch.
+ * 2. Apply metallic bronze/steel radial gradient.
+ * 3. Attach a continuous RotateTransition that spins the gear smoothly.
+ */
+public class P3_CompoundGearBadge {
+
+    public static class GearApp extends Application {
+        @Override
+        public void start(Stage primaryStage) {
+        System.out.println("=== Practice 3: Animated Engineering Gear Badge (CSG) ===");
+
+        double cx = 100, cy = 100;
+        double hubRadius = 60;
+
+        // 1. Base Hub Circle
+        Shape gearShape = new Circle(cx, cy, hubRadius);
+
+        // 2. Add 8 gear teeth via Shape.union()
+        for (int i = 0; i &lt; 4; i++) {
+            double angle = i * 45.0;
+            // Cross-bar representing two opposite teeth
+            Rectangle toothPair = new Rectangle(cx - 72, cy - 12, 144, 24);
+            toothPair.setArcWidth(6);
+            toothPair.setArcHeight(6);
+            toothPair.setRotate(angle);
+
+            gearShape = Shape.union(gearShape, toothPair);
+        }
+
+        // 3. Subtract central axle bore hole
+        Circle axleHole = new Circle(cx, cy, 24);
+        gearShape = Shape.subtract(gearShape, axleHole);
+
+        // 4. Subtract keyway slot notch
+        Rectangle keyway = new Rectangle(cx - 5, cy - 32, 10, 14);
+        gearShape = Shape.subtract(gearShape, keyway);
+
+        // Metallic Finish: Steel Radial Gradient
+        RadialGradient steelGrad = new RadialGradient(
+            -45, 0.4, 0.5, 0.5, 0.5, true, CycleMethod.NO_CYCLE,
+            new Stop(0.0, Color.rgb(241, 245, 249)),
+            new Stop(0.5, Color.rgb(148, 163, 184)),
+            new Stop(1.0, Color.rgb(51, 65, 85))
+        );
+        gearShape.setFill(steelGrad);
+        gearShape.setStroke(Color.rgb(30, 41, 59));
+        gearShape.setStrokeWidth(2.0);
+
+        // 5. Spin Animation: 4 seconds per full 360 rotation
+        RotateTransition spin = new RotateTransition(Duration.seconds(4.0), gearShape);
+        spin.setByAngle(360);
+        spin.setCycleCount(Animation.INDEFINITE);
+        spin.setInterpolator(Interpolator.LINEAR);
+        spin.play();
+
+        Text title = new Text("Animated Precision Gear (CSG Subtraction)");
+        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
+
+        VBox root = new VBox(25, title, gearShape);
+        root.setPadding(new Insets(25));
+        root.setAlignment(Pos.CENTER);
+
+        System.out.println("Gear badge built using 4 unions and 2 subtractions. Spin animation active.");
+
+        Scene scene = new Scene(root, 360, 360);
+        primaryStage.setTitle("Practice 3 - Compound Gear Badge");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+    }
+
+    public static void main(String[] args) {
+        Application.launch(GearApp.class, args);
+    }
+}</code></pre>
+<!--@end-->
+    </details>
+  </div>
+
+  <!-- ===== 18. CHEAT SHEET ================================================== -->
+  <h2>Cheat Sheet</h2>
+  <div class="cheatsheet">
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Category</th><th>Code Snippet</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Text Node</strong></td>
+            <td><code>Text t = new Text(0, 24, "Label");<br>t.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));<br>t.setFill(Color.BLUE);</code></td>
+            <td>Creates vector typography. Y coordinate anchors baseline.</td>
+          </tr>
+          <tr>
+            <td><strong>TextFlow</strong></td>
+            <td><code>TextFlow flow = new TextFlow(t1, t2);</code></td>
+            <td>Wraps multi-colored, multi-font inline text spans into a paragraph.</td>
+          </tr>
+          <tr>
+            <td><strong>Transforms</strong></td>
+            <td><code>node.getTransforms().addAll(<br>&nbsp;&nbsp;new Translate(dx, dy),<br>&nbsp;&nbsp;new Rotate(angle, pivotX, pivotY),<br>&nbsp;&nbsp;new Scale(sx, sy, pivotX, pivotY),<br>&nbsp;&nbsp;new Shear(x, y, pivotX, pivotY)<br>);</code></td>
+            <td>Cumulative 2D transformations with explicit center pivot points.</td>
+          </tr>
+          <tr>
+            <td><strong>2D Shapes</strong></td>
+            <td><code>new Rectangle(x, y, w, h);<br>new Circle(cx, cy, r);<br>new Ellipse(cx, cy, rx, ry);<br>new Polygon(x1, y1, x2, y2, ...);<br>new Arc(cx, cy, rx, ry, start, len);</code></td>
+            <td>Core 2D vector primitives inheriting from <code>Shape</code>.</td>
+          </tr>
+          <tr>
+            <td><strong>Linear Gradient</strong></td>
+            <td><code>new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE,<br>&nbsp;&nbsp;new Stop(0.0, Color.BLUE),<br>&nbsp;&nbsp;new Stop(1.0, Color.GOLD));</code></td>
+            <td>Directional color transition between proportional coordinates.</td>
+          </tr>
+          <tr>
+            <td><strong>Radial Gradient</strong></td>
+            <td><code>new RadialGradient(-30, 0.35, 0.5, 0.5, 0.5, true, CycleMethod.NO_CYCLE,<br>&nbsp;&nbsp;new Stop(0.0, Color.WHITE),<br>&nbsp;&nbsp;new Stop(1.0, Color.NAVY));</code></td>
+            <td>Concentric circular gradient with off-center specular shine.</td>
+          </tr>
+          <tr>
+            <td><strong>CSG Operations</strong></td>
+            <td><code>Shape u = Shape.union(s1, s2);<br>Shape i = Shape.intersect(s1, s2);<br>Shape s = Shape.subtract(s1, s2);</code></td>
+            <td>Boolean set operations: Merge (OR), Overlap (AND), Carve (DIFFERENCE).</td>
+          </tr>
+          <tr>
+            <td><strong>3D Primitives</strong></td>
+            <td><code>Box b = new Box(w, h, d);<br>Sphere s = new Sphere(r, 64);<br>Cylinder c = new Cylinder(r, h);<br>b.setMaterial(new PhongMaterial(Color.GOLD));</code></td>
+            <td>Hardware-accelerated 3D meshes with Phong shading.</td>
+          </tr>
+          <tr>
+            <td><strong>3D Scene Depth</strong></td>
+            <td><code>new Scene(root3D, width, height, true);</code></td>
+            <td>Enables GPU hardware Z-buffer for true 3D spatial depth sorting.</td>
+          </tr>
+          <tr>
+            <td><strong>Transitions</strong></td>
+            <td><code>RotateTransition rt = new RotateTransition(Duration.seconds(2), node);<br>rt.setByAngle(360);<br>rt.setCycleCount(Animation.INDEFINITE);<br>rt.play();</code></td>
+            <td>Hardware-accelerated GPU render pulse animation.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== 19. FURTHER STUDY =============================================== -->
+  <h2>Further Study &amp; Resources</h2>
+  <div class="video-grid">
+    <div class="video-card">
+      <h4>Official OpenJFX Documentation</h4>
+      <p>Deep dive into the official JavaFX documentation covering 2D Shapes, Canvas, Transforms, and 3D Graphics pipelines.</p>
+      <a href="https://openjfx.io/" target="_blank" rel="noopener">OpenJFX Official Documentation &rarr;</a>
+    </div>
+    <div class="video-card">
+      <h4>JavaFX 2D Graphics &amp; Shapes Tutorial</h4>
+      <p>Comprehensive video tutorial walking through JavaFX Shapes, Stroke properties, and gradient painting.</p>
+      <a href="https://www.youtube.com/watch?v=kYJzX8V9TNo" target="_blank" rel="noopener">Watch JavaFX 2D Tutorial on YouTube &rarr;</a>
+    </div>
+    <div class="video-card">
+      <h4>JavaFX 3D Fundamentals &amp; Lighting</h4>
+      <p>Video exploration of PerspectiveCamera, PointLight, Box, Sphere, and PhongMaterial shading in OpenJFX.</p>
+      <a href="https://www.youtube.com/watch?v=p4v5v7a6Q2g" target="_blank" rel="noopener">Watch JavaFX 3D Tutorial on YouTube &rarr;</a>
+    </div>
+  </div>
+
+  <!-- ===== 20. SESSION SUMMARY ============================================== -->
+  <h2>Session Summary</h2>
+  <p>
+    In this session, you expanded your JavaFX knowledge from basic window containers into full command of vector
+    graphics, typography, transformations, and 3D meshes:
+  </p>
+  <ul>
+    <li><strong>Text as Vector Geometry</strong>: You discovered that <code>Text</code> is a <code>Shape</code>, learned how baseline coordinates work, and used <code>TextFlow</code> to build rich inline documents.</li>
+    <li><strong>Geometric Transformations</strong>: You mastered Translation, Center-Pivot Rotation, Scaling, and Shearing, and proved why transformation order is non-commutative.</li>
+    <li><strong>2D Shape Hierarchy</strong>: You built lines, rounded rectangles, circles, ellipses, polygons, and pie arcs with custom stroke joins, caps, and dash patterns.</li>
+    <li><strong>Paints &amp; Gradients</strong>: You applied multi-stop linear and radial gradients to simulate metallic lusters and 3D specular highlights.</li>
+    <li><strong>Constructive Solid Geometry (CSG)</strong>: You used <code>Shape.union()</code>, <code>Shape.intersect()</code>, and <code>Shape.subtract()</code> to construct complex emblems without external image assets.</li>
+    <li><strong>3D Mesh Graphics</strong>: You rendered <code>Box</code>, <code>Cylinder</code>, and <code>Sphere</code> primitives with <code>PhongMaterial</code> and lighting, remembering to always activate the GPU depth buffer.</li>
+    <li><strong>Transitions &amp; Motion</strong>: You choreographed smooth 60fps animations using <code>RotateTransition</code>, <code>ScaleTransition</code>, <code>ParallelTransition</code>, and <code>SequentialTransition</code>.</li>
+  </ul>
+
+  <!-- New Words Box -->
+  <div class="newwords">
+    <b>&#128218; New Words &amp; Concepts Mastered Today</b>
+    <ul>
+      <li><strong>Baseline Coordinate</strong>: The horizontal line upon which character glyphs sit. Positioning text at $y=0$ hides it above the viewport.</li>
+      <li><strong>TextFlow</strong>: A specialized layout pane that wraps multiple styled <code>Text</code> nodes like a continuous flowing document paragraph.</li>
+      <li><strong>Pivot Point</strong>: The anchor point $(pivotX, pivotY)$ around which rotation, scaling, and shearing transformations occur.</li>
+      <li><strong>Shearing</strong>: A geometric transformation that skews an object along an axis, turning rectangles into parallelograms.</li>
+      <li><strong>Constructive Solid Geometry (CSG)</strong>: Creating complex shapes by applying boolean set operations (union, intersection, subtraction) to simpler primitives.</li>
+      <li><strong>LinearGradient</strong>: A smooth transition of colors along a straight directional vector.</li>
+      <li><strong>RadialGradient</strong>: A circular radiation of colors outward from a focal point, capable of simulating 3D specular shine.</li>
+      <li><strong>CycleMethod</strong>: Determines how a gradient repeats beyond its coordinate boundaries (<code>NO_CYCLE</code>, <code>REFLECT</code>, <code>REPEAT</code>).</li>
+      <li><strong>Shape3D</strong>: The abstract base class for JavaFX 3D mesh primitives (<code>Box</code>, <code>Cylinder</code>, <code>Sphere</code>).</li>
+      <li><strong>PhongMaterial</strong>: A shading material that defines diffuse color, specular shine color, and surface reflectance power for 3D meshes.</li>
+      <li><strong>Depth Buffer (Z-Buffer)</strong>: A GPU memory buffer that tracks pixel distance from the camera, ensuring proper front-to-back 3D occlusion sorting.</li>
+      <li><strong>Transition</strong>: A high-level animation class that interpolates property values over a <code>Duration</code> synchronized with the monitor refresh rate.</li>
+    </ul>
+  </div>
+
+  <div class="callout callout--tip"><span class="callout__i">&#128640;</span>
+    <div class="callout__b"><b>Looking Ahead to Session 15</b>
+      In <strong>Session 15: JavaFX Layouts, CSS, Controls &amp; Charts</strong>, you will move from individual
+      shapes to full application architecture! You will master professional layout managers (<code>BorderPane</code>,
+      <code>GridPane</code>, <code>HBox</code>, <code>VBox</code>), skin your interfaces with external CSS stylesheets,
+      explore advanced UI controls (TableViews, ComboBoxes, Sliders), and generate business charts (PieChart, BarChart, LineChart)
+      for enterprise dashboards.
+      <p><strong>Next Session Warm-up:</strong> Review CSS class selectors (<code>.my-class</code>) and HTML box-model margins/padding before Session 15.</p>
+    </div>
+  </div>
+
+
+</main>
+
+<script src="../assets/js/course.js"></script>
+</body>
+</html>

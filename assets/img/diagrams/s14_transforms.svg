@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 380" font-family="system-ui,-apple-system,sans-serif">
+  <defs>
+    <linearGradient id="tfm" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#0ea5e9"/><stop offset="100%" stop-color="#06b6d4"/></linearGradient>
+  </defs>
+  <rect width="820" height="380" rx="16" fill="#0f172a"/>
+  <text x="410" y="30" text-anchor="middle" fill="#94a3b8" font-size="14" font-weight="600">The Four Geometric Transformations in JavaFX</text>
+
+  <!-- Translate -->
+  <rect x="20" y="55" width="180" height="140" rx="12" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+  <rect x="20" y="55" width="180" height="32" rx="12" fill="url(#tfm)"/>
+  <text x="110" y="76" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">Translate</text>
+  <!-- Original square -->
+  <rect x="50" y="105" width="30" height="30" rx="3" fill="#475569" stroke="#64748b" stroke-dasharray="4"/>
+  <text x="65" y="150" text-anchor="middle" fill="#64748b" font-size="9">original</text>
+  <!-- Arrow -->
+  <line x1="85" y1="120" x2="130" y2="120" stroke="#0ea5e9" stroke-width="2" marker-end="url(#arrowBlue)"/>
+  <line x1="65" y1="140" x2="65" y2="170" stroke="#0ea5e9" stroke-width="1" stroke-dasharray="3"/>
+  <!-- Moved square -->
+  <rect x="125" y="105" width="30" height="30" rx="3" fill="#0ea5e9" opacity="0.7"/>
+  <text x="140" y="150" text-anchor="middle" fill="#0ea5e9" font-size="9">moved</text>
+  <text x="110" y="185" text-anchor="middle" fill="#cbd5e1" font-size="10">setTranslateX(dx)</text>
+
+  <!-- Rotate -->
+  <rect x="220" y="55" width="180" height="140" rx="12" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+  <rect x="220" y="55" width="180" height="32" rx="12" fill="url(#tfm)"/>
+  <text x="310" y="76" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">Rotate</text>
+  <!-- Original square -->
+  <rect x="280" y="100" width="30" height="30" rx="3" fill="#475569" stroke="#64748b" stroke-dasharray="4"/>
+  <!-- Rotated square -->
+  <rect x="295" y="100" width="30" height="30" rx="3" fill="#f59e0b" opacity="0.7" transform="rotate(30 310 115)"/>
+  <!-- Arc arrow -->
+  <path d="M 340 100 A 25 25 0 0 1 325 140" fill="none" stroke="#f59e0b" stroke-width="2"/>
+  <text x="310" y="165" text-anchor="middle" fill="#f59e0b" font-size="9">θ = 30°</text>
+  <text x="310" y="185" text-anchor="middle" fill="#cbd5e1" font-size="10">setRotate(angle)</text>
+
+  <!-- Scale -->
+  <rect x="420" y="55" width="180" height="140" rx="12" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+  <rect x="420" y="55" width="180" height="32" rx="12" fill="url(#tfm)"/>
+  <text x="510" y="76" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">Scale</text>
+  <!-- Small square -->
+  <rect x="480" y="110" width="20" height="20" rx="2" fill="#475569" stroke="#64748b" stroke-dasharray="4"/>
+  <text x="490" y="145" text-anchor="middle" fill="#64748b" font-size="9">1×</text>
+  <!-- Big square -->
+  <rect x="510" y="100" width="40" height="40" rx="3" fill="#10b981" opacity="0.6"/>
+  <text x="530" y="155" text-anchor="middle" fill="#10b981" font-size="9">2×</text>
+  <text x="510" y="185" text-anchor="middle" fill="#cbd5e1" font-size="10">setScaleX(sx)</text>
+
+  <!-- Shear -->
+  <rect x="620" y="55" width="180" height="140" rx="12" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+  <rect x="620" y="55" width="180" height="32" rx="12" fill="url(#tfm)"/>
+  <text x="710" y="76" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">Shear</text>
+  <!-- Original square -->
+  <rect x="660" y="105" width="30" height="30" rx="3" fill="#475569" stroke="#64748b" stroke-dasharray="4"/>
+  <!-- Sheared parallelogram -->
+  <polygon points="720,105 750,105 740,135 710,135" fill="#ef4444" opacity="0.6"/>
+  <text x="710" y="155" text-anchor="middle" fill="#ef4444" font-size="9">skewed</text>
+  <text x="710" y="185" text-anchor="middle" fill="#cbd5e1" font-size="10">Shear(x, y)</text>
+
+  <!-- Bottom: Transform class table -->
+  <rect x="20" y="220" width="780" height="140" rx="12" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+  <text x="410" y="245" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="600">javafx.scene.transform.Transform Subclasses</text>
+
+  <rect x="40" y="260" width="170" height="28" rx="6" fill="#0ea5e940"/>
+  <text x="125" y="279" text-anchor="middle" fill="#0ea5e9" font-size="11" font-weight="600">Translate(x, y)</text>
+  <text x="125" y="300" text-anchor="middle" fill="#94a3b8" font-size="9">Shifts the node position</text>
+
+  <rect x="230" y="260" width="170" height="28" rx="6" fill="#f59e0b40"/>
+  <text x="315" y="279" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="600">Rotate(angle, pX, pY)</text>
+  <text x="315" y="300" text-anchor="middle" fill="#94a3b8" font-size="9">Spins around pivot point</text>
+
+  <rect x="420" y="260" width="170" height="28" rx="6" fill="#10b98140"/>
+  <text x="505" y="279" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">Scale(sX, sY)</text>
+  <text x="505" y="300" text-anchor="middle" fill="#94a3b8" font-size="9">Multiplies dimensions</text>
+
+  <rect x="610" y="260" width="170" height="28" rx="6" fill="#ef444440"/>
+  <text x="695" y="279" text-anchor="middle" fill="#ef4444" font-size="11" font-weight="600">Shear(x, y)</text>
+  <text x="695" y="300" text-anchor="middle" fill="#94a3b8" font-size="9">Slants along axis</text>
+
+  <text x="410" y="340" text-anchor="middle" fill="#64748b" font-size="10">All transforms can be stacked via node.getTransforms().addAll(t1, t2, t3) — applied in list order</text>
+</svg>
